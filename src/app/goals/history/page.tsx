@@ -44,7 +44,7 @@ function HistoryContent() {
 
   function getStreak(goalId: string) {
     const subs = getSubmissionsForGoal(goalId).filter((s) => s.status === "verified");
-    const dates = [...new Set(subs.map((s) => s.date))].sort().reverse();
+    const dates = Array.from(new Set(subs.map((s) => s.date))).sort().reverse();
     let streak = 0;
     let d = new Date();
     for (const dateStr of dates) {
@@ -60,7 +60,7 @@ function HistoryContent() {
   // Group verified subs by goal for history view
   const byGoal = goals.map((goal) => {
     const goalSubs = verifiedSubs.filter((s) => s.goalId === goal.id);
-    const completedDates = [...new Set(goalSubs.map((s) => s.date))].sort().reverse();
+    const completedDates = Array.from(new Set(goalSubs.map((s) => s.date))).sort().reverse();
     return {
       goal,
       submissions: goalSubs,

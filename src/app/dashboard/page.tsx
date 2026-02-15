@@ -42,7 +42,7 @@ function DashboardContent() {
 
   function getStreak(goal: (typeof goals)[0]) {
     const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
-    const dates = [...new Set(subs.map((s) => s.date))].sort().reverse();
+    const dates = Array.from(new Set(subs.map((s) => s.date))).sort().reverse();
     let streak = 0;
     let d = new Date();
     const today = format(d, "yyyy-MM-dd");
