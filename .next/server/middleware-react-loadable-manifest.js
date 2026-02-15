@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"lib\\\\supabase\\\\client.ts -> @supabase/ssr\":{\"id\":\"lib\\\\supabase\\\\client.ts -> @supabase/ssr\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_supabase_ssr_dist_module_index_js.js\"]}}"

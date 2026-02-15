@@ -1,0 +1,423 @@
+"use client";
+
+import { useCallback, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AppProvider, useApp } from "@/context/AppContext";
+import { PLANS, type PlanId } from "@/types";
+
+type Slide = 0 | 1 | 2; // 0 = welcome, 1 = login, 2 = plan
+type AuthMode = "signin" | "signup";
+
+function LandingContent() {
+  const router = useRouter();
+  const { user, setUser, setPlan, useSupabase, supabase } = useApp();
+
+  const [slide, setSlide] = useState<Slide>(0);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+  const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const goTo = (next: Slide) => {
+    setSlide(next);
+  };
+
+  const handleTouchStart = (x: number) => {
+    touchStartX.current = x;
+    touchEndX.current = null;
+  };
+
+  const handleTouchMove = (x: number) => {
+    touchEndX.current = x;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current == null || touchEndX.current == null) return;
+    const delta = touchEndX.current - touchStartX.current;
+    const threshold = 50; // px
+    if (delta > threshold && slide > 0) {
+      setSlide((prev) => (prev - 1) as Slide);
+    } else if (delta < -threshold && slide < 2) {
+      setSlide((prev) => (prev + 1) as Slide);
+    }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setLoginError("Please enter your email.");
+      return;
+    }
+    if (password.length < 6) {
+      setLoginError("Password must be at least 6 characters.");
+      return;
+    }
+    setLoginError("");
+    setResetSent(false);
+
+    if (useSupabase && supabase) {
+      setLoading(true);
+      try {
+        if (authMode === "signin") {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password,
+          });
+          if (error) {
+            setLoginError(error.message === "Invalid login credentials" ? "Invalid email or password." : error.message);
+            return;
+          }
+        } else {
+          const { data, error } = await supabase.auth.signUp({
+            email: trimmedEmail,
+            password,
+            options: { emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined },
+          });
+          if (error) {
+            setLoginError(error.message);
+            return;
+          }
+          if (data?.user && !data?.session) {
+            setLoginError("Check your email to confirm your account, then sign in.");
+            return;
+          }
+          setLoginError("");
+          setSlide(2);
+          return;
+        }
+        setSlide(2);
+      } catch (err) {
+        setLoginError(err instanceof Error ? err.message : "Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      const now = new Date().toISOString();
+      setUser({
+        id: user?.id ?? `user-${Date.now()}`,
+        email: trimmedEmail,
+        plan: user?.plan ?? "free",
+        createdAt: user?.createdAt ?? now,
+      });
+      setLoginError("");
+      setSlide(2);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setLoginError("Enter your email first.");
+      return;
+    }
+    if (!useSupabase || !supabase) return;
+    setLoading(true);
+    setLoginError("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback?next=/reset-password` : undefined,
+      });
+      if (error) {
+        setLoginError(error.message);
+        return;
+      }
+      setResetSent(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: "google" | "apple") => {
+    if (!useSupabase || !supabase) return;
+    setLoading(true);
+    setLoginError("");
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined,
+        },
+      });
+      if (error) {
+        setLoginError(error.message);
+        return;
+      }
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChoosePlan = useCallback(
+    (planId: PlanId) => {
+      setPlan(planId);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("proveit_start_tour", "1");
+      }
+      router.push("/dashboard");
+    },
+    [router, setPlan]
+  );
+
+  return (
+    <main className="fixed inset-0 flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
+      {/* Decorative background shapes */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-prove-200/40 blur-3xl dark:bg-prove-900/30" />
+        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-prove-100/50 blur-3xl dark:bg-prove-900/20" />
+        <div className="absolute right-1/3 top-1/4 h-40 w-40 rounded-full bg-prove-300/20 blur-2xl dark:bg-prove-800/20" />
+      </div>
+      <div
+        className="relative z-10 flex flex-1 flex-col overflow-hidden"
+        onTouchStart={(e) => handleTouchStart(e.touches[0].clientX)}
+        onTouchMove={(e) => handleTouchMove(e.touches[0].clientX)}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={(e) => handleTouchStart(e.clientX)}
+        onMouseMove={(e) => {
+          if (e.buttons === 1) handleTouchMove(e.clientX);
+        }}
+        onMouseUp={handleTouchEnd}
+      >
+        {/* Slides container */}
+        <div
+          className="flex min-h-0 flex-1 w-[300%] transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${slide * (100 / 3)}%)` }}
+        >
+          {/* Slide 0 – Welcome – full-screen hero */}
+          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-[5vw] py-[env(safe-area-inset-top)]">
+            <div className="flex w-full max-w-xl flex-col items-stretch">
+              <div
+                className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] animate-welcome-step [animation-fill-mode:forwards] dark:bg-prove-900/50"
+              >
+                <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
+                <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">
+                  Step 1 of 3
+                </p>
+              </div>
+              <h1
+                className="mt-[clamp(0.75rem,3vh,1.5rem)] font-display text-[clamp(2rem,8vmin,4.5rem)] font-bold leading-[1.08] tracking-tight text-slate-900 animate-welcome-headline [animation-fill-mode:forwards] dark:text-white"
+              >
+                Prove your
+                <br />
+                <span className="text-prove-600 dark:text-prove-400">habits</span> with
+                <br />
+                photos.
+              </h1>
+              <div
+                className="mt-[clamp(0.5rem,2.5vh,1.25rem)] rounded-2xl border border-slate-200/80 bg-white/60 p-[clamp(0.75rem,3vw,1.25rem)] backdrop-blur-sm animate-welcome-list [animation-fill-mode:forwards] dark:border-slate-700/50 dark:bg-slate-900/40"
+              >
+                <ol className="space-y-[clamp(0.25rem,1.5vh,0.75rem)] text-[clamp(0.8125rem,2.5vmin,1.125rem)] leading-relaxed text-slate-600 dark:text-slate-400">
+                  <li className="flex gap-3">
+                    <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
+                    Set a daily or weekly goal and a reminder time.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>
+                    Get a notification on your phone.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">3</span>
+                    Take a photo before midnight to keep your streak.
+                  </li>
+                </ol>
+              </div>
+            </div>
+            <div
+              className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full max-w-xl items-center justify-between animate-welcome-cta [animation-fill-mode:forwards]"
+            >
+              <span className="text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">Swipe → to continue</span>
+              <button
+                type="button"
+                onClick={() => goTo(1)}
+                className="rounded-full bg-prove-600 px-[clamp(1rem,4vw,1.5rem)] py-[clamp(0.5rem,2vh,0.75rem)] text-[clamp(0.8125rem,2.5vmin,1rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
+              >
+                Get started
+              </button>
+            </div>
+          </section>
+
+          {/* Slide 1 – Login */}
+          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-[5vw] py-[env(safe-area-inset-top)]">
+            <div className="flex w-full max-w-md flex-col items-stretch">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] dark:bg-prove-900/50">
+                <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
+                <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">Step 2 of 3</p>
+              </div>
+              <h2 className="mt-[clamp(0.5rem,2vh,1rem)] font-display text-[clamp(1.5rem,5vmin,2.5rem)] font-bold tracking-tight text-slate-900 dark:text-white">
+                {authMode === "signin" ? "Sign in" : "Create account"}
+              </h2>
+              <form onSubmit={handleLoginSubmit} className="mt-[clamp(0.75rem,3vh,1.5rem)]">
+                <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/50">
+                  {useSupabase && (
+                    <div className="mb-4 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOAuthSignIn("google")}
+                        disabled={loading}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1rem)] font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      >
+                        <svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Continue with Google
+                      </button>
+                      <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="bg-white px-2 text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">or</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-[clamp(0.75rem,2.5vh,1.25rem)]">
+                    <div>
+                      <label className="text-[clamp(0.8125rem,2.5vmin,1rem)] font-medium text-slate-700 dark:text-slate-300">Email</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-900 placeholder-slate-400 transition focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[clamp(0.8125rem,2.5vmin,1rem)] font-medium text-slate-700 dark:text-slate-300">Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-900 placeholder-slate-400 transition focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                        placeholder="At least 6 characters"
+                        required
+                      />
+                      {useSupabase && authMode === "signin" && (
+                        <button
+                          type="button"
+                          onClick={handleForgotPassword}
+                          disabled={loading}
+                          className="mt-1.5 text-sm text-prove-600 hover:underline dark:text-prove-400"
+                        >
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
+                    {resetSent && (
+                      <p className="text-sm text-prove-600 dark:text-prove-400" role="status">Check your email for the reset link.</p>
+                    )}
+                    {loginError && (
+                      <p className="text-[clamp(0.8125rem,2vmin,0.9375rem)] text-red-500" role="alert">{loginError}</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="mt-2 w-full rounded-xl bg-prove-600 py-[clamp(0.625rem,2.5vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 disabled:opacity-70 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
+                    >
+                      {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
+                    </button>
+                    {useSupabase && (
+                      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                        {authMode === "signin" ? (
+                          <>Don&apos;t have an account?{" "}
+                            <button type="button" onClick={() => { setAuthMode("signup"); setLoginError(""); }} className="font-medium text-prove-600 hover:underline dark:text-prove-400">Sign up</button>
+                          </>
+                        ) : (
+                          <>Already have an account?{" "}
+                            <button type="button" onClick={() => { setAuthMode("signin"); setLoginError(""); }} className="font-medium text-prove-600 hover:underline dark:text-prove-400">Sign in</button>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full max-w-md items-center justify-between text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
+              <button type="button" onClick={() => goTo(0)} className="hover:text-slate-700 dark:hover:text-slate-300">
+                ← Back
+              </button>
+              <span>Swipe → to choose plan</span>
+            </div>
+          </section>
+
+          {/* Slide 2 – Choose plan */}
+          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-[5vw] py-[env(safe-area-inset-top)]">
+            <div className="flex w-full max-w-md flex-col items-stretch">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] dark:bg-prove-900/50">
+                <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
+                <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">Step 3 of 3</p>
+              </div>
+              <h2 className="mt-[clamp(0.5rem,2vh,1rem)] font-display text-[clamp(1.5rem,5vmin,2.5rem)] font-bold tracking-tight text-slate-900 dark:text-white">
+                Pick your plan
+              </h2>
+              <div className="mt-[clamp(0.75rem,3vh,1.5rem)] space-y-[clamp(0.5rem,2vh,0.75rem)]">
+                {PLANS.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => handleChoosePlan(plan.id as PlanId)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-slate-200/80 bg-white/80 px-[clamp(1rem,4vw,1.25rem)] py-[clamp(0.75rem,2.5vh,1rem)] text-left backdrop-blur-sm transition hover:border-prove-300 hover:bg-prove-50/50 dark:border-slate-700/50 dark:bg-slate-900/50 dark:hover:border-prove-700 dark:hover:bg-prove-900/30"
+                  >
+                    <div>
+                      <p className="text-[clamp(0.9375rem,2.5vmin,1.25rem)] font-semibold text-slate-900 dark:text-white">{plan.name}</p>
+                      <p className="mt-0.5 text-[clamp(0.8125rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
+                        {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
+                        {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1rem)] py-[clamp(0.25rem,1vh,0.5rem)] text-[clamp(0.8125rem,2vmin,0.9375rem)] font-semibold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
+                      {plan.priceMonthly === 0 ? "Free" : `£${plan.priceMonthly}/mo`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full max-w-md items-center justify-between text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
+              <button type="button" onClick={() => goTo(1)} className="hover:text-slate-700 dark:hover:text-slate-300">
+                ← Back
+              </button>
+              <span>Swipe ← to go back</span>
+            </div>
+          </section>
+        </div>
+        {/* Dots indicator */}
+        <div
+          className="flex shrink-0 items-center justify-center gap-[clamp(0.375rem,1.5vw,0.5rem)] px-4 py-[clamp(0.375rem,1.5vh,0.5rem)] pb-[max(0.5rem,env(safe-area-inset-bottom))] animate-welcome-dots [animation-fill-mode:forwards]"
+        >
+          {[0, 1, 2].map((i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i as Slide)}
+              className={`rounded-full transition-all duration-300 ${
+                slide === i
+                  ? "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(1rem,4vmin,1.5rem)] bg-prove-600 dark:bg-prove-400"
+                  : "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(0.375rem,1.5vmin,0.5rem)] bg-slate-300 dark:bg-slate-600"
+              }`}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AppProvider>
+      <LandingContent />
+    </AppProvider>
+  );
+}
