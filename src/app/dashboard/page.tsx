@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Target,
   CheckCircle2,
+  Camera,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
@@ -203,23 +204,25 @@ function DashboardContent() {
                         Done
                       </span>
                     ) : isWithinSubmissionWindow(goal) ? (
-                      <button
-                        onClick={() => {
-                          setMarkingId(goal.id);
-                          markGoalDone(goal.id).finally(() => setMarkingId(null));
-                        }}
-                        disabled={!!markingId}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
-                      >
-                        {markingId === goal.id ? (
-                          <>Marking…</>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-4 w-4" />
-                            Mark done
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                        >
+                          <Camera className="h-4 w-4" />
+                          Submit proof
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setMarkingId(goal.id);
+                            markGoalDone(goal.id).finally(() => setMarkingId(null));
+                          }}
+                          disabled={!!markingId}
+                          className="rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-60"
+                        >
+                          {markingId === goal.id ? "…" : "Mark done"}
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
                         {getSubmissionWindowMessage(goal) ?? "Not due yet"}
@@ -264,23 +267,25 @@ function DashboardContent() {
                           Done
                         </span>
                       ) : isWithinSubmissionWindow(goal) ? (
-                        <button
-                          onClick={() => {
-                            setMarkingId(goal.id);
-                            markGoalDone(goal.id).finally(() => setMarkingId(null));
-                          }}
-                          disabled={!!markingId}
-                          className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
-                        >
-                          {markingId === goal.id ? (
-                            <>Marking…</>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="h-4 w-4" />
-                              Mark done
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/goals/submit?goalId=${goal.id}`}
+                            className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                          >
+                            <Camera className="h-4 w-4" />
+                            Submit proof
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setMarkingId(goal.id);
+                              markGoalDone(goal.id).finally(() => setMarkingId(null));
+                            }}
+                            disabled={!!markingId}
+                            className="rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-60"
+                          >
+                            {markingId === goal.id ? "…" : "Mark done"}
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
                           {getSubmissionWindowMessage(goal) ?? "Not due yet"}

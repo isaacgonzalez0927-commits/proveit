@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, CheckCircle2, Calendar, Sun } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Calendar, Sun, Camera } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
@@ -243,23 +243,25 @@ function GoalsContent() {
                 <div className="flex items-center gap-2">
                   {due ? (
                     isWithinSubmissionWindow(goal) ? (
-                      <button
-                        onClick={() => {
-                          setMarkingId(goal.id);
-                          markGoalDone(goal.id).finally(() => setMarkingId(null));
-                        }}
-                        disabled={!!markingId}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
-                      >
-                        {markingId === goal.id ? (
-                          <>Marking…</>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-4 w-4" />
-                            Mark done
-                          </>
-                        )}
-                      </button>
+                      <>
+                        <Link
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                        >
+                          <Camera className="h-4 w-4" />
+                          Submit proof
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setMarkingId(goal.id);
+                            markGoalDone(goal.id).finally(() => setMarkingId(null));
+                          }}
+                          disabled={!!markingId}
+                          className="rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-60"
+                        >
+                          {markingId === goal.id ? "…" : "Mark done"}
+                        </button>
+                      </>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
                         {getSubmissionWindowMessage(goal) ?? "Not due yet"}
