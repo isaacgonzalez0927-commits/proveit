@@ -12,11 +12,11 @@ import { BuddyIllustration } from "./BuddyIllustration";
 export type BuddyStageKey = "baby" | "toddler" | "growing" | "strong" | "champion";
 
 const BUDDY_STAGES: { minStreak: number; stage: BuddyStageKey; name: string }[] = [
-  { minStreak: 0, stage: "baby", name: "Baby Buddy" },
-  { minStreak: 14, stage: "toddler", name: "Buddy Toddler" },
-  { minStreak: 30, stage: "growing", name: "Buddy Growing" },
-  { minStreak: 60, stage: "strong", name: "Buddy Strong" },
-  { minStreak: 100, stage: "champion", name: "Champion Buddy" },
+  { minStreak: 0, stage: "baby", name: "Sprout Buddy" },
+  { minStreak: 14, stage: "toddler", name: "Rising Buddy" },
+  { minStreak: 30, stage: "growing", name: "Steady Buddy" },
+  { minStreak: 60, stage: "strong", name: "Unstoppable Buddy" },
+  { minStreak: 100, stage: "champion", name: "Legend Buddy" },
 ];
 
 const ENCOURAGEMENT = {

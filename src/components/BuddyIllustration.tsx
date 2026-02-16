@@ -64,132 +64,140 @@ export function BuddyIllustration({
           {animal === "fox" && <FoxBuddy stage={stage} />}
         </g>
         {hatId && (
-          <g transform={`translate(60, ${stage === "baby" ? 18 : stage === "champion" ? -8 : 8})`}>
+          <g transform={`translate(60, ${stage === "baby" ? 22 : stage === "toddler" ? 20 : stage === "growing" ? 19 : stage === "strong" ? 18 : 17})`}>
             <HatIllustration id={hatId as "cap" | "crown" | "grad" | "tophat" | "helmet"} size={baseSize * 0.5} />
           </g>
         )}
+        {accessoryId && (
+          <g transform={`translate(${accessoryId === "star" ? 72 : 60}, ${accessoryId === "glasses" ? 58 : accessoryId === "bow" ? 54 : 48})`}>
+            <AccessoryIllustration
+              id={accessoryId as "glasses" | "bow" | "star"}
+              size={accessoryId === "glasses" ? baseSize * 0.38 : baseSize * 0.3}
+            />
+          </g>
+        )}
       </svg>
-      {accessoryId && (
-        <div
-          className="absolute right-0 top-1/2 -translate-y-1/2"
-          style={{ width: baseSize * 0.45, height: baseSize * 0.45 }}
-        >
-          <svg viewBox="0 0 24 24" className="w-full h-full">
-            <AccessoryIllustration id={accessoryId as "glasses" | "bow" | "star"} size={24} />
-          </svg>
-        </div>
-      )}
     </div>
   );
 }
 
 const FUR = "#8B7355";
-const FUR_LIGHT = "#A08060";
-const FUR_DARK = "#6B5344";
-const BELLY = "#E8DCC8";
-const EYE = "#1a1a1a";
+const FUR_LIGHT = "#B8956E";
+const FUR_DARK = "#5c4537";
+const BELLY = "#f5ebe0";
+const EYE = "#2d2d2d";
+const EYE_WHITE = "#fff";
 const HIGHLIGHT = "#fff";
 
 function CatBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
+  const scale = stage === "baby" ? 0.72 : stage === "toddler" ? 0.85 : stage === "growing" ? 0.98 : stage === "strong" ? 1.1 : 1.22;
   return (
     <g transform={`scale(${scale})`}>
       <defs>
-        <radialGradient id="catBody" cx="40%" cy="30%" r="70%">
+        <radialGradient id="catBody" cx="45%" cy="35%" r="60%">
           <stop offset="0%" stopColor={FUR_LIGHT} />
           <stop offset="100%" stopColor={FUR} />
         </radialGradient>
-        <radialGradient id="catHead" cx="35%" cy="35%" r="65%">
+        <radialGradient id="catHead" cx="40%" cy="40%" r="60%">
           <stop offset="0%" stopColor={FUR_LIGHT} />
           <stop offset="100%" stopColor={FUR} />
         </radialGradient>
       </defs>
-      <ellipse cx={0} cy={35} rx={22} ry={28} fill="url(#catBody)" stroke={FUR_DARK} strokeWidth={0.5} />
-      <ellipse cx={0} cy={40} rx={14} ry={10} fill={BELLY} opacity={0.9} />
-      <path d="M -18 -44 L -10 -56 L 0 -44" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.5} strokeLinejoin="round" />
-      <path d="M 18 -44 L 10 -56 L 0 -44" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.5} strokeLinejoin="round" />
-      <circle cx={0} cy={-35} r={24} fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.5} />
-      <ellipse cx={-8} cy={-38} rx={4.5} ry={5.5} fill={EYE} />
-      <ellipse cx={8} cy={-38} rx={4.5} ry={5.5} fill={EYE} />
-      <circle cx={-6} cy={-36} r={1.8} fill={HIGHLIGHT} />
-      <circle cx={10} cy={-36} r={1.8} fill={HIGHLIGHT} />
-      <path d="M 0 -31 L -2 -29 L 0 -27 L 2 -29 Z" fill="#e8a598" stroke="#d49488" strokeWidth={0.3} />
-      <path d="M -20 -35 Q -10 -34 -6 -33 M 20 -35 Q 10 -34 6 -33" stroke={FUR_DARK} strokeWidth={0.35} opacity={0.7} fill="none" />
+      {/* Body - rounder, chubbier */}
+      <ellipse cx={0} cy={38} rx={20} ry={24} fill="url(#catBody)" stroke={FUR_DARK} strokeWidth={0.4} />
+      <ellipse cx={0} cy={42} rx={12} ry={9} fill={BELLY} opacity={0.95} />
+      {/* Ears */}
+      <path d="M -16 -42 L -8 -58 L 2 -42" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.35} strokeLinejoin="round" />
+      <path d="M 16 -42 L 8 -58 L -2 -42" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.35} strokeLinejoin="round" />
+      {/* Head */}
+      <circle cx={0} cy={-32} r={22} fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.4} />
+      {/* Eyes - bigger, cuter */}
+      <ellipse cx={-7} cy={-35} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-35} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-34} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-34} r={2.2} fill={EYE_WHITE} />
+      {/* Nose */}
+      <path d="M 0 -28 L -1.5 -25 L 0 -23 L 1.5 -25 Z" fill="#d4a08a" stroke="#c4907a" strokeWidth={0.2} />
+      {/* Whiskers */}
+      <path d="M -18 -32 Q -10 -31 -6 -30 M 18 -32 Q 10 -31 6 -30" stroke={FUR_DARK} strokeWidth={0.3} opacity={0.6} fill="none" />
     </g>
   );
 }
 
 function DogBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
-  const fur = "#c4a574";
-  const furLight = "#e5c890";
+  const scale = stage === "baby" ? 0.72 : stage === "toddler" ? 0.85 : stage === "growing" ? 0.98 : stage === "strong" ? 1.1 : 1.22;
+  const fur = "#c9a86c";
+  const furLight = "#e8d4a0";
+  const dark = "#8b6914";
   return (
     <g transform={`scale(${scale})`}>
       <defs>
-        <radialGradient id="dogBody" cx="40%" cy="30%" r="70%">
+        <radialGradient id="dogBody" cx="45%" cy="35%" r="60%">
           <stop offset="0%" stopColor={furLight} />
           <stop offset="100%" stopColor={fur} />
         </radialGradient>
-        <radialGradient id="dogHead" cx="35%" cy="35%" r="65%">
+        <radialGradient id="dogHead" cx="40%" cy="40%" r="60%">
           <stop offset="0%" stopColor={furLight} />
           <stop offset="100%" stopColor={fur} />
         </radialGradient>
       </defs>
-      <ellipse cx={0} cy={35} rx={22} ry={28} fill="url(#dogBody)" stroke={FUR_DARK} strokeWidth={0.5} />
-      <ellipse cx={0} cy={42} rx={15} ry={11} fill={BELLY} opacity={0.9} />
-      <ellipse cx={-20} cy={-24} rx={11} ry={17} fill="url(#dogHead)" stroke={FUR_DARK} strokeWidth={0.4} transform="rotate(-25 -20 -24)" />
-      <ellipse cx={20} cy={-24} rx={11} ry={17} fill="url(#dogHead)" stroke={FUR_DARK} strokeWidth={0.4} transform="rotate(25 20 -24)" />
-      <circle cx={0} cy={-35} r={24} fill="url(#dogHead)" stroke={FUR_DARK} strokeWidth={0.5} />
-      <ellipse cx={-8} cy={-38} rx={4.5} ry={5.5} fill={EYE} />
-      <ellipse cx={8} cy={-38} rx={4.5} ry={5.5} fill={EYE} />
-      <circle cx={-6} cy={-36} r={1.8} fill={HIGHLIGHT} />
-      <circle cx={10} cy={-36} r={1.8} fill={HIGHLIGHT} />
-      <ellipse cx={0} cy={-30} rx={3.5} ry={2.2} fill="#8b6914" stroke="#6b5010" strokeWidth={0.2} />
+      <ellipse cx={0} cy={38} rx={20} ry={24} fill="url(#dogBody)" stroke={dark} strokeWidth={0.4} />
+      <ellipse cx={0} cy={42} rx={12} ry={9} fill={BELLY} opacity={0.95} />
+      {/* Floppy ears */}
+      <ellipse cx={-18} cy={-22} rx={9} ry={14} fill="url(#dogHead)" stroke={dark} strokeWidth={0.35} transform="rotate(-22 -18 -22)" />
+      <ellipse cx={18} cy={-22} rx={9} ry={14} fill="url(#dogHead)" stroke={dark} strokeWidth={0.35} transform="rotate(22 18 -22)" />
+      <circle cx={0} cy={-32} r={22} fill="url(#dogHead)" stroke={dark} strokeWidth={0.4} />
+      <ellipse cx={-7} cy={-35} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-35} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-34} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-34} r={2.2} fill={EYE_WHITE} />
+      <ellipse cx={0} cy={-27} rx={3} ry={2} fill="#a67c52" stroke="#8b6914" strokeWidth={0.2} />
     </g>
   );
 }
 
 function RabbitBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
-  const fur = "#d4c4b0";
-  const furLight = "#ebe0d0";
+  const scale = stage === "baby" ? 0.72 : stage === "toddler" ? 0.85 : stage === "growing" ? 0.98 : stage === "strong" ? 1.1 : 1.22;
+  const fur = "#e8ddd0";
+  const furLight = "#f5efe8";
   return (
     <g transform={`scale(${scale})`}>
       <defs>
-        <radialGradient id="rabbitBody" cx="40%" cy="30%" r="70%">
+        <radialGradient id="rabbitBody" cx="45%" cy="35%" r="60%">
           <stop offset="0%" stopColor={furLight} />
           <stop offset="100%" stopColor={fur} />
         </radialGradient>
         <linearGradient id="rabbitEar" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={fur} />
+          <stop offset="0%" stopColor="#d4c4b0" />
           <stop offset="50%" stopColor={furLight} />
-          <stop offset="100%" stopColor={fur} />
+          <stop offset="100%" stopColor="#d4c4b0" />
         </linearGradient>
       </defs>
-      <ellipse cx={0} cy={38} rx={20} ry={26} fill="url(#rabbitBody)" stroke={FUR_DARK} strokeWidth={0.5} />
-      <ellipse cx={0} cy={43} rx={13} ry={9} fill="#f5f0e8" opacity={0.95} />
-      <ellipse cx={-10} cy={-54} rx={6.5} ry={25} fill="url(#rabbitEar)" stroke={FUR_DARK} strokeWidth={0.4} />
-      <ellipse cx={10} cy={-54} rx={6.5} ry={25} fill="url(#rabbitEar)" stroke={FUR_DARK} strokeWidth={0.4} />
-      <circle cx={0} cy={-32} r={22} fill="url(#rabbitBody)" stroke={FUR_DARK} strokeWidth={0.5} />
-      <ellipse cx={-8} cy={-35} rx={4.5} ry={5.5} fill={EYE} />
-      <ellipse cx={8} cy={-35} rx={4.5} ry={5.5} fill={EYE} />
-      <circle cx={-6} cy={-33} r={1.8} fill={HIGHLIGHT} />
-      <circle cx={10} cy={-33} r={1.8} fill={HIGHLIGHT} />
-      <path d="M -2 -27 Q 0 -25 2 -27" stroke="#c4a574" strokeWidth={0.6} fill="none" strokeLinecap="round" />
+      <ellipse cx={0} cy={40} rx={19} ry={23} fill="url(#rabbitBody)" stroke="#b8a898" strokeWidth={0.4} />
+      <ellipse cx={0} cy={44} rx={11} ry={8} fill="#fdf8f3" opacity={0.95} />
+      {/* Long ears */}
+      <ellipse cx={-8} cy={-50} rx={5} ry={22} fill="url(#rabbitEar)" stroke="#b8a898" strokeWidth={0.35} />
+      <ellipse cx={8} cy={-50} rx={5} ry={22} fill="url(#rabbitEar)" stroke="#b8a898" strokeWidth={0.35} />
+      <circle cx={0} cy={-30} r={20} fill="url(#rabbitBody)" stroke="#b8a898" strokeWidth={0.4} />
+      <ellipse cx={-7} cy={-33} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-33} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-32} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-32} r={2.2} fill={EYE_WHITE} />
+      <path d="M -2 -24 Q 0 -22 2 -24" stroke="#d4b89c" strokeWidth={0.5} fill="none" strokeLinecap="round" />
     </g>
   );
 }
 
 function FoxBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
-  const fur = "#e07c3c";
+  const scale = stage === "baby" ? 0.72 : stage === "toddler" ? 0.85 : stage === "growing" ? 0.98 : stage === "strong" ? 1.1 : 1.22;
+  const fur = "#e07838";
   const furLight = "#f0a050";
-  const white = "#fef7ed";
-  const dark = "#c45c2c";
+  const white = "#fef9f5";
+  const dark = "#b85c28";
   return (
     <g transform={`scale(${scale})`}>
       <defs>
-        <radialGradient id="foxBody" cx="40%" cy="30%" r="70%">
+        <radialGradient id="foxBody" cx="45%" cy="35%" r="60%">
           <stop offset="0%" stopColor={furLight} />
           <stop offset="100%" stopColor={fur} />
         </radialGradient>
@@ -198,17 +206,19 @@ function FoxBuddy({ stage }: { stage: string }) {
           <stop offset="100%" stopColor={fur} />
         </linearGradient>
       </defs>
-      <ellipse cx={0} cy={35} rx={22} ry={28} fill="url(#foxBody)" stroke={dark} strokeWidth={0.5} />
-      <ellipse cx={0} cy={42} rx={14} ry={9} fill={white} opacity={0.95} />
-      <path d="M -17 -41 L -6 -58 L 4 -41" fill="url(#foxEar)" stroke={dark} strokeWidth={0.4} strokeLinejoin="round" />
-      <path d="M 17 -41 L 6 -58 L -4 -41" fill="url(#foxEar)" stroke={dark} strokeWidth={0.4} strokeLinejoin="round" />
-      <circle cx={0} cy={-35} r={24} fill="url(#foxBody)" stroke={dark} strokeWidth={0.5} />
-      <path d="M -14 -39 Q -7 -35 0 -32 Q 7 -35 14 -39" fill="none" stroke={white} strokeWidth={1.8} opacity={0.9} strokeLinecap="round" />
-      <ellipse cx={-8} cy={-38} rx={4.5} ry={5.5} fill={EYE} />
-      <ellipse cx={8} cy={-38} rx={4.5} ry={5.5} fill={EYE} />
-      <circle cx={-6} cy={-36} r={1.8} fill={HIGHLIGHT} />
-      <circle cx={10} cy={-36} r={1.8} fill={HIGHLIGHT} />
-      <path d="M 0 -28 L -2 -25 L 0 -23 L 2 -25 Z" fill="#5c4033" stroke="#3d2a20" strokeWidth={0.2} />
+      <ellipse cx={0} cy={38} rx={20} ry={24} fill="url(#foxBody)" stroke={dark} strokeWidth={0.4} />
+      <ellipse cx={0} cy={42} rx={12} ry={9} fill={white} opacity={0.95} />
+      {/* Pointy ears */}
+      <path d="M -14 -40 L -5 -55 L 3 -40" fill="url(#foxEar)" stroke={dark} strokeWidth={0.35} strokeLinejoin="round" />
+      <path d="M 14 -40 L 5 -55 L -3 -40" fill="url(#foxEar)" stroke={dark} strokeWidth={0.35} strokeLinejoin="round" />
+      <circle cx={0} cy={-32} r={22} fill="url(#foxBody)" stroke={dark} strokeWidth={0.4} />
+      {/* White muzzle stripe */}
+      <path d="M -12 -35 Q -6 -32 0 -28 Q 6 -32 12 -35" fill="none" stroke={white} strokeWidth={2} opacity={0.9} strokeLinecap="round" />
+      <ellipse cx={-7} cy={-35} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-35} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-34} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-34} r={2.2} fill={EYE_WHITE} />
+      <path d="M 0 -27 L -1.5 -24 L 0 -22 L 1.5 -24 Z" fill="#6b4a3a" stroke="#4a3528" strokeWidth={0.2} />
     </g>
   );
 }

@@ -11,6 +11,7 @@
     "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "start": "next start",
     "lint": "next lint",
+    "deploy": "npx vercel --prod",
     "clean": "node -e \"var f=require('fs');if(f.existsSync('.next')){f.rmSync('.next',{recursive:true});console.log('Cleared .next');}else{console.log('.next not found');}\"",
     "i": "npm.cmd install"
   },

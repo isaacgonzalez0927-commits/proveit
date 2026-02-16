@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { isGoalDue, getDueDayName, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
@@ -53,6 +53,7 @@ function SubmitProofContent() {
 
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [feedback, setFeedback] = useState<string>("");
@@ -91,20 +92,20 @@ function SubmitProofContent() {
     }
   }, [authReady, user, goalId, goal, router, pageLoading]);
 
-  const stopCamera = useCallback(() => {
+  const stopCamera = useCallback((keepCameraMode = false) => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     setStreamReady(false);
-    setCameraStarted(false);
+    if (!keepCameraMode) setCameraStarted(false);
   }, []);
 
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
 
-  const handleStartCamera = useCallback(async () => {
+  const handleStartCamera = useCallback(async (preferredFacing?: "user" | "environment") => {
     if (typeof window === "undefined") return;
 
     const isLocalhost =
@@ -118,12 +119,11 @@ function SubmitProofContent() {
       return;
     }
 
+    const targetFacing = preferredFacing ?? facingMode;
+
     try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const constraints: MediaStreamConstraints = {
-        video: isMobile
-          ? { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: targetFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
       };
       let stream: MediaStream;
       try {
@@ -132,6 +132,7 @@ function SubmitProofContent() {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
       streamRef.current = stream;
+      setFacingMode(targetFacing);
       const video = videoRef.current;
       if (video) {
         video.srcObject = stream;
@@ -147,7 +148,13 @@ function SubmitProofContent() {
       console.error(e);
       alert("Could not access camera. You can upload a photo instead.");
     }
-  }, []);
+  }, [facingMode]);
+
+  const flipCamera = useCallback(() => {
+    const next = facingMode === "user" ? "environment" : "user";
+    stopCamera(true);
+    handleStartCamera(next);
+  }, [facingMode, stopCamera, handleStartCamera]);
 
   useEffect(() => {
     return () => stopCamera();
@@ -362,120 +369,148 @@ function SubmitProofContent() {
     );
   }
 
+  const showFullScreenCamera = step === "capture" && cameraStarted && !imageDataUrl;
+
   return (
     <>
-      <Header />
+      {!showFullScreenCamera && <Header />}
       <main className="mx-auto max-w-lg px-4 py-8">
-        <Link
-          href="/goals"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to goals
-        </Link>
+        {!showFullScreenCamera && (
+          <Link
+            href="/goals"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to goals
+          </Link>
+        )}
 
-        <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
-          Submit proof: {goal.title}
-        </h1>
-        <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time on your due day.
-        </p>
+        {!showFullScreenCamera && (
+          <>
+            <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
+              Submit proof: {goal.title}
+            </h1>
+            <p className="mt-1 text-slate-600 dark:text-slate-400">
+              Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time on your due day.
+            </p>
+          </>
+        )}
 
-        {step === "capture" && (
+        {step === "capture" && !showFullScreenCamera && !cameraStarted && (
           <div className="mt-8 animate-fade-in">
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
-              {!imageDataUrl ? (
-                !cameraStarted ? (
-                  <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
-                    <p className="text-center text-sm text-slate-300">
-                      Tap to start camera or upload a photo
-                    </p>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={handleStartCamera}
-                        className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
-                      >
-                        <Camera className="h-6 w-6" />
-                        Use camera
-                      </button>
-                      <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-500 bg-slate-800 px-5 py-3 text-white hover:bg-slate-700">
-                        <Upload className="h-6 w-6" />
-                        Upload photo
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          onChange={handleFileSelect}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ) : (
-                <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="h-full w-full object-cover bg-slate-900"
-                    style={{ minHeight: 240 }}
-                  />
-                  {!streamReady && (
-                    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded-lg bg-black/50 px-3 py-2">
-                      <p className="text-sm text-white">Starting camera…</p>
-                    </div>
-                  )}
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-                    <button
-                      onClick={capturePhoto}
-                      className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg hover:bg-slate-100"
-                      aria-label="Take photo"
-                    >
-                      <Camera className="h-7 w-7" />
-                    </button>
-                    <label className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-white text-slate-900 shadow-lg hover:bg-slate-100">
-                      <Upload className="h-7 w-7" />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </>
-                )
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center p-4">
-                  <img
-                    src={imageDataUrl}
-                    alt="Your proof"
-                    className="max-h-full max-w-full rounded-lg object-contain"
-                  />
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() => {
-                        setImageDataUrl(null);
-                        setCameraStarted(true);
-                        handleStartCamera();
-                      }}
-                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-300"
-                    >
-                      Retake
-                    </button>
-                    <button
-                      onClick={submitForVerification}
-                      className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
-                    >
-                      Verify with AI
-                    </button>
-                  </div>
+              <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
+                <p className="text-center text-sm text-slate-300">
+                  Tap to start camera or upload a photo
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => handleStartCamera()}
+                    className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
+                  >
+                    <Camera className="h-6 w-6" />
+                    Use camera
+                  </button>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-500 bg-slate-800 px-5 py-3 text-white hover:bg-slate-700">
+                    <Upload className="h-6 w-6" />
+                    Upload photo
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showFullScreenCamera && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-black">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            {!streamReady && (
+              <div className="absolute bottom-1/3 left-1/2 -translate-x-1/2 rounded-lg bg-black/50 px-4 py-3">
+                <p className="text-sm text-white">Starting camera…</p>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                stopCamera();
+                setCameraStarted(false);
+              }}
+              className="absolute left-4 top-[env(safe-area-inset-top,1rem)] z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label="Close camera"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
+              <button
+                onClick={flipCamera}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
+                aria-label="Switch camera"
+              >
+                <SwitchCamera className="h-7 w-7" />
+              </button>
+              <button
+                onClick={capturePhoto}
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg hover:bg-slate-100"
+                aria-label="Take photo"
+              >
+                <Camera className="h-8 w-8" />
+              </button>
+              <label className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30">
+                <Upload className="h-7 w-7" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
+        {step === "capture" && !showFullScreenCamera && imageDataUrl && (
+          <div className="mt-8 animate-fade-in">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
+              <div className="flex h-full flex-col items-center justify-center p-4">
+                <img
+                  src={imageDataUrl}
+                  alt="Your proof"
+                  className="max-h-full max-w-full rounded-lg object-contain"
+                />
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={() => {
+                      setImageDataUrl(null);
+                      setCameraStarted(true);
+                      handleStartCamera();
+                    }}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-300"
+                  >
+                    Retake
+                  </button>
+                  <button
+                    onClick={submitForVerification}
+                    className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
+                  >
+                    Verify with AI
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

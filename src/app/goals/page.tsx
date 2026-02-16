@@ -7,11 +7,11 @@ import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
+import { format, isThisWeek, parseISO } from "date-fns";
 import type { GoalFrequency } from "@/types";
 
 function GoalsContent() {
-  const { user, goals, addGoal, removeGoal, canAddGoal, markGoalDone } = useApp();
-  const [markingId, setMarkingId] = useState<string | null>(null);
+  const { user, goals, addGoal, removeGoal, canAddGoal, getSubmissionsForGoal } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -210,6 +210,13 @@ function GoalsContent() {
                 : null;
             const due = isGoalDue(goal);
             const dueLabel = getNextDueLabel(goal);
+            const todayStr = format(new Date(), "yyyy-MM-dd");
+            const isDone = goal.frequency === "daily"
+              ? getSubmissionsForGoal(goal.id).some((s) => s.date === todayStr && s.status === "verified")
+              : getSubmissionsForGoal(goal.id).some((s) => {
+                  const d = parseISO(s.date);
+                  return isThisWeek(d) && s.status === "verified";
+                });
 
             return (
               <li
@@ -242,26 +249,19 @@ function GoalsContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   {due ? (
-                    isWithinSubmissionWindow(goal) ? (
-                      <>
-                        <Link
-                          href={`/goals/submit?goalId=${goal.id}`}
-                          className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
-                        >
-                          <Camera className="h-4 w-4" />
-                          Submit proof
-                        </Link>
-                        <button
-                          onClick={() => {
-                            setMarkingId(goal.id);
-                            markGoalDone(goal.id).finally(() => setMarkingId(null));
-                          }}
-                          disabled={!!markingId}
-                          className="rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-60"
-                        >
-                          {markingId === goal.id ? "…" : "Mark done"}
-                        </button>
-                      </>
+                    isDone ? (
+                      <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Done
+                      </span>
+                    ) : isWithinSubmissionWindow(goal) ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Submit proof
+                      </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
                         {getSubmissionWindowMessage(goal) ?? "Not due yet"}

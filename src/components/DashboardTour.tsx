@@ -55,7 +55,7 @@ export function DashboardTour() {
               Meet your accountability buddy
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Choose your animal buddy (cat, dog, rabbit, or fox) and complete goals to help them grow from baby to champion.
+              Choose your animal buddy (cat, dog, rabbit, or fox) and complete goals to help them grow from Sprout to Legend.
               Visit the Buddy tab to customize. They&apos;ll cheer you on every step of the way.
             </p>
           </>

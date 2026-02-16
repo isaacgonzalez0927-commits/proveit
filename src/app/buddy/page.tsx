@@ -85,11 +85,11 @@ export default function BuddyPage() {
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
           <h2 className="font-semibold text-slate-900 dark:text-white">Growth stages</h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <li>• 0 days: Baby Buddy — just getting started</li>
-            <li>• 14 days: Buddy Toddler — two weeks strong!</li>
-            <li>• 30 days: Buddy Growing — building momentum</li>
-            <li>• 60 days: Buddy Strong — two months of dedication</li>
-            <li>• 100 days: Champion Buddy — you&apos;re unstoppable</li>
+            <li>• 0 days: Sprout Buddy — just getting started</li>
+            <li>• 14 days: Rising Buddy — two weeks strong!</li>
+            <li>• 30 days: Steady Buddy — building momentum</li>
+            <li>• 60 days: Unstoppable Buddy — two months of dedication</li>
+            <li>• 100 days: Legend Buddy — you&apos;re unstoppable</li>
           </ul>
         </div>
 
