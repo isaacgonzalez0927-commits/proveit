@@ -18,6 +18,7 @@ export interface StoredUser {
   id: string;
   email: string;
   plan: PlanId;
+  planBilling?: "monthly" | "yearly";
   createdAt: string;
 }
 

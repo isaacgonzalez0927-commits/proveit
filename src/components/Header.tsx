@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Camera, LayoutDashboard, CreditCard, History, LogOut, ChevronDown } from "lucide-react";
+import { Camera, LayoutDashboard, CreditCard, History, LogOut, ChevronDown, Sparkles } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
@@ -49,6 +49,9 @@ export function Header() {
         <nav className="flex min-w-0 flex-1 flex-nowrap items-center justify-end gap-1 overflow-x-auto overflow-y-hidden py-2 -my-2">
           <NavLink href="/dashboard" icon={<LayoutDashboard className="h-4 w-4 shrink-0" />}>
             Dashboard
+          </NavLink>
+          <NavLink href="/buddy" icon={<Sparkles className="h-4 w-4 shrink-0" />}>
+            Buddy
           </NavLink>
           <NavLink href="/goals" icon={<Camera className="h-4 w-4 shrink-0" />}>
             Goals

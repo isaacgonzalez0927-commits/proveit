@@ -17,6 +17,7 @@ import {
 import { PLANS } from "@/types";
 import { useSupabaseAuth } from "@/lib/supabase/hooks";
 import { format } from "date-fns";
+import { isWithinSubmissionWindow } from "@/lib/goalDue";
 import {
   getStoredEarnedItems,
   getStoredEquippedItems,
@@ -38,7 +39,7 @@ interface AppContextValue {
   submissions: ProofSubmission[];
   authReady: boolean;
   setUser: (user: StoredUser | null) => void;
-  setPlan: (plan: PlanId) => void | Promise<void>;
+  setPlan: (plan: PlanId, billing?: "monthly" | "yearly") => void | Promise<void>;
   addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Goal | null | Promise<Goal | null>;
   updateGoal: (id: string, updates: Partial<Goal>) => void | Promise<void>;
   removeGoal: (id: string) => void | Promise<void>;
@@ -84,7 +85,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ]).then(([profileResult, goalsResult, subsResult]) => {
         const p = profileResult.status === "fulfilled" ? profileResult.value?.profile : null;
         if (p) {
-          setUserState({ id: p.id, email: p.email, plan: p.plan ?? "free", createdAt: p.createdAt ?? new Date().toISOString() });
+          setUserState({
+            id: p.id,
+            email: p.email,
+            plan: p.plan ?? "free",
+            planBilling: p.planBilling,
+            createdAt: p.createdAt ?? new Date().toISOString(),
+          });
         } else if (supabaseUser) {
           setUserState({ id: supabaseUser.id, email: supabaseUser.email ?? "", plan: "free", createdAt: supabaseUser.created_at });
         }
@@ -164,20 +171,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setPlan = useCallback(
-    async (plan: PlanId) => {
+    async (plan: PlanId, billing: "monthly" | "yearly" = "monthly") => {
       if (!user) return;
       if (useSupabase) {
         try {
           await fetch("/api/profile", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plan }),
+            body: JSON.stringify({ plan, planBilling: billing }),
           });
         } catch {
           // fallback to local
         }
       }
-      setUserState({ ...user, plan });
+      setUserState({
+        ...user,
+        plan,
+        planBilling: plan === "free" ? undefined : billing,
+      });
     },
     [user, useSupabase]
   );
@@ -344,6 +355,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (goalId: string) => {
       const g = goals.find((x) => x.id === goalId);
       if (!g) return;
+      if (!isWithinSubmissionWindow(g)) return; // Only allow within 1 hour after due
       const dateStr = format(new Date(), "yyyy-MM-dd");
       const existing = submissions.find((s) => s.goalId === goalId && s.date === dateStr);
       if (existing?.status === "verified") return;

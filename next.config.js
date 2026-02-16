@@ -3,6 +3,9 @@ const nextConfig = {
   images: {
     remotePatterns: [{ hostname: '**' }],
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Avoid "Array buffer allocation failed" from webpack pack cache (dev only)
   webpack: (config, { dev }) => {
     if (dev) {

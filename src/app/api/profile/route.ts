@@ -20,6 +20,7 @@ export async function GET() {
         id: user.id,
         email: user.email ?? "",
         plan: "free",
+        planBilling: "monthly",
         createdAt: user.created_at,
       },
     });
@@ -30,6 +31,7 @@ export async function GET() {
       id: data.id,
       email: data.email,
       plan: data.plan,
+      planBilling: data.plan_billing ?? "monthly",
       createdAt: data.created_at,
     },
   });
@@ -43,13 +45,17 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { plan } = body;
+  const { plan, planBilling } = body;
 
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (plan && ["free", "pro", "premium"].includes(plan)) {
-    await supabase
-      .from("profiles")
-      .update({ plan, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
+    updates.plan = plan;
+  }
+  if (planBilling && ["monthly", "yearly"].includes(planBilling)) {
+    updates.plan_billing = planBilling;
+  }
+  if (Object.keys(updates).length > 1) {
+    await supabase.from("profiles").update(updates).eq("id", user.id);
   }
 
   return NextResponse.json({ ok: true });

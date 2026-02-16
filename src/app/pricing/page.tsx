@@ -15,7 +15,7 @@ function PricingContent() {
 
   const handleSelectPlan = (planId: PlanId) => {
     if (!user || planId === "free") return;
-    setPlan(planId);
+    setPlan(planId, billing);
     router.push("/dashboard");
   };
 
@@ -64,6 +64,7 @@ function PricingContent() {
               plan={plan}
               billing={billing}
               currentPlanId={user?.plan ?? null}
+              currentPlanBilling={user?.planBilling ?? "monthly"}
               hasUser={!!user}
               onSelect={() => handleSelectPlan(plan.id as PlanId)}
             />
@@ -84,12 +85,14 @@ function PricingCard({
   plan,
   billing,
   currentPlanId,
+  currentPlanBilling,
   hasUser,
   onSelect,
 }: {
   plan: (typeof PLANS)[0];
   billing: "monthly" | "yearly";
   currentPlanId: PlanId | null;
+  currentPlanBilling: "monthly" | "yearly";
   hasUser: boolean;
   onSelect: () => void;
 }) {
@@ -98,7 +101,8 @@ function PricingCard({
       ? plan.priceYearly
       : plan.priceMonthly;
   const isYearly = billing === "yearly" && plan.priceYearly > 0;
-  const isCurrent = currentPlanId === plan.id;
+  const isCurrent =
+    currentPlanId === plan.id && currentPlanBilling === billing;
   const isFree = plan.id === "free";
 
   const Icon = plan.id === "premium" ? Crown : plan.id === "pro" ? Zap : null;

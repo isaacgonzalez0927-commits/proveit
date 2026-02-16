@@ -2,21 +2,25 @@
 
 import { useState } from "react";
 import { Palette } from "lucide-react";
+import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import { getItemById } from "@/lib/buddyItems";
 import { BuddyCustomizer } from "./BuddyCustomizer";
+import { BuddyIllustration } from "./BuddyIllustration";
 
-const BUDDY_STAGES = [
-  { minStreak: 0, emoji: "🥚", name: "Buddy Egg", size: "text-4xl" },
-  { minStreak: 1, emoji: "🐣", name: "Buddy Hatched", size: "text-5xl" },
-  { minStreak: 3, emoji: "🐥", name: "Buddy Growing", size: "text-5xl" },
-  { minStreak: 7, emoji: "🐓", name: "Buddy Strong", size: "text-6xl" },
-  { minStreak: 14, emoji: "🦅", name: "Champion Buddy", size: "text-6xl" },
-] as const;
+export type BuddyStageKey = "baby" | "toddler" | "growing" | "strong" | "champion";
+
+const BUDDY_STAGES: { minStreak: number; stage: BuddyStageKey; name: string }[] = [
+  { minStreak: 0, stage: "baby", name: "Baby Buddy" },
+  { minStreak: 1, stage: "toddler", name: "Buddy Toddler" },
+  { minStreak: 3, stage: "growing", name: "Buddy Growing" },
+  { minStreak: 7, stage: "strong", name: "Buddy Strong" },
+  { minStreak: 14, stage: "champion", name: "Champion Buddy" },
+];
 
 const ENCOURAGEMENT = {
   noStreak: [
-    "Complete a goal to hatch your buddy!",
+    "Complete a goal to help your buddy grow!",
     "Your buddy is waiting for you. Mark a goal done!",
     "Let's get started — your buddy believes in you!",
   ],
@@ -39,11 +43,11 @@ const ENCOURAGEMENT = {
 } as const;
 
 function getStage(streak: number): (typeof BUDDY_STAGES)[number] {
-  let stage: (typeof BUDDY_STAGES)[number] = BUDDY_STAGES[0];
+  let result: (typeof BUDDY_STAGES)[number] = BUDDY_STAGES[0];
   for (const s of BUDDY_STAGES) {
-    if (streak >= s.minStreak) stage = s;
+    if (streak >= s.minStreak) result = s;
   }
-  return stage;
+  return result;
 }
 
 function getMessage(
@@ -74,12 +78,15 @@ interface AccountabilityBuddyProps {
   maxStreak: number;
   goalsDoneToday: number;
   totalDueToday: number;
+  /** When true, shows larger illustration (for dedicated Buddy page) */
+  large?: boolean;
 }
 
 export function AccountabilityBuddy({
   maxStreak,
   goalsDoneToday,
   totalDueToday,
+  large = false,
 }: AccountabilityBuddyProps) {
   const { earnedItems, equippedItems, setEquipped } = useApp();
   const [showCustomizer, setShowCustomizer] = useState(false);
@@ -92,21 +99,16 @@ export function AccountabilityBuddy({
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-prove-50 to-amber-50/50 p-5 dark:border-slate-700 dark:from-prove-950/30 dark:to-amber-950/20">
       <div className="flex items-center gap-4">
         <div
-          className={`relative flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-white/80 shadow-sm dark:bg-slate-800/80 ${stage.size}`}
+          className={`relative flex shrink-0 items-center justify-center rounded-2xl bg-white/80 shadow-sm dark:bg-slate-800/80 ${large ? "h-40 w-40" : "h-24 w-24"}`}
           role="img"
           aria-label={stage.name}
         >
-          {hatItem && (
-            <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-2xl" aria-hidden>
-              {hatItem.emoji}
-            </span>
-          )}
-          {stage.emoji}
-          {accessoryItem && (
-            <span className="absolute -right-0.5 top-1/2 -translate-y-1/2 text-lg" aria-hidden>
-              {accessoryItem.emoji}
-            </span>
-          )}
+          <BuddyIllustration
+            size={large ? "large" : "default"}
+            stage={stage.stage}
+            hatEmoji={hatItem?.emoji}
+            accessoryEmoji={accessoryItem?.emoji}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-slate-900 dark:text-white">
@@ -120,14 +122,24 @@ export function AccountabilityBuddy({
               {maxStreak} day{maxStreak !== 1 ? "s" : ""} streak · Keep going!
             </p>
           )}
-          <button
-            type="button"
-            onClick={() => setShowCustomizer(true)}
-            className="mt-2 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
-          >
-            <Palette className="h-3.5 w-3.5" />
-            Customize
-          </button>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCustomizer(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+            >
+              <Palette className="h-3.5 w-3.5" />
+              Customize
+            </button>
+            {!large && (
+              <Link
+                href="/buddy"
+                className="flex items-center gap-1.5 rounded-lg border border-prove-200 bg-prove-50 px-2.5 py-1 text-xs font-medium text-prove-700 hover:bg-prove-100 dark:border-prove-800 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50"
+              >
+                View full buddy →
+              </Link>
+            )}
+          </div>
         </div>
       </div>
       {showCustomizer && (

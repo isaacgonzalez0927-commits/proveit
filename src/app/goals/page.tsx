@@ -6,7 +6,7 @@ import { Plus, Trash2, CheckCircle2, Calendar, Sun } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
-import { isGoalDue, getNextDueLabel } from "@/lib/goalDue";
+import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import type { GoalFrequency } from "@/types";
 
 function GoalsContent() {
@@ -242,23 +242,29 @@ function GoalsContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   {due ? (
-                    <button
-                      onClick={() => {
-                        setMarkingId(goal.id);
-                        markGoalDone(goal.id).finally(() => setMarkingId(null));
-                      }}
-                      disabled={!!markingId}
-                      className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
-                    >
-                      {markingId === goal.id ? (
-                        <>Marking…</>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4" />
-                          Mark done
-                        </>
-                      )}
-                    </button>
+                    isWithinSubmissionWindow(goal) ? (
+                      <button
+                        onClick={() => {
+                          setMarkingId(goal.id);
+                          markGoalDone(goal.id).finally(() => setMarkingId(null));
+                        }}
+                        disabled={!!markingId}
+                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
+                      >
+                        {markingId === goal.id ? (
+                          <>Marking…</>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Mark done
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
+                        {getSubmissionWindowMessage(goal) ?? "Not due yet"}
+                      </span>
+                    )
                   ) : (
                     <span className="text-sm text-slate-400 dark:text-slate-500">
                       {dueLabel}

@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Target,
   CheckCircle2,
-  History,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
@@ -18,16 +17,30 @@ import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { DashboardTour } from "@/components/DashboardTour";
 import { AccountabilityBuddy } from "@/components/AccountabilityBuddy";
 import { getPlan } from "@/lib/store";
-import { isGoalDue, getNextDueLabel } from "@/lib/goalDue";
+import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek, parseISO } from "date-fns";
 
 function DashboardContent() {
   const { user, goals, submissions, getSubmissionsForGoal, markGoalDone, checkAndAwardItems } = useApp();
   const [markingId, setMarkingId] = useState<string | null>(null);
-  const recentVerified = submissions
-    .filter((s) => s.status === "verified")
-    .sort((a, b) => new Date(b.verifiedAt ?? b.createdAt).getTime() - new Date(a.verifiedAt ?? a.createdAt).getTime())
-    .slice(0, 5);
+  const thisWeekVerified = submissions.filter((s) => {
+    if (s.status !== "verified") return false;
+    const d = parseISO(s.date);
+    return isThisWeek(d);
+  });
+  const weeklyByDay = (() => {
+    const dayCount: Record<string, number> = {};
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    days.forEach((d) => { dayCount[d] = 0; });
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    for (const s of thisWeekVerified) {
+      const d = parseISO(s.date);
+      dayCount[days[d.getDay()]]++;
+    }
+    return dayCount;
+  })();
   if (!user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
@@ -189,7 +202,7 @@ function DashboardContent() {
                         <CheckCircle2 className="h-4 w-4" />
                         Done
                       </span>
-                    ) : (
+                    ) : isWithinSubmissionWindow(goal) ? (
                       <button
                         onClick={() => {
                           setMarkingId(goal.id);
@@ -207,6 +220,10 @@ function DashboardContent() {
                           </>
                         )}
                       </button>
+                    ) : (
+                      <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
+                        {getSubmissionWindowMessage(goal) ?? "Not due yet"}
+                      </span>
                     )}
                   </li>
                 );
@@ -246,7 +263,7 @@ function DashboardContent() {
                           <CheckCircle2 className="h-4 w-4" />
                           Done
                         </span>
-                      ) : (
+                      ) : isWithinSubmissionWindow(goal) ? (
                         <button
                           onClick={() => {
                             setMarkingId(goal.id);
@@ -264,6 +281,10 @@ function DashboardContent() {
                             </>
                           )}
                         </button>
+                      ) : (
+                        <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
+                          {getSubmissionWindowMessage(goal) ?? "Not due yet"}
+                        </span>
                       )
                     ) : (
                       <span className="text-sm text-slate-400 dark:text-slate-500">
@@ -277,35 +298,43 @@ function DashboardContent() {
           )}
         </section>
 
-        {recentVerified.length > 0 && (
-          <section className="mt-10">
-            <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <History className="h-5 w-5" />
-              Recent activity
-            </h2>
-            <ul className="mt-3 space-y-2">
-              {recentVerified.map((sub) => {
-                const g = goals.find((x) => x.id === sub.goalId);
-                return (
-                  <li
-                    key={sub.id}
-                    className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white py-2 px-3 dark:border-slate-800 dark:bg-slate-900"
+        <section className="mt-10">
+          <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
+            Weekly recap
+          </h2>
+          <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {thisWeekVerified.length}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  goals completed this week
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-end gap-1 sm:gap-2">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div
+                    key={day}
+                    className="flex flex-col items-center rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-slate-800/50"
                   >
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900 dark:text-white truncate">
-                        {g?.title ?? "Goal"}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Verified {sub.date}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                      {day}
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                      {weeklyByDay[day] ?? 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {thisWeekVerified.length > 0 && (
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                Keep it up! Your buddy is growing stronger with every goal.
+              </p>
+            )}
+          </div>
+        </section>
 
         <Link
           href="/pricing"

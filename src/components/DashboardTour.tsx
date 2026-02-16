@@ -50,13 +50,13 @@ export function DashboardTour() {
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Step 1 of 4
             </p>
-            <p className="mt-2 text-4xl" role="img" aria-label="Buddy egg">🥚</p>
+            <p className="mt-2 text-4xl" role="img" aria-label="Baby buddy">👶</p>
             <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
               Meet your accountability buddy
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Your buddy grows with your streak! Complete goals to hatch and evolve them from an egg
-              into a champion. They&apos;ll cheer you on every step of the way.
+              Your buddy grows with your streak! Complete goals to evolve them from baby into a champion.
+              Visit the Buddy tab to see them grow. They&apos;ll cheer you on every step of the way.
             </p>
           </>
         )}
@@ -69,8 +69,7 @@ export function DashboardTour() {
               This is your dashboard
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              See your buddy, current streak, today&apos;s goals, and what you&apos;ve recently proved
-              with photos.
+              See your buddy, current streak, today&apos;s goals, and your weekly recap.
             </p>
           </>
         )}

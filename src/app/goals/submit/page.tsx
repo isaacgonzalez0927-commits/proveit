@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
-import { isGoalDue, getDueDayName } from "@/lib/goalDue";
+import { isGoalDue, getDueDayName, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
 import { format } from "date-fns";
 import { generateId } from "@/lib/store";
@@ -234,19 +234,12 @@ function SubmitProofContent() {
       const data = await res.json();
       const aiPassed = data.verified === true;
       const now = new Date();
-
-      let withinWindow = true;
-      if (goal.frequency === "daily") {
-        withinWindow = true;
-      } else if (goal.frequency === "weekly") {
-        const reminderDay = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-        withinWindow = now.getDay() === reminderDay;
-      }
+      const withinWindow = isWithinSubmissionWindow(goal, now);
 
       const passed = aiPassed && withinWindow;
       const msg = withinWindow
         ? data.feedback ?? "Verification completed."
-        : "Submit on your reminder day before midnight to count toward your streak.";
+        : "Submissions closed. You have 1 hour after the due time to submit.";
 
       const sub = await addSubmission({
         goalId: goal.id,
@@ -336,6 +329,39 @@ function SubmitProofContent() {
     );
   }
 
+  const inWindow = isWithinSubmissionWindow(goal);
+  if (!inWindow) {
+    const msg = getSubmissionWindowMessage(goal);
+    return (
+      <>
+        <Header />
+        <main className="mx-auto max-w-lg px-4 py-8">
+          <Link
+            href="/goals"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to goals
+          </Link>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+            <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
+              {goal.title}
+            </h1>
+            <p className="mt-2 text-slate-600 dark:text-slate-400">
+              {msg ?? "Submissions are closed. You have 1 hour after the due time to submit."}
+            </p>
+            <Link
+              href="/dashboard"
+              className="mt-6 inline-block text-sm font-medium text-prove-600 hover:text-prove-700 dark:text-prove-400"
+            >
+              Back to dashboard
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
@@ -352,7 +378,7 @@ function SubmitProofContent() {
           Submit proof: {goal.title}
         </h1>
         <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Take a photo or upload one showing you doing this goal. AI will verify it.
+          Take a photo or upload one showing you doing this goal. AI will verify it. You have 1 hour after the due time to submit.
         </p>
 
         {step === "capture" && (
