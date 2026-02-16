@@ -24,8 +24,11 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with any email (dem
 
 ## AI verification
 
-- **With API key**: Set `OPENAI_API_KEY` in `.env.local`. The app will use GPT-4 Vision to check that the photo matches the goal.
-- **Without**: The app runs in demo mode and returns a simulated pass/fail so you can test the flow.
+Priority: Custom AI → OpenAI → Demo mode.
+
+- **Custom AI**: Set `CUSTOM_AI_VERIFY_URL` in `.env.local` to your friend's API. It must accept POST with `{ imageBase64, goalTitle, goalDescription }` and return `{ verified: boolean, feedback: string }`. Optionally set `CUSTOM_AI_API_KEY` for auth headers.
+- **OpenAI**: Set `OPENAI_API_KEY` in `.env.local`. Uses GPT-4 Vision.
+- **Without either**: Demo mode (random pass/fail for testing).
 
 ## Pricing (demo)
 

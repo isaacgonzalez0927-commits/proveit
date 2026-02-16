@@ -105,6 +105,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           frequency: g.frequency,
           reminderTime: g.reminderTime,
           reminderDay: g.reminderDay,
+          gracePeriod: g.gracePeriod,
           createdAt: g.createdAt,
           completedDates: g.completedDates ?? [],
         })));
@@ -220,6 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               frequency: goal.frequency,
               reminderTime: goal.reminderTime,
               reminderDay: goal.reminderDay,
+              gracePeriod: goal.gracePeriod ?? "eod",
             }),
           });
           const data = await res.json();
@@ -249,6 +251,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               ...updates,
               reminderTime: updates.reminderTime,
               reminderDay: updates.reminderDay,
+              gracePeriod: updates.gracePeriod,
             }),
           });
         } catch {

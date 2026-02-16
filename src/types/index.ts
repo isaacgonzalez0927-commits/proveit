@@ -20,6 +20,9 @@ export interface User {
 
 export type GoalFrequency = "daily" | "weekly";
 
+/** How long after the due time you can still submit proof */
+export type GracePeriod = "1h" | "3h" | "6h" | "12h" | "eod";
+
 export interface Goal {
   id: string;
   userId: string;
@@ -28,6 +31,8 @@ export interface Goal {
   frequency: GoalFrequency;
   reminderTime?: string; // HH:mm
   reminderDay?: number; // 0-6 for weekly (0 = Sunday)
+  /** How long after due time to submit: 1h, 3h, 6h, 12h, or eod (end of day) */
+  gracePeriod?: GracePeriod;
   createdAt: string;
   completedDates: string[]; // ISO date strings when verified
 }

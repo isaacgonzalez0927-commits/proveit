@@ -99,9 +99,9 @@ export function AccountabilityBuddy({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-prove-50 to-amber-50/50 p-5 dark:border-slate-700 dark:from-prove-950/30 dark:to-amber-950/20">
-      <div className="flex items-center gap-4">
+      <div className={large ? "flex flex-col items-center text-center" : "flex items-center gap-4"}>
         <div
-          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/80 shadow-sm dark:bg-slate-800/80 ${large ? "h-72 w-72 sm:h-80 sm:w-80" : "h-40 w-40 sm:h-48 sm:w-48"}`}
+          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/80 shadow-sm dark:bg-slate-800/80 ${large ? "h-64 w-64 sm:h-72 sm:w-72" : "h-40 w-40 sm:h-48 sm:w-48"}`}
           role="img"
           aria-label={stage.name}
         >
@@ -113,11 +113,11 @@ export function AccountabilityBuddy({
             accessoryId={accessoryItem?.id ?? null}
           />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className={large ? "mt-4 w-full" : "min-w-0 flex-1"}>
           <p className="font-semibold text-slate-900 dark:text-white">
             {stage.name}
           </p>
-          <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
+          <p className={`text-sm text-slate-600 dark:text-slate-400 ${large ? "mt-1" : "mt-0.5"}`}>
             {message}
           </p>
           {maxStreak > 0 && (
@@ -125,7 +125,7 @@ export function AccountabilityBuddy({
               {maxStreak} day{maxStreak !== 1 ? "s" : ""} streak · Keep going!
             </p>
           )}
-          <div className="mt-2 flex items-center gap-2">
+          <div className={`flex flex-wrap gap-2 ${large ? "mt-4 justify-center" : "mt-2"}`}>
             <button
               type="button"
               onClick={() => setShowCustomizer(true)}

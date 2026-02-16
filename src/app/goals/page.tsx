@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek, parseISO } from "date-fns";
-import type { GoalFrequency } from "@/types";
+import type { GoalFrequency, GracePeriod } from "@/types";
 
 function GoalsContent() {
   const { user, goals, addGoal, removeGoal, canAddGoal, getSubmissionsForGoal } = useApp();
@@ -19,7 +19,16 @@ function GoalsContent() {
   const [dailyTime, setDailyTime] = useState("09:00");
   const [weeklyDay, setWeeklyDay] = useState<number>(0);
   const [weeklyTime, setWeeklyTime] = useState("10:00");
+  const [gracePeriod, setGracePeriod] = useState<GracePeriod>("eod");
   const [goalToDelete, setGoalToDelete] = useState<{ id: string; title: string } | null>(null);
+
+  const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
+    { value: "1h", label: "1 hour after due" },
+    { value: "3h", label: "3 hours after due" },
+    { value: "6h", label: "6 hours after due" },
+    { value: "12h", label: "12 hours after due" },
+    { value: "eod", label: "Until end of day" },
+  ];
 
   if (!user) {
     return (
@@ -56,6 +65,7 @@ function GoalsContent() {
       frequency,
       reminderTime,
       reminderDay,
+      gracePeriod,
     });
     setTitle("");
     setDescription("");
@@ -63,6 +73,7 @@ function GoalsContent() {
     setDailyTime("09:00");
     setWeeklyDay(0);
     setWeeklyTime("10:00");
+    setGracePeriod("eod");
     setShowForm(false);
   };
 
@@ -181,6 +192,22 @@ function GoalsContent() {
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   required
                 />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Submit proof within
+                </label>
+                <select
+                  value={gracePeriod}
+                  onChange={(e) => setGracePeriod(e.target.value as GracePeriod)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  {GRACE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="mt-4 flex gap-2">

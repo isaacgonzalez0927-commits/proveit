@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * AI verification endpoint.
- * - With OPENAI_API_KEY: uses GPT-4 Vision to check if the image shows the goal being done.
- * - Without: returns a simulated result for demo (random pass/fail with plausible feedback).
+ * Priority: 1) Custom AI (CUSTOM_AI_VERIFY_URL), 2) OpenAI (OPENAI_API_KEY), 3) Demo mode
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,11 +20,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const customUrl = process.env.CUSTOM_AI_VERIFY_URL;
+    const openaiKey = process.env.OPENAI_API_KEY;
 
-    if (apiKey && imageBase64) {
-      const result = await verifyWithOpenAI(
-        apiKey,
+    // 1. Custom AI (your friend's API)
+    if (customUrl && imageBase64) {
+      const result = await verifyWithCustomAI(
+        customUrl,
         imageBase64,
         goalTitle,
         goalDescription ?? ""
@@ -33,7 +34,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // Demo mode: simulate verification (slightly biased toward pass for better UX in demo)
+    // 2. OpenAI GPT-4 Vision
+    if (openaiKey && imageBase64) {
+      const result = await verifyWithOpenAI(
+        openaiKey,
+        imageBase64,
+        goalTitle,
+        goalDescription ?? ""
+      );
+      return NextResponse.json(result);
+    }
+
+    // 3. Demo mode: simulate verification
     const simulated = simulateVerification(goalTitle);
     return NextResponse.json(simulated);
   } catch (e) {
@@ -107,6 +119,46 @@ Respond with JSON only, no markdown:
   return {
     verified: Boolean(parsed.verified),
     feedback: parsed.feedback ?? "No feedback provided.",
+  };
+}
+
+/**
+ * Call a custom AI API. Expects the endpoint to:
+ * - Accept POST with JSON: { imageBase64, goalTitle, goalDescription }
+ * - Return JSON: { verified: boolean, feedback: string }
+ * Set CUSTOM_AI_VERIFY_URL and optionally CUSTOM_AI_API_KEY in .env.local
+ */
+async function verifyWithCustomAI(
+  url: string,
+  imageBase64: string,
+  goalTitle: string,
+  goalDescription: string
+) {
+  const apiKey = process.env.CUSTOM_AI_API_KEY;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      imageBase64,
+      goalTitle,
+      goalDescription,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Custom AI error: ${res.status} ${err}`);
+  }
+
+  const data = (await res.json()) as { verified?: boolean; feedback?: string };
+  return {
+    verified: Boolean(data.verified),
+    feedback: data.feedback ?? "No feedback provided.",
   };
 }
 

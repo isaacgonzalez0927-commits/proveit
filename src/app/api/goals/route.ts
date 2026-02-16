@@ -24,6 +24,7 @@ export async function GET() {
     frequency: row.frequency,
     reminderTime: row.reminder_time ?? undefined,
     reminderDay: row.reminder_day ?? undefined,
+    gracePeriod: (row as { grace_period?: string }).grace_period ?? undefined,
     createdAt: row.created_at,
     completedDates: row.completed_dates ?? [],
   }));
@@ -39,20 +40,23 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, title, description, frequency, reminderTime, reminderDay } = body;
+  const { id, title, description, frequency, reminderTime, reminderDay, gracePeriod } = body;
+
+  const insertData: Record<string, unknown> = {
+    id,
+    user_id: user.id,
+    title,
+    description: description ?? null,
+    frequency,
+    reminder_time: reminderTime ?? null,
+    reminder_day: reminderDay ?? null,
+    completed_dates: [],
+  };
+  if (gracePeriod != null) insertData.grace_period = gracePeriod;
 
   const { data, error } = await supabase
     .from("goals")
-    .insert({
-      id,
-      user_id: user.id,
-      title,
-      description: description ?? null,
-      frequency,
-      reminder_time: reminderTime ?? null,
-      reminder_day: reminderDay ?? null,
-      completed_dates: [],
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -67,6 +71,7 @@ export async function POST(request: NextRequest) {
       frequency: data.frequency,
       reminderTime: data.reminder_time ?? undefined,
       reminderDay: data.reminder_day ?? undefined,
+      gracePeriod: (data as { grace_period?: string }).grace_period ?? undefined,
       createdAt: data.created_at,
       completedDates: data.completed_dates ?? [],
     },
@@ -89,6 +94,7 @@ export async function PATCH(request: NextRequest) {
   if (updates.frequency != null) dbUpdates.frequency = updates.frequency;
   if (updates.reminderTime != null) dbUpdates.reminder_time = updates.reminderTime;
   if (updates.reminderDay != null) dbUpdates.reminder_day = updates.reminderDay;
+  if (updates.gracePeriod != null) dbUpdates.grace_period = updates.gracePeriod;
   if (updates.completedDates != null) dbUpdates.completed_dates = updates.completedDates;
 
   const { error } = await supabase

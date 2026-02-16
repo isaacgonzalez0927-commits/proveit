@@ -64,12 +64,12 @@ export function BuddyIllustration({
           {animal === "fox" && <FoxBuddy stage={stage} />}
         </g>
         {hatId && (
-          <g transform={`translate(60, ${stage === "baby" ? 22 : stage === "toddler" ? 20 : stage === "growing" ? 19 : stage === "strong" ? 18 : 17})`}>
+          <g transform={`translate(60, ${stage === "baby" ? 30 : stage === "toddler" ? 28 : stage === "growing" ? 27 : stage === "strong" ? 26 : 25})`}>
             <HatIllustration id={hatId as "cap" | "crown" | "grad" | "tophat" | "helmet"} size={baseSize * 0.5} />
           </g>
         )}
         {accessoryId && (
-          <g transform={`translate(${accessoryId === "star" ? 72 : 60}, ${accessoryId === "glasses" ? 58 : accessoryId === "bow" ? 54 : 48})`}>
+          <g transform={`translate(${accessoryId === "star" ? 72 : 60}, ${accessoryId === "glasses" ? 48 : accessoryId === "bow" ? 54 : 42})`}>
             <AccessoryIllustration
               id={accessoryId as "glasses" | "bow" | "star"}
               size={accessoryId === "glasses" ? baseSize * 0.38 : baseSize * 0.3}
@@ -107,19 +107,19 @@ function CatBuddy({ stage }: { stage: string }) {
       <ellipse cx={0} cy={38} rx={20} ry={24} fill="url(#catBody)" stroke={FUR_DARK} strokeWidth={0.4} />
       <ellipse cx={0} cy={42} rx={12} ry={9} fill={BELLY} opacity={0.95} />
       {/* Ears */}
-      <path d="M -16 -42 L -8 -58 L 2 -42" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.35} strokeLinejoin="round" />
-      <path d="M 16 -42 L 8 -58 L -2 -42" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.35} strokeLinejoin="round" />
-      {/* Head */}
-      <circle cx={0} cy={-32} r={22} fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.4} />
+      <path d="M -16 -38 L -8 -54 L 2 -38" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.35} strokeLinejoin="round" />
+      <path d="M 16 -38 L 8 -54 L -2 -38" fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.35} strokeLinejoin="round" />
+      {/* Head - closer to body */}
+      <circle cx={0} cy={-22} r={22} fill="url(#catHead)" stroke={FUR_DARK} strokeWidth={0.4} />
       {/* Eyes - bigger, cuter */}
-      <ellipse cx={-7} cy={-35} rx={5} ry={6} fill={EYE} />
-      <ellipse cx={7} cy={-35} rx={5} ry={6} fill={EYE} />
-      <circle cx={-5} cy={-34} r={2.2} fill={EYE_WHITE} />
-      <circle cx={9} cy={-34} r={2.2} fill={EYE_WHITE} />
+      <ellipse cx={-7} cy={-25} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-25} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-24} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-24} r={2.2} fill={EYE_WHITE} />
       {/* Nose */}
-      <path d="M 0 -28 L -1.5 -25 L 0 -23 L 1.5 -25 Z" fill="#d4a08a" stroke="#c4907a" strokeWidth={0.2} />
+      <path d="M 0 -18 L -1.5 -15 L 0 -13 L 1.5 -15 Z" fill="#d4a08a" stroke="#c4907a" strokeWidth={0.2} />
       {/* Whiskers */}
-      <path d="M -18 -32 Q -10 -31 -6 -30 M 18 -32 Q 10 -31 6 -30" stroke={FUR_DARK} strokeWidth={0.3} opacity={0.6} fill="none" />
+      <path d="M -18 -22 Q -10 -21 -6 -20 M 18 -22 Q 10 -21 6 -20" stroke={FUR_DARK} strokeWidth={0.3} opacity={0.6} fill="none" />
     </g>
   );
 }
@@ -144,14 +144,14 @@ function DogBuddy({ stage }: { stage: string }) {
       <ellipse cx={0} cy={38} rx={20} ry={24} fill="url(#dogBody)" stroke={dark} strokeWidth={0.4} />
       <ellipse cx={0} cy={42} rx={12} ry={9} fill={BELLY} opacity={0.95} />
       {/* Floppy ears */}
-      <ellipse cx={-18} cy={-22} rx={9} ry={14} fill="url(#dogHead)" stroke={dark} strokeWidth={0.35} transform="rotate(-22 -18 -22)" />
-      <ellipse cx={18} cy={-22} rx={9} ry={14} fill="url(#dogHead)" stroke={dark} strokeWidth={0.35} transform="rotate(22 18 -22)" />
-      <circle cx={0} cy={-32} r={22} fill="url(#dogHead)" stroke={dark} strokeWidth={0.4} />
-      <ellipse cx={-7} cy={-35} rx={5} ry={6} fill={EYE} />
-      <ellipse cx={7} cy={-35} rx={5} ry={6} fill={EYE} />
-      <circle cx={-5} cy={-34} r={2.2} fill={EYE_WHITE} />
-      <circle cx={9} cy={-34} r={2.2} fill={EYE_WHITE} />
-      <ellipse cx={0} cy={-27} rx={3} ry={2} fill="#a67c52" stroke="#8b6914" strokeWidth={0.2} />
+      <ellipse cx={-18} cy={-18} rx={9} ry={14} fill="url(#dogHead)" stroke={dark} strokeWidth={0.35} transform="rotate(-22 -18 -18)" />
+      <ellipse cx={18} cy={-18} rx={9} ry={14} fill="url(#dogHead)" stroke={dark} strokeWidth={0.35} transform="rotate(22 18 -18)" />
+      <circle cx={0} cy={-22} r={22} fill="url(#dogHead)" stroke={dark} strokeWidth={0.4} />
+      <ellipse cx={-7} cy={-25} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-25} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-24} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-24} r={2.2} fill={EYE_WHITE} />
+      <ellipse cx={0} cy={-17} rx={3} ry={2} fill="#a67c52" stroke="#8b6914" strokeWidth={0.2} />
     </g>
   );
 }
@@ -176,14 +176,14 @@ function RabbitBuddy({ stage }: { stage: string }) {
       <ellipse cx={0} cy={40} rx={19} ry={23} fill="url(#rabbitBody)" stroke="#b8a898" strokeWidth={0.4} />
       <ellipse cx={0} cy={44} rx={11} ry={8} fill="#fdf8f3" opacity={0.95} />
       {/* Long ears */}
-      <ellipse cx={-8} cy={-50} rx={5} ry={22} fill="url(#rabbitEar)" stroke="#b8a898" strokeWidth={0.35} />
-      <ellipse cx={8} cy={-50} rx={5} ry={22} fill="url(#rabbitEar)" stroke="#b8a898" strokeWidth={0.35} />
-      <circle cx={0} cy={-30} r={20} fill="url(#rabbitBody)" stroke="#b8a898" strokeWidth={0.4} />
-      <ellipse cx={-7} cy={-33} rx={5} ry={6} fill={EYE} />
-      <ellipse cx={7} cy={-33} rx={5} ry={6} fill={EYE} />
-      <circle cx={-5} cy={-32} r={2.2} fill={EYE_WHITE} />
-      <circle cx={9} cy={-32} r={2.2} fill={EYE_WHITE} />
-      <path d="M -2 -24 Q 0 -22 2 -24" stroke="#d4b89c" strokeWidth={0.5} fill="none" strokeLinecap="round" />
+      <ellipse cx={-8} cy={-46} rx={5} ry={22} fill="url(#rabbitEar)" stroke="#b8a898" strokeWidth={0.35} />
+      <ellipse cx={8} cy={-46} rx={5} ry={22} fill="url(#rabbitEar)" stroke="#b8a898" strokeWidth={0.35} />
+      <circle cx={0} cy={-20} r={20} fill="url(#rabbitBody)" stroke="#b8a898" strokeWidth={0.4} />
+      <ellipse cx={-7} cy={-23} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-23} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-22} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-22} r={2.2} fill={EYE_WHITE} />
+      <path d="M -2 -14 Q 0 -12 2 -14" stroke="#d4b89c" strokeWidth={0.5} fill="none" strokeLinecap="round" />
     </g>
   );
 }
@@ -209,16 +209,16 @@ function FoxBuddy({ stage }: { stage: string }) {
       <ellipse cx={0} cy={38} rx={20} ry={24} fill="url(#foxBody)" stroke={dark} strokeWidth={0.4} />
       <ellipse cx={0} cy={42} rx={12} ry={9} fill={white} opacity={0.95} />
       {/* Pointy ears */}
-      <path d="M -14 -40 L -5 -55 L 3 -40" fill="url(#foxEar)" stroke={dark} strokeWidth={0.35} strokeLinejoin="round" />
-      <path d="M 14 -40 L 5 -55 L -3 -40" fill="url(#foxEar)" stroke={dark} strokeWidth={0.35} strokeLinejoin="round" />
-      <circle cx={0} cy={-32} r={22} fill="url(#foxBody)" stroke={dark} strokeWidth={0.4} />
+      <path d="M -14 -36 L -5 -51 L 3 -36" fill="url(#foxEar)" stroke={dark} strokeWidth={0.35} strokeLinejoin="round" />
+      <path d="M 14 -36 L 5 -51 L -3 -36" fill="url(#foxEar)" stroke={dark} strokeWidth={0.35} strokeLinejoin="round" />
+      <circle cx={0} cy={-22} r={22} fill="url(#foxBody)" stroke={dark} strokeWidth={0.4} />
       {/* White muzzle stripe */}
-      <path d="M -12 -35 Q -6 -32 0 -28 Q 6 -32 12 -35" fill="none" stroke={white} strokeWidth={2} opacity={0.9} strokeLinecap="round" />
-      <ellipse cx={-7} cy={-35} rx={5} ry={6} fill={EYE} />
-      <ellipse cx={7} cy={-35} rx={5} ry={6} fill={EYE} />
-      <circle cx={-5} cy={-34} r={2.2} fill={EYE_WHITE} />
-      <circle cx={9} cy={-34} r={2.2} fill={EYE_WHITE} />
-      <path d="M 0 -27 L -1.5 -24 L 0 -22 L 1.5 -24 Z" fill="#6b4a3a" stroke="#4a3528" strokeWidth={0.2} />
+      <path d="M -12 -25 Q -6 -22 0 -18 Q 6 -22 12 -25" fill="none" stroke={white} strokeWidth={2} opacity={0.9} strokeLinecap="round" />
+      <ellipse cx={-7} cy={-25} rx={5} ry={6} fill={EYE} />
+      <ellipse cx={7} cy={-25} rx={5} ry={6} fill={EYE} />
+      <circle cx={-5} cy={-24} r={2.2} fill={EYE_WHITE} />
+      <circle cx={9} cy={-24} r={2.2} fill={EYE_WHITE} />
+      <path d="M 0 -17 L -1.5 -14 L 0 -12 L 1.5 -14 Z" fill="#6b4a3a" stroke="#4a3528" strokeWidth={0.2} />
     </g>
   );
 }
