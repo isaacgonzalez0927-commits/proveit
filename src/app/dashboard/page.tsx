@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Plus,
-  Camera,
   Flame,
   Calendar,
   ChevronRight,
@@ -12,17 +11,19 @@ import {
   CheckCircle2,
   History,
 } from "lucide-react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { DashboardTour } from "@/components/DashboardTour";
+import { AccountabilityBuddy } from "@/components/AccountabilityBuddy";
 import { getPlan } from "@/lib/store";
 import { isGoalDue, getNextDueLabel } from "@/lib/goalDue";
 import { format, isThisWeek, parseISO } from "date-fns";
 
 function DashboardContent() {
-  const { user, goals, submissions, getSubmissionsForGoal } = useApp();
+  const { user, goals, submissions, getSubmissionsForGoal, markGoalDone, checkAndAwardItems } = useApp();
+  const [markingId, setMarkingId] = useState<string | null>(null);
   const recentVerified = submissions
     .filter((s) => s.status === "verified")
     .sort((a, b) => new Date(b.verifiedAt ?? b.createdAt).getTime() - new Date(a.verifiedAt ?? a.createdAt).getTime())
@@ -60,6 +61,22 @@ function DashboardContent() {
     ? Math.max(...goals.map((g) => getStreak(g)), 0)
     : 0;
 
+  useEffect(() => {
+    checkAndAwardItems(maxStreak);
+  }, [maxStreak, submissions, checkAndAwardItems]);
+
+  const goalsDueToday = goals.filter((g) => isGoalDue(g));
+  const goalsDoneToday = goalsDueToday.filter((g) => {
+    const subs = getSubmissionsForGoal(g.id);
+    if (g.frequency === "daily") {
+      return subs.some((s) => s.date === todayStr && s.status === "verified");
+    }
+    return subs.some((s) => {
+      const d = parseISO(s.date);
+      return isThisWeek(d) && s.status === "verified";
+    });
+  }).length;
+
   return (
     <>
       <NotificationScheduler />
@@ -75,7 +92,13 @@ function DashboardContent() {
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <AccountabilityBuddy
+          maxStreak={maxStreak}
+          goalsDoneToday={goalsDoneToday}
+          totalDueToday={goalsDueToday.length}
+        />
+
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-2">
               <Flame className="h-5 w-5 text-amber-500" />
@@ -161,13 +184,30 @@ function DashboardContent() {
                         </p>
                       </div>
                     </div>
-                    <Link
-                      href={`/goals/submit?goalId=${goal.id}`}
-                      className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
-                    >
-                      <Camera className="h-4 w-4" />
-                      {verified ? "View" : "Submit proof"}
-                    </Link>
+                    {verified ? (
+                      <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Done
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setMarkingId(goal.id);
+                          markGoalDone(goal.id).finally(() => setMarkingId(null));
+                        }}
+                        disabled={!!markingId}
+                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
+                      >
+                        {markingId === goal.id ? (
+                          <>Marking…</>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Mark done
+                          </>
+                        )}
+                      </button>
+                    )}
                   </li>
                 );
               })}
@@ -201,13 +241,30 @@ function DashboardContent() {
                       </div>
                     </div>
                     {due ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
-                      >
-                        <Camera className="h-4 w-4" />
-                        {thisWeekProof ? "View" : "Submit proof"}
-                      </Link>
+                      thisWeekProof ? (
+                        <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Done
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setMarkingId(goal.id);
+                            markGoalDone(goal.id).finally(() => setMarkingId(null));
+                          }}
+                          disabled={!!markingId}
+                          className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
+                        >
+                          {markingId === goal.id ? (
+                            <>Marking…</>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4" />
+                              Mark done
+                            </>
+                          )}
+                        </button>
+                      )
                     ) : (
                       <span className="text-sm text-slate-400 dark:text-slate-500">
                         {dueLabel}
@@ -263,9 +320,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <AppProvider>
-      <DashboardContent />
-    </AppProvider>
-  );
+  return <DashboardContent />;
 }

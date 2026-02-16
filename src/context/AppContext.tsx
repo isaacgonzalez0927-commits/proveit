@@ -16,6 +16,15 @@ import {
 } from "@/lib/store";
 import { PLANS } from "@/types";
 import { useSupabaseAuth } from "@/lib/supabase/hooks";
+import { format } from "date-fns";
+import {
+  getStoredEarnedItems,
+  getStoredEquippedItems,
+  saveEarnedItems,
+  saveEquippedItems,
+  computeNewlyEarnedItems,
+  type EquippedItems,
+} from "@/lib/buddyItems";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -27,6 +36,7 @@ interface AppContextValue {
   user: StoredUser | null;
   goals: Goal[];
   submissions: ProofSubmission[];
+  authReady: boolean;
   setUser: (user: StoredUser | null) => void;
   setPlan: (plan: PlanId) => void | Promise<void>;
   addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Goal | null | Promise<Goal | null>;
@@ -36,6 +46,11 @@ interface AppContextValue {
   updateSubmission: (id: string, updates: Partial<ProofSubmission>) => void | Promise<void>;
   canAddGoal: (frequency: GoalFrequency) => boolean;
   getSubmissionsForGoal: (goalId: string) => ProofSubmission[];
+  markGoalDone: (goalId: string) => Promise<void>;
+  earnedItems: string[];
+  equippedItems: EquippedItems;
+  setEquipped: (slot: keyof EquippedItems, itemId: string | null) => void;
+  checkAndAwardItems: (maxStreak: number) => string[];
   requestNotificationPermission: () => Promise<boolean>;
   signOut: () => void;
   useSupabase: boolean;
@@ -55,49 +70,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoalsState] = useState<Goal[]>([]);
   const [submissions, setSubmissionsState] = useState<ProofSubmission[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [earnedItems, setEarnedItems] = useState<string[]>([]);
+  const [equippedItems, setEquippedItemsState] = useState<EquippedItems>({});
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
-      fetch("/api/profile")
-        .then((r) => r.json())
-        .then((data) => {
-          const p = data.profile;
-          if (p) setUserState({ id: p.id, email: p.email, plan: p.plan, createdAt: p.createdAt });
-        })
-        .catch(() => {});
-      fetch("/api/goals")
-        .then((r) => r.json())
-        .then((data) => {
-          const gs = data.goals ?? [];
-          setGoalsState(gs.map((g: Record<string, unknown>) => ({
-            id: g.id,
-            userId: g.userId,
-            title: g.title,
-            description: g.description,
-            frequency: g.frequency,
-            reminderTime: g.reminderTime,
-            reminderDay: g.reminderDay,
-            createdAt: g.createdAt,
-            completedDates: g.completedDates ?? [],
-          })));
-        })
-        .catch(() => {});
-      fetch("/api/submissions")
-        .then((r) => r.json())
-        .then((data) => {
-          const subs = data.submissions ?? [];
-          setSubmissionsState(subs.map((s: Record<string, unknown>) => ({
-            id: s.id,
-            goalId: s.goalId,
-            date: s.date,
-            imageDataUrl: s.imageDataUrl,
-            status: s.status,
-            aiFeedback: s.aiFeedback,
-            verifiedAt: s.verifiedAt,
-            createdAt: s.createdAt,
-          })));
-        })
-        .catch(() => {});
+      setDataLoaded(false);
+      Promise.allSettled([
+        fetch("/api/profile").then((r) => r.json()),
+        fetch("/api/goals").then((r) => r.json()),
+        fetch("/api/submissions").then((r) => r.json()),
+      ]).then(([profileResult, goalsResult, subsResult]) => {
+        const p = profileResult.status === "fulfilled" ? profileResult.value?.profile : null;
+        if (p) {
+          setUserState({ id: p.id, email: p.email, plan: p.plan ?? "free", createdAt: p.createdAt ?? new Date().toISOString() });
+        } else if (supabaseUser) {
+          setUserState({ id: supabaseUser.id, email: supabaseUser.email ?? "", plan: "free", createdAt: supabaseUser.created_at });
+        }
+        const goalsRes = goalsResult.status === "fulfilled" ? goalsResult.value : null;
+        const gs = goalsRes?.goals ?? [];
+        setGoalsState(gs.map((g: Record<string, unknown>) => ({
+          id: g.id,
+          userId: g.userId,
+          title: g.title,
+          description: g.description,
+          frequency: g.frequency,
+          reminderTime: g.reminderTime,
+          reminderDay: g.reminderDay,
+          createdAt: g.createdAt,
+          completedDates: g.completedDates ?? [],
+        })));
+        const subsRes = subsResult.status === "fulfilled" ? subsResult.value : null;
+        const subs = subsRes?.submissions ?? [];
+        setSubmissionsState(subs.map((s: Record<string, unknown>) => ({
+          id: s.id,
+          goalId: s.goalId,
+          date: s.date,
+          imageDataUrl: s.imageDataUrl,
+          status: s.status,
+          aiFeedback: s.aiFeedback,
+          verifiedAt: s.verifiedAt,
+          createdAt: s.createdAt,
+        })));
+      }).finally(() => setDataLoaded(true));
       setHydrated(true);
       return;
     }
@@ -105,6 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserState(null);
       setGoalsState([]);
       setSubmissionsState([]);
+      setDataLoaded(true);
       setHydrated(true);
       return;
     }
@@ -112,6 +129,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserState(getStoredUser());
       setGoalsState(getStoredGoals());
       setSubmissionsState(getStoredSubmissions());
+      setDataLoaded(true);
       setHydrated(true);
       return;
     }
@@ -119,6 +137,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setHydrated(true);
     }
   }, [useSupabase, supabaseUser, authLoading, supabase]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setEarnedItems(getStoredEarnedItems());
+    setEquippedItemsState(getStoredEquippedItems());
+  }, []);
 
   useEffect(() => {
     if (!hydrated || useSupabase) return;
@@ -316,6 +340,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [submissions]
   );
 
+  const markGoalDone = useCallback(
+    async (goalId: string) => {
+      const g = goals.find((x) => x.id === goalId);
+      if (!g) return;
+      const dateStr = format(new Date(), "yyyy-MM-dd");
+      const existing = submissions.find((s) => s.goalId === goalId && s.date === dateStr);
+      if (existing?.status === "verified") return;
+      await addSubmission({
+        goalId,
+        date: dateStr,
+        imageDataUrl: "",
+        status: "verified",
+        aiFeedback: "Marked as done.",
+        verifiedAt: new Date().toISOString(),
+      });
+      if (!g.completedDates.includes(dateStr)) {
+        await updateGoal(goalId, { completedDates: [...g.completedDates, dateStr] });
+      }
+    },
+    [goals, submissions, addSubmission, updateGoal]
+  );
+
+  const setEquipped = useCallback((slot: keyof EquippedItems, itemId: string | null) => {
+    setEquippedItemsState((prev) => {
+      const next = { ...prev };
+      if (itemId) next[slot] = itemId;
+      else delete next[slot];
+      saveEquippedItems(next);
+      return next;
+    });
+  }, []);
+
+  const checkAndAwardItems = useCallback(
+    (maxStreak: number): string[] => {
+      const totalGoalsCompleted = submissions.filter((s) => s.status === "verified").length;
+      const hasCompletedAnyGoal = totalGoalsCompleted > 0;
+      const newlyEarned = computeNewlyEarnedItems(earnedItems, {
+        hasCompletedAnyGoal,
+        maxStreak,
+        totalGoalsCompleted,
+      });
+      if (newlyEarned.length > 0) {
+        const next = [...earnedItems, ...newlyEarned];
+        setEarnedItems(next);
+        saveEarnedItems(next);
+      }
+      return newlyEarned;
+    },
+    [earnedItems, submissions]
+  );
+
   const requestNotificationPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
     if (Notification.permission === "granted") return true;
@@ -328,11 +403,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
+    setEarnedItems([]);
+    setEquippedItemsState({});
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(STORAGE_KEYS.user);
         localStorage.removeItem(STORAGE_KEYS.goals);
         localStorage.removeItem(STORAGE_KEYS.submissions);
+        localStorage.removeItem("proveit_buddy_earned");
+        localStorage.removeItem("proveit_buddy_equipped");
       } catch {
         // ignore
       }
@@ -346,11 +425,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
+    setEarnedItems([]);
+    setEquippedItemsState({});
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(STORAGE_KEYS.user);
         localStorage.removeItem(STORAGE_KEYS.goals);
         localStorage.removeItem(STORAGE_KEYS.submissions);
+        localStorage.removeItem("proveit_buddy_earned");
+        localStorage.removeItem("proveit_buddy_equipped");
       } catch {
         // ignore
       }
@@ -361,6 +444,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     user,
     goals,
     submissions,
+    authReady: useSupabase ? (!authLoading && (!supabaseUser || dataLoaded)) : true,
     setUser,
     setPlan,
     addGoal,
@@ -370,6 +454,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateSubmission,
     canAddGoal: canAddGoalCheck,
     getSubmissionsForGoal,
+    markGoalDone,
+    earnedItems,
+    equippedItems,
+    setEquipped,
+    checkAndAwardItems,
     requestNotificationPermission,
     signOut: useSupabase ? signOutWithSupabase : signOut,
     useSupabase,

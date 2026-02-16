@@ -4,59 +4,113 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft } from "lucide-react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { isGoalDue, getDueDayName } from "@/lib/goalDue";
+import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
 import { format } from "date-fns";
+import { generateId } from "@/lib/store";
+import type { StoredUser } from "@/lib/store";
+import type { Goal } from "@/types";
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const goalId = searchParams.get("goalId");
-  const { user, goals, addSubmission, updateSubmission, updateGoal } = useApp();
-  const goal = goals.find((g) => g.id === goalId);
+  const { user: contextUser, goals: contextGoals, addSubmission, updateSubmission, updateGoal, useSupabase, supabase, authReady } = useApp();
+  // Fallback: fetch directly when context doesn't have data (handles direct nav / context race)
+  const [localUser, setLocalUser] = useState<StoredUser | null>(null);
+  const [localGoal, setLocalGoal] = useState<Goal | null>(null);
+  const [pageLoading, setPageLoading] = useState(false);
+  const user = contextUser ?? localUser;
+  const goal = contextGoals.find((g) => g.id === goalId) ?? localGoal ?? null;
+  const goals = goal && !contextGoals.find((g) => g.id === goal.id) ? [...contextGoals, goal] : contextGoals;
+
+  useEffect(() => {
+    if (!goalId || !authReady) return;
+    if (user && goal) {
+      setPageLoading(false);
+      return;
+    }
+    // Need to fetch - prevent redirect until we have data
+    setPageLoading(true);
+    let cancelled = false;
+    Promise.all([
+      fetch("/api/profile").then((r) => r.json()),
+      fetch("/api/goals").then((r) => r.json()),
+    ]).then(([profileRes, goalsRes]) => {
+      if (cancelled) return;
+      const p = profileRes?.profile;
+      if (p) setLocalUser({ id: p.id, email: p.email, plan: p.plan ?? "free", createdAt: p.createdAt ?? new Date().toISOString() });
+      const gs = goalsRes?.goals ?? [];
+      const g = gs.find((x: Goal) => x.id === goalId);
+      if (g) setLocalGoal(g);
+    }).catch(() => {}).finally(() => {
+      if (!cancelled) setPageLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [goalId, authReady, contextUser, contextGoals, localUser, localGoal]);
 
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
+  const [cameraStarted, setCameraStarted] = useState(false);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [feedback, setFeedback] = useState<string>("");
   const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [streamReady, setStreamReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const hasRedirected = useRef(false);
+  const hasShownContent = useRef(false);
+
+  // Once we've shown the submit UI (camera/upload), never redirect - avoids auth blips
+  useEffect(() => {
+    if (user && goal) hasShownContent.current = true;
+  }, [user, goal]);
 
   useEffect(() => {
-    if (!user) {
-      router.replace("/dashboard");
-      return;
-    }
-    if (!goalId || !goal) {
+    if (!authReady || hasRedirected.current || pageLoading) return;
+    if (hasShownContent.current) return; // Already showed content - don't redirect
+    if (!goalId) {
+      hasRedirected.current = true;
       router.replace("/goals");
       return;
     }
-  }, [user, goalId, goal, router]);
+    if (!user) {
+      hasRedirected.current = true;
+      router.replace("/dashboard");
+      return;
+    }
+    if (!goal) {
+      hasRedirected.current = true;
+      router.replace("/goals");
+      return;
+    }
+  }, [authReady, user, goalId, goal, router, pageLoading]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    setStreamReady(false);
+    setCameraStarted(false);
   }, []);
 
   useEffect(() => {
     return () => stopCamera();
   }, [stopCamera]);
 
-  const startCamera = useCallback(async () => {
+  const handleStartCamera = useCallback(async () => {
     if (typeof window === "undefined") return;
 
     const isLocalhost =
       window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     const isSecure = window.isSecureContext;
 
-    // Many mobile browsers block camera on plain HTTP over local IP.
     if (!isSecure && !isLocalhost) {
       alert(
         "Your browser is blocking the camera because this site is not using HTTPS.\n\nOn your phone, use the Upload button instead and choose Camera or Photo Library."
@@ -65,9 +119,30 @@ function SubmitProofContent() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const constraints: MediaStreamConstraints = {
+        video: isMobile
+          ? { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      };
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        try {
+          await video.play();
+        } catch {
+          // Some browsers require play() in user gesture; autoPlay may handle it
+        }
+      }
+      setStreamReady(true);
+      setCameraStarted(true);
     } catch (e) {
       console.error(e);
       alert("Could not access camera. You can upload a photo instead.");
@@ -75,9 +150,18 @@ function SubmitProofContent() {
   }, []);
 
   useEffect(() => {
-    if (step === "capture" && goalId) startCamera();
     return () => stopCamera();
-  }, [step, goalId, startCamera, stopCamera]);
+  }, [stopCamera]);
+
+  // Attach stream to video when both exist (handles timing when video mounts after stream)
+  useEffect(() => {
+    if (step !== "capture" || !streamRef.current || !videoRef.current || !streamReady) return;
+    const video = videoRef.current;
+    if (!video.srcObject && streamRef.current) {
+      video.srcObject = streamRef.current;
+      video.play().catch(() => {});
+    }
+  }, [step, streamReady]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
@@ -106,18 +190,38 @@ function SubmitProofContent() {
   };
 
   const submitForVerification = useCallback(async () => {
-    if (!imageDataUrl || !goal) return;
+    if (!imageDataUrl || !goal || !user) return;
     setStep("uploading");
 
-    const base64 = imageDataUrl.split(",")[1];
-    if (!base64) {
-      setVerified(false);
-      setFeedback("Invalid image.");
-      setStep("result");
-      return;
-    }
+    let imageToStore = imageDataUrl;
+    const submissionId = generateId();
 
     try {
+      // Compress image to avoid API body size limits
+      const compressed = await compressImage(imageDataUrl, 1200, 0.75);
+      const base64 = compressed.split(",")[1];
+      if (!base64) {
+        setVerified(false);
+        setFeedback("Invalid image.");
+        setStep("result");
+        return;
+      }
+
+      // If using Supabase, upload to Storage and use URL instead of base64
+      if (useSupabase && supabase) {
+        try {
+          const storageUrl = await uploadProofToStorage(supabase, user.id, submissionId, compressed);
+          imageToStore = storageUrl;
+        } catch (uploadErr) {
+          setVerified(false);
+          setFeedback("Failed to upload image. Please try again.");
+          setStep("result");
+          return;
+        }
+      } else {
+        imageToStore = compressed;
+      }
+
       const res = await fetch("/api/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,13 +235,12 @@ function SubmitProofContent() {
       const aiPassed = data.verified === true;
       const now = new Date();
 
-      // Submit anytime on the due date: daily = anytime today, weekly = anytime on reminder day
       let withinWindow = true;
       if (goal.frequency === "daily") {
-        withinWindow = true; // Can submit anytime before midnight
+        withinWindow = true;
       } else if (goal.frequency === "weekly") {
         const reminderDay = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-        withinWindow = now.getDay() === reminderDay; // Can submit anytime on reminder day
+        withinWindow = now.getDay() === reminderDay;
       }
 
       const passed = aiPassed && withinWindow;
@@ -148,7 +251,7 @@ function SubmitProofContent() {
       const sub = await addSubmission({
         goalId: goal.id,
         date: todayStr,
-        imageDataUrl,
+        imageDataUrl: imageToStore,
         status: passed ? "verified" : "rejected",
         aiFeedback: msg,
         verifiedAt: passed ? new Date().toISOString() : undefined,
@@ -162,7 +265,7 @@ function SubmitProofContent() {
         verifiedAt: passed ? new Date().toISOString() : undefined,
       });
       if (passed) {
-        const g = goals.find((x) => x.id === goal.id);
+        const g = goals.find((x: Goal) => x.id === goal.id);
         if (g && !g.completedDates.includes(todayStr)) {
           await updateGoal(goal.id, {
             completedDates: [...g.completedDates, todayStr],
@@ -172,19 +275,23 @@ function SubmitProofContent() {
     } catch (err) {
       setVerified(false);
       setFeedback("Something went wrong. Please try again.");
-      const sub = await addSubmission({
-        goalId: goal.id,
-        date: todayStr,
-        imageDataUrl,
-        status: "rejected",
-        aiFeedback: "Request failed.",
-      });
-      setSubmissionId(sub.id);
+      try {
+        const sub = await addSubmission({
+          goalId: goal.id,
+          date: todayStr,
+          imageDataUrl: imageToStore,
+          status: "rejected",
+          aiFeedback: "Request failed.",
+        });
+        setSubmissionId(sub.id);
+      } catch {
+        setFeedback("Failed to save submission. Please try again.");
+      }
     }
     setStep("result");
-  }, [imageDataUrl, goal, todayStr, addSubmission, updateSubmission, updateGoal, goals]);
+  }, [imageDataUrl, goal, todayStr, user, addSubmission, updateSubmission, updateGoal, goals, useSupabase, supabase]);
 
-  if (!user || !goal) {
+  if (!authReady || pageLoading || !user || !goal) {
     return (
       <>
         <Header />
@@ -252,14 +359,48 @@ function SubmitProofContent() {
           <div className="mt-8 animate-fade-in">
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
               {!imageDataUrl ? (
+                !cameraStarted ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
+                    <p className="text-center text-sm text-slate-300">
+                      Tap to start camera or upload a photo
+                    </p>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={handleStartCamera}
+                        className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
+                      >
+                        <Camera className="h-6 w-6" />
+                        Use camera
+                      </button>
+                      <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-500 bg-slate-800 px-5 py-3 text-white hover:bg-slate-700">
+                        <Upload className="h-6 w-6" />
+                        Upload photo
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
                 <>
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover bg-slate-900"
+                    style={{ minHeight: 240 }}
                   />
+                  {!streamReady && (
+                    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded-lg bg-black/50 px-3 py-2">
+                      <p className="text-sm text-white">Starting camera…</p>
+                    </div>
+                  )}
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
                     <button
                       onClick={capturePhoto}
@@ -281,6 +422,7 @@ function SubmitProofContent() {
                     </label>
                   </div>
                 </>
+                )
               ) : (
                 <div className="flex h-full flex-col items-center justify-center p-4">
                   <img
@@ -292,7 +434,8 @@ function SubmitProofContent() {
                     <button
                       onClick={() => {
                         setImageDataUrl(null);
-                        startCamera();
+                        setCameraStarted(true);
+                        handleStartCamera();
                       }}
                       className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-300"
                     >
@@ -364,9 +507,5 @@ function SubmitProofContent() {
 }
 
 export default function SubmitProofPage() {
-  return (
-    <AppProvider>
-      <SubmitProofContent />
-    </AppProvider>
-  );
+  return <SubmitProofContent />;
 }

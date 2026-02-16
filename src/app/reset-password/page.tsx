@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -102,9 +102,5 @@ function ResetPasswordContent() {
 }
 
 export default function ResetPasswordPage() {
-  return (
-    <AppProvider>
-      <ResetPasswordContent />
-    </AppProvider>
-  );
+  return <ResetPasswordContent />;
 }

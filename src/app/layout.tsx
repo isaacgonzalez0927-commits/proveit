@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { AppProvider } from "@/context/AppContext";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -54,7 +55,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col min-h-screen">
-          {children}
+          <AppProvider>{children}</AppProvider>
         </div>
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { PLANS, type PlanId } from "@/types";
 
 type Slide = 0 | 1 | 2; // 0 = welcome, 1 = login, 2 = plan
@@ -98,15 +98,15 @@ function LandingContent() {
         setLoading(false);
       }
     } else {
-      const now = new Date().toISOString();
-      setUser({
-        id: user?.id ?? `user-${Date.now()}`,
-        email: trimmedEmail,
-        plan: user?.plan ?? "free",
-        createdAt: user?.createdAt ?? now,
-      });
-      setLoginError("");
-      setSlide(2);
+    const now = new Date().toISOString();
+    setUser({
+      id: user?.id ?? `user-${Date.now()}`,
+      email: trimmedEmail,
+      plan: user?.plan ?? "free",
+      createdAt: user?.createdAt ?? now,
+    });
+    setLoginError("");
+    setSlide(2);
     }
   };
 
@@ -230,7 +230,7 @@ function LandingContent() {
                     <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">3</span>
                     Take a photo before midnight to keep your streak.
                   </li>
-                </ol>
+              </ol>
               </div>
             </div>
             <div
@@ -281,27 +281,27 @@ function LandingContent() {
                     </div>
                   )}
                   <div className="space-y-[clamp(0.75rem,2.5vh,1.25rem)]">
-                    <div>
+                <div>
                       <label className="text-[clamp(0.8125rem,2.5vmin,1rem)] font-medium text-slate-700 dark:text-slate-300">Email</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                         className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-900 placeholder-slate-400 transition focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                        placeholder="you@example.com"
-                        required
-                      />
-                    </div>
-                    <div>
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+                <div>
                       <label className="text-[clamp(0.8125rem,2.5vmin,1rem)] font-medium text-slate-700 dark:text-slate-300">Password</label>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                         className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-900 placeholder-slate-400 transition focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                        placeholder="At least 6 characters"
-                        required
-                      />
+                    placeholder="At least 6 characters"
+                    required
+                  />
                       {useSupabase && authMode === "signin" && (
                         <button
                           type="button"
@@ -312,20 +312,20 @@ function LandingContent() {
                           Forgot password?
                         </button>
                       )}
-                    </div>
+                </div>
                     {resetSent && (
                       <p className="text-sm text-prove-600 dark:text-prove-400" role="status">Check your email for the reset link.</p>
                     )}
-                    {loginError && (
+                {loginError && (
                       <p className="text-[clamp(0.8125rem,2vmin,0.9375rem)] text-red-500" role="alert">{loginError}</p>
-                    )}
-                    <button
-                      type="submit"
+                )}
+                <button
+                  type="submit"
                       disabled={loading}
                       className="mt-2 w-full rounded-xl bg-prove-600 py-[clamp(0.625rem,2.5vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 disabled:opacity-70 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
-                    >
+                >
                       {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
-                    </button>
+                </button>
                     {useSupabase && (
                       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
                         {authMode === "signin" ? (
@@ -415,9 +415,5 @@ function LandingContent() {
 }
 
 export default function HomePage() {
-  return (
-    <AppProvider>
-      <LandingContent />
-    </AppProvider>
-  );
+  return <LandingContent />;
 }

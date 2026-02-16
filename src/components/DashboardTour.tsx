@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
-type TourStep = 0 | 1 | 2;
+type TourStep = 0 | 1 | 2 | 3;
 
 const START_KEY = "proveit_start_tour";
 const DONE_KEY = "proveit_tour_done";
@@ -34,7 +33,7 @@ export function DashboardTour() {
   };
 
   const next = () => {
-    setStep((prev) => (prev < 2 ? ((prev + 1) as TourStep) : prev));
+    setStep((prev) => (prev < 3 ? ((prev + 1) as TourStep) : prev));
   };
 
   const prev = () => {
@@ -49,21 +48,36 @@ export function DashboardTour() {
         {step === 0 && (
           <>
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 1 of 3
+              Step 1 of 4
             </p>
+            <p className="mt-2 text-4xl" role="img" aria-label="Buddy egg">🥚</p>
             <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
-              This is your dashboard
+              Meet your accountability buddy
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              See your current streak, today&apos;s goals, and what you&apos;ve recently proved with
-              photos.
+              Your buddy grows with your streak! Complete goals to hatch and evolve them from an egg
+              into a champion. They&apos;ll cheer you on every step of the way.
             </p>
           </>
         )}
         {step === 1 && (
           <>
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 2 of 3
+              Step 2 of 4
+            </p>
+            <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
+              This is your dashboard
+            </h2>
+            <p className="mt-2 text-slate-600 dark:text-slate-400">
+              See your buddy, current streak, today&apos;s goals, and what you&apos;ve recently proved
+              with photos.
+            </p>
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              Step 3 of 4
             </p>
             <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
               Add and manage goals
@@ -74,17 +88,17 @@ export function DashboardTour() {
             </p>
           </>
         )}
-        {step === 2 && (
+        {step === 3 && (
           <>
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 3 of 3
+              Step 4 of 4
             </p>
             <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
               Prove it with photos
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              When you complete a goal, tap <span className="font-semibold">Submit proof</span> to
-              take or upload a photo and let AI verify it.
+              When you complete a goal, tap <span className="font-semibold">Mark done</span> or{" "}
+              <span className="font-semibold">Submit proof</span> to take a photo and let AI verify it.
             </p>
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
               You can always upgrade or change your plan from the Pricing tab.
@@ -101,7 +115,7 @@ export function DashboardTour() {
             Skip
           </button>
           <div className="flex items-center gap-1.5">
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <button
                 key={i}
                 type="button"
@@ -123,7 +137,7 @@ export function DashboardTour() {
                 Back
               </button>
             )}
-            {step < 2 ? (
+            {step < 3 ? (
               <button
                 type="button"
                 onClick={next}

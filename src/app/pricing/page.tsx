@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Zap, Crown } from "lucide-react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { PLANS, type PlanId } from "@/types";
 
@@ -169,9 +169,5 @@ function PricingCard({
 }
 
 export default function PricingPage() {
-  return (
-    <AppProvider>
-      <PricingContent />
-    </AppProvider>
-  );
+  return <PricingContent />;
 }

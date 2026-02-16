@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Camera, Calendar, Sun } from "lucide-react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { Plus, Trash2, CheckCircle2, Calendar, Sun } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { isGoalDue, getNextDueLabel } from "@/lib/goalDue";
 import type { GoalFrequency } from "@/types";
 
 function GoalsContent() {
-  const { user, goals, addGoal, removeGoal, canAddGoal } = useApp();
+  const { user, goals, addGoal, removeGoal, canAddGoal, markGoalDone } = useApp();
+  const [markingId, setMarkingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -241,13 +242,23 @@ function GoalsContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   {due ? (
-                    <Link
-                      href={`/goals/submit?goalId=${goal.id}`}
-                      className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                    <button
+                      onClick={() => {
+                        setMarkingId(goal.id);
+                        markGoalDone(goal.id).finally(() => setMarkingId(null));
+                      }}
+                      disabled={!!markingId}
+                      className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
                     >
-                      <Camera className="h-4 w-4" />
-                      Submit proof
-                    </Link>
+                      {markingId === goal.id ? (
+                        <>Marking…</>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          Mark done
+                        </>
+                      )}
+                    </button>
                   ) : (
                     <span className="text-sm text-slate-400 dark:text-slate-500">
                       {dueLabel}
@@ -321,9 +332,5 @@ function GoalsContent() {
 }
 
 export default function GoalsPage() {
-  return (
-    <AppProvider>
-      <GoalsContent />
-    </AppProvider>
-  );
+  return <GoalsContent />;
 }

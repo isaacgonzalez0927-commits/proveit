@@ -10,7 +10,7 @@ import {
   Lock,
   Flame,
 } from "lucide-react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { format, parseISO, isThisWeek } from "date-fns";
@@ -195,9 +195,5 @@ function HistoryContent() {
 }
 
 export default function GoalHistoryPage() {
-  return (
-    <AppProvider>
-      <HistoryContent />
-    </AppProvider>
-  );
+  return <HistoryContent />;
 }
