@@ -38,8 +38,8 @@ const ENCOURAGEMENT = {
   ],
 } as const;
 
-function getStage(streak: number) {
-  let stage = BUDDY_STAGES[0];
+function getStage(streak: number): (typeof BUDDY_STAGES)[number] {
+  let stage: (typeof BUDDY_STAGES)[number] = BUDDY_STAGES[0];
   for (const s of BUDDY_STAGES) {
     if (streak >= s.minStreak) stage = s;
   }
