@@ -17,6 +17,7 @@ export const BUDDY_ANIMALS: BuddyAnimal[] = [
 ];
 
 const STORAGE_KEY = "proveit_buddy_animal";
+const LOCKED_KEY = "proveit_buddy_animal_locked";
 
 export function getStoredBuddyAnimal(): BuddyAnimalId {
   if (typeof window === "undefined") return "cat";
@@ -32,4 +33,18 @@ export function getStoredBuddyAnimal(): BuddyAnimalId {
 export function saveBuddyAnimal(animalId: BuddyAnimalId) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, animalId);
+}
+
+export function isBuddyAnimalLocked(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(LOCKED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function lockBuddyAnimal() {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LOCKED_KEY, "true");
 }

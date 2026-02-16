@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 import { BUDDY_ITEMS, type ItemSlot } from "@/lib/buddyItems";
 import type { EquippedItems } from "@/lib/buddyItems";
-import { BUDDY_ANIMALS, type BuddyAnimalId } from "@/lib/buddyAnimals";
+import { BUDDY_ANIMALS, type BuddyAnimalId, isBuddyAnimalLocked, lockBuddyAnimal } from "@/lib/buddyAnimals";
 import { BuddyIllustration } from "./BuddyIllustration";
 import { HatIllustration, AccessoryIllustration } from "./BuddyItemIllustrations";
 
@@ -30,6 +30,12 @@ export function BuddyCustomizer({
   onClose,
 }: BuddyCustomizerProps) {
   const earnedSet = new Set(earnedItems);
+  const animalLocked = isBuddyAnimalLocked();
+
+  const handleSelectAnimal = (id: BuddyAnimalId) => {
+    onSelectAnimal(id);
+    lockBuddyAnimal();
+  };
 
   return (
     <div
