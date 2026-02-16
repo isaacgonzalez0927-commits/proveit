@@ -5,6 +5,7 @@ import { Palette } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import { getItemById } from "@/lib/buddyItems";
+import { getStoredBuddyAnimal, saveBuddyAnimal } from "@/lib/buddyAnimals";
 import { BuddyCustomizer } from "./BuddyCustomizer";
 import { BuddyIllustration } from "./BuddyIllustration";
 
@@ -12,10 +13,10 @@ export type BuddyStageKey = "baby" | "toddler" | "growing" | "strong" | "champio
 
 const BUDDY_STAGES: { minStreak: number; stage: BuddyStageKey; name: string }[] = [
   { minStreak: 0, stage: "baby", name: "Baby Buddy" },
-  { minStreak: 1, stage: "toddler", name: "Buddy Toddler" },
-  { minStreak: 3, stage: "growing", name: "Buddy Growing" },
-  { minStreak: 7, stage: "strong", name: "Buddy Strong" },
-  { minStreak: 14, stage: "champion", name: "Champion Buddy" },
+  { minStreak: 14, stage: "toddler", name: "Buddy Toddler" },
+  { minStreak: 30, stage: "growing", name: "Buddy Growing" },
+  { minStreak: 60, stage: "strong", name: "Buddy Strong" },
+  { minStreak: 100, stage: "champion", name: "Champion Buddy" },
 ];
 
 const ENCOURAGEMENT = {
@@ -90,6 +91,7 @@ export function AccountabilityBuddy({
 }: AccountabilityBuddyProps) {
   const { earnedItems, equippedItems, setEquipped } = useApp();
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [animal, setAnimal] = useState(() => getStoredBuddyAnimal());
   const stage = getStage(maxStreak);
   const message = getMessage(maxStreak, goalsDoneToday, totalDueToday);
   const hatItem = equippedItems.hat ? getItemById(equippedItems.hat) : null;
@@ -104,10 +106,11 @@ export function AccountabilityBuddy({
           aria-label={stage.name}
         >
           <BuddyIllustration
+            animal={animal}
             size={large ? "large" : "default"}
             stage={stage.stage}
-            hatEmoji={hatItem?.emoji}
-            accessoryEmoji={accessoryItem?.emoji}
+            hatId={hatItem?.id ?? null}
+            accessoryId={accessoryItem?.id ?? null}
           />
         </div>
         <div className="min-w-0 flex-1">
@@ -147,6 +150,11 @@ export function AccountabilityBuddy({
           earnedItems={earnedItems}
           equippedItems={equippedItems}
           onSetEquipped={setEquipped}
+          selectedAnimal={animal}
+          onSelectAnimal={(id) => {
+            saveBuddyAnimal(id);
+            setAnimal(id);
+          }}
           onClose={() => setShowCustomizer(false)}
         />
       )}

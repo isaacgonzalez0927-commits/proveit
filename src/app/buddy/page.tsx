@@ -71,7 +71,7 @@ export default function BuddyPage() {
             Your Buddy
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Complete goals to help your buddy grow from baby to champion!
+            Choose your animal buddy and complete goals to help them grow!
           </p>
         </div>
 
@@ -86,10 +86,10 @@ export default function BuddyPage() {
           <h2 className="font-semibold text-slate-900 dark:text-white">Growth stages</h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
             <li>• 0 days: Baby Buddy — just getting started</li>
-            <li>• 1 day: Buddy Toddler — first step!</li>
-            <li>• 3 days: Buddy Growing — building momentum</li>
-            <li>• 7 days: Buddy Strong — one week strong</li>
-            <li>• 14 days: Champion Buddy — you&apos;re unstoppable</li>
+            <li>• 14 days: Buddy Toddler — two weeks strong!</li>
+            <li>• 30 days: Buddy Growing — building momentum</li>
+            <li>• 60 days: Buddy Strong — two months of dedication</li>
+            <li>• 100 days: Champion Buddy — you&apos;re unstoppable</li>
           </ul>
         </div>
 

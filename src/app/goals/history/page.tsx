@@ -57,14 +57,16 @@ function HistoryContent() {
     return streak;
   }
 
-  // Group verified subs by goal for history view
+  // Group verified subs by goal for history view (with submission for each date to get image)
   const byGoal = goals.map((goal) => {
     const goalSubs = verifiedSubs.filter((s) => s.goalId === goal.id);
     const completedDates = Array.from(new Set(goalSubs.map((s) => s.date))).sort().reverse();
+    const subsByDate = new Map(goalSubs.map((s) => [s.date, s]));
     return {
       goal,
       submissions: goalSubs,
       completedDates,
+      subsByDate,
       streak: getStreak(goal.id),
     };
   }).filter((g) => g.completedDates.length > 0);
@@ -119,7 +121,7 @@ function HistoryContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                {byGoal.map(({ goal, completedDates, streak }) => (
+                {byGoal.map(({ goal, completedDates, subsByDate, streak }) => (
                   <section
                     key={goal.id}
                     className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
@@ -153,12 +155,26 @@ function HistoryContent() {
                         const d = parseISO(dateStr);
                         const label = format(d, "EEE, MMM d, yyyy");
                         const isThisWeekDate = isThisWeek(d);
+                        const sub = subsByDate.get(dateStr);
+                        const hasImage = sub?.imageDataUrl && sub.imageDataUrl.length > 10;
                         return (
                           <li
                             key={dateStr}
                             className="flex items-center gap-3 rounded-lg bg-slate-50 py-2 px-3 dark:bg-slate-800/50"
                           >
-                            <CheckCircle2 className="h-4 w-4 shrink-0 text-prove-500" />
+                            {hasImage ? (
+                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-200 dark:bg-slate-700">
+                                <img
+                                  src={sub!.imageDataUrl}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-prove-100 dark:bg-prove-900/50">
+                                <CheckCircle2 className="h-5 w-5 text-prove-500" />
+                              </div>
+                            )}
                             <span className="text-sm text-slate-700 dark:text-slate-300">
                               {label}
                               {isThisWeekDate && (

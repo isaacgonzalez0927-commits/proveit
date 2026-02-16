@@ -55,8 +55,8 @@ export function DashboardTour() {
               Meet your accountability buddy
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Your buddy grows with your streak! Complete goals to evolve them from baby into a champion.
-              Visit the Buddy tab to see them grow. They&apos;ll cheer you on every step of the way.
+              Choose your animal buddy (cat, dog, rabbit, or fox) and complete goals to help them grow from baby to champion.
+              Visit the Buddy tab to customize. They&apos;ll cheer you on every step of the way.
             </p>
           </>
         )}

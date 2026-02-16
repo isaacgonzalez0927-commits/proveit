@@ -26,14 +26,14 @@ export const BUDDY_ITEMS: BuddyItem[] = [
     name: "Glasses",
     emoji: "👓",
     slot: "accessory",
-    unlock: { type: "streak", value: 3 },
+    unlock: { type: "streak", value: 7 },
   },
   {
     id: "crown",
     name: "Crown",
     emoji: "👑",
     slot: "hat",
-    unlock: { type: "streak", value: 7 },
+    unlock: { type: "streak", value: 14 },
   },
   {
     id: "bow",
@@ -47,14 +47,14 @@ export const BUDDY_ITEMS: BuddyItem[] = [
     name: "Graduation cap",
     emoji: "🎓",
     slot: "hat",
-    unlock: { type: "streak", value: 14 },
+    unlock: { type: "streak", value: 30 },
   },
   {
     id: "tophat",
     name: "Top hat",
     emoji: "🎩",
     slot: "hat",
-    unlock: { type: "streak", value: 30 },
+    unlock: { type: "streak", value: 100 },
   },
   {
     id: "helmet",

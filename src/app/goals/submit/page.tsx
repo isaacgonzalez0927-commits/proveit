@@ -239,7 +239,7 @@ function SubmitProofContent() {
       const passed = aiPassed && withinWindow;
       const msg = withinWindow
         ? data.feedback ?? "Verification completed."
-        : "Submissions closed. You have 1 hour after the due time to submit.";
+        : "Submissions are closed. Submit on your due day.";
 
       const sub = await addSubmission({
         goalId: goal.id,
@@ -348,7 +348,7 @@ function SubmitProofContent() {
               {goal.title}
             </h1>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              {msg ?? "Submissions are closed. You have 1 hour after the due time to submit."}
+              {msg ?? "Submissions are closed. Submit on your due day."}
             </p>
             <Link
               href="/dashboard"
@@ -378,7 +378,7 @@ function SubmitProofContent() {
           Submit proof: {goal.title}
         </h1>
         <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Take a photo or upload one showing you doing this goal. AI will verify it. You have 1 hour after the due time to submit.
+          Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time on your due day.
         </p>
 
         {step === "capture" && (

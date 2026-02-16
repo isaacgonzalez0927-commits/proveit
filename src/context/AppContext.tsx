@@ -355,7 +355,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (goalId: string) => {
       const g = goals.find((x) => x.id === goalId);
       if (!g) return;
-      if (!isWithinSubmissionWindow(g)) return; // Only allow within 1 hour after due
+      if (!isWithinSubmissionWindow(g)) return; // Only allow on due day
       const dateStr = format(new Date(), "yyyy-MM-dd");
       const existing = submissions.find((s) => s.goalId === goalId && s.date === dateStr);
       if (existing?.status === "verified") return;
@@ -424,6 +424,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem(STORAGE_KEYS.submissions);
         localStorage.removeItem("proveit_buddy_earned");
         localStorage.removeItem("proveit_buddy_equipped");
+        localStorage.removeItem("proveit_buddy_animal");
       } catch {
         // ignore
       }
@@ -446,6 +447,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem(STORAGE_KEYS.submissions);
         localStorage.removeItem("proveit_buddy_earned");
         localStorage.removeItem("proveit_buddy_equipped");
+        localStorage.removeItem("proveit_buddy_animal");
       } catch {
         // ignore
       }
