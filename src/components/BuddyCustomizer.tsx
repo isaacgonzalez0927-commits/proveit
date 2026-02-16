@@ -73,7 +73,7 @@ export function BuddyCustomizer({
                   key={a.id}
                   type="button"
                   onClick={() => onSelectAnimal(a.id)}
-                  className={`flex h-14 w-14 items-center justify-center rounded-xl border-2 transition overflow-hidden ${
+                  className={`flex h-20 w-20 min-[400px]:h-24 min-[400px]:w-24 items-center justify-center rounded-xl border-2 transition overflow-hidden ${
                     selectedAnimal === a.id
                       ? "border-prove-500 bg-prove-50 dark:border-prove-400 dark:bg-prove-950/50"
                       : "border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"

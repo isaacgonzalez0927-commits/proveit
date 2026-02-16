@@ -101,7 +101,7 @@ export function AccountabilityBuddy({
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-prove-50 to-amber-50/50 p-5 dark:border-slate-700 dark:from-prove-950/30 dark:to-amber-950/20">
       <div className="flex items-center gap-4">
         <div
-          className={`relative flex shrink-0 items-center justify-center rounded-2xl bg-white/80 shadow-sm dark:bg-slate-800/80 ${large ? "h-40 w-40" : "h-24 w-24"}`}
+          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/80 shadow-sm dark:bg-slate-800/80 ${large ? "h-72 w-72 sm:h-80 sm:w-80" : "h-40 w-40 sm:h-48 sm:w-48"}`}
           role="img"
           aria-label={stage.name}
         >

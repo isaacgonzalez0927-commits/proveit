@@ -26,20 +26,20 @@ export function BuddyIllustration({
   accessoryId,
 }: BuddyIllustrationProps) {
   const stageSizes = {
-    baby: size === "large" ? 80 : size === "small" ? 36 : 48,
-    toddler: size === "large" ? 100 : size === "small" ? 44 : 60,
-    growing: size === "large" ? 120 : size === "small" ? 52 : 72,
-    strong: size === "large" ? 140 : size === "small" ? 60 : 88,
-    champion: size === "large" ? 160 : size === "small" ? 68 : 100,
+    baby: size === "large" ? 120 : size === "small" ? 56 : 80,
+    toddler: size === "large" ? 150 : size === "small" ? 68 : 100,
+    growing: size === "large" ? 180 : size === "small" ? 80 : 120,
+    strong: size === "large" ? 210 : size === "small" ? 92 : 140,
+    champion: size === "large" ? 240 : size === "small" ? 104 : 160,
   };
   const baseSize = stageSizes[stage];
 
   return (
-    <div className={`relative inline-flex items-center justify-center ${className}`}>
+    <div className={`relative inline-flex items-center justify-center max-w-full max-h-full ${className}`}>
       <svg
         viewBox="0 0 120 140"
-        className="overflow-visible"
-        style={{ width: baseSize, height: baseSize * 1.2 }}
+        className="overflow-visible shrink-0"
+        style={{ width: baseSize, height: baseSize * 1.15, maxWidth: "100%", maxHeight: "100%" }}
         aria-hidden
       >
         {/* Champion cape/glow behind buddy */}
@@ -65,14 +65,14 @@ export function BuddyIllustration({
         </g>
         {hatId && (
           <g transform={`translate(60, ${stage === "baby" ? 18 : stage === "champion" ? -8 : 8})`}>
-            <HatIllustration id={hatId as "cap" | "crown" | "grad" | "tophat" | "helmet"} size={baseSize * 0.45} />
+            <HatIllustration id={hatId as "cap" | "crown" | "grad" | "tophat" | "helmet"} size={baseSize * 0.5} />
           </g>
         )}
       </svg>
       {accessoryId && (
         <div
           className="absolute right-0 top-1/2 -translate-y-1/2"
-          style={{ width: baseSize * 0.4, height: baseSize * 0.4 }}
+          style={{ width: baseSize * 0.45, height: baseSize * 0.45 }}
         >
           <svg viewBox="0 0 24 24" className="w-full h-full">
             <AccessoryIllustration id={accessoryId as "glasses" | "bow" | "star"} size={24} />
@@ -91,7 +91,7 @@ const EYE = "#1a1a1a";
 const HIGHLIGHT = "#fff";
 
 function CatBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.5 : stage === "toddler" ? 0.65 : stage === "growing" ? 0.8 : stage === "strong" ? 0.95 : 1.1;
+  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
   return (
     <g transform={`scale(${scale})`}>
       <defs>
@@ -120,7 +120,7 @@ function CatBuddy({ stage }: { stage: string }) {
 }
 
 function DogBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.5 : stage === "toddler" ? 0.65 : stage === "growing" ? 0.8 : stage === "strong" ? 0.95 : 1.1;
+  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
   const fur = "#c4a574";
   const furLight = "#e5c890";
   return (
@@ -150,7 +150,7 @@ function DogBuddy({ stage }: { stage: string }) {
 }
 
 function RabbitBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.5 : stage === "toddler" ? 0.65 : stage === "growing" ? 0.8 : stage === "strong" ? 0.95 : 1.1;
+  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
   const fur = "#d4c4b0";
   const furLight = "#ebe0d0";
   return (
@@ -181,7 +181,7 @@ function RabbitBuddy({ stage }: { stage: string }) {
 }
 
 function FoxBuddy({ stage }: { stage: string }) {
-  const scale = stage === "baby" ? 0.5 : stage === "toddler" ? 0.65 : stage === "growing" ? 0.8 : stage === "strong" ? 0.95 : 1.1;
+  const scale = stage === "baby" ? 0.7 : stage === "toddler" ? 0.82 : stage === "growing" ? 0.95 : stage === "strong" ? 1.08 : 1.25;
   const fur = "#e07c3c";
   const furLight = "#f0a050";
   const white = "#fef7ed";
