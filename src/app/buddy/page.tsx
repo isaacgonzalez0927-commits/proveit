@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { Plus, Pencil, Save, Trash2, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { getSubmissionWindowMessage, isGoalDue, isWithinSubmissionWindow } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
@@ -13,17 +14,32 @@ import {
   saveDeveloperModeSettings,
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
-import { GOAL_PLANT_VARIANTS } from "@/lib/goalPlants";
+import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { Header } from "@/components/Header";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
+import { getPlan } from "@/lib/store";
+import type { Goal, GoalFrequency, GracePeriod } from "@/types";
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
+  { value: "1h", label: "1 hour after due" },
+  { value: "3h", label: "3 hours after due" },
+  { value: "6h", label: "6 hours after due" },
+  { value: "12h", label: "12 hours after due" },
+  { value: "eod", label: "Until end of day" },
+];
 
 export default function BuddyPage() {
   const {
     user,
     goals,
+    addGoal,
+    updateGoal,
+    removeGoal,
+    canAddGoal,
     getSubmissionsForGoal,
     getGoalPlantVariant,
     setGoalPlantVariant,
@@ -33,6 +49,38 @@ export default function BuddyPage() {
   );
   const [goalStreakDrafts, setGoalStreakDrafts] = useState<Record<string, string>>({});
   const [developerMessage, setDeveloperMessage] = useState<string | null>(null);
+  const [goalManagerMessage, setGoalManagerMessage] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isAddingGoal, setIsAddingGoal] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newFrequency, setNewFrequency] = useState<GoalFrequency>("daily");
+  const [newDailyTime, setNewDailyTime] = useState("09:00");
+  const [newWeeklyDay, setNewWeeklyDay] = useState(0);
+  const [newWeeklyTime, setNewWeeklyTime] = useState("10:00");
+  const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>("eod");
+  const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(1);
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editDraft, setEditDraft] = useState<{
+    title: string;
+    description: string;
+    frequency: GoalFrequency;
+    dailyTime: string;
+    weeklyDay: number;
+    weeklyTime: string;
+    gracePeriod: GracePeriod;
+    plantVariant: GoalPlantVariant;
+  }>({
+    title: "",
+    description: "",
+    frequency: "daily",
+    dailyTime: "09:00",
+    weeklyDay: 0,
+    weeklyTime: "10:00",
+    gracePeriod: "eod",
+    plantVariant: 1,
+  });
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
   useEffect(() => {
@@ -128,6 +176,129 @@ export default function BuddyPage() {
     setDeveloperMessage("Cleared all goal streak overrides.");
   };
 
+  const plan = getPlan(user.plan);
+  const canCreateDaily = canAddGoal("daily");
+  const canCreateWeekly = canAddGoal("weekly");
+  const resetCreateGoalForm = () => {
+    setNewTitle("");
+    setNewDescription("");
+    setNewFrequency("daily");
+    setNewDailyTime("09:00");
+    setNewWeeklyDay(0);
+    setNewWeeklyTime("10:00");
+    setNewGracePeriod("eod");
+    setNewPlantVariant(1);
+  };
+
+  const handleCreateGoal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGoalManagerMessage(null);
+    if (!newTitle.trim()) {
+      setGoalManagerMessage("Goal title is required.");
+      return;
+    }
+    if (newFrequency === "daily" && !canCreateDaily) {
+      setGoalManagerMessage("Daily goal limit reached for your current plan.");
+      return;
+    }
+    if (newFrequency === "weekly" && !canCreateWeekly) {
+      setGoalManagerMessage("Weekly goal limit reached for your current plan.");
+      return;
+    }
+
+    setIsAddingGoal(true);
+    try {
+      const created = await addGoal({
+        title: newTitle.trim(),
+        description: newDescription.trim() || undefined,
+        frequency: newFrequency,
+        reminderTime: newFrequency === "daily" ? newDailyTime : newWeeklyTime,
+        reminderDay: newFrequency === "weekly" ? newWeeklyDay : undefined,
+        gracePeriod: newGracePeriod,
+      });
+      if (!created) {
+        setGoalManagerMessage("Could not create goal right now. Please try again.");
+        return;
+      }
+      setGoalPlantVariant(created.id, newPlantVariant);
+      setShowCreateForm(false);
+      resetCreateGoalForm();
+      setGoalManagerMessage("Goal added to your garden.");
+    } finally {
+      setIsAddingGoal(false);
+    }
+  };
+
+  const startEditingGoal = (goal: Goal) => {
+    setEditingGoalId(goal.id);
+    setEditDraft({
+      title: goal.title,
+      description: goal.description ?? "",
+      frequency: goal.frequency,
+      dailyTime: goal.frequency === "daily" ? (goal.reminderTime ?? "09:00") : "09:00",
+      weeklyDay: goal.frequency === "weekly" ? (goal.reminderDay ?? 0) : 0,
+      weeklyTime: goal.frequency === "weekly" ? (goal.reminderTime ?? "10:00") : "10:00",
+      gracePeriod: goal.gracePeriod ?? "eod",
+      plantVariant: getGoalPlantVariant(goal.id),
+    });
+    setGoalManagerMessage(null);
+  };
+
+  const cancelEditingGoal = () => {
+    setEditingGoalId(null);
+    setIsSavingEdit(false);
+  };
+
+  const saveEditingGoal = async (goal: Goal) => {
+    setGoalManagerMessage(null);
+    if (!editDraft.title.trim()) {
+      setGoalManagerMessage("Goal title is required.");
+      return;
+    }
+
+    if (editDraft.frequency !== goal.frequency) {
+      if (editDraft.frequency === "daily" && !canAddGoal("daily")) {
+        setGoalManagerMessage("Daily goal limit reached. Upgrade plan or remove a daily goal first.");
+        return;
+      }
+      if (editDraft.frequency === "weekly" && !canAddGoal("weekly")) {
+        setGoalManagerMessage("Weekly goal limit reached. Upgrade plan or remove a weekly goal first.");
+        return;
+      }
+    }
+
+    setIsSavingEdit(true);
+    try {
+      await updateGoal(goal.id, {
+        title: editDraft.title.trim(),
+        description: editDraft.description.trim() || undefined,
+        frequency: editDraft.frequency,
+        reminderTime: editDraft.frequency === "daily" ? editDraft.dailyTime : editDraft.weeklyTime,
+        reminderDay: editDraft.frequency === "weekly" ? editDraft.weeklyDay : undefined,
+        gracePeriod: editDraft.gracePeriod,
+      });
+      setGoalPlantVariant(goal.id, editDraft.plantVariant);
+      setEditingGoalId(null);
+      setGoalManagerMessage("Goal updated.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const deleteGoalFromGarden = async (goal: Goal) => {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        `Delete "${goal.title}" and all of its proof history? This can't be undone.`
+      );
+      if (!confirmed) return;
+    }
+    await removeGoal(goal.id);
+    if (editingGoalId === goal.id) {
+      cancelEditingGoal();
+    }
+    setGoalManagerMessage("Goal deleted.");
+  };
+
   const garden = goals.map((goal) => {
     const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
     const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
@@ -179,13 +350,22 @@ export default function BuddyPage() {
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             Every goal grows its own plant. Finish goals to water each one and unlock all stage-6 flowers.
           </p>
-          <div className="mt-3">
-            <Link
-              href="/goals"
-              className="inline-flex rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700"
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {plan.name} plan · {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
+            {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateForm((prev) => !prev);
+                setGoalManagerMessage(null);
+              }}
+              className="inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700"
             >
-              Add goal
-            </Link>
+              <Plus className="h-3.5 w-3.5" />
+              {showCreateForm ? "Close add goal" : "Add goal in garden"}
+            </button>
           </div>
         </div>
 
@@ -207,6 +387,154 @@ export default function BuddyPage() {
             <p className="text-[10px] text-fuchsia-700/80 dark:text-fuchsia-300/80">Stage 6 plants</p>
           </div>
         </div>
+
+        {goalManagerMessage && (
+          <p className="mb-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            {goalManagerMessage}
+          </p>
+        )}
+
+        {showCreateForm && (
+          <form
+            onSubmit={handleCreateGoal}
+            className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
+              Add goal in Garden
+            </h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              You can now create goals without leaving this page.
+            </p>
+
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Goal title"
+              className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              required
+            />
+            <textarea
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Optional description"
+              rows={2}
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+
+            <div className="mt-3 flex flex-wrap gap-3">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <input
+                  type="radio"
+                  checked={newFrequency === "daily"}
+                  onChange={() => setNewFrequency("daily")}
+                  disabled={!canCreateDaily}
+                  className="text-prove-600"
+                />
+                Daily {!canCreateDaily && "(limit reached)"}
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <input
+                  type="radio"
+                  checked={newFrequency === "weekly"}
+                  onChange={() => setNewFrequency("weekly")}
+                  disabled={!canCreateWeekly}
+                  className="text-prove-600"
+                />
+                Weekly {!canCreateWeekly && "(limit reached)"}
+              </label>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {newFrequency === "weekly" && (
+                <label className="text-xs text-slate-700 dark:text-slate-300">
+                  Day of week
+                  <select
+                    value={newWeeklyDay}
+                    onChange={(e) => setNewWeeklyDay(Number(e.target.value))}
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    {DAY_NAMES.map((day, index) => (
+                      <option key={day} value={index}>
+                        {day}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              <label className="text-xs text-slate-700 dark:text-slate-300">
+                Reminder time
+                <input
+                  type="time"
+                  value={newFrequency === "daily" ? newDailyTime : newWeeklyTime}
+                  onChange={(e) =>
+                    newFrequency === "daily"
+                      ? setNewDailyTime(e.target.value)
+                      : setNewWeeklyTime(e.target.value)
+                  }
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  required
+                />
+              </label>
+
+              <label className="text-xs text-slate-700 dark:text-slate-300">
+                Submit proof within
+                <select
+                  value={newGracePeriod}
+                  onChange={(e) => setNewGracePeriod(e.target.value as GracePeriod)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  {GRACE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Plant style</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {GOAL_PLANT_VARIANTS.map((variant) => (
+                  <button
+                    key={variant}
+                    type="button"
+                    onClick={() => setNewPlantVariant(variant)}
+                    className={`rounded-md border px-2 py-1 text-xs font-semibold ${
+                      newPlantVariant === variant
+                        ? "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200"
+                        : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                    }`}
+                  >
+                    Plant {variant}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="submit"
+                disabled={isAddingGoal}
+                className="rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 disabled:opacity-70"
+              >
+                {isAddingGoal ? "Adding..." : "Add goal"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  resetCreateGoalForm();
+                }}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
 
         <section className="mb-6">
           <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
@@ -259,12 +587,13 @@ export default function BuddyPage() {
             <p className="text-slate-600 dark:text-slate-400">
               No plants yet. Create your first goal and pick Plant 1, 2, or 3 to start your garden.
             </p>
-            <Link
-              href="/goals"
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(true)}
               className="mt-3 inline-flex rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
             >
               Add your first goal
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -280,9 +609,35 @@ export default function BuddyPage() {
                       Plant {entry.plantVariant} · {entry.goal.frequency === "daily" ? "Daily" : "Weekly"}
                     </p>
                   </div>
-                  <span className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-                    {entry.stage.name}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                      {entry.stage.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        editingGoalId === entry.goal.id
+                          ? cancelEditingGoal()
+                          : startEditingGoal(entry.goal)
+                      }
+                      className="rounded-md border border-slate-300 bg-white/80 p-1 text-slate-600 hover:bg-white hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                      aria-label={editingGoalId === entry.goal.id ? "Close edit" : "Edit goal"}
+                    >
+                      {editingGoalId === entry.goal.id ? (
+                        <X className="h-3.5 w-3.5" />
+                      ) : (
+                        <Pencil className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteGoalFromGarden(entry.goal)}
+                      className="rounded-md border border-red-300 bg-white/80 p-1 text-red-600 hover:bg-red-50 dark:border-red-700 dark:bg-slate-900/60 dark:text-red-300 dark:hover:bg-red-900/30"
+                      aria-label="Delete goal"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-3 flex items-center justify-center rounded-xl bg-white/70 py-3 dark:bg-slate-900/50">
@@ -346,6 +701,170 @@ export default function BuddyPage() {
                     })}
                   </div>
                 </div>
+
+                {editingGoalId === entry.goal.id && (
+                  <div className="mt-3 rounded-lg border border-slate-300 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                      Edit goal
+                    </p>
+
+                    <input
+                      type="text"
+                      value={editDraft.title}
+                      onChange={(e) => setEditDraft((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="Goal title"
+                      className="mt-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      required
+                    />
+                    <textarea
+                      value={editDraft.description}
+                      onChange={(e) => setEditDraft((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder="Description"
+                      rows={2}
+                      className="mt-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                        <input
+                          type="radio"
+                          checked={editDraft.frequency === "daily"}
+                          onChange={() =>
+                            setEditDraft((prev) => ({
+                              ...prev,
+                              frequency: "daily",
+                              dailyTime: prev.dailyTime || "09:00",
+                            }))
+                          }
+                          className="text-prove-600"
+                        />
+                        Daily
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                        <input
+                          type="radio"
+                          checked={editDraft.frequency === "weekly"}
+                          onChange={() =>
+                            setEditDraft((prev) => ({
+                              ...prev,
+                              frequency: "weekly",
+                              weeklyDay: Number.isFinite(prev.weeklyDay) ? prev.weeklyDay : 0,
+                              weeklyTime: prev.weeklyTime || "10:00",
+                            }))
+                          }
+                          className="text-prove-600"
+                        />
+                        Weekly
+                      </label>
+                    </div>
+
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {editDraft.frequency === "weekly" && (
+                        <label className="text-[11px] text-slate-700 dark:text-slate-300">
+                          Day
+                          <select
+                            value={editDraft.weeklyDay}
+                            onChange={(e) =>
+                              setEditDraft((prev) => ({
+                                ...prev,
+                                weeklyDay: Number(e.target.value),
+                              }))
+                            }
+                            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                          >
+                            {DAY_NAMES.map((day, index) => (
+                              <option key={day} value={index}>
+                                {day}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      <label className="text-[11px] text-slate-700 dark:text-slate-300">
+                        Time
+                        <input
+                          type="time"
+                          value={editDraft.frequency === "daily" ? editDraft.dailyTime : editDraft.weeklyTime}
+                          onChange={(e) =>
+                            setEditDraft((prev) =>
+                              prev.frequency === "daily"
+                                ? { ...prev, dailyTime: e.target.value }
+                                : { ...prev, weeklyTime: e.target.value }
+                            )
+                          }
+                          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        />
+                      </label>
+
+                      <label className="text-[11px] text-slate-700 dark:text-slate-300">
+                        Grace period
+                        <select
+                          value={editDraft.gracePeriod}
+                          onChange={(e) =>
+                            setEditDraft((prev) => ({
+                              ...prev,
+                              gracePeriod: e.target.value as GracePeriod,
+                            }))
+                          }
+                          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                          {GRACE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="mt-2">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                        Plant style (edit)
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {GOAL_PLANT_VARIANTS.map((variant) => (
+                          <button
+                            key={variant}
+                            type="button"
+                            onClick={() =>
+                              setEditDraft((prev) => ({
+                                ...prev,
+                                plantVariant: variant,
+                              }))
+                            }
+                            className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${
+                              editDraft.plantVariant === variant
+                                ? "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200"
+                                : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            }`}
+                          >
+                            Plant {variant}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => saveEditingGoal(entry.goal)}
+                        disabled={isSavingEdit}
+                        className="inline-flex items-center gap-1 rounded-md bg-prove-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-prove-700 disabled:opacity-70"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                        {isSavingEdit ? "Saving..." : "Save changes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEditingGoal}
+                        className="rounded-md border border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {isCreatorAccount && developerSettings.enabled && (
                   <div className="mt-3 rounded-lg border border-amber-300/70 bg-amber-50/90 p-2 dark:border-amber-700/60 dark:bg-amber-950/30">
