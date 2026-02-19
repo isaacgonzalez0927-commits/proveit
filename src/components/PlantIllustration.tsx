@@ -8,7 +8,7 @@ interface PlantIllustrationProps {
   stage: PlantStageKey;
   /** 0..1 based on how many due goals are done today */
   wateringLevel: number;
-  /** Number of goals completed today (drives droplet count) */
+  /** Number of goals completed today */
   wateredGoals: number;
   className?: string;
   size?: "default" | "large" | "small";
@@ -123,7 +123,6 @@ export function PlantIllustration({
   }, [photoCandidates]);
 
   if (!photoFailed && photoSrc) {
-    const waterDropCount = Math.min(6, Math.max(0, wateredGoals));
     return (
       <div
         className={`relative inline-flex items-center justify-center ${className}`}
@@ -148,24 +147,6 @@ export function PlantIllustration({
           loading="eager"
           draggable={false}
         />
-        <div className="pointer-events-none absolute left-2 top-2 flex flex-wrap gap-1">
-          {[0, 1, 2, 3, 4, 5]
-            .slice(0, Math.max(waterDropCount, safeWater > 0 ? 1 : 0))
-            .map((n) => (
-              <svg
-                key={n}
-                viewBox="0 0 10 14"
-                className="h-3 w-2.5"
-                style={{ opacity: 0.25 + safeWater * 0.55 }}
-                aria-hidden
-              >
-                <path
-                  d="M5 0 C3.2 2.7 1 5 1 8 A4 4 0 0 0 9 8 C9 5 6.8 2.7 5 0 Z"
-                  fill="#38bdf8"
-                />
-              </svg>
-            ))}
-        </div>
       </div>
     );
   }
@@ -184,14 +165,13 @@ export function PlantIllustration({
 function SvgPlantIllustration({
   stage,
   wateringLevel,
-  wateredGoals,
+  wateredGoals: _wateredGoals,
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const config = STAGE_CONFIG[stage];
   const id = useId();
-  const waterDropCount = Math.min(6, Math.max(0, wateredGoals));
   const { stageHeight, stageWidth } = getStageDimensions(size);
   const stemBottomY = 114;
   const stemTopY = stemBottomY - config.stemHeight;
@@ -232,18 +212,6 @@ function SvgPlantIllustration({
           fill={`url(#sunGlow-${id})`}
           opacity={0.2 + safeWater * 0.5}
         />
-
-        <g opacity={safeWater > 0 ? 0.4 + safeWater * 0.5 : 0.15}>
-          {[0, 1, 2, 3, 4, 5].slice(0, Math.max(waterDropCount, safeWater > 0 ? 1 : 0)).map((n) => {
-            const x = 20 + n * 13;
-            const y = 22 + (n % 2) * 6;
-            return (
-              <g key={n} transform={`translate(${x} ${y})`}>
-                <path d="M 0 -5 C -3 -1 -2 3 0 5 C 2 3 3 -1 0 -5 Z" fill="#38bdf8" />
-              </g>
-            );
-          })}
-        </g>
 
         <path
           d={`M 70 ${stemBottomY - 4} C ${70 - config.stemCurve} ${stemBottomY - 28}, ${70 + config.stemCurve} ${stemTopY + 14}, 70 ${stemTopY}`}
