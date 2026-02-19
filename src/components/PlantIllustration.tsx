@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 export type PlantStageKey = "seedling" | "sprout" | "leafy" | "blooming" | "thriving";
 
@@ -14,14 +14,60 @@ interface PlantIllustrationProps {
   size?: "default" | "large" | "small";
 }
 
-const PHOTO_STAGE_SOURCES: Record<PlantStageKey, string> = {
-  seedling: "/plants/plant-stage-1.png",
-  sprout: "/plants/plant-stage-2.png",
-  leafy: "/plants/plant-stage-3.png",
-  blooming: "/plants/plant-stage-4.png",
-  thriving: "/plants/plant-stage-5.png",
+const STAGE_TO_NUMBER: Record<PlantStageKey, number> = {
+  seedling: 1,
+  sprout: 2,
+  leafy: 3,
+  blooming: 4,
+  thriving: 5,
 };
-const PHOTO_FLOWERING_SOURCE = "/plants/plant-stage-6.png";
+
+const STAGE_ALIASES: Record<PlantStageKey, string[]> = {
+  seedling: ["seedling", "sprout-1", "baby-plant"],
+  sprout: ["sprout", "plant-2", "small-plant"],
+  leafy: ["leafy", "plant-3", "mid-plant"],
+  blooming: ["blooming", "plant-4", "tall-plant"],
+  thriving: ["thriving", "plant-5", "full-plant"],
+};
+
+const FLOWERING_ALIASES = ["flowering", "flowered", "bloom-final", "plant-6", "final-plant"];
+const IMAGE_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
+
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function buildPhotoCandidates(stage: PlantStageKey, useFlowering: boolean): string[] {
+  const stageNumber = useFlowering ? 6 : STAGE_TO_NUMBER[stage];
+  const baseNames = useFlowering
+    ? [
+        `plant-stage-${stageNumber}`,
+        `stage-${stageNumber}`,
+        `stage${stageNumber}`,
+        `plant-${stageNumber}`,
+        `plant${stageNumber}`,
+        `${stageNumber}`,
+        ...FLOWERING_ALIASES,
+      ]
+    : [
+        `plant-stage-${stageNumber}`,
+        `stage-${stageNumber}`,
+        `stage${stageNumber}`,
+        `plant-${stageNumber}`,
+        `plant${stageNumber}`,
+        `${stageNumber}`,
+        ...STAGE_ALIASES[stage],
+      ];
+
+  const names = unique(baseNames);
+  const candidates: string[] = [];
+  for (const name of names) {
+    for (const ext of IMAGE_EXTENSIONS) {
+      candidates.push(`/plants/${name}.${ext}`);
+    }
+  }
+  return candidates;
+}
 
 const STAGE_CONFIG: Record<
   PlantStageKey,
@@ -62,17 +108,21 @@ export function PlantIllustration({
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const { stageHeight, stageWidth } = getStageDimensions(size);
+  const useFloweringPhoto = stage === "thriving" && safeWater >= 0.95;
+  const photoCandidates = useMemo(
+    () => buildPhotoCandidates(stage, useFloweringPhoto),
+    [stage, useFloweringPhoto]
+  );
+  const [photoIndex, setPhotoIndex] = useState(0);
   const [photoFailed, setPhotoFailed] = useState(false);
-  const photoSrc =
-    stage === "thriving" && safeWater >= 0.95
-      ? PHOTO_FLOWERING_SOURCE
-      : PHOTO_STAGE_SOURCES[stage];
+  const photoSrc = photoCandidates[photoIndex];
 
   useEffect(() => {
     setPhotoFailed(false);
-  }, [photoSrc]);
+    setPhotoIndex(0);
+  }, [photoCandidates]);
 
-  if (!photoFailed) {
+  if (!photoFailed && photoSrc) {
     const waterDropCount = Math.min(6, Math.max(0, wateredGoals));
     return (
       <div
@@ -86,7 +136,15 @@ export function PlantIllustration({
           style={{
             filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
           }}
-          onError={() => setPhotoFailed(true)}
+          onError={() => {
+            setPhotoIndex((current) => {
+              if (current >= photoCandidates.length - 1) {
+                setPhotoFailed(true);
+                return current;
+              }
+              return current + 1;
+            });
+          }}
           loading="eager"
           draggable={false}
         />
