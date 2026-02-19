@@ -195,8 +195,8 @@ function LandingContent() {
           style={{ transform: `translateX(-${slide * (100 / 3)}%)` }}
         >
           {/* Slide 0 – Welcome – full-screen hero */}
-          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-[5vw] py-[env(safe-area-inset-top)]">
-            <div className="flex w-full max-w-xl flex-col items-stretch">
+          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
+            <div className="flex w-full flex-1 flex-col items-stretch justify-center">
               <div
                 className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] animate-welcome-step [animation-fill-mode:forwards] dark:bg-prove-900/50"
               >
@@ -233,9 +233,7 @@ function LandingContent() {
               </ol>
               </div>
             </div>
-            <div
-              className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full max-w-xl items-center justify-between animate-welcome-cta [animation-fill-mode:forwards]"
-            >
+            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full items-center justify-between animate-welcome-cta [animation-fill-mode:forwards]">
               <span className="text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">Swipe → to continue</span>
               <button
                 type="button"
@@ -248,8 +246,8 @@ function LandingContent() {
           </section>
 
           {/* Slide 1 – Login */}
-          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-[5vw] py-[env(safe-area-inset-top)]">
-            <div className="flex w-full max-w-md flex-col items-stretch">
+          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
+            <div className="flex w-full flex-1 flex-col items-stretch justify-center">
               <div className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] dark:bg-prove-900/50">
                 <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
                 <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">Step 2 of 3</p>
@@ -343,7 +341,7 @@ function LandingContent() {
                 </div>
               </form>
             </div>
-            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full max-w-md items-center justify-between text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
+            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full items-center justify-between text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
               <button type="button" onClick={() => goTo(0)} className="hover:text-slate-700 dark:hover:text-slate-300">
                 ← Back
               </button>
