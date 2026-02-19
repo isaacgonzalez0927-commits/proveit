@@ -25,8 +25,9 @@ import {
   saveDeveloperModeSettings,
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
+import { safeParseISO } from "@/lib/dateUtils";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
-import { format, isThisWeek, parseISO } from "date-fns";
+import { format, isThisWeek } from "date-fns";
 
 function DashboardContent() {
   const { user, goals, submissions, getSubmissionsForGoal, checkAndAwardItems, markGoalDone } = useApp();
@@ -41,8 +42,8 @@ function DashboardContent() {
   });
   const thisWeekVerified = submissions.filter((s) => {
     if (s.status !== "verified") return false;
-    const d = parseISO(s.date);
-    return isThisWeek(d);
+    const d = safeParseISO(s.date);
+    return d ? isThisWeek(d) : false;
   });
   const weeklyByDay = (() => {
     const dayCount: Record<string, number> = {};
@@ -52,7 +53,8 @@ function DashboardContent() {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     for (const s of thisWeekVerified) {
-      const d = parseISO(s.date);
+      const d = safeParseISO(s.date);
+      if (!d) continue;
       dayCount[days[d.getDay()]]++;
     }
     return dayCount;
@@ -96,8 +98,8 @@ function DashboardContent() {
       return subs.some((s) => s.date === todayStr && s.status === "verified");
     }
     return subs.some((s) => {
-      const d = parseISO(s.date);
-      return isThisWeek(d) && s.status === "verified";
+      const d = safeParseISO(s.date);
+      return !!d && isThisWeek(d) && s.status === "verified";
     });
   };
 
@@ -478,8 +480,8 @@ function DashboardContent() {
               {weeklyGoals.map((goal) => {
                 const subs = getSubmissionsForGoal(goal.id);
                 const thisWeekProof = subs.some((s) => {
-                  const d = parseISO(s.date);
-                  return isThisWeek(d) && s.status === "verified";
+                  const d = safeParseISO(s.date);
+                  return !!d && isThisWeek(d) && s.status === "verified";
                 });
                 const due = isGoalDue(goal);
                 const dueLabel = getNextDueLabel(goal);

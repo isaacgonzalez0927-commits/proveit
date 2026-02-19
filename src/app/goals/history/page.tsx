@@ -13,7 +13,8 @@ import {
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
-import { format, parseISO, isThisWeek } from "date-fns";
+import { safeParseISO } from "@/lib/dateUtils";
+import { format, isThisWeek } from "date-fns";
 
 function HistoryContent() {
   const { user, goals, submissions, getSubmissionsForGoal } = useApp();
@@ -152,9 +153,9 @@ function HistoryContent() {
                     </div>
                     <ul className="mt-4 space-y-2">
                       {completedDates.slice(0, 10).map((dateStr) => {
-                        const d = parseISO(dateStr);
-                        const label = format(d, "EEE, MMM d, yyyy");
-                        const isThisWeekDate = isThisWeek(d);
+                        const d = safeParseISO(dateStr);
+                        const label = d ? format(d, "EEE, MMM d, yyyy") : dateStr;
+                        const isThisWeekDate = d ? isThisWeek(d) : false;
                         const sub = subsByDate.get(dateStr);
                         const hasImage = sub?.imageDataUrl && sub.imageDataUrl.length > 10;
                         return (

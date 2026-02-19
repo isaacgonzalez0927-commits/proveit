@@ -6,8 +6,9 @@ import { Plus, Trash2, CheckCircle2, Calendar, Sun, Camera } from "lucide-react"
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
+import { safeParseISO } from "@/lib/dateUtils";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
-import { format, isThisWeek, parseISO } from "date-fns";
+import { format, isThisWeek } from "date-fns";
 import type { GoalFrequency, GracePeriod } from "@/types";
 
 function GoalsContent() {
@@ -275,8 +276,8 @@ function GoalsContent() {
             const isDone = goal.frequency === "daily"
               ? getSubmissionsForGoal(goal.id).some((s) => s.date === todayStr && s.status === "verified")
               : getSubmissionsForGoal(goal.id).some((s) => {
-                  const d = parseISO(s.date);
-                  return isThisWeek(d) && s.status === "verified";
+                  const d = safeParseISO(s.date);
+                  return !!d && isThisWeek(d) && s.status === "verified";
                 });
 
             return (

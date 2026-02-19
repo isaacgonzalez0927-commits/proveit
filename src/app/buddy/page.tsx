@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { format, isThisWeek, parseISO } from "date-fns";
+import { format, isThisWeek } from "date-fns";
 import { useApp } from "@/context/AppContext";
 import { isGoalDue } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
+import { safeParseISO } from "@/lib/dateUtils";
 import {
   applyDeveloperModeNumbers,
   DEFAULT_DEVELOPER_MODE_SETTINGS,
@@ -56,8 +57,8 @@ export default function BuddyPage() {
       return subs.some((s) => s.date === todayStr && s.status === "verified");
     }
     return subs.some((s) => {
-      const d = parseISO(s.date);
-      return isThisWeek(d) && s.status === "verified";
+      const d = safeParseISO(s.date);
+      return !!d && isThisWeek(d) && s.status === "verified";
     });
   }).length;
   const isCreatorAccount = hasCreatorAccess(user?.email);
