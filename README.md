@@ -22,6 +22,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Sign in with any email (demo; no password). Add goals, submit a photo, and see AI verification in action.
 
+On macOS Catalina? Use the recovery checklist in [MACOS-10.15-SETUP.md](./MACOS-10.15-SETUP.md).
+
 ## AI verification
 
 Priority: Custom AI → OpenAI → Demo mode.
