@@ -17,7 +17,7 @@ interface PlantIllustrationProps {
   wateringLevel: number;
   /** Number of goals completed today */
   wateredGoals: number;
-  /** Optional style variant used for stage-6 flowering plants */
+  /** Optional style variant used across all stages */
   variant?: GoalPlantVariant;
   className?: string;
   size?: "default" | "large" | "small";
@@ -51,12 +51,13 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
   const baseNames =
     stage === "flowering"
       ? [
-          `plant-stage-6-${variant}`,
-          `plant-stage-6-${variant.toString().padStart(2, "0")}`,
-          `plant-stage-6-${variant.toString().padStart(3, "0")}`,
-          `stage-6-${variant}`,
-          `stage6-${variant}`,
-          `plant-6-${variant}`,
+          `plant-stage-${stageNumber}-${variant}`,
+          `plant-stage-${stageNumber}-${variant.toString().padStart(2, "0")}`,
+          `plant-stage-${stageNumber}-${variant.toString().padStart(3, "0")}`,
+          `stage-${stageNumber}-${variant}`,
+          `stage${stageNumber}-${variant}`,
+          `plant-${stageNumber}-${variant}`,
+          `${stageNumber}-${variant}`,
           `flowering-${variant}`,
           `final-plant-${variant}`,
           `plant-stage-${stageNumber}`,
@@ -65,9 +66,17 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
           `plant-${stageNumber}`,
           `plant${stageNumber}`,
           `${stageNumber}`,
+          ...STAGE_ALIASES[stage].map((alias) => `${alias}-${variant}`),
           ...STAGE_ALIASES[stage],
         ]
       : [
+          `plant-stage-${stageNumber}-${variant}`,
+          `stage-${stageNumber}-${variant}`,
+          `stage${stageNumber}-${variant}`,
+          `plant-${stageNumber}-${variant}`,
+          `plant${stageNumber}-${variant}`,
+          `${stageNumber}-${variant}`,
+          ...STAGE_ALIASES[stage].map((alias) => `${alias}-${variant}`),
           `plant-stage-${stageNumber}`,
           `stage-${stageNumber}`,
           `stage${stageNumber}`,
@@ -118,6 +127,50 @@ function getStageDimensions(size: "default" | "large" | "small") {
   return { stageHeight, stageWidth };
 }
 
+function getVariantPhotoFilter(variant: GoalPlantVariant, safeWater: number) {
+  if (variant === 2) {
+    return `hue-rotate(24deg) saturate(${1.02 + safeWater * 0.35}) brightness(${0.92 + safeWater * 0.13})`;
+  }
+  if (variant === 3) {
+    return `hue-rotate(-20deg) saturate(${1.04 + safeWater * 0.38}) brightness(${0.91 + safeWater * 0.14})`;
+  }
+  return `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`;
+}
+
+function getVariantPalette(variant: GoalPlantVariant) {
+  if (variant === 2) {
+    return {
+      leafStart: "#93c5fd",
+      leafEnd: "#2563eb",
+      stemStart: "#38bdf8",
+      stemEnd: "#0f766e",
+      flower: "#c084fc",
+      potTop: "#bb7f59",
+      potBottom: "#7f3e2a",
+    };
+  }
+  if (variant === 3) {
+    return {
+      leafStart: "#86efac",
+      leafEnd: "#65a30d",
+      stemStart: "#4ade80",
+      stemEnd: "#3f6212",
+      flower: "#fb7185",
+      potTop: "#d17a59",
+      potBottom: "#944227",
+    };
+  }
+  return {
+    leafStart: "#6ee7b7",
+    leafEnd: "#22c55e",
+    stemStart: "#34d399",
+    stemEnd: "#15803d",
+    flower: "#f472b6",
+    potTop: "#c26d4f",
+    potBottom: "#8a3f2a",
+  };
+}
+
 export function PlantIllustration({
   stage,
   wateringLevel,
@@ -149,7 +202,7 @@ export function PlantIllustration({
           alt=""
           className="h-full w-full select-none object-contain"
           style={{
-            filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+            filter: getVariantPhotoFilter(variant, safeWater),
           }}
           onError={() => {
             setPhotoIndex((current) => {
@@ -172,6 +225,7 @@ export function PlantIllustration({
       stage={stage}
       wateringLevel={wateringLevel}
       wateredGoals={wateredGoals}
+      variant={variant}
       className={className}
       size={size}
     />
@@ -182,11 +236,13 @@ function SvgPlantIllustration({
   stage,
   wateringLevel,
   wateredGoals: _wateredGoals,
+  variant = 1,
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const config = STAGE_CONFIG[stage];
+  const palette = getVariantPalette(variant);
   const id = useId();
   const { stageHeight, stageWidth } = getStageDimensions(size);
   const stemBottomY = 114;
@@ -204,16 +260,16 @@ function SvgPlantIllustration({
       >
         <defs>
           <linearGradient id={`leafGrad-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6ee7b7" />
-            <stop offset="100%" stopColor="#22c55e" />
+            <stop offset="0%" stopColor={palette.leafStart} />
+            <stop offset="100%" stopColor={palette.leafEnd} />
           </linearGradient>
           <linearGradient id={`stemGrad-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#34d399" />
-            <stop offset="100%" stopColor="#15803d" />
+            <stop offset="0%" stopColor={palette.stemStart} />
+            <stop offset="100%" stopColor={palette.stemEnd} />
           </linearGradient>
           <linearGradient id={`potGrad-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#c26d4f" />
-            <stop offset="100%" stopColor="#8a3f2a" />
+            <stop offset="0%" stopColor={palette.potTop} />
+            <stop offset="100%" stopColor={palette.potBottom} />
           </linearGradient>
           <radialGradient id={`sunGlow-${id}`} cx="50%" cy="50%" r="55%">
             <stop offset="0%" stopColor="#fde68a" stopOpacity="0.6" />
@@ -266,7 +322,7 @@ function SvgPlantIllustration({
               const dot = offsets[idx];
               return (
                 <g key={idx} transform={`translate(${70 + dot.x} ${stemTopY - 4 + dot.y})`}>
-                  <circle r={5.2} fill="#f472b6" opacity={0.96} />
+                  <circle r={5.2} fill={palette.flower} opacity={0.96} />
                   <circle r={2.2} fill="#fde68a" />
                 </g>
               );

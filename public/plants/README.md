@@ -15,6 +15,12 @@ Optional stage-6 goal variants (for Garden mode):
 - `plant-stage-6-2.png` - Plant 2 flower
 - `plant-stage-6-3.png` - Plant 3 flower
 
+Optional per-style files for *every* stage:
+
+- `plant-stage-1-1.png`, `plant-stage-1-2.png`, `plant-stage-1-3.png`
+- `plant-stage-2-1.png`, `plant-stage-2-2.png`, `plant-stage-2-3.png`
+- ...same pattern through stage 6.
+
 The app will also auto-try alternate names/extensions in `/public/plants`, such as:
 
 - `stage1.png`, `stage-1.jpg`, `plant1.webp`, `seedling.png`
@@ -26,4 +32,5 @@ The app will also auto-try alternate names/extensions in `/public/plants`, such 
 
 Supported image extensions: `.png`, `.webp`, `.jpg`, `.jpeg`.
 
-If none are found, the app falls back to the built-in SVG illustration.
+If variant files are missing, the app still applies visible style tinting per plant style so switching styles is obvious.
+If no stage images are found at all, the app falls back to the built-in SVG illustration.
