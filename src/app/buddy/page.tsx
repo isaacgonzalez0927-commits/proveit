@@ -111,10 +111,11 @@ export default function BuddyPage() {
           <h2 className="font-semibold text-slate-900 dark:text-white">Growth stages</h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
             <li>• 0 days: Seedling — first growth</li>
-            <li>• 14 days: Sprout — two weeks of consistency</li>
-            <li>• 30 days: Leafy Plant — momentum is building</li>
-            <li>• 60 days: Blooming Plant — strong daily habits</li>
-            <li>• 100 days: Thriving Garden — elite consistency</li>
+            <li>• 7 days: Sprout — first full week</li>
+            <li>• 14 days: Leafy Plant — two weeks of consistency</li>
+            <li>• 30 days: Blooming Plant — momentum is building</li>
+            <li>• 60 days: Thriving Plant — strong daily habits</li>
+            <li>• 100 days: Flowering Garden — elite consistency</li>
           </ul>
         </div>
 

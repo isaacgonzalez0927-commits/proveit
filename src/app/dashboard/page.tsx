@@ -292,7 +292,7 @@ function DashboardContent() {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {[0, 14, 30, 60, 100].map((preset) => (
+                {[0, 7, 14, 30, 60, 100].map((preset) => (
                   <button
                     key={preset}
                     type="button"

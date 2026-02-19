@@ -5,10 +5,11 @@ import { PlantIllustration, type PlantStageKey } from "./PlantIllustration";
 
 const PLANT_STAGES: { minStreak: number; stage: PlantStageKey; name: string }[] = [
   { minStreak: 0, stage: "seedling", name: "Seedling" },
-  { minStreak: 14, stage: "sprout", name: "Sprout" },
-  { minStreak: 30, stage: "leafy", name: "Leafy Plant" },
-  { minStreak: 60, stage: "blooming", name: "Blooming Plant" },
-  { minStreak: 100, stage: "thriving", name: "Thriving Garden" },
+  { minStreak: 7, stage: "sprout", name: "Sprout" },
+  { minStreak: 14, stage: "leafy", name: "Leafy Plant" },
+  { minStreak: 30, stage: "blooming", name: "Blooming Plant" },
+  { minStreak: 60, stage: "thriving", name: "Thriving Plant" },
+  { minStreak: 100, stage: "flowering", name: "Flowering Garden" },
 ];
 
 const ENCOURAGEMENT = {
