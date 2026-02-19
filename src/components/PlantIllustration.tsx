@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 
 export type PlantStageKey = "seedling" | "sprout" | "leafy" | "blooming" | "thriving";
 
@@ -13,6 +13,15 @@ interface PlantIllustrationProps {
   className?: string;
   size?: "default" | "large" | "small";
 }
+
+const PHOTO_STAGE_SOURCES: Record<PlantStageKey, string> = {
+  seedling: "/plants/plant-stage-1.png",
+  sprout: "/plants/plant-stage-2.png",
+  leafy: "/plants/plant-stage-3.png",
+  blooming: "/plants/plant-stage-4.png",
+  thriving: "/plants/plant-stage-5.png",
+};
+const PHOTO_FLOWERING_SOURCE = "/plants/plant-stage-6.png";
 
 const STAGE_CONFIG: Record<
   PlantStageKey,
@@ -38,7 +47,83 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function getStageDimensions(size: "default" | "large" | "small") {
+  const stageHeight = size === "large" ? 250 : size === "small" ? 120 : 170;
+  const stageWidth = stageHeight * 0.82;
+  return { stageHeight, stageWidth };
+}
+
 export function PlantIllustration({
+  stage,
+  wateringLevel,
+  wateredGoals,
+  className = "",
+  size = "default",
+}: PlantIllustrationProps) {
+  const safeWater = clamp(wateringLevel, 0, 1);
+  const { stageHeight, stageWidth } = getStageDimensions(size);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const photoSrc =
+    stage === "thriving" && safeWater >= 0.95
+      ? PHOTO_FLOWERING_SOURCE
+      : PHOTO_STAGE_SOURCES[stage];
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photoSrc]);
+
+  if (!photoFailed) {
+    const waterDropCount = Math.min(6, Math.max(0, wateredGoals));
+    return (
+      <div
+        className={`relative inline-flex items-center justify-center ${className}`}
+        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%" }}
+      >
+        <img
+          src={photoSrc}
+          alt=""
+          className="h-full w-full select-none object-contain"
+          style={{
+            filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+          }}
+          onError={() => setPhotoFailed(true)}
+          loading="eager"
+          draggable={false}
+        />
+        <div className="pointer-events-none absolute left-2 top-2 flex flex-wrap gap-1">
+          {[0, 1, 2, 3, 4, 5]
+            .slice(0, Math.max(waterDropCount, safeWater > 0 ? 1 : 0))
+            .map((n) => (
+              <svg
+                key={n}
+                viewBox="0 0 10 14"
+                className="h-3 w-2.5"
+                style={{ opacity: 0.25 + safeWater * 0.55 }}
+                aria-hidden
+              >
+                <path
+                  d="M5 0 C3.2 2.7 1 5 1 8 A4 4 0 0 0 9 8 C9 5 6.8 2.7 5 0 Z"
+                  fill="#38bdf8"
+                />
+              </svg>
+            ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SvgPlantIllustration
+      stage={stage}
+      wateringLevel={wateringLevel}
+      wateredGoals={wateredGoals}
+      className={className}
+      size={size}
+    />
+  );
+}
+
+function SvgPlantIllustration({
   stage,
   wateringLevel,
   wateredGoals,
@@ -49,8 +134,7 @@ export function PlantIllustration({
   const config = STAGE_CONFIG[stage];
   const id = useId();
   const waterDropCount = Math.min(6, Math.max(0, wateredGoals));
-  const stageHeight = size === "large" ? 250 : size === "small" ? 120 : 170;
-  const stageWidth = stageHeight * 0.82;
+  const { stageHeight, stageWidth } = getStageDimensions(size);
   const stemBottomY = 114;
   const stemTopY = stemBottomY - config.stemHeight;
   const wetSoilLightness = 31 - safeWater * 12;
