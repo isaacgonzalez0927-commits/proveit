@@ -15,11 +15,12 @@ import { Header } from "@/components/Header";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { DashboardTour } from "@/components/DashboardTour";
-import { AccountabilityBuddy } from "@/components/AccountabilityBuddy";
+import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { getPlan } from "@/lib/store";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
   applyDeveloperModeNumbers,
+  applyGoalStreakOverride,
   DEFAULT_DEVELOPER_MODE_SETTINGS,
   getStoredDeveloperModeSettings,
   saveDeveloperModeSettings,
@@ -28,6 +29,8 @@ import {
 import { safeParseISO } from "@/lib/dateUtils";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek } from "date-fns";
+import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
+import { getPlantStageForStreak } from "@/lib/plantGrowth";
 
 function DashboardContent() {
   const {
@@ -67,66 +70,38 @@ function DashboardContent() {
     }
     return dayCount;
   })();
-  if (!user) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading your dashboard…</p>
-      </main>
-    );
-  }
 
   const plan = user ? getPlan(user.plan) : null;
   const dailyGoals = goals.filter((g) => g.frequency === "daily");
   const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const isCreatorAccount = hasCreatorAccess(user?.email);
+  const effectiveDeveloperSettings = isCreatorAccount
+    ? developerSettings
+    : DEFAULT_DEVELOPER_MODE_SETTINGS;
 
-  function getStreak(goal: (typeof goals)[0]) {
-    const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
-    const dates = Array.from(new Set(subs.map((s) => s.date))).sort().reverse();
-    let streak = 0;
-    let d = new Date();
-    const today = format(d, "yyyy-MM-dd");
-    for (const dateStr of dates) {
-      const check = format(d, "yyyy-MM-dd");
-      if (dateStr === check) {
-        streak++;
-        d.setDate(d.getDate() - 1);
-      } else break;
-    }
-    return streak;
-  }
+  const isGoalCompletedInCurrentWindow = (goal: (typeof goals)[number]) =>
+    isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
 
-  const goalStreaks = goals.map((goal) => ({ goal, streak: getStreak(goal) }));
-  const maxStreak = goalStreaks.length
-    ? Math.max(...goalStreaks.map((entry) => entry.streak), 0)
+  const goalStreaks = goals.map((goal) => {
+    const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
+    const displayStreak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
+    return { goal, actualStreak, displayStreak };
+  });
+
+  const realMaxStreak = goalStreaks.length
+    ? Math.max(...goalStreaks.map((entry) => entry.actualStreak), 0)
     : 0;
-  const featuredGoal = goalStreaks.reduce<(typeof goalStreaks)[number] | null>(
-    (best, current) => {
-      if (!best) return current;
-      return current.streak > best.streak ? current : best;
-    },
-    null
-  );
-  const featuredPlantVariant = featuredGoal ? getGoalPlantVariant(featuredGoal.goal.id) : 1;
-
-  const isGoalCompletedInCurrentWindow = (goal: (typeof goals)[number]) => {
-    const subs = getSubmissionsForGoal(goal.id);
-    if (goal.frequency === "daily") {
-      return subs.some((s) => s.date === todayStr && s.status === "verified");
-    }
-    return subs.some((s) => {
-      const d = safeParseISO(s.date);
-      return !!d && isThisWeek(d) && s.status === "verified";
-    });
-  };
+  const maxStreak = goalStreaks.length
+    ? Math.max(...goalStreaks.map((entry) => entry.displayStreak), 0)
+    : 0;
 
   useEffect(() => {
-    checkAndAwardItems(maxStreak);
-  }, [maxStreak, submissions, checkAndAwardItems]);
+    checkAndAwardItems(realMaxStreak);
+  }, [realMaxStreak, submissions, checkAndAwardItems]);
 
   const goalsDueToday = goals.filter((g) => isGoalDue(g));
   const goalsDoneToday = goalsDueToday.filter(isGoalCompletedInCurrentWindow).length;
-  const isCreatorAccount = hasCreatorAccess(user.email);
   const toDeveloperDraft = (settings: DeveloperModeSettings) => ({
     streak: settings.overrideMaxStreak == null ? "" : String(settings.overrideMaxStreak),
     goalsDoneToday:
@@ -141,10 +116,15 @@ function DashboardContent() {
     setDeveloperDraft(toDeveloperDraft(stored));
   }, []);
 
+  if (!user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading your dashboard…</p>
+      </main>
+    );
+  }
+
   const creatorPendingDueGoals = goalsDueToday.filter((g) => !isGoalCompletedInCurrentWindow(g));
-  const effectiveDeveloperSettings = isCreatorAccount
-    ? developerSettings
-    : DEFAULT_DEVELOPER_MODE_SETTINGS;
   const displayProgress = applyDeveloperModeNumbers(
     {
       maxStreak,
@@ -156,6 +136,18 @@ function DashboardContent() {
   const displayMaxStreak = displayProgress.maxStreak;
   const displayGoalsDoneToday = displayProgress.goalsDoneToday;
   const displayTotalDueToday = displayProgress.totalDueToday;
+  const displayStreakByGoalId = new Map(goalStreaks.map((entry) => [entry.goal.id, entry.displayStreak]));
+  const sortedGoalStreaks = [...goalStreaks].sort((a, b) => b.displayStreak - a.displayStreak);
+  const gardenSnapshotPlants = sortedGoalStreaks.map((entry) => {
+    const due = isGoalDue(entry.goal);
+    const watered = isGoalCompletedInCurrentWindow(entry.goal);
+    return {
+      id: entry.goal.id,
+      stage: getPlantStageForStreak(entry.displayStreak).stage,
+      wateringLevel: watered ? 1 : due ? 0.18 : 0.62,
+      variant: getGoalPlantVariant(entry.goal.id),
+    };
+  });
 
   const handleCreatorWaterAllDueGoals = async () => {
     if (creatorActionBusy) return;
@@ -221,10 +213,11 @@ function DashboardContent() {
       overrideMaxStreak: null,
       overrideGoalsDoneToday: null,
       overrideTotalDueToday: null,
+      goalStreakOverrides: {},
     };
     persistDeveloperSettings(next);
     setDeveloperDraft(toDeveloperDraft(next));
-    setDeveloperModeMessage("Developer test values cleared.");
+    setDeveloperModeMessage("Developer test values cleared (including per-goal streak overrides).");
   };
 
   const setDeveloperStreakPreset = (value: number) => {
@@ -256,12 +249,29 @@ function DashboardContent() {
           </p>
         </div>
 
-        <AccountabilityBuddy
-          maxStreak={displayMaxStreak}
-          goalsDoneToday={displayGoalsDoneToday}
-          totalDueToday={displayTotalDueToday}
-          plantVariant={featuredPlantVariant}
-        />
+        <section className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-cyan-50/40 p-4 dark:border-emerald-900/60 dark:from-emerald-950/25 dark:to-cyan-950/20">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
+                Garden snapshot
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                All your plants together, growing goal by goal.
+              </p>
+            </div>
+            <Link
+              href="/buddy"
+              className="rounded-lg border border-emerald-300 bg-white/70 px-2.5 py-1 text-xs font-medium text-emerald-800 hover:bg-white dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+            >
+              Open Garden
+            </Link>
+          </div>
+          <GardenSnapshot plants={gardenSnapshotPlants} className="mt-3" />
+          <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-200">
+            Watered today: {displayGoalsDoneToday}/{displayTotalDueToday} · Top streak:{" "}
+            {displayMaxStreak} day{displayMaxStreak === 1 ? "" : "s"}
+          </p>
+        </section>
 
         {isCreatorAccount && (
           <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-800/60 dark:bg-amber-950/20">
@@ -296,6 +306,9 @@ function DashboardContent() {
                   </p>
                   <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
                     Override streak and watering numbers without changing real account data.
+                  </p>
+                  <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
+                    Per-goal streak overrides are available inside Garden cards.
                   </p>
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm text-amber-900 dark:text-amber-200">
@@ -427,10 +440,10 @@ function DashboardContent() {
               Today&apos;s goals
             </h2>
             <Link
-              href="/goals"
+              href="/buddy"
               className="flex items-center gap-1 text-sm font-medium text-prove-600 hover:text-prove-700 dark:text-prove-400"
             >
-              Manage goals
+              Manage in Garden
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -470,7 +483,7 @@ function DashboardContent() {
                           {goal.title}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Daily · Streak: {getStreak(goal)} days
+                          Daily · Streak: {displayStreakByGoalId.get(goal.id) ?? 0} days
                         </p>
                       </div>
                     </div>
@@ -519,7 +532,7 @@ function DashboardContent() {
                           {goal.title}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Weekly · Streak: {getStreak(goal)} weeks
+                          Weekly · Streak: {displayStreakByGoalId.get(goal.id) ?? 0} weeks
                           {!due && dueLabel && ` · ${dueLabel}`}
                         </p>
                       </div>
