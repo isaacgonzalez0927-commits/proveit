@@ -26,6 +26,13 @@ import {
   computeNewlyEarnedItems,
   type EquippedItems,
 } from "@/lib/buddyItems";
+import {
+  clearGoalPlantSelections,
+  getDefaultGoalPlantVariant,
+  getStoredGoalPlantSelections,
+  saveGoalPlantSelections,
+  type GoalPlantVariant,
+} from "@/lib/goalPlants";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -52,6 +59,9 @@ interface AppContextValue {
   equippedItems: EquippedItems;
   setEquipped: (slot: keyof EquippedItems, itemId: string | null) => void;
   checkAndAwardItems: (maxStreak: number) => string[];
+  goalPlantSelections: Record<string, GoalPlantVariant>;
+  getGoalPlantVariant: (goalId: string) => GoalPlantVariant;
+  setGoalPlantVariant: (goalId: string, variant: GoalPlantVariant) => void;
   requestNotificationPermission: () => Promise<boolean>;
   signOut: () => void;
   useSupabase: boolean;
@@ -74,6 +84,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [earnedItems, setEarnedItems] = useState<string[]>([]);
   const [equippedItems, setEquippedItemsState] = useState<EquippedItems>({});
+  const [goalPlantSelections, setGoalPlantSelections] = useState<Record<string, GoalPlantVariant>>({});
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
@@ -150,6 +161,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     setEarnedItems(getStoredEarnedItems());
     setEquippedItemsState(getStoredEquippedItems());
+    setGoalPlantSelections(getStoredGoalPlantSelections());
   }, []);
 
   useEffect(() => {
@@ -280,6 +292,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setGoalsState((prev) => prev.filter((g) => g.id !== id));
       setSubmissionsState((prev) => prev.filter((s) => s.goalId !== id));
+      setGoalPlantSelections((prev) => {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        delete next[id];
+        saveGoalPlantSelections(next);
+        return next;
+      });
     },
     [useSupabase]
   );
@@ -418,12 +437,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return result === "granted";
   }, []);
 
+  const setGoalPlantVariant = useCallback((goalId: string, variant: GoalPlantVariant) => {
+    setGoalPlantSelections((prev) => {
+      const next = { ...prev, [goalId]: variant };
+      saveGoalPlantSelections(next);
+      return next;
+    });
+  }, []);
+
+  const getGoalPlantVariant = useCallback(
+    (goalId: string): GoalPlantVariant => {
+      return goalPlantSelections[goalId] ?? getDefaultGoalPlantVariant(goalId);
+    },
+    [goalPlantSelections]
+  );
+
   const signOut = useCallback(() => {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
     setEarnedItems([]);
     setEquippedItemsState({});
+    setGoalPlantSelections({});
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(STORAGE_KEYS.user);
@@ -432,6 +467,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("proveit_buddy_earned");
         localStorage.removeItem("proveit_buddy_equipped");
         localStorage.removeItem("proveit_buddy_animal");
+        clearGoalPlantSelections();
       } catch {
         // ignore
       }
@@ -447,6 +483,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSubmissionsState([]);
     setEarnedItems([]);
     setEquippedItemsState({});
+    setGoalPlantSelections({});
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(STORAGE_KEYS.user);
@@ -455,6 +492,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("proveit_buddy_earned");
         localStorage.removeItem("proveit_buddy_equipped");
         localStorage.removeItem("proveit_buddy_animal");
+        clearGoalPlantSelections();
       } catch {
         // ignore
       }
@@ -480,6 +518,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     equippedItems,
     setEquipped,
     checkAndAwardItems,
+    goalPlantSelections,
+    getGoalPlantVariant,
+    setGoalPlantVariant,
     requestNotificationPermission,
     signOut: useSupabase ? signOutWithSupabase : signOut,
     useSupabase,

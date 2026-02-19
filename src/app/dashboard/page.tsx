@@ -30,7 +30,15 @@ import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWind
 import { format, isThisWeek } from "date-fns";
 
 function DashboardContent() {
-  const { user, goals, submissions, getSubmissionsForGoal, checkAndAwardItems, markGoalDone } = useApp();
+  const {
+    user,
+    goals,
+    submissions,
+    getSubmissionsForGoal,
+    checkAndAwardItems,
+    markGoalDone,
+    getGoalPlantVariant,
+  } = useApp();
   const [creatorActionBusy, setCreatorActionBusy] = useState(false);
   const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
   const [developerModeMessage, setDeveloperModeMessage] = useState<string | null>(null);
@@ -88,9 +96,18 @@ function DashboardContent() {
     return streak;
   }
 
-  const maxStreak = goals.length
-    ? Math.max(...goals.map((g) => getStreak(g)), 0)
+  const goalStreaks = goals.map((goal) => ({ goal, streak: getStreak(goal) }));
+  const maxStreak = goalStreaks.length
+    ? Math.max(...goalStreaks.map((entry) => entry.streak), 0)
     : 0;
+  const featuredGoal = goalStreaks.reduce<(typeof goalStreaks)[number] | null>(
+    (best, current) => {
+      if (!best) return current;
+      return current.streak > best.streak ? current : best;
+    },
+    null
+  );
+  const featuredPlantVariant = featuredGoal ? getGoalPlantVariant(featuredGoal.goal.id) : 1;
 
   const isGoalCompletedInCurrentWindow = (goal: (typeof goals)[number]) => {
     const subs = getSubmissionsForGoal(goal.id);
@@ -243,6 +260,7 @@ function DashboardContent() {
           maxStreak={displayMaxStreak}
           goalsDoneToday={displayGoalsDoneToday}
           totalDueToday={displayTotalDueToday}
+          plantVariant={featuredPlantVariant}
         />
 
         {isCreatorAccount && (

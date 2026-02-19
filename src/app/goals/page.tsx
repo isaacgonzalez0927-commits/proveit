@@ -5,14 +5,25 @@ import Link from "next/link";
 import { Plus, Trash2, CheckCircle2, Calendar, Sun, Camera } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
+import { PlantIllustration } from "@/components/PlantIllustration";
 import { getPlan } from "@/lib/store";
 import { safeParseISO } from "@/lib/dateUtils";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek } from "date-fns";
 import type { GoalFrequency, GracePeriod } from "@/types";
+import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
 
 function GoalsContent() {
-  const { user, goals, addGoal, removeGoal, canAddGoal, getSubmissionsForGoal } = useApp();
+  const {
+    user,
+    goals,
+    addGoal,
+    removeGoal,
+    canAddGoal,
+    getSubmissionsForGoal,
+    setGoalPlantVariant,
+    getGoalPlantVariant,
+  } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [addGoalError, setAddGoalError] = useState<string | null>(null);
@@ -23,6 +34,7 @@ function GoalsContent() {
   const [weeklyDay, setWeeklyDay] = useState<number>(0);
   const [weeklyTime, setWeeklyTime] = useState("10:00");
   const [gracePeriod, setGracePeriod] = useState<GracePeriod>("eod");
+  const [selectedPlantVariant, setSelectedPlantVariant] = useState<GoalPlantVariant>(1);
   const [goalToDelete, setGoalToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
@@ -83,6 +95,7 @@ function GoalsContent() {
         setAddGoalError("Could not create goal right now. Please try again in a moment.");
         return;
       }
+      setGoalPlantVariant(created.id, selectedPlantVariant);
       setTitle("");
       setDescription("");
       setFrequency("daily");
@@ -90,6 +103,7 @@ function GoalsContent() {
       setWeeklyDay(0);
       setWeeklyTime("10:00");
       setGracePeriod("eod");
+      setSelectedPlantVariant(1);
       setShowForm(false);
     } finally {
       setIsAddingGoal(false);
@@ -238,6 +252,39 @@ function GoalsContent() {
                 </select>
               </div>
             </div>
+            <div className="mt-4">
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                Choose plant style
+              </label>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {GOAL_PLANT_VARIANTS.map((variant) => {
+                  const isSelected = selectedPlantVariant === variant;
+                  return (
+                    <button
+                      key={variant}
+                      type="button"
+                      onClick={() => setSelectedPlantVariant(variant)}
+                      className={`rounded-xl border p-2 text-xs transition ${
+                        isSelected
+                          ? "border-prove-500 bg-prove-50 text-prove-700 dark:border-prove-500 dark:bg-prove-950/40 dark:text-prove-200"
+                          : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                      }`}
+                    >
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900">
+                        <PlantIllustration
+                          stage="flowering"
+                          wateringLevel={1}
+                          wateredGoals={1}
+                          size="small"
+                          variant={variant}
+                        />
+                      </div>
+                      <p className="mt-1 font-medium">Plant {variant}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             {addGoalError && (
               <p className="mt-3 text-sm text-red-600 dark:text-red-400">{addGoalError}</p>
             )}
@@ -254,6 +301,7 @@ function GoalsContent() {
                 onClick={() => {
                   setShowForm(false);
                   setAddGoalError(null);
+                  setSelectedPlantVariant(1);
                 }}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
@@ -270,6 +318,7 @@ function GoalsContent() {
               goal.frequency === "weekly" && typeof goal.reminderDay === "number"
                 ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][goal.reminderDay]
                 : null;
+            const plantVariant = getGoalPlantVariant(goal.id);
             const due = isGoalDue(goal);
             const dueLabel = getNextDueLabel(goal);
             const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -306,6 +355,9 @@ function GoalsContent() {
                         <> · {dayLabel ? `${dayLabel} ` : ""}{timeLabel}</>
                       )}
                       {!due && dueLabel && ` · ${dueLabel}`}
+                    </p>
+                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+                      Plant {plantVariant}
                     </p>
                   </div>
                 </div>

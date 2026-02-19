@@ -2,27 +2,66 @@
 
 import { useEffect, useState } from "react";
 
-type TourStep = 0 | 1 | 2 | 3;
-
 const START_KEY = "proveit_start_tour";
 const DONE_KEY = "proveit_tour_done";
+const TOUR_VERSION = "2";
+
+const TOUR_STEPS = [
+  {
+    title: "Welcome to ProveIt",
+    emoji: "🌱",
+    body:
+      "You just picked your plan. Next you will set goals, choose each goal's plant style, and start building your garden.",
+    note: "Quick tip: use the bottom tabs to move between Home, Garden, Goals, History, and Plan.",
+  },
+  {
+    title: "Create a goal + choose plant style",
+    body:
+      "Open the Goals tab, tap Add goal, set daily or weekly timing, and choose Plant 1, 2, or 3 for that goal.",
+    note: "Plant style matters most at stage 6 where each style has its own flower.",
+  },
+  {
+    title: "Complete goals with proof photos",
+    body:
+      "When a goal is due, tap Submit proof and take a photo. AI verifies it and waters that goal's plant.",
+    note: "Stay inside the due window to protect your streak.",
+  },
+  {
+    title: "Grow your Garden",
+    body:
+      "The Garden tab shows every goal as its own plant card with streak, stage, and watering status.",
+    note: "Daily goals track day streaks, weekly goals track week streaks.",
+  },
+  {
+    title: "Track progress from Home",
+    body:
+      "Dashboard shows your overall momentum: due goals, completed goals, streak pressure, and quick actions.",
+    note: "Use Creator Tools and Developer Mode (creator account only) to test states quickly.",
+  },
+  {
+    title: "Use History + Plan tools",
+    body:
+      "History helps you audit past proofs, and Plan lets you change limits/features when you need more room.",
+    note: "You're ready. Build consistency, water your plants, and keep proving it.",
+  },
+] as const;
 
 export function DashboardTour() {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<TourStep>(0);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const shouldStart = window.localStorage.getItem(START_KEY);
     const done = window.localStorage.getItem(DONE_KEY);
-    if (shouldStart && !done) {
+    if (shouldStart && done !== TOUR_VERSION) {
       setOpen(true);
     }
   }, []);
 
   const finish = () => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(DONE_KEY, "1");
+      window.localStorage.setItem(DONE_KEY, TOUR_VERSION);
       window.localStorage.removeItem(START_KEY);
     }
     setOpen(false);
@@ -33,77 +72,34 @@ export function DashboardTour() {
   };
 
   const next = () => {
-    setStep((prev) => (prev < 3 ? ((prev + 1) as TourStep) : prev));
+    setStep((prev) => (prev < TOUR_STEPS.length - 1 ? prev + 1 : prev));
   };
 
   const prev = () => {
-    setStep((prev) => (prev > 0 ? ((prev - 1) as TourStep) : prev));
+    setStep((prev) => (prev > 0 ? prev - 1 : prev));
   };
 
   if (!open) return null;
 
+  const activeStep = TOUR_STEPS[step];
+  const stepCount = TOUR_STEPS.length;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-4 text-sm shadow-xl dark:bg-slate-900">
-        {step === 0 && (
-          <>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 1 of 4
-            </p>
-            <p className="mt-2 text-4xl" role="img" aria-label="Plant">🌱</p>
-            <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
-              Meet your accountability plant
-            </h2>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Complete goals to water your plant and watch it grow from seedling to thriving garden.
-              Visit the Plant tab anytime to check its progress.
-            </p>
-          </>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+          Step {step + 1} of {stepCount}
+        </p>
+        {activeStep.emoji && (
+          <p className="mt-2 text-4xl" role="img" aria-label="Tour icon">
+            {activeStep.emoji}
+          </p>
         )}
-        {step === 1 && (
-          <>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 2 of 4
-            </p>
-            <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
-              This is your dashboard
-            </h2>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              See your plant, current streak, today&apos;s goals, and your weekly recap.
-            </p>
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 3 of 4
-            </p>
-            <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
-              Add and manage goals
-            </h2>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Use the Goals tab in the top bar to add daily or weekly goals, edit them, or delete
-              ones you don&apos;t need.
-            </p>
-          </>
-        )}
-        {step === 3 && (
-          <>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              Step 4 of 4
-            </p>
-            <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
-              Prove it with photos
-            </h2>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              When you complete a goal, tap <span className="font-semibold">Mark done</span> or{" "}
-              <span className="font-semibold">Submit proof</span> to take a photo and let AI verify it.
-            </p>
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              You can always upgrade or change your plan from the Pricing tab.
-            </p>
-          </>
-        )}
+        <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
+          {activeStep.title}
+        </h2>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">{activeStep.body}</p>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{activeStep.note}</p>
 
         <div className="mt-4 flex items-center justify-between">
           <button
@@ -114,11 +110,11 @@ export function DashboardTour() {
             Skip
           </button>
           <div className="flex items-center gap-1.5">
-            {[0, 1, 2, 3].map((i) => (
+            {TOUR_STEPS.map((_, i) => (
               <button
                 key={i}
                 type="button"
-                onClick={() => setStep(i as TourStep)}
+                onClick={() => setStep(i)}
                 className={`h-1.5 rounded-full ${
                   step === i ? "w-4 bg-slate-900 dark:bg-white" : "w-2 bg-slate-300 dark:bg-slate-700"
                 }`}
@@ -136,7 +132,7 @@ export function DashboardTour() {
                 Back
               </button>
             )}
-            {step < 3 ? (
+            {step < TOUR_STEPS.length - 1 ? (
               <button
                 type="button"
                 onClick={next}

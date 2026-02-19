@@ -1,16 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { PlantIllustration, type PlantStageKey } from "./PlantIllustration";
-
-const PLANT_STAGES: { minStreak: number; stage: PlantStageKey; name: string }[] = [
-  { minStreak: 0, stage: "seedling", name: "Seedling" },
-  { minStreak: 7, stage: "sprout", name: "Sprout" },
-  { minStreak: 14, stage: "leafy", name: "Leafy Plant" },
-  { minStreak: 30, stage: "blooming", name: "Blooming Plant" },
-  { minStreak: 60, stage: "thriving", name: "Thriving Plant" },
-  { minStreak: 100, stage: "flowering", name: "Flowering Garden" },
-];
+import { PlantIllustration } from "./PlantIllustration";
+import type { GoalPlantVariant } from "@/lib/goalPlants";
+import { getPlantStageForStreak } from "@/lib/plantGrowth";
 
 const ENCOURAGEMENT = {
   noStreak: [
@@ -35,14 +28,6 @@ const ENCOURAGEMENT = {
     "Almost there. Finish strong and hydrate your plant.",
   ],
 } as const;
-
-function getStage(streak: number): (typeof PLANT_STAGES)[number] {
-  let result: (typeof PLANT_STAGES)[number] = PLANT_STAGES[0];
-  for (const s of PLANT_STAGES) {
-    if (streak >= s.minStreak) result = s;
-  }
-  return result;
-}
 
 function getMessage(
   streak: number,
@@ -72,6 +57,7 @@ interface AccountabilityBuddyProps {
   maxStreak: number;
   goalsDoneToday: number;
   totalDueToday: number;
+  plantVariant?: GoalPlantVariant;
   /** When true, shows larger illustration (for dedicated Buddy page) */
   large?: boolean;
 }
@@ -80,9 +66,10 @@ export function AccountabilityBuddy({
   maxStreak,
   goalsDoneToday,
   totalDueToday,
+  plantVariant = 1,
   large = false,
 }: AccountabilityBuddyProps) {
-  const stage = getStage(maxStreak);
+  const stage = getPlantStageForStreak(maxStreak);
   const message = getMessage(maxStreak, goalsDoneToday, totalDueToday);
   const wateringLevel =
     totalDueToday > 0 ? Math.min(1, goalsDoneToday / totalDueToday) : maxStreak > 0 ? 1 : 0;
@@ -104,6 +91,7 @@ export function AccountabilityBuddy({
             stage={stage.stage}
             wateringLevel={wateringLevel}
             wateredGoals={goalsDoneToday}
+            variant={plantVariant}
           />
         </div>
         <div className={large ? "mt-4 w-full" : "min-w-0 flex-1"}>
@@ -127,7 +115,7 @@ export function AccountabilityBuddy({
                 href="/buddy"
                 className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
               >
-                View full plant →
+                View full garden →
               </Link>
             )}
           </div>

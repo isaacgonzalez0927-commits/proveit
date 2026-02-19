@@ -164,6 +164,7 @@ function LandingContent() {
       setPlan(planId);
       if (typeof window !== "undefined") {
         window.localStorage.setItem("proveit_start_tour", "1");
+        window.localStorage.removeItem("proveit_tour_done");
       }
       router.push("/dashboard");
     },
@@ -220,7 +221,7 @@ function LandingContent() {
                 <ol className="space-y-[clamp(0.25rem,1.5vh,0.75rem)] text-left text-[clamp(0.8125rem,2.5vmin,1.125rem)] leading-relaxed text-slate-600 dark:text-slate-400">
                   <li className="flex gap-3">
                     <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
-                    Set a daily or weekly goal and a reminder time.
+                    Set a daily or weekly goal, reminder time, and plant style.
                   </li>
                   <li className="flex gap-3">
                     <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>

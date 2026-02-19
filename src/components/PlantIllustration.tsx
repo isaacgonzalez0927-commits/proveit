@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
+import type { GoalPlantVariant } from "@/lib/goalPlants";
 
 export type PlantStageKey =
   | "seedling"
@@ -16,6 +17,8 @@ interface PlantIllustrationProps {
   wateringLevel: number;
   /** Number of goals completed today */
   wateredGoals: number;
+  /** Optional style variant used for stage-6 flowering plants */
+  variant?: GoalPlantVariant;
   className?: string;
   size?: "default" | "large" | "small";
 }
@@ -43,17 +46,36 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
-function buildPhotoCandidates(stage: PlantStageKey): string[] {
+function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
   const stageNumber = STAGE_TO_NUMBER[stage];
-  const baseNames = [
-    `plant-stage-${stageNumber}`,
-    `stage-${stageNumber}`,
-    `stage${stageNumber}`,
-    `plant-${stageNumber}`,
-    `plant${stageNumber}`,
-    `${stageNumber}`,
-    ...STAGE_ALIASES[stage],
-  ];
+  const baseNames =
+    stage === "flowering"
+      ? [
+          `plant-stage-6-${variant}`,
+          `plant-stage-6-${variant.toString().padStart(2, "0")}`,
+          `plant-stage-6-${variant.toString().padStart(3, "0")}`,
+          `stage-6-${variant}`,
+          `stage6-${variant}`,
+          `plant-6-${variant}`,
+          `flowering-${variant}`,
+          `final-plant-${variant}`,
+          `plant-stage-${stageNumber}`,
+          `stage-${stageNumber}`,
+          `stage${stageNumber}`,
+          `plant-${stageNumber}`,
+          `plant${stageNumber}`,
+          `${stageNumber}`,
+          ...STAGE_ALIASES[stage],
+        ]
+      : [
+          `plant-stage-${stageNumber}`,
+          `stage-${stageNumber}`,
+          `stage${stageNumber}`,
+          `plant-${stageNumber}`,
+          `plant${stageNumber}`,
+          `${stageNumber}`,
+          ...STAGE_ALIASES[stage],
+        ];
 
   const names = unique(baseNames);
   const candidates: string[] = [];
@@ -100,12 +122,13 @@ export function PlantIllustration({
   stage,
   wateringLevel,
   wateredGoals,
+  variant = 1,
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const { stageHeight, stageWidth } = getStageDimensions(size);
-  const photoCandidates = useMemo(() => buildPhotoCandidates(stage), [stage]);
+  const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoFailed, setPhotoFailed] = useState(false);
   const photoSrc = photoCandidates[photoIndex];

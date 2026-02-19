@@ -19,7 +19,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const APP_TABS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/buddy", label: "Plant", icon: Sprout },
+  { href: "/buddy", label: "Garden", icon: Sprout },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/goals/history", label: "History", icon: History },
   { href: "/pricing", label: "Plan", icon: CreditCard },
@@ -27,7 +27,7 @@ const APP_TABS = [
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/dashboard")) return "Dashboard";
-  if (pathname.startsWith("/buddy")) return "Plant";
+  if (pathname.startsWith("/buddy")) return "Garden";
   if (pathname.startsWith("/goals/history")) return "History";
   if (pathname.startsWith("/goals/submit")) return "Submit Proof";
   if (pathname.startsWith("/goals")) return "Goals";
