@@ -6,7 +6,14 @@ const START_KEY = "proveit_start_tour";
 const DONE_KEY = "proveit_tour_done";
 const TOUR_VERSION = "2";
 
-const TOUR_STEPS = [
+interface TourStep {
+  title: string;
+  body: string;
+  note: string;
+  emoji?: string;
+}
+
+const TOUR_STEPS: TourStep[] = [
   {
     title: "Welcome to ProveIt",
     emoji: "🌱",
