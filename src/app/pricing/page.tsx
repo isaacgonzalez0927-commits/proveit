@@ -22,7 +22,7 @@ function PricingContent() {
   return (
     <>
       <Header />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="text-center">
           <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
             Simple pricing

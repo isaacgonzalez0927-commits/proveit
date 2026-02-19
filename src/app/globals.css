@@ -9,7 +9,7 @@
   --accent-coral: #ff6b6b;
   --accent-gold: #f59e0b;
   --accent-violet: #8b5cf6;
-  --bg-app: #ffffff;
+  --bg-app: #f4f7fb;
   --bg-card: #ffffff;
   --text-primary: #0f172a;
   --text-muted: #64748b;
@@ -38,7 +38,10 @@ html {
 }
 
 body {
-  background: var(--bg-app);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(14, 165, 233, 0.08), transparent 60%),
+    radial-gradient(1000px 500px at 0% 0%, rgba(59, 130, 246, 0.08), transparent 65%),
+    var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-dm-sans, system-ui, sans-serif);
   min-height: 100vh;

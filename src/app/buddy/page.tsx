@@ -84,7 +84,7 @@ export default function BuddyPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Your Plant

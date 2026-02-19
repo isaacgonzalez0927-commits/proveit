@@ -3,10 +3,47 @@
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Camera, LayoutDashboard, CreditCard, History, LogOut, ChevronDown, Sprout } from "lucide-react";
+import {
+  LayoutDashboard,
+  CreditCard,
+  History,
+  LogOut,
+  ChevronDown,
+  Sprout,
+  Target,
+  UserCircle2,
+} from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
+
+const APP_TABS = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/buddy", label: "Plant", icon: Sprout },
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/goals/history", label: "History", icon: History },
+  { href: "/pricing", label: "Plan", icon: CreditCard },
+] as const;
+
+function getPageTitle(pathname: string): string {
+  if (pathname.startsWith("/dashboard")) return "Dashboard";
+  if (pathname.startsWith("/buddy")) return "Plant";
+  if (pathname.startsWith("/goals/history")) return "History";
+  if (pathname.startsWith("/goals/submit")) return "Submit Proof";
+  if (pathname.startsWith("/goals")) return "Goals";
+  if (pathname.startsWith("/pricing")) return "Pricing";
+  if (pathname.startsWith("/reset-password")) return "Reset Password";
+  return "ProveIt";
+}
+
+function isTabActive(pathname: string, href: string): boolean {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/buddy") return pathname.startsWith("/buddy");
+  if (href === "/goals/history") return pathname.startsWith("/goals/history");
+  if (href === "/goals") return pathname === "/goals" || pathname.startsWith("/goals/submit");
+  if (href === "/pricing") return pathname.startsWith("/pricing");
+  return pathname === href;
+}
 
 export function Header() {
   const pathname = usePathname();
@@ -31,6 +68,9 @@ export function Header() {
     return null;
   }
 
+  const showBottomTabs = !pathname.startsWith("/goals/submit");
+  const pageTitle = getPageTitle(pathname);
+
   const handleSignOut = () => {
     setAccountOpen(false);
     signOut();
@@ -38,95 +78,86 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/95 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-950/95 pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex h-14 max-w-2xl items-center gap-4 px-4 sm:px-6">
-        <Link
-          href="/"
-          className="shrink-0 font-display text-xl font-bold tracking-tight text-prove-700 dark:text-prove-400"
-        >
-          ProveIt
-        </Link>
-        <nav className="flex min-w-0 flex-1 flex-nowrap items-center justify-end gap-1 overflow-x-auto overflow-y-hidden py-2 -my-2">
-          <NavLink href="/dashboard" icon={<LayoutDashboard className="h-4 w-4 shrink-0" />}>
-            Dashboard
-          </NavLink>
-          <NavLink href="/buddy" icon={<Sprout className="h-4 w-4 shrink-0" />}>
-            Plant
-          </NavLink>
-          <NavLink href="/goals" icon={<Camera className="h-4 w-4 shrink-0" />}>
-            Goals
-          </NavLink>
-          <NavLink href="/goals/history" icon={<History className="h-4 w-4 shrink-0" />}>
-            History
-          </NavLink>
-          <NavLink href="/pricing" icon={<CreditCard className="h-4 w-4 shrink-0" />}>
-            Pricing
-          </NavLink>
-        </nav>
-        <div className="relative ml-1 shrink-0" ref={accountRef}>
-          <button
-            type="button"
-            onClick={() => setAccountOpen((o) => !o)}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-            aria-expanded={accountOpen}
-            aria-haspopup="true"
-            aria-label="Account menu"
-          >
-            <span className="hidden sm:inline">Account</span>
-            <ChevronDown className={clsx("h-4 w-4 transition", accountOpen && "rotate-180")} />
-          </button>
-          {accountOpen && (
-            <div
-              className="absolute right-0 top-full z-[100] mt-1 min-w-[180px] rounded-xl border border-slate-200 bg-white py-2 shadow-lg dark:border-slate-700 dark:bg-slate-900"
-              role="menu"
+    <>
+      <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/95 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-950/95 pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="min-w-0">
+            <Link
+              href="/dashboard"
+              className="block truncate font-display text-lg font-bold tracking-tight text-prove-700 dark:text-prove-400"
             >
-              <div className="flex items-center justify-between gap-3 px-3 py-2" role="none">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Theme</span>
-                <ThemeToggle />
-              </div>
-              <div className="border-t border-slate-100 dark:border-slate-800" />
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                role="menuitem"
-                aria-label="Sign out"
+              ProveIt
+            </Link>
+            <p className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              {pageTitle}
+            </p>
+          </div>
+          <div className="relative shrink-0" ref={accountRef}>
+            <button
+              type="button"
+              onClick={() => setAccountOpen((o) => !o)}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              aria-expanded={accountOpen}
+              aria-haspopup="true"
+              aria-label="Account menu"
+            >
+              <UserCircle2 className="h-4 w-4" />
+              <ChevronDown className={clsx("h-4 w-4 transition", accountOpen && "rotate-180")} />
+            </button>
+            {accountOpen && (
+              <div
+                className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl border border-slate-200 bg-white py-2 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+                role="menu"
               >
-                <LogOut className="h-4 w-4 shrink-0" />
-                Sign out
-              </button>
-            </div>
-          )}
+                <div className="flex items-center justify-between gap-3 px-3 py-2" role="none">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Theme</span>
+                  <ThemeToggle />
+                </div>
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  role="menuitem"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
-  );
-}
+      </header>
 
-function NavLink({
-  href,
-  children,
-  icon,
-}: {
-  href: string;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const active = pathname === href || (href !== "/" && pathname.startsWith(href));
-  return (
-    <Link
-      href={href}
-      className={clsx(
-        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-        active
-          ? "bg-prove-100 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
-        icon && "gap-2"
+      {showBottomTabs && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+          <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <nav className="pointer-events-auto grid grid-cols-5 rounded-2xl border border-slate-200/80 bg-white/95 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.15)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/95 dark:shadow-[0_10px_30px_rgba(2,6,23,0.5)]">
+              {APP_TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = isTabActive(pathname, tab.href);
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    className={clsx(
+                      "flex min-h-[56px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-[11px] font-semibold transition-colors",
+                      active
+                        ? "bg-prove-100 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300"
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    )}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="mt-1 leading-none">{tab.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
       )}
-    >
-      {icon}
-      {children}
-    </Link>
+    </>
   );
 }
