@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+function normalizeCompletedDates(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((v): v is string => typeof v === "string");
+  }
+  return [];
+}
+
+function mapGoalRow(row: Record<string, unknown>) {
+  return {
+    id: row.id as string,
+    userId: row.user_id as string,
+    title: row.title as string,
+    description: (row.description as string | null) ?? undefined,
+    frequency: row.frequency as string,
+    reminderTime: (row.reminder_time as string | null) ?? undefined,
+    reminderDay: (row.reminder_day as number | null) ?? undefined,
+    gracePeriod: (row.grace_period as string | null) ?? undefined,
+    createdAt: row.created_at as string,
+    completedDates: normalizeCompletedDates(row.completed_dates),
+  };
+}
+
 export async function GET() {
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ goals: [] });
@@ -16,18 +38,7 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const goals = (data ?? []).map((row) => ({
-    id: row.id,
-    userId: row.user_id,
-    title: row.title,
-    description: row.description ?? undefined,
-    frequency: row.frequency,
-    reminderTime: row.reminder_time ?? undefined,
-    reminderDay: row.reminder_day ?? undefined,
-    gracePeriod: (row as { grace_period?: string }).grace_period ?? undefined,
-    createdAt: row.created_at,
-    completedDates: row.completed_dates ?? [],
-  }));
+  const goals = (data ?? []).map((row) => mapGoalRow(row as Record<string, unknown>));
 
   return NextResponse.json({ goals });
 }
@@ -42,7 +53,22 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { id, title, description, frequency, reminderTime, reminderDay, gracePeriod } = body;
 
-  const insertData: Record<string, unknown> = {
+  // Best-effort profile upsert for installs where the trigger wasn't present
+  // when the account was created. Ignore if table/columns differ.
+  try {
+    await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email ?? "",
+        plan: "free",
+      },
+      { onConflict: "id" }
+    );
+  } catch {
+    // ignore
+  }
+
+  const baseInsertData: Record<string, unknown> = {
     id,
     user_id: user.id,
     title,
@@ -50,31 +76,33 @@ export async function POST(request: NextRequest) {
     frequency,
     reminder_time: reminderTime ?? null,
     reminder_day: reminderDay ?? null,
-    completed_dates: [],
   };
-  if (gracePeriod != null) insertData.grace_period = gracePeriod;
 
-  const { data, error } = await supabase
-    .from("goals")
-    .insert(insertData)
-    .select()
-    .single();
+  const insertGoal = async (includeGracePeriod: boolean) => {
+    const insertData = { ...baseInsertData };
+    if (includeGracePeriod && gracePeriod != null) {
+      insertData.grace_period = gracePeriod;
+    }
+    return supabase
+      .from("goals")
+      .insert(insertData)
+      .select()
+      .single();
+  };
+
+  let { data, error } = await insertGoal(true);
+  if (error && /grace_period/i.test(error.message ?? "")) {
+    // Some deployments may not have run the grace_period migration yet.
+    // Retry without that column to keep goal creation functional.
+    ({ data, error } = await insertGoal(false));
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const mapped = mapGoalRow(data as Record<string, unknown>);
+
   return NextResponse.json({
-    goal: {
-      id: data.id,
-      userId: data.user_id,
-      title: data.title,
-      description: data.description ?? undefined,
-      frequency: data.frequency,
-      reminderTime: data.reminder_time ?? undefined,
-      reminderDay: data.reminder_day ?? undefined,
-      gracePeriod: (data as { grace_period?: string }).grace_period ?? undefined,
-      createdAt: data.created_at,
-      completedDates: data.completed_dates ?? [],
-    },
+    goal: mapped,
   });
 }
 

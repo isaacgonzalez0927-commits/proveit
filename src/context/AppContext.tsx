@@ -224,12 +224,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               gracePeriod: goal.gracePeriod ?? "eod",
             }),
           });
-          const data = await res.json();
-          if (!res.ok) return null;
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            console.error("Failed to create goal:", data?.error ?? res.statusText);
+            return null;
+          }
           const created = data.goal as Goal;
           setGoalsState((prev) => [...prev, created]);
           return created;
-        } catch {
+        } catch (error) {
+          console.error("Failed to create goal:", error);
           return null;
         }
       }

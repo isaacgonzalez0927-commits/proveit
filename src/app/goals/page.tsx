@@ -13,6 +13,8 @@ import type { GoalFrequency, GracePeriod } from "@/types";
 function GoalsContent() {
   const { user, goals, addGoal, removeGoal, canAddGoal, getSubmissionsForGoal } = useApp();
   const [showForm, setShowForm] = useState(false);
+  const [isAddingGoal, setIsAddingGoal] = useState(false);
+  const [addGoalError, setAddGoalError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [frequency, setFrequency] = useState<GoalFrequency>("daily");
@@ -52,29 +54,45 @@ function GoalsContent() {
   const canAddDaily = canAddGoal("daily");
   const canAddWeekly = canAddGoal("weekly");
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    setAddGoalError(null);
+    if (!title.trim()) {
+      setAddGoalError("Goal title is required.");
+      return;
+    }
     const limit = frequency === "daily" ? canAddDaily : canAddWeekly;
-    if (!limit) return;
+    if (!limit) {
+      setAddGoalError("Goal limit reached for this frequency on your current plan.");
+      return;
+    }
     const reminderTime = frequency === "daily" ? dailyTime : weeklyTime;
     const reminderDay = frequency === "weekly" ? weeklyDay : undefined;
-    addGoal({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      frequency,
-      reminderTime,
-      reminderDay,
-      gracePeriod,
-    });
-    setTitle("");
-    setDescription("");
-    setFrequency("daily");
-    setDailyTime("09:00");
-    setWeeklyDay(0);
-    setWeeklyTime("10:00");
-    setGracePeriod("eod");
-    setShowForm(false);
+    setIsAddingGoal(true);
+    try {
+      const created = await addGoal({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        frequency,
+        reminderTime,
+        reminderDay,
+        gracePeriod,
+      });
+      if (!created) {
+        setAddGoalError("Could not create goal right now. Please try again in a moment.");
+        return;
+      }
+      setTitle("");
+      setDescription("");
+      setFrequency("daily");
+      setDailyTime("09:00");
+      setWeeklyDay(0);
+      setWeeklyTime("10:00");
+      setGracePeriod("eod");
+      setShowForm(false);
+    } finally {
+      setIsAddingGoal(false);
+    }
   };
 
   return (
@@ -92,7 +110,10 @@ function GoalsContent() {
             </p>
           </div>
           <button
-            onClick={() => setShowForm((v) => !v)}
+            onClick={() => {
+              setAddGoalError(null);
+              setShowForm((v) => !v);
+            }}
             className="flex items-center gap-2 rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-50"
             disabled={!canAddDaily && !canAddWeekly}
           >
@@ -113,14 +134,20 @@ function GoalsContent() {
               type="text"
               placeholder="e.g. Run 3 miles"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (addGoalError) setAddGoalError(null);
+              }}
               className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-500 focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               required
             />
             <textarea
               placeholder="Optional description (helps AI verify)"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (addGoalError) setAddGoalError(null);
+              }}
               rows={2}
               className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-500 focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
@@ -210,16 +237,23 @@ function GoalsContent() {
                 </select>
               </div>
             </div>
+            {addGoalError && (
+              <p className="mt-3 text-sm text-red-600 dark:text-red-400">{addGoalError}</p>
+            )}
             <div className="mt-4 flex gap-2">
               <button
                 type="submit"
-                className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
+                disabled={isAddingGoal}
+                className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-60"
               >
-                Add goal
+                {isAddingGoal ? "Adding..." : "Add goal"}
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setAddGoalError(null);
+                }}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancel
