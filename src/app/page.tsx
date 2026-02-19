@@ -196,7 +196,7 @@ function LandingContent() {
         >
           {/* Slide 0 – Welcome – full-screen hero */}
           <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
-            <div className="flex w-full flex-1 flex-col items-stretch justify-center">
+            <div className="flex w-full flex-1 flex-col items-center justify-center text-center">
               <div
                 className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] animate-welcome-step [animation-fill-mode:forwards] dark:bg-prove-900/50"
               >
@@ -206,7 +206,7 @@ function LandingContent() {
                 </p>
               </div>
               <h1
-                className="mt-[clamp(0.75rem,3vh,1.5rem)] font-display text-[clamp(2rem,8vmin,4.5rem)] font-bold leading-[1.08] tracking-tight text-slate-900 animate-welcome-headline [animation-fill-mode:forwards] dark:text-white"
+                className="mt-[clamp(0.75rem,3vh,1.5rem)] max-w-[12ch] font-display text-[clamp(2.6rem,10.5vmin,6rem)] font-bold leading-[1.02] tracking-tight text-slate-900 animate-welcome-headline [animation-fill-mode:forwards] dark:text-white"
               >
                 Prove your
                 <br />
@@ -215,9 +215,9 @@ function LandingContent() {
                 photos.
               </h1>
               <div
-                className="mt-[clamp(0.5rem,2.5vh,1.25rem)] rounded-2xl border border-slate-200/80 bg-white/60 p-[clamp(0.75rem,3vw,1.25rem)] backdrop-blur-sm animate-welcome-list [animation-fill-mode:forwards] dark:border-slate-700/50 dark:bg-slate-900/40"
+                className="mt-[clamp(0.5rem,2.5vh,1.25rem)] w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/60 p-[clamp(0.75rem,3vw,1.25rem)] backdrop-blur-sm animate-welcome-list [animation-fill-mode:forwards] dark:border-slate-700/50 dark:bg-slate-900/40"
               >
-                <ol className="space-y-[clamp(0.25rem,1.5vh,0.75rem)] text-[clamp(0.8125rem,2.5vmin,1.125rem)] leading-relaxed text-slate-600 dark:text-slate-400">
+                <ol className="space-y-[clamp(0.25rem,1.5vh,0.75rem)] text-left text-[clamp(0.8125rem,2.5vmin,1.125rem)] leading-relaxed text-slate-600 dark:text-slate-400">
                   <li className="flex gap-3">
                     <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
                     Set a daily or weekly goal and a reminder time.
