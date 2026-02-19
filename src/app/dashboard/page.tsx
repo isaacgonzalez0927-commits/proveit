@@ -18,11 +18,14 @@ import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { DashboardTour } from "@/components/DashboardTour";
 import { AccountabilityBuddy } from "@/components/AccountabilityBuddy";
 import { getPlan } from "@/lib/store";
+import { hasCreatorAccess } from "@/lib/accountAccess";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek, parseISO } from "date-fns";
 
 function DashboardContent() {
-  const { user, goals, submissions, getSubmissionsForGoal, checkAndAwardItems } = useApp();
+  const { user, goals, submissions, getSubmissionsForGoal, checkAndAwardItems, markGoalDone } = useApp();
+  const [creatorActionBusy, setCreatorActionBusy] = useState(false);
+  const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
   const thisWeekVerified = submissions.filter((s) => {
     if (s.status !== "verified") return false;
     const d = parseISO(s.date);
@@ -74,21 +77,45 @@ function DashboardContent() {
     ? Math.max(...goals.map((g) => getStreak(g)), 0)
     : 0;
 
-  useEffect(() => {
-    checkAndAwardItems(maxStreak);
-  }, [maxStreak, submissions, checkAndAwardItems]);
-
-  const goalsDueToday = goals.filter((g) => isGoalDue(g));
-  const goalsDoneToday = goalsDueToday.filter((g) => {
-    const subs = getSubmissionsForGoal(g.id);
-    if (g.frequency === "daily") {
+  const isGoalCompletedInCurrentWindow = (goal: (typeof goals)[number]) => {
+    const subs = getSubmissionsForGoal(goal.id);
+    if (goal.frequency === "daily") {
       return subs.some((s) => s.date === todayStr && s.status === "verified");
     }
     return subs.some((s) => {
       const d = parseISO(s.date);
       return isThisWeek(d) && s.status === "verified";
     });
-  }).length;
+  };
+
+  useEffect(() => {
+    checkAndAwardItems(maxStreak);
+  }, [maxStreak, submissions, checkAndAwardItems]);
+
+  const goalsDueToday = goals.filter((g) => isGoalDue(g));
+  const goalsDoneToday = goalsDueToday.filter(isGoalCompletedInCurrentWindow).length;
+  const isCreatorAccount = hasCreatorAccess(user.email);
+  const creatorPendingDueGoals = goalsDueToday.filter((g) => !isGoalCompletedInCurrentWindow(g));
+
+  const handleCreatorWaterAllDueGoals = async () => {
+    if (creatorActionBusy) return;
+    setCreatorActionBusy(true);
+    setCreatorActionResult(null);
+    let watered = 0;
+    try {
+      for (const goal of creatorPendingDueGoals) {
+        await markGoalDone(goal.id);
+        watered += 1;
+      }
+      if (watered === 0) {
+        setCreatorActionResult("All due goals were already watered.");
+      } else {
+        setCreatorActionResult(`Watered ${watered} due goal${watered === 1 ? "" : "s"}.`);
+      }
+    } finally {
+      setCreatorActionBusy(false);
+    }
+  };
 
   return (
     <>
@@ -110,6 +137,34 @@ function DashboardContent() {
           goalsDoneToday={goalsDoneToday}
           totalDueToday={goalsDueToday.length}
         />
+
+        {isCreatorAccount && (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-800/60 dark:bg-amber-950/20">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  Creator tools (private)
+                </p>
+                <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
+                  This section is only visible to isaacgonzalez0927@gmail.com.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCreatorWaterAllDueGoals}
+                disabled={creatorActionBusy}
+                className="rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {creatorActionBusy
+                  ? "Watering..."
+                  : `Water all due goals (${creatorPendingDueGoals.length})`}
+              </button>
+            </div>
+            {creatorActionResult && (
+              <p className="mt-3 text-xs text-amber-900 dark:text-amber-200">{creatorActionResult}</p>
+            )}
+          </section>
+        )}
 
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
