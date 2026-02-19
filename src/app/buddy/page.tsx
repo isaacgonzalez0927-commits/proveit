@@ -1,9 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format, isThisWeek, parseISO } from "date-fns";
 import { useApp } from "@/context/AppContext";
 import { isGoalDue } from "@/lib/goalDue";
+import { hasCreatorAccess } from "@/lib/accountAccess";
+import {
+  applyDeveloperModeNumbers,
+  DEFAULT_DEVELOPER_MODE_SETTINGS,
+  getStoredDeveloperModeSettings,
+  type DeveloperModeSettings,
+} from "@/lib/developerMode";
 import { Header } from "@/components/Header";
 import { AccountabilityBuddy } from "@/components/AccountabilityBuddy";
 
@@ -28,7 +36,14 @@ function getStreak(
 
 export default function BuddyPage() {
   const { user, goals, getSubmissionsForGoal } = useApp();
+  const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(
+    DEFAULT_DEVELOPER_MODE_SETTINGS
+  );
   const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  useEffect(() => {
+    setDeveloperSettings(getStoredDeveloperModeSettings());
+  }, []);
 
   const maxStreak = goals.length
     ? Math.max(...goals.map((g) => getStreak(g, getSubmissionsForGoal)), 0)
@@ -45,6 +60,15 @@ export default function BuddyPage() {
       return isThisWeek(d) && s.status === "verified";
     });
   }).length;
+  const isCreatorAccount = hasCreatorAccess(user?.email);
+  const displayProgress = applyDeveloperModeNumbers(
+    {
+      maxStreak,
+      goalsDoneToday,
+      totalDueToday: goalsDueToday.length,
+    },
+    isCreatorAccount ? developerSettings : DEFAULT_DEVELOPER_MODE_SETTINGS
+  );
 
   if (!user) {
     return (
@@ -68,12 +92,17 @@ export default function BuddyPage() {
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             Complete goals to water your plant and help it grow.
           </p>
+          {isCreatorAccount && developerSettings.enabled && (
+            <p className="mt-2 inline-flex rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              Developer mode preview active
+            </p>
+          )}
         </div>
 
         <AccountabilityBuddy
-          maxStreak={maxStreak}
-          goalsDoneToday={goalsDoneToday}
-          totalDueToday={goalsDueToday.length}
+          maxStreak={displayProgress.maxStreak}
+          goalsDoneToday={displayProgress.goalsDoneToday}
+          totalDueToday={displayProgress.totalDueToday}
           large
         />
 
