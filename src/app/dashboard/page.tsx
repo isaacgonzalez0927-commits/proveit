@@ -310,7 +310,7 @@ function DashboardContent() {
             </div>
             {thisWeekVerified.length > 0 && (
               <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
-                Keep it up! Your buddy is growing stronger with every goal.
+                Keep it up! Your plant gets healthier with every completed goal.
               </p>
             )}
           </div>

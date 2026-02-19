@@ -50,13 +50,13 @@ export function DashboardTour() {
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Step 1 of 4
             </p>
-            <p className="mt-2 text-4xl" role="img" aria-label="Baby buddy">👶</p>
+            <p className="mt-2 text-4xl" role="img" aria-label="Plant">🌱</p>
             <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
-              Meet your accountability buddy
+              Meet your accountability plant
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Choose your animal buddy (cat, dog, rabbit, or fox) and complete goals to help them grow from Sprout to Legend.
-              Visit the Buddy tab to customize. They&apos;ll cheer you on every step of the way.
+              Complete goals to water your plant and watch it grow from seedling to thriving garden.
+              Visit the Plant tab anytime to check its progress.
             </p>
           </>
         )}
@@ -69,7 +69,7 @@ export function DashboardTour() {
               This is your dashboard
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              See your buddy, current streak, today&apos;s goals, and your weekly recap.
+              See your plant, current streak, today&apos;s goals, and your weekly recap.
             </p>
           </>
         )}

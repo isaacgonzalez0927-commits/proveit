@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Camera, LayoutDashboard, CreditCard, History, LogOut, ChevronDown, Sparkles } from "lucide-react";
+import { Camera, LayoutDashboard, CreditCard, History, LogOut, ChevronDown, Sprout } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
@@ -50,8 +50,8 @@ export function Header() {
           <NavLink href="/dashboard" icon={<LayoutDashboard className="h-4 w-4 shrink-0" />}>
             Dashboard
           </NavLink>
-          <NavLink href="/buddy" icon={<Sparkles className="h-4 w-4 shrink-0" />}>
-            Buddy
+          <NavLink href="/buddy" icon={<Sprout className="h-4 w-4 shrink-0" />}>
+            Plant
           </NavLink>
           <NavLink href="/goals" icon={<Camera className="h-4 w-4 shrink-0" />}>
             Goals

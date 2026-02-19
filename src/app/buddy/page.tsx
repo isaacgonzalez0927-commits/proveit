@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { format, isThisWeek, parseISO } from "date-fns";
 import { useApp } from "@/context/AppContext";
@@ -28,7 +27,7 @@ function getStreak(
 }
 
 export default function BuddyPage() {
-  const { user, goals, submissions, getSubmissionsForGoal, checkAndAwardItems } = useApp();
+  const { user, goals, getSubmissionsForGoal } = useApp();
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
   const maxStreak = goals.length
@@ -47,10 +46,6 @@ export default function BuddyPage() {
     });
   }).length;
 
-  useEffect(() => {
-    checkAndAwardItems(maxStreak);
-  }, [maxStreak, submissions, checkAndAwardItems]);
-
   if (!user) {
     return (
       <>
@@ -68,10 +63,10 @@ export default function BuddyPage() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-            Your Buddy
+            Your Plant
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Choose your animal buddy and complete goals to help them grow!
+            Complete goals to water your plant and help it grow.
           </p>
         </div>
 
@@ -85,11 +80,11 @@ export default function BuddyPage() {
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
           <h2 className="font-semibold text-slate-900 dark:text-white">Growth stages</h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <li>• 0 days: Sprout Buddy — just getting started</li>
-            <li>• 14 days: Rising Buddy — two weeks strong!</li>
-            <li>• 30 days: Steady Buddy — building momentum</li>
-            <li>• 60 days: Unstoppable Buddy — two months of dedication</li>
-            <li>• 100 days: Legend Buddy — you&apos;re unstoppable</li>
+            <li>• 0 days: Seedling — first growth</li>
+            <li>• 14 days: Sprout — two weeks of consistency</li>
+            <li>• 30 days: Leafy Plant — momentum is building</li>
+            <li>• 60 days: Blooming Plant — strong daily habits</li>
+            <li>• 100 days: Thriving Garden — elite consistency</li>
           </ul>
         </div>
 
