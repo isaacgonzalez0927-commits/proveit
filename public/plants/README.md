@@ -32,5 +32,5 @@ The app will also auto-try alternate names/extensions in `/public/plants`, such 
 
 Supported image extensions: `.png`, `.webp`, `.jpg`, `.jpeg`.
 
-If variant files are missing, the app still applies visible style tinting per plant style so switching styles is obvious.
+If variant files are missing, the app falls back to the default stage images.
 If no stage images are found at all, the app falls back to the built-in SVG illustration.
