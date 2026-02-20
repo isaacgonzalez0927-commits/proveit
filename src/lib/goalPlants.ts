@@ -1,11 +1,11 @@
-export const GOAL_PLANT_VARIANTS = [1, 2, 3] as const;
+export const GOAL_PLANT_VARIANTS = [1, 2, 3, 4] as const;
 export type GoalPlantVariant = (typeof GOAL_PLANT_VARIANTS)[number];
 
 const STORAGE_KEY = "proveit_goal_plants";
 
 function normalizeVariant(value: unknown): GoalPlantVariant | null {
-  if (value === 1 || value === 2 || value === 3) return value;
-  if (value === "1" || value === "2" || value === "3") {
+  if (value === 1 || value === 2 || value === 3 || value === 4) return value;
+  if (value === "1" || value === "2" || value === "3" || value === "4") {
     return Number(value) as GoalPlantVariant;
   }
   return null;

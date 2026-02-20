@@ -14,11 +14,12 @@ Optional stage-6 goal variants (for Garden mode):
 - `plant-stage-6-1.png` - Plant 1 flower
 - `plant-stage-6-2.png` - Plant 2 flower
 - `plant-stage-6-3.png` - Plant 3 flower
+- `plant-stage-6-4.png` - Plant 4 flower
 
 Optional per-style files for *every* stage:
 
-- `plant-stage-1-1.png`, `plant-stage-1-2.png`, `plant-stage-1-3.png`
-- `plant-stage-2-1.png`, `plant-stage-2-2.png`, `plant-stage-2-3.png`
+- `plant-stage-1-1.png`, `plant-stage-1-2.png`, `plant-stage-1-3.png`, `plant-stage-1-4.png`
+- `plant-stage-2-1.png`, `plant-stage-2-2.png`, `plant-stage-2-3.png`, `plant-stage-2-4.png`
 - ...same pattern through stage 6.
 
 The app will also auto-try alternate names/extensions in `/public/plants`, such as:
@@ -28,7 +29,7 @@ The app will also auto-try alternate names/extensions in `/public/plants`, such 
 - `stage3.png`, `leafy.jpeg`
 - `stage4.png`, `blooming.webp`
 - `stage5.png`, `thriving.png`
-- `stage6.png`, `flowering.png`, `plant-stage-6-1.png`, `plant-stage-6-2.png`, `plant-stage-6-3.png`
+- `stage6.png`, `flowering.png`, `plant-stage-6-1.png`, `plant-stage-6-2.png`, `plant-stage-6-3.png`, `plant-stage-6-4.png`
 
 Supported image extensions: `.png`, `.webp`, `.jpg`, `.jpeg`.
 

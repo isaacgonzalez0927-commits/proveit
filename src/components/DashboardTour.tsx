@@ -24,7 +24,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Create a goal + choose plant style",
     body:
-      "Open the Goals tab, tap Add goal, set daily or weekly timing, and choose Plant 1, 2, or 3 for that goal.",
+      "Open the Garden tab, tap Add goal, set daily or weekly timing, and choose Plant 1, 2, 3, or 4 for that goal.",
     note: "Plant style matters most at stage 6 where each style has its own flower.",
   },
   {

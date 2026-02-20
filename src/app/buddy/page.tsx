@@ -588,7 +588,7 @@ export default function BuddyPage() {
         {goals.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
             <p className="text-slate-600 dark:text-slate-400">
-              No plants yet. Create your first goal and pick Plant 1, 2, or 3 to start your garden.
+              No plants yet. Create your first goal and pick Plant 1, 2, 3, or 4 to start your garden.
             </p>
             <button
               type="button"
@@ -913,7 +913,7 @@ export default function BuddyPage() {
                 • {stage.minStreak} {stage.minStreak === 1 ? "day" : "days"}: {stage.name}
               </li>
             ))}
-            <li>• Stage 6 supports three flower variants (Plant 1 / 2 / 3)</li>
+            <li>• Stage 6 supports four flower variants (Plant 1 / 2 / 3 / 4)</li>
           </ul>
         </div>
 

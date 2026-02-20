@@ -256,7 +256,7 @@ function GoalsContent() {
               <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
                 Choose plant style
               </label>
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {GOAL_PLANT_VARIANTS.map((variant) => {
                   const isSelected = selectedPlantVariant === variant;
                   return (
