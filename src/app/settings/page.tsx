@@ -290,7 +290,7 @@ export default function SettingsPage() {
           <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/55 p-5 dark:border-amber-900/60 dark:bg-amber-950/25">
             <h2 className="font-semibold text-amber-900 dark:text-amber-200">Developer tools (private)</h2>
             <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
-              Only visible for isaacgonzalez0927@gmail.com. Toggle developer tools here.
+              Only visible for creator accounts. Toggle developer tools here.
             </p>
             <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-200">
               <input

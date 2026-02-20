@@ -80,6 +80,7 @@ export const PLANS: Plan[] = [
       "Hide goals from history",
       "Custom reminder times",
       "Flexible proof grace period",
+      "Change goal plant style after creation",
     ],
     stripePriceId: "price_pro_monthly",
   },

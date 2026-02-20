@@ -35,7 +35,7 @@ Priority: Custom AI → OpenAI → Demo mode.
 ## Pricing (demo)
 
 - **Free**: 2 daily goals, 2 weekly goals, AI verification, reminders, streak tracking.
-- **Pro** ($4.99/mo or $49/year): 5 daily, 5 weekly, Goal History access, history display controls, custom reminders, flexible grace period.
+- **Pro** ($4.99/mo or $49/year): 5 daily, 5 weekly, Goal History access, history display controls, custom reminders, flexible grace period, and post-creation plant style edits.
 - **Premium** ($9.99/mo or $99/year): Unlimited daily + weekly goals and all Pro features.
 
 In production, wire paid plans to Stripe (or your payment provider) using the plan IDs in `src/types/index.ts`.
