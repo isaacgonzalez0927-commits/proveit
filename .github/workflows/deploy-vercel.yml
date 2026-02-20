@@ -2,11 +2,18 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [main]
+    branches:
+      - "**"
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,10 +27,44 @@ jobs:
         run: npm ci
 
       - name: Deploy to Vercel
+        id: vercel_deploy
         uses: amondnet/vercel-action@v25
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           scope: isaacs-projects-94fcf528
-          vercel-args: "--prod"
+          github-comment: true
+          github-deployment: true
+          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
+
+      - name: Add deployment link to workflow summary
+        if: always()
+        run: |
+          DEPLOY_URL="${{ steps.vercel_deploy.outputs['preview-url'] }}"
+          if [ -z "$DEPLOY_URL" ]; then
+            DEPLOY_URL="${{ steps.vercel_deploy.outputs['deployment-url'] }}"
+          fi
+
+          echo "### Vercel deployment" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "- No deployment URL was returned." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [[ "$DEPLOY_URL" =~ ^https?:// ]]; then
+            LINK="$DEPLOY_URL"
+          else
+            LINK="https://$DEPLOY_URL"
+          fi
+
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            ENVIRONMENT="production"
+          else
+            ENVIRONMENT="preview"
+          fi
+
+          echo "- Latest URL: $LINK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Environment: $ENVIRONMENT" >> "$GITHUB_STEP_SUMMARY"
