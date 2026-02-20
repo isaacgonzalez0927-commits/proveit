@@ -23,6 +23,10 @@ interface PlantIllustrationProps {
   size?: "default" | "large" | "small";
 }
 
+interface SvgPlantIllustrationProps extends PlantIllustrationProps {
+  transform?: string;
+}
+
 const STAGE_TO_NUMBER: Record<PlantStageKey, number> = {
   seedling: 1,
   sprout: 2,
@@ -44,10 +48,16 @@ const IMAGE_EXTENSIONS = ["png", "PNG", "webp", "WEBP", "jpg", "JPG", "jpeg", "J
 const IMAGE_DIRECTORIES = [
   "/plants",
   "/plants/backup",
+  "/plants/backup/plants",
+  "/plants/backup/public/plants",
   "/plants/back-up",
   "/plants/back up",
   "/plants/proveit_backup_20260218_230946",
+  "/plants/proveit_backup_20260218_230946/plants",
+  "/plants/proveit_backup_20260218_230946/public/plants",
   "/proveit_backup_20260218_230946",
+  "/proveit_backup_20260218_230946/plants",
+  "/proveit_backup_20260218_230946/public/plants",
 ];
 const IMAGE_EXISTS_CACHE = new Map<string, boolean>();
 
@@ -172,6 +182,19 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
   };
 }
 
+function getFallbackStyleTransform(variant: GoalPlantVariant): string | undefined {
+  switch (variant) {
+    case 2:
+      return "scaleX(-1) rotate(-6deg)";
+    case 3:
+      return "rotate(-10deg) scale(0.94) translateY(1px)";
+    case 4:
+      return "rotate(10deg) scale(1.06) translateY(-1px)";
+    default:
+      return undefined;
+  }
+}
+
 const STAGE_CONFIG: Record<
   PlantStageKey,
   { stemHeight: number; leaves: number; flowers: number; stemCurve: number }
@@ -219,13 +242,7 @@ export function PlantIllustration({
   const usingVariantSpecificPhoto =
     !!photoSrc && photoCandidateData.variantSpecificPaths.has(photoSrc);
   const fallbackStyleTransform =
-    variant === 2 && !usingVariantSpecificPhoto
-      ? "scaleX(-1)"
-      : variant === 3 && !usingVariantSpecificPhoto
-        ? "rotate(-4deg)"
-      : variant === 4 && !usingVariantSpecificPhoto
-        ? "rotate(4deg)"
-        : undefined;
+    !usingVariantSpecificPhoto ? getFallbackStyleTransform(variant) : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -277,6 +294,7 @@ export function PlantIllustration({
       variant={variant}
       className={className}
       size={size}
+      transform={getFallbackStyleTransform(variant)}
     />
   );
 }
@@ -288,7 +306,8 @@ function SvgPlantIllustration({
   variant: _variant = 1,
   className = "",
   size = "default",
-}: PlantIllustrationProps) {
+  transform,
+}: SvgPlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const config = STAGE_CONFIG[stage];
   const id = useId();
@@ -299,7 +318,10 @@ function SvgPlantIllustration({
   const stemThickness = 2 + safeWater * 0.8;
 
   return (
-    <div className={`relative inline-flex items-center justify-center ${className}`}>
+    <div
+      className={`relative inline-flex items-center justify-center ${className}`}
+      style={transform ? { transform } : undefined}
+    >
       <svg
         viewBox="0 0 140 170"
         className="shrink-0 overflow-visible"
