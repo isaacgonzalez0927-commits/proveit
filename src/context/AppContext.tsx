@@ -408,7 +408,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (goalId: string) => {
       const g = goals.find((x) => x.id === goalId);
       if (!g) return;
-      if (!isWithinSubmissionWindow(g)) return; // Only allow on due day
+      if (!isWithinSubmissionWindow(g)) return; // Only allow while submissions are open
       const dateStr = format(new Date(), "yyyy-MM-dd");
       const existing = submissions.find((s) => s.goalId === goalId && s.date === dateStr);
       if (existing?.status === "verified") return;

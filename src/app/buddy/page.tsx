@@ -313,9 +313,9 @@ export default function BuddyPage() {
     const stage = getPlantStageForStreak(streak);
     const due = isGoalDue(goal);
     const doneInCurrentWindow = isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
-    const withinSubmissionWindow = isWithinSubmissionWindow(goal);
+    const canSubmitNow = isWithinSubmissionWindow(goal);
     const submissionWindowMessage =
-      due && !doneInCurrentWindow && !withinSubmissionWindow
+      !doneInCurrentWindow && !canSubmitNow
         ? (getSubmissionWindowMessage(goal) ?? "Submission window closed")
         : null;
     const wateringLevel = doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
@@ -325,6 +325,7 @@ export default function BuddyPage() {
       streak,
       stage,
       due,
+      canSubmitNow,
       doneInCurrentWindow,
       submissionWindowMessage,
       wateringLevel,
@@ -681,14 +682,14 @@ export default function BuddyPage() {
                 <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
                   {entry.doneInCurrentWindow
                     ? "Watered this cycle."
-                    : entry.due
+                    : entry.canSubmitNow
                       ? "Needs water now."
-                      : "Next watering window is coming up."}
+                      : "Waiting for the next cycle."}
                 </p>
                 {entry.submissionWindowMessage && (
                   <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{entry.submissionWindowMessage}</p>
                 )}
-                {entry.due && !entry.doneInCurrentWindow && !entry.submissionWindowMessage && (
+                {entry.canSubmitNow && !entry.doneInCurrentWindow && !entry.submissionWindowMessage && (
                   <Link
                     href={`/goals/submit?goalId=${entry.goal.id}`}
                     className="mt-2 inline-flex rounded-md bg-prove-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-prove-700"

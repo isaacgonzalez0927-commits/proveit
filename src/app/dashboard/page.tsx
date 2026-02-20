@@ -355,6 +355,8 @@ function DashboardContent() {
                 });
                 const due = isGoalDue(goal);
                 const dueLabel = getNextDueLabel(goal);
+                const canSubmitNow = isWithinSubmissionWindow(goal);
+                const windowMessage = getSubmissionWindowMessage(goal);
                 return (
                   <li
                     key={goal.id}
@@ -376,28 +378,22 @@ function DashboardContent() {
                         </p>
                       </div>
                     </div>
-                    {due ? (
-                      thisWeekProof ? (
-                        <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
-                          <CheckCircle2 className="h-4 w-4" />
-                          Done
-                        </span>
-                      ) : isWithinSubmissionWindow(goal) ? (
-                        <Link
-                          href={`/goals/submit?goalId=${goal.id}`}
-                          className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
-                        >
-                          <Camera className="h-4 w-4" />
-                          Submit proof
-                        </Link>
-                      ) : (
-                        <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
-                          {getSubmissionWindowMessage(goal) ?? "Not due yet"}
-                        </span>
-                      )
+                    {thisWeekProof ? (
+                      <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Done
+                      </span>
+                    ) : canSubmitNow ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Submit proof
+                      </Link>
                     ) : (
-                      <span className="text-sm text-slate-400 dark:text-slate-500">
-                        {dueLabel}
+                      <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
+                        {windowMessage ?? dueLabel ?? "Not due yet"}
                       </span>
                     )}
                   </li>

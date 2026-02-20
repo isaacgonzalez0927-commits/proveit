@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
-import { isGoalDue, getDueDayName, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
+import { isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
 import { format } from "date-fns";
 import { generateId } from "@/lib/store";
@@ -73,7 +73,6 @@ function SubmitProofContent() {
     if (user && goal) hasShownContent.current = true;
   }, [user, goal]);
 
-  const due = !!goal && isGoalDue(goal);
   const inWindow = !!goal && isWithinSubmissionWindow(goal);
 
   useEffect(() => {
@@ -176,12 +175,12 @@ function SubmitProofContent() {
 
   useEffect(() => {
     if (!user || !goal) return;
-    if (!due || !inWindow) return;
+    if (!inWindow) return;
     if (step !== "capture" || cameraStarted || imageDataUrl) return;
     if (autoStartCameraAttemptedRef.current) return;
     autoStartCameraAttemptedRef.current = true;
     void handleStartCamera();
-  }, [user, goal, due, inWindow, step, cameraStarted, imageDataUrl, handleStartCamera]);
+  }, [user, goal, inWindow, step, cameraStarted, imageDataUrl, handleStartCamera]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
@@ -267,7 +266,7 @@ function SubmitProofContent() {
       const passed = aiPassed && withinWindow;
       const msg = withinWindow
         ? data.feedback ?? "Verification completed."
-        : "Submissions are closed. Submit on your due day.";
+        : "Submissions are closed right now.";
 
       const sub = await addSubmission({
         goalId: goal.id,
@@ -323,39 +322,6 @@ function SubmitProofContent() {
     );
   }
 
-  const dueDayName = getDueDayName(goal);
-
-  if (!due) {
-    return (
-      <>
-        <Header />
-        <main className="mx-auto max-w-lg px-4 py-8">
-          <Link
-            href="/goals"
-            className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to goals
-          </Link>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
-            <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
-              {goal.title}
-            </h1>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Proof isn’t due yet. Come back {dueDayName ? `on ${dueDayName}` : "on your reminder day"} to submit.
-            </p>
-            <Link
-              href="/dashboard"
-              className="mt-6 inline-block text-sm font-medium text-prove-600 hover:text-prove-700 dark:text-prove-400"
-            >
-              Back to dashboard
-            </Link>
-          </div>
-        </main>
-      </>
-    );
-  }
-
   if (!inWindow) {
     const msg = getSubmissionWindowMessage(goal);
     return (
@@ -374,7 +340,7 @@ function SubmitProofContent() {
               {goal.title}
             </h1>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              {msg ?? "Submissions are closed. Submit on your due day."}
+              {msg ?? "Submissions are closed right now."}
             </p>
             <Link
               href="/dashboard"
@@ -410,7 +376,7 @@ function SubmitProofContent() {
               Submit proof: {goal.title}
             </h1>
             <p className="mt-1 text-slate-600 dark:text-slate-400">
-              Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time on your due day.
+              Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time before the due deadline.
             </p>
           </>
         )}

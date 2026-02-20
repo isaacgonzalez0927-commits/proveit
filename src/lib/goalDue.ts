@@ -24,6 +24,24 @@ function getDueDate(goal: Goal, now: Date): Date | null {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+function getCurrentCycleDueDate(goal: Goal, now: Date): Date {
+  if (goal.frequency === "daily") {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
+  const dueDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayDelta = day - now.getDay();
+  dueDate.setDate(dueDate.getDate() + dayDelta);
+  return dueDate;
+}
+
+function getWeeklyCycleStart(now: Date): Date {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  start.setDate(start.getDate() - start.getDay());
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
 function getWindowEnd(dueDate: Date, reminderTime: string | undefined, grace: GracePeriod | undefined): Date {
   const { hour, minute } = parseTime(reminderTime, 9, 0);
   const start = new Date(dueDate);
@@ -50,19 +68,21 @@ export function isGoalDue(goal: Goal, now: Date = new Date()): boolean {
 }
 
 /**
- * True when the user can submit proof within the grace period after due time.
+ * True when the user can submit proof any time before the due deadline:
+ * - daily: from start of day until grace deadline
+ * - weekly: from start of current week until grace deadline on due day
  */
 export function isWithinSubmissionWindow(goal: Goal, now: Date = new Date()): boolean {
-  const dueDate = getDueDate(goal, now);
-  if (!dueDate) return false;
-
-  const { hour, minute } = parseTime(goal.reminderTime, 9, 0);
-  const windowStart = new Date(dueDate);
-  windowStart.setHours(hour, minute, 0, 0);
-
+  const dueDate = getCurrentCycleDueDate(goal, now);
   const windowEnd = getWindowEnd(dueDate, goal.reminderTime, goal.gracePeriod);
+  if (goal.frequency === "daily") {
+    const dayStart = new Date(dueDate);
+    dayStart.setHours(0, 0, 0, 0);
+    return now >= dayStart && now <= windowEnd;
+  }
 
-  return now >= windowStart && now <= windowEnd;
+  const weekStart = getWeeklyCycleStart(now);
+  return now >= weekStart && now <= windowEnd;
 }
 
 /**
@@ -74,21 +94,17 @@ export function getSubmissionWindowMessage(
   now: Date = new Date()
 ): string | null {
   if (isWithinSubmissionWindow(goal, now)) return null;
-  const dueDate = getDueDate(goal, now);
-  if (!dueDate) return null;
-
-  const { hour, minute } = parseTime(goal.reminderTime, 9, 0);
-  const windowStart = new Date(dueDate);
-  windowStart.setHours(hour, minute, 0, 0);
-
-  if (now < windowStart) {
-    return `Opens at ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-  }
-
+  const dueDate = getCurrentCycleDueDate(goal, now);
   const windowEnd = getWindowEnd(dueDate, goal.reminderTime, goal.gracePeriod);
-  const endH = windowEnd.getHours();
-  const endM = windowEnd.getMinutes();
-  return `Closed (until ${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")})`;
+
+  if (now > windowEnd) {
+    if (goal.frequency === "weekly") {
+      const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
+      return `Closed for this week (until next ${DAY_NAMES[day]})`;
+    }
+    return "Closed for today";
+  }
+  return "Submissions are not available right now.";
 }
 
 /**
