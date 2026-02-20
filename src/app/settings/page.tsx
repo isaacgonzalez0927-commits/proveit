@@ -6,6 +6,11 @@ import { SlidersHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useApp } from "@/context/AppContext";
 import { PlantIllustration } from "@/components/PlantIllustration";
+import { hasCreatorAccess } from "@/lib/accountAccess";
+import {
+  getStoredDeveloperModeSettings,
+  saveDeveloperModeSettings,
+} from "@/lib/developerMode";
 import {
   DEFAULT_HISTORY_DISPLAY_SETTINGS,
   getStoredHistoryDisplaySettings,
@@ -18,6 +23,12 @@ import {
   saveAppSettings,
   type AppSettings,
 } from "@/lib/appSettings";
+import {
+  getStoredHiddenHistoryGoalIds,
+  hideGoalFromHistory,
+  saveHiddenHistoryGoalIds,
+  showGoalInHistory,
+} from "@/lib/historyVisibility";
 import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
 import type { GoalFrequency, GracePeriod } from "@/types";
 
@@ -62,20 +73,25 @@ const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
 ];
 
 export default function SettingsPage() {
-  const { user, goals, submissions, deleteGoalHistory } = useApp();
+  const { user, goals, submissions } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
-  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
+  const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
+  const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
+  const [developerEnabled, setDeveloperEnabled] = useState(false);
+  const isCreatorAccount = hasCreatorAccess(user?.email);
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
     setAppSettings(getStoredAppSettings());
+    setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
+    setDeveloperEnabled(getStoredDeveloperModeSettings().enabled);
   }, []);
 
-  const goalsWithHistory = useMemo(
+  const goalHistoryEntries = useMemo(
     () =>
       goals
         .map((goal) => {
@@ -83,11 +99,18 @@ export default function SettingsPage() {
           const verifiedEntries = submissions.filter(
             (submission) => submission.goalId === goal.id && submission.status === "verified"
           ).length;
-          return { goal, totalEntries, verifiedEntries };
+          return {
+            goal,
+            totalEntries,
+            verifiedEntries,
+            hidden: hiddenGoalIds.includes(goal.id),
+          };
         })
         .filter((entry) => entry.totalEntries > 0),
-    [goals, submissions]
+    [goals, submissions, hiddenGoalIds]
   );
+  const visibleGoalHistoryEntries = goalHistoryEntries.filter((entry) => !entry.hidden);
+  const hiddenGoalHistoryEntries = goalHistoryEntries.filter((entry) => entry.hidden);
 
   const updateHistorySetting = (key: keyof HistoryDisplaySettings, checked: boolean) => {
     const next = { ...historySettings, [key]: checked };
@@ -107,23 +130,34 @@ export default function SettingsPage() {
     updateAppSetting("defaultGoalPlantVariant", variant);
   };
 
-  const handleDeleteGoalHistory = async (goalId: string, goalTitle: string) => {
+  const handleToggleDeveloperTools = (enabled: boolean) => {
+    const next = { ...getStoredDeveloperModeSettings(), enabled };
+    saveDeveloperModeSettings(next);
+    setDeveloperEnabled(enabled);
+    setSettingsMessage(enabled ? "Developer tools enabled." : "Developer tools disabled.");
+  };
+
+  const handleHideGoalHistory = async (goalId: string, goalTitle: string) => {
     setSettingsMessage(null);
     if (typeof window !== "undefined") {
       const confirmed = window.confirm(
-        `Delete all history for "${goalTitle}"? This removes submissions and verified dates for this goal.`
+        `Hide "${goalTitle}" from Goal History? You can restore it below any time.`
       );
       if (!confirmed) return;
     }
-    setDeletingGoalId(goalId);
-    try {
-      await deleteGoalHistory(goalId);
-      setSettingsMessage(`Deleted history for "${goalTitle}".`);
-    } catch {
-      setSettingsMessage("Could not delete goal history right now.");
-    } finally {
-      setDeletingGoalId(null);
-    }
+    setHidingGoalId(goalId);
+    const nextHiddenGoalIds = hideGoalFromHistory(goalId, hiddenGoalIds);
+    setHiddenGoalIds(nextHiddenGoalIds);
+    saveHiddenHistoryGoalIds(nextHiddenGoalIds);
+    setSettingsMessage(`Hidden "${goalTitle}" from history.`);
+    setHidingGoalId(null);
+  };
+
+  const handleShowGoalHistory = (goalId: string, goalTitle: string) => {
+    const nextHiddenGoalIds = showGoalInHistory(goalId, hiddenGoalIds);
+    setHiddenGoalIds(nextHiddenGoalIds);
+    saveHiddenHistoryGoalIds(nextHiddenGoalIds);
+    setSettingsMessage(`Restored "${goalTitle}" in history.`);
   };
 
   if (!user) {
@@ -252,18 +286,36 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {isCreatorAccount && (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/55 p-5 dark:border-amber-900/60 dark:bg-amber-950/25">
+            <h2 className="font-semibold text-amber-900 dark:text-amber-200">Developer tools (private)</h2>
+            <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
+              Only visible for isaacgonzalez0927@gmail.com. Toggle developer tools here.
+            </p>
+            <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-200">
+              <input
+                type="checkbox"
+                checked={developerEnabled}
+                onChange={(event) => handleToggleDeveloperTools(event.target.checked)}
+                className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+              />
+              {developerEnabled ? "Developer tools ON" : "Developer tools OFF"}
+            </label>
+          </section>
+        )}
+
         <section className="mt-6 rounded-2xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/60 dark:bg-red-950/20">
-          <h2 className="font-semibold text-red-800 dark:text-red-200">Delete goal history</h2>
+          <h2 className="font-semibold text-red-800 dark:text-red-200">Hide goals from history</h2>
           <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
-            Remove all saved submissions and verified dates for a specific goal.
+            Hiding removes the goal from History view only. It does not delete proof data.
           </p>
-          {goalsWithHistory.length === 0 ? (
+          {visibleGoalHistoryEntries.length === 0 ? (
             <p className="mt-3 text-sm text-red-700/90 dark:text-red-300/90">
-              No goal history found yet.
+              No visible goal history right now.
             </p>
           ) : (
             <div className="mt-3 space-y-2">
-              {goalsWithHistory.map((entry) => (
+              {visibleGoalHistoryEntries.map((entry) => (
                 <div
                   key={entry.goal.id}
                   className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-white px-3 py-2.5 dark:border-red-900/60 dark:bg-slate-900/60"
@@ -278,15 +330,38 @@ export default function SettingsPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleDeleteGoalHistory(entry.goal.id, entry.goal.title)}
-                    disabled={deletingGoalId === entry.goal.id}
+                    onClick={() => handleHideGoalHistory(entry.goal.id, entry.goal.title)}
+                    disabled={hidingGoalId === entry.goal.id}
                     className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/40"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    {deletingGoalId === entry.goal.id ? "Deleting..." : "Delete history"}
+                    {hidingGoalId === entry.goal.id ? "Hiding..." : "Hide from history"}
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+          {hiddenGoalHistoryEntries.length > 0 && (
+            <div className="mt-4 rounded-lg border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/70">
+              <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                Hidden goals
+              </p>
+              <div className="mt-2 space-y-2">
+                {hiddenGoalHistoryEntries.map((entry) => (
+                  <div key={entry.goal.id} className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-sm text-slate-700 dark:text-slate-300">
+                      {entry.goal.title}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleShowGoalHistory(entry.goal.id, entry.goal.title)}
+                      className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Show again
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>

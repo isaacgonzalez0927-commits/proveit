@@ -23,7 +23,6 @@ import {
   applyGoalStreakOverride,
   DEFAULT_DEVELOPER_MODE_SETTINGS,
   getStoredDeveloperModeSettings,
-  saveDeveloperModeSettings,
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
 import { safeParseISO } from "@/lib/dateUtils";
@@ -44,13 +43,7 @@ function DashboardContent() {
   } = useApp();
   const [creatorActionBusy, setCreatorActionBusy] = useState(false);
   const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
-  const [developerModeMessage, setDeveloperModeMessage] = useState<string | null>(null);
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(DEFAULT_DEVELOPER_MODE_SETTINGS);
-  const [developerDraft, setDeveloperDraft] = useState({
-    streak: "",
-    goalsDoneToday: "",
-    totalDueToday: "",
-  });
   const thisWeekVerified = submissions.filter((s) => {
     if (s.status !== "verified") return false;
     const d = safeParseISO(s.date);
@@ -102,18 +95,10 @@ function DashboardContent() {
 
   const goalsDueToday = goals.filter((g) => isGoalDue(g));
   const goalsDoneToday = goalsDueToday.filter(isGoalCompletedInCurrentWindow).length;
-  const toDeveloperDraft = (settings: DeveloperModeSettings) => ({
-    streak: settings.overrideMaxStreak == null ? "" : String(settings.overrideMaxStreak),
-    goalsDoneToday:
-      settings.overrideGoalsDoneToday == null ? "" : String(settings.overrideGoalsDoneToday),
-    totalDueToday:
-      settings.overrideTotalDueToday == null ? "" : String(settings.overrideTotalDueToday),
-  });
 
   useEffect(() => {
     const stored = getStoredDeveloperModeSettings();
     setDeveloperSettings(stored);
-    setDeveloperDraft(toDeveloperDraft(stored));
   }, []);
 
   if (!user) {
@@ -167,71 +152,6 @@ function DashboardContent() {
     } finally {
       setCreatorActionBusy(false);
     }
-  };
-
-  const parseOverride = (value: string): number | null => {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    const parsed = Number.parseInt(trimmed, 10);
-    if (!Number.isFinite(parsed) || parsed < 0) return null;
-    return parsed;
-  };
-
-  const persistDeveloperSettings = (next: DeveloperModeSettings) => {
-    setDeveloperSettings(next);
-    saveDeveloperModeSettings(next);
-  };
-
-  const handleDeveloperToggle = (enabled: boolean) => {
-    const next = { ...developerSettings, enabled };
-    persistDeveloperSettings(next);
-    setDeveloperModeMessage(enabled ? "Developer mode enabled." : "Developer mode disabled.");
-  };
-
-  const handleDeveloperDraftChange = (
-    field: "streak" | "goalsDoneToday" | "totalDueToday",
-    value: string
-  ) => {
-    const cleaned = value.replace(/[^\d]/g, "");
-    setDeveloperDraft((prev) => ({ ...prev, [field]: cleaned }));
-  };
-
-  const applyDeveloperModeOverrides = () => {
-    const next: DeveloperModeSettings = {
-      ...developerSettings,
-      overrideMaxStreak: parseOverride(developerDraft.streak),
-      overrideGoalsDoneToday: parseOverride(developerDraft.goalsDoneToday),
-      overrideTotalDueToday: parseOverride(developerDraft.totalDueToday),
-    };
-    persistDeveloperSettings(next);
-    setDeveloperModeMessage("Developer test values saved.");
-  };
-
-  const clearDeveloperModeOverrides = () => {
-    const next: DeveloperModeSettings = {
-      ...developerSettings,
-      overrideMaxStreak: null,
-      overrideGoalsDoneToday: null,
-      overrideTotalDueToday: null,
-      goalStreakOverrides: {},
-    };
-    persistDeveloperSettings(next);
-    setDeveloperDraft(toDeveloperDraft(next));
-    setDeveloperModeMessage("Developer test values cleared (including per-goal streak overrides).");
-  };
-
-  const setDeveloperStreakPreset = (value: number) => {
-    const nextDraft = { ...developerDraft, streak: String(value) };
-    setDeveloperDraft(nextDraft);
-    const next: DeveloperModeSettings = {
-      ...developerSettings,
-      enabled: true,
-      overrideMaxStreak: value,
-      overrideGoalsDoneToday: parseOverride(nextDraft.goalsDoneToday),
-      overrideTotalDueToday: parseOverride(nextDraft.totalDueToday),
-    };
-    persistDeveloperSettings(next);
-    setDeveloperModeMessage(`Streak preset set to ${value}.`);
   };
 
   return (
@@ -299,102 +219,21 @@ function DashboardContent() {
               <p className="mt-3 text-xs text-amber-900 dark:text-amber-200">{creatorActionResult}</p>
             )}
             <div className="mt-4 border-t border-amber-300/50 pt-4 dark:border-amber-700/50">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                    Developer mode preview
-                  </p>
-                  <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
-                    Override streak and watering numbers without changing real account data.
-                  </p>
-                  <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
-                    Per-goal streak overrides are available inside Garden cards.
-                  </p>
-                </div>
-                <label className="inline-flex items-center gap-2 text-sm text-amber-900 dark:text-amber-200">
-                  <input
-                    type="checkbox"
-                    checked={developerSettings.enabled}
-                    onChange={(e) => handleDeveloperToggle(e.target.checked)}
-                    className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
-                  />
-                  {developerSettings.enabled ? "Enabled" : "Disabled"}
-                </label>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[0, 7, 14, 30, 60, 100].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setDeveloperStreakPreset(preset)}
-                    className="rounded-md border border-amber-300 bg-white/70 px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-white dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                  >
-                    Streak {preset}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <label className="text-xs text-amber-900 dark:text-amber-200">
-                  Streak override
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={developerDraft.streak}
-                    onChange={(e) => handleDeveloperDraftChange("streak", e.target.value)}
-                    placeholder="Real streak"
-                    className="mt-1 w-full rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm text-slate-900 placeholder:text-slate-500 dark:border-amber-700 dark:bg-amber-950/40 dark:text-white"
-                  />
-                </label>
-                <label className="text-xs text-amber-900 dark:text-amber-200">
-                  Goals done today
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={developerDraft.goalsDoneToday}
-                    onChange={(e) => handleDeveloperDraftChange("goalsDoneToday", e.target.value)}
-                    placeholder="Real done count"
-                    className="mt-1 w-full rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm text-slate-900 placeholder:text-slate-500 dark:border-amber-700 dark:bg-amber-950/40 dark:text-white"
-                  />
-                </label>
-                <label className="text-xs text-amber-900 dark:text-amber-200">
-                  Goals due today
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={developerDraft.totalDueToday}
-                    onChange={(e) => handleDeveloperDraftChange("totalDueToday", e.target.value)}
-                    placeholder="Real due count"
-                    className="mt-1 w-full rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm text-slate-900 placeholder:text-slate-500 dark:border-amber-700 dark:bg-amber-950/40 dark:text-white"
-                  />
-                </label>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={applyDeveloperModeOverrides}
-                  disabled={!developerSettings.enabled}
-                  className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Apply test values
-                </button>
-                <button
-                  type="button"
-                  onClick={clearDeveloperModeOverrides}
-                  className="rounded-md border border-amber-400 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                >
-                  Clear overrides
-                </button>
-              </div>
-
-              <p className="mt-3 text-xs text-amber-900 dark:text-amber-200">
-                Preview values: streak {displayMaxStreak} · watered {displayGoalsDoneToday}/{displayTotalDueToday}
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                Developer tools
               </p>
-              {developerModeMessage && (
-                <p className="mt-1 text-xs text-amber-900 dark:text-amber-200">{developerModeMessage}</p>
-              )}
+              <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
+                Turn developer tools on/off from Settings only.
+              </p>
+              <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
+                Current status: {effectiveDeveloperSettings.enabled ? "ON" : "OFF"}.
+              </p>
+              <Link
+                href="/settings"
+                className="mt-3 inline-flex rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+              >
+                Open Settings
+              </Link>
             </div>
           </section>
         )}
@@ -454,11 +293,11 @@ function DashboardContent() {
                 No goals yet. Add a daily or weekly goal to get reminders and start proving it.
               </p>
               <Link
-                href="/goals"
+                href="/buddy"
                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
               >
                 <Plus className="h-4 w-4" />
-                Add goal
+                Add goal in Garden
               </Link>
             </div>
           ) : (

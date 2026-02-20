@@ -137,12 +137,6 @@ export default function BuddyPage() {
     saveDeveloperModeSettings(next);
   };
 
-  const handleDeveloperToggle = (enabled: boolean) => {
-    const next = { ...developerSettings, enabled };
-    persistDeveloperSettings(next);
-    setDeveloperMessage(enabled ? "Developer mode enabled." : "Developer mode disabled.");
-  };
-
   const handleGoalStreakDraftChange = (goalId: string, value: string) => {
     const cleaned = value.replace(/[^\d]/g, "");
     setGoalStreakDrafts((prev) => ({ ...prev, [goalId]: cleaned }));
@@ -359,7 +353,7 @@ export default function BuddyPage() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-            Your Garden
+            Goal Garden
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             Every goal grows its own plant. Finish goals to water each one and unlock all stage-6 flowers.
@@ -580,19 +574,19 @@ export default function BuddyPage() {
                   Developer mode (garden controls)
                 </p>
                 <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
-                  Set streak overrides and change existing goal styles.
+                  Turn on/off from Settings only. Per-goal controls appear below when enabled.
                 </p>
               </div>
-              <label className="inline-flex items-center gap-2 text-sm text-amber-900 dark:text-amber-200">
-                <input
-                  type="checkbox"
-                  checked={developerSettings.enabled}
-                  onChange={(e) => handleDeveloperToggle(e.target.checked)}
-                  className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
-                />
-                {developerSettings.enabled ? "Enabled" : "Disabled"}
-              </label>
+              <Link
+                href="/settings"
+                className="inline-flex items-center rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+              >
+                Open Settings
+              </Link>
             </div>
+            <p className="mt-2 text-xs text-amber-900 dark:text-amber-200">
+              Current status: {developerSettings.enabled ? "ON" : "OFF"}.
+            </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"

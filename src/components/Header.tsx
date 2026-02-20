@@ -10,7 +10,6 @@ import {
   LogOut,
   ChevronDown,
   Sprout,
-  Target,
   UserCircle2,
   SlidersHorizontal,
 } from "lucide-react";
@@ -20,15 +19,14 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const APP_TABS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/buddy", label: "Garden", icon: Sprout },
-  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/buddy", label: "Goal Garden", icon: Sprout },
   { href: "/goals/history", label: "History", icon: History },
   { href: "/pricing", label: "Plan", icon: CreditCard },
 ] as const;
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/dashboard")) return "Dashboard";
-  if (pathname.startsWith("/buddy")) return "Garden";
+  if (pathname.startsWith("/buddy")) return "Goal Garden";
   if (pathname.startsWith("/goals/history")) return "History";
   if (pathname.startsWith("/goals/submit")) return "Submit Proof";
   if (pathname.startsWith("/goals")) return "Goals";
@@ -42,7 +40,6 @@ function isTabActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard";
   if (href === "/buddy") return pathname.startsWith("/buddy");
   if (href === "/goals/history") return pathname.startsWith("/goals/history");
-  if (href === "/goals") return pathname === "/goals" || pathname.startsWith("/goals/submit");
   if (href === "/pricing") return pathname.startsWith("/pricing");
   return pathname === href;
 }
@@ -145,7 +142,7 @@ export function Header() {
       {showBottomTabs && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <nav className="pointer-events-auto grid grid-cols-5 rounded-2xl border border-slate-200/80 bg-white/95 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.15)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/95 dark:shadow-[0_10px_30px_rgba(2,6,23,0.5)]">
+            <nav className="pointer-events-auto grid grid-cols-4 rounded-2xl border border-slate-200/80 bg-white/95 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.15)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/95 dark:shadow-[0_10px_30px_rgba(2,6,23,0.5)]">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);

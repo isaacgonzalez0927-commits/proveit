@@ -23,17 +23,24 @@ import {
   getStoredHistoryDisplaySettings,
   type HistoryDisplaySettings,
 } from "@/lib/historySettings";
+import {
+  getStoredHiddenHistoryGoalIds,
+  hideGoalFromHistory,
+  saveHiddenHistoryGoalIds,
+} from "@/lib/historyVisibility";
 
 function HistoryContent() {
-  const { user, goals, submissions, getSubmissionsForGoal, deleteGoalHistory } = useApp();
+  const { user, goals, submissions, getSubmissionsForGoal } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
   const [historyActionMessage, setHistoryActionMessage] = useState<string | null>(null);
-  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
+  const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
+  const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
+    setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
   }, []);
 
   if (!user) {
@@ -87,7 +94,7 @@ function HistoryContent() {
       subsByDate,
       streak: getStreak(goal.id),
     };
-  }).filter((g) => g.completedDates.length > 0);
+  }).filter((g) => g.completedDates.length > 0 && !hiddenGoalIds.includes(g.goal.id));
 
   const enabledSettingCount = [
     historySettings.showProofPhotos,
@@ -96,24 +103,21 @@ function HistoryContent() {
     historySettings.showThisWeekBadge,
   ].filter(Boolean).length;
 
-  const handleDeleteGoalHistory = async (goalId: string, goalTitle: string) => {
+  const handleHideGoalFromHistory = async (goalId: string, goalTitle: string) => {
     setHistoryActionMessage(null);
     if (typeof window !== "undefined") {
       const confirmed = window.confirm(
-        `Delete all history for "${goalTitle}"? This removes verified dates and proof entries for this goal.`
+        `Hide "${goalTitle}" from Goal History? You can restore hidden goals from Settings.`
       );
       if (!confirmed) return;
     }
 
-    setDeletingGoalId(goalId);
-    try {
-      await deleteGoalHistory(goalId);
-      setHistoryActionMessage(`Deleted history for "${goalTitle}".`);
-    } catch {
-      setHistoryActionMessage("Could not delete history right now. Please try again.");
-    } finally {
-      setDeletingGoalId(null);
-    }
+    setHidingGoalId(goalId);
+    const nextHiddenGoalIds = hideGoalFromHistory(goalId, hiddenGoalIds);
+    setHiddenGoalIds(nextHiddenGoalIds);
+    saveHiddenHistoryGoalIds(nextHiddenGoalIds);
+    setHistoryActionMessage(`Hidden "${goalTitle}" from history.`);
+    setHidingGoalId(null);
   };
 
   return (
@@ -221,12 +225,12 @@ function HistoryContent() {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => handleDeleteGoalHistory(goal.id, goal.title)}
-                          disabled={deletingGoalId === goal.id}
+                          onClick={() => handleHideGoalFromHistory(goal.id, goal.title)}
+                          disabled={hidingGoalId === goal.id}
                           className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          {deletingGoalId === goal.id ? "Deleting..." : "Delete history"}
+                          {hidingGoalId === goal.id ? "Hiding..." : "Hide from history"}
                         </button>
                       </div>
                     </div>
