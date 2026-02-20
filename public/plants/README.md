@@ -32,6 +32,8 @@ The app will also auto-try alternate names/extensions in:
 - `/public/plants/backup`
 - `/public/plants/back-up`
 - `/public/plants/back up`
+- `/public/plants/proveit_backup_20260218_230946`
+- `/public/proveit_backup_20260218_230946`
 
 Examples:
 

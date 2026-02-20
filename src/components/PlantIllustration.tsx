@@ -41,7 +41,14 @@ const STAGE_ALIASES: Record<PlantStageKey, string[]> = {
   flowering: ["flowering", "flowered", "bloom-final", "plant-6", "final-plant"],
 };
 const IMAGE_EXTENSIONS = ["png", "PNG", "webp", "WEBP", "jpg", "JPG", "jpeg", "JPEG"];
-const IMAGE_DIRECTORIES = ["/plants", "/plants/backup", "/plants/back-up", "/plants/back up"];
+const IMAGE_DIRECTORIES = [
+  "/plants",
+  "/plants/backup",
+  "/plants/back-up",
+  "/plants/back up",
+  "/plants/proveit_backup_20260218_230946",
+  "/proveit_backup_20260218_230946",
+];
 const IMAGE_EXISTS_CACHE = new Map<string, boolean>();
 
 function unique(values: string[]): string[] {
