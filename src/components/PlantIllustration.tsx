@@ -144,6 +144,7 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
   candidates: string[];
   variantSpecificPaths: Set<string>;
 } {
+  const allowVariantSpecificAssets = stage === "flowering";
   const styleFallbackBaseNames = unique([
     `plant-style-${variant}`,
     `plant-style-${variant.toString().padStart(2, "0")}`,
@@ -171,13 +172,15 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
     `final-plant-${variant}`,
     `final_plant_${variant}`,
   ]);
-  const variantSpecificPaths = expandToPhotoPaths([
-    ...buildVariantSpecificBaseNames(stage, variant),
-    ...styleFallbackBaseNames,
-  ]);
+  const variantSpecificPaths = allowVariantSpecificAssets
+    ? expandToPhotoPaths([
+        ...buildVariantSpecificBaseNames(stage, variant),
+        ...styleFallbackBaseNames,
+      ])
+    : [];
   const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNames(stage));
   return {
-    candidates: unique([...variantSpecificPaths, ...fallbackPaths]),
+    candidates: unique(allowVariantSpecificAssets ? [...variantSpecificPaths, ...fallbackPaths] : fallbackPaths),
     variantSpecificPaths: new Set(variantSpecificPaths),
   };
 }
@@ -242,7 +245,9 @@ export function PlantIllustration({
   const usingVariantSpecificPhoto =
     !!photoSrc && photoCandidateData.variantSpecificPaths.has(photoSrc);
   const fallbackStyleTransform =
-    !usingVariantSpecificPhoto ? getFallbackStyleTransform(variant) : undefined;
+    stage === "flowering" && !usingVariantSpecificPhoto
+      ? getFallbackStyleTransform(variant)
+      : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -294,7 +299,7 @@ export function PlantIllustration({
       variant={variant}
       className={className}
       size={size}
-      transform={getFallbackStyleTransform(variant)}
+      transform={stage === "flowering" ? getFallbackStyleTransform(variant) : undefined}
     />
   );
 }

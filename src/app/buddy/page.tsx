@@ -94,6 +94,7 @@ export default function BuddyPage() {
   const effectiveDeveloperSettings = isCreatorAccount
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
+  const canEditExistingGoalStyle = isCreatorAccount && developerSettings.enabled;
 
   useEffect(() => {
     if (!isCreatorAccount) return;
@@ -280,7 +281,9 @@ export default function BuddyPage() {
         reminderDay: editDraft.frequency === "weekly" ? editDraft.weeklyDay : undefined,
         gracePeriod: editDraft.gracePeriod,
       });
-      setGoalPlantVariant(goal.id, editDraft.plantVariant);
+      if (canEditExistingGoalStyle) {
+        setGoalPlantVariant(goal.id, editDraft.plantVariant);
+      }
       setEditingGoalId(null);
       setGoalManagerMessage("Goal updated.");
     } finally {
@@ -569,7 +572,7 @@ export default function BuddyPage() {
                   Developer mode (garden controls)
                 </p>
                 <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
-                  Set streak overrides per goal directly in each card.
+                  Set streak overrides and change existing goal styles.
                 </p>
               </div>
               <label className="inline-flex items-center gap-2 text-sm text-amber-900 dark:text-amber-200">
@@ -692,39 +695,52 @@ export default function BuddyPage() {
                   </Link>
                 )}
 
-                <div className="mt-3">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                    Plant style
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {GOAL_PLANT_VARIANTS.map((variant) => {
-                      const selected = variant === entry.plantVariant;
-                      return (
-                        <button
-                          key={variant}
-                          type="button"
-                          onClick={() => setGoalPlantVariant(entry.goal.id, variant)}
-                          className={`rounded-md border p-1 transition ${
-                            selected
-                              ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
-                              : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
-                          }`}
-                          aria-label={`Set plant style ${variant}`}
-                        >
-                          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
-                            <PlantIllustration
-                              stage="flowering"
-                              wateringLevel={1}
-                              wateredGoals={1}
-                              size="small"
-                              variant={variant}
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
+                {canEditExistingGoalStyle ? (
+                  <div className="mt-3">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                      Plant style
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {GOAL_PLANT_VARIANTS.map((variant) => {
+                        const selected = variant === entry.plantVariant;
+                        return (
+                          <button
+                            key={variant}
+                            type="button"
+                            onClick={() => setGoalPlantVariant(entry.goal.id, variant)}
+                            className={`rounded-md border p-1 transition ${
+                              selected
+                                ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                                : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
+                            }`}
+                            aria-label={`Set plant style ${variant}`}
+                          >
+                            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                              <PlantIllustration
+                                stage="flowering"
+                                wateringLevel={1}
+                                wateredGoals={1}
+                                size="small"
+                                variant={variant}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-3">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                      Plant style
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                      {isCreatorAccount
+                        ? "Locked after goal creation. Enable Developer mode to change it."
+                        : "Locked after goal creation."}
+                    </p>
+                  </div>
+                )}
 
                 {editingGoalId === entry.goal.id && (
                   <div className="mt-3 rounded-lg border border-slate-300 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-900/70">
@@ -842,41 +858,43 @@ export default function BuddyPage() {
                       </label>
                     </div>
 
-                    <div className="mt-2">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                        Plant style (edit)
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        {GOAL_PLANT_VARIANTS.map((variant) => (
-                          <button
-                            key={variant}
-                            type="button"
-                            onClick={() =>
-                              setEditDraft((prev) => ({
-                                ...prev,
-                                plantVariant: variant,
-                              }))
-                            }
-                            className={`rounded-md border p-1 ${
-                              editDraft.plantVariant === variant
-                                ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
-                                : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
-                            }`}
-                            aria-label={`Set edit plant style ${variant}`}
-                          >
-                            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
-                              <PlantIllustration
-                                stage="flowering"
-                                wateringLevel={1}
-                                wateredGoals={1}
-                                size="small"
-                                variant={variant}
-                              />
-                            </div>
-                          </button>
-                        ))}
+                    {canEditExistingGoalStyle && (
+                      <div className="mt-2">
+                        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                          Plant style (edit)
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {GOAL_PLANT_VARIANTS.map((variant) => (
+                            <button
+                              key={variant}
+                              type="button"
+                              onClick={() =>
+                                setEditDraft((prev) => ({
+                                  ...prev,
+                                  plantVariant: variant,
+                                }))
+                              }
+                              className={`rounded-md border p-1 ${
+                                editDraft.plantVariant === variant
+                                  ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                                  : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
+                              }`}
+                              aria-label={`Set edit plant style ${variant}`}
+                            >
+                              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                                <PlantIllustration
+                                  stage="flowering"
+                                  wateringLevel={1}
+                                  wateredGoals={1}
+                                  size="small"
+                                  variant={variant}
+                                />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
