@@ -1,11 +1,8 @@
 Drop your plant stage images in this folder.
 
-Style names shown in the app:
+Style options shown in the app:
 
-- `1` = Fern
-- `2` = Ivy
-- `3` = Poppy
-- `4` = Daisy
+- `1`, `2`, `3`, and `4` (image-only selectors, no text labels)
 
 Preferred names (in order):
 
@@ -18,10 +15,10 @@ Preferred names (in order):
 
 Optional stage-6 goal variants (for Garden mode):
 
-- `plant-stage-6-1.png` - Plant 1 flower
-- `plant-stage-6-2.png` - Plant 2 flower
-- `plant-stage-6-3.png` - Plant 3 flower
-- `plant-stage-6-4.png` - Plant 4 flower
+- `plant-stage-6-1.png` - style 1 flower
+- `plant-stage-6-2.png` - style 2 flower
+- `plant-stage-6-3.png` - style 3 flower
+- `plant-stage-6-4.png` - style 4 flower
 
 Optional per-style files for *every* stage:
 

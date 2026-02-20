@@ -16,7 +16,6 @@ import {
 } from "@/lib/developerMode";
 import {
   GOAL_PLANT_VARIANTS,
-  getGoalPlantVariantName,
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
@@ -509,13 +508,22 @@ export default function BuddyPage() {
                     key={variant}
                     type="button"
                     onClick={() => setNewPlantVariant(variant)}
-                    className={`rounded-md border px-2 py-1 text-xs font-semibold ${
+                    className={`rounded-md border p-1 ${
                       newPlantVariant === variant
-                        ? "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200"
-                        : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                        ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                        : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
                     }`}
+                    aria-label={`Select plant style ${variant}`}
                   >
-                    {getGoalPlantVariantName(variant)}
+                    <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                      <PlantIllustration
+                        stage="flowering"
+                        wateringLevel={1}
+                        wateredGoals={1}
+                        size="small"
+                        variant={variant}
+                      />
+                    </div>
                   </button>
                 ))}
               </div>
@@ -613,7 +621,7 @@ export default function BuddyPage() {
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-slate-900 dark:text-white">{entry.goal.title}</p>
                     <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                      {getGoalPlantVariantName(entry.plantVariant)} · {entry.goal.frequency === "daily" ? "Daily" : "Weekly"}
+                      {entry.goal.frequency === "daily" ? "Daily" : "Weekly"}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -696,13 +704,22 @@ export default function BuddyPage() {
                           key={variant}
                           type="button"
                           onClick={() => setGoalPlantVariant(entry.goal.id, variant)}
-                          className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                          className={`rounded-md border p-1 transition ${
                             selected
-                              ? "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200"
-                              : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                              : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
                           }`}
+                          aria-label={`Set plant style ${variant}`}
                         >
-                          {getGoalPlantVariantName(variant)}
+                          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                            <PlantIllustration
+                              stage="flowering"
+                              wateringLevel={1}
+                              wateredGoals={1}
+                              size="small"
+                              variant={variant}
+                            />
+                          </div>
                         </button>
                       );
                     })}
@@ -840,13 +857,22 @@ export default function BuddyPage() {
                                 plantVariant: variant,
                               }))
                             }
-                            className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${
+                            className={`rounded-md border p-1 ${
                               editDraft.plantVariant === variant
-                                ? "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-200"
-                                : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                                : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
                             }`}
+                            aria-label={`Set edit plant style ${variant}`}
                           >
-                            {getGoalPlantVariantName(variant)}
+                            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                              <PlantIllustration
+                                stage="flowering"
+                                wateringLevel={1}
+                                wateredGoals={1}
+                                size="small"
+                                variant={variant}
+                              />
+                            </div>
                           </button>
                         ))}
                       </div>
@@ -917,7 +943,7 @@ export default function BuddyPage() {
                 • {stage.minStreak} {stage.minStreak === 1 ? "day" : "days"}: {stage.name}
               </li>
             ))}
-            <li>• Stage 6 supports four flower variants (Fern / Ivy / Poppy / Daisy)</li>
+            <li>• Stage 6 supports four flower style variants</li>
           </ul>
         </div>
 

@@ -13,7 +13,6 @@ import { format, isThisWeek } from "date-fns";
 import type { GoalFrequency, GracePeriod } from "@/types";
 import {
   GOAL_PLANT_VARIANTS,
-  getGoalPlantVariantName,
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
 
@@ -268,11 +267,12 @@ function GoalsContent() {
                       key={variant}
                       type="button"
                       onClick={() => setSelectedPlantVariant(variant)}
-                      className={`rounded-xl border p-2 text-xs transition ${
+                      className={`rounded-xl border p-1.5 transition ${
                         isSelected
-                          ? "border-prove-500 bg-prove-50 text-prove-700 dark:border-prove-500 dark:bg-prove-950/40 dark:text-prove-200"
-                          : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                          ? "border-prove-500 bg-prove-50 dark:border-prove-500 dark:bg-prove-950/40"
+                          : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
                       }`}
+                      aria-label={`Select plant style ${variant}`}
                     >
                       <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900">
                         <PlantIllustration
@@ -283,7 +283,6 @@ function GoalsContent() {
                           variant={variant}
                         />
                       </div>
-                      <p className="mt-1 font-medium">{getGoalPlantVariantName(variant)}</p>
                     </button>
                   );
                 })}
@@ -360,9 +359,15 @@ function GoalsContent() {
                       )}
                       {!due && dueLabel && ` · ${dueLabel}`}
                     </p>
-                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
-                      {getGoalPlantVariantName(plantVariant)}
-                    </p>
+                    <div className="mt-1 inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-md bg-emerald-50 dark:bg-emerald-900/30">
+                      <PlantIllustration
+                        stage="flowering"
+                        wateringLevel={1}
+                        wateredGoals={1}
+                        size="small"
+                        variant={plantVariant}
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
