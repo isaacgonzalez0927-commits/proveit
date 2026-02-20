@@ -150,7 +150,7 @@ function HistoryContent() {
               <Lock className="h-7 w-7 text-prove-600 dark:text-prove-400" />
             </div>
             <h2 className="mt-4 font-display text-lg font-semibold text-slate-900 dark:text-white">
-              Goal history is a Pro feature
+              Goal history is a paid plan feature
             </h2>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               Upgrade to Pro or Premium to view your full proof history, completed dates per goal, and streak timelines.
@@ -159,7 +159,7 @@ function HistoryContent() {
               href="/pricing"
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-prove-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-prove-700"
             >
-              Upgrade to Pro
+              View plans
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>

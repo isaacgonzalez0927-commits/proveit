@@ -460,7 +460,7 @@ function DashboardContent() {
           href="/pricing"
           className="mt-8 block rounded-xl border border-prove-200 bg-prove-50/50 p-4 text-center text-sm text-prove-800 dark:border-prove-800 dark:bg-prove-950/30 dark:text-prove-200"
         >
-          Want more goals? Upgrade to Pro or Premium →
+          Want more goals or Goal History access? Upgrade to Pro or Premium →
         </Link>
       </main>
       <NotificationPrompt />

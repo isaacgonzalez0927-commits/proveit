@@ -10,7 +10,7 @@ ProveIt sends you reminders for daily and weekly goals. You take a photo of your
 - **Photo proof** via camera or file upload
 - **AI verification** (OpenAI GPT-4 Vision when `OPENAI_API_KEY` is set; otherwise demo mode)
 - **Streaks** and recent activity
-- **Plans**: Free (1 daily + 1 weekly), Pro ($9.99/mo – 10 each + extras), Premium ($19.99/mo – unlimited + all features)
+- **Plans**: Free (2 daily + 2 weekly), Pro ($4.99/mo – 5 each + Goal History), Premium ($9.99/mo – unlimited goals + all Pro features)
 
 ## Quick start
 
@@ -34,11 +34,11 @@ Priority: Custom AI → OpenAI → Demo mode.
 
 ## Pricing (demo)
 
-- **Free**: 1 daily goal, 1 weekly goal, AI verification, basic streaks.
-- **Pro** ($9.99/mo or $99/year): 10 daily, 10 weekly, custom reminders, export, no ads.
-- **Premium** ($19.99/mo or $199/year): Unlimited goals, priority verification, accountability partner, weekly digest.
+- **Free**: 2 daily goals, 2 weekly goals, AI verification, reminders, streak tracking.
+- **Pro** ($4.99/mo or $49/year): 5 daily, 5 weekly, Goal History access, history display controls, custom reminders, flexible grace period.
+- **Premium** ($9.99/mo or $99/year): Unlimited daily + weekly goals and all Pro features.
 
-In production, wire Pro and Premium to Stripe (or your payment provider) using the plan IDs in `src/types/index.ts`.
+In production, wire paid plans to Stripe (or your payment provider) using the plan IDs in `src/types/index.ts`.
 
 ## Tech stack
 
