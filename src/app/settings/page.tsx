@@ -5,12 +5,21 @@ import Link from "next/link";
 import { SlidersHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useApp } from "@/context/AppContext";
+import { PlantIllustration } from "@/components/PlantIllustration";
 import {
   DEFAULT_HISTORY_DISPLAY_SETTINGS,
   getStoredHistoryDisplaySettings,
   saveHistoryDisplaySettings,
   type HistoryDisplaySettings,
 } from "@/lib/historySettings";
+import {
+  DEFAULT_APP_SETTINGS,
+  getStoredAppSettings,
+  saveAppSettings,
+  type AppSettings,
+} from "@/lib/appSettings";
+import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
+import type { GoalFrequency, GracePeriod } from "@/types";
 
 const HISTORY_SETTING_ITEMS: Array<{
   key: keyof HistoryDisplaySettings;
@@ -39,16 +48,31 @@ const HISTORY_SETTING_ITEMS: Array<{
   },
 ];
 
+const GOAL_FREQUENCY_OPTIONS: Array<{ value: GoalFrequency; label: string }> = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+];
+
+const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
+  { value: "1h", label: "1 hour after due" },
+  { value: "3h", label: "3 hours after due" },
+  { value: "6h", label: "6 hours after due" },
+  { value: "12h", label: "12 hours after due" },
+  { value: "eod", label: "Until end of day" },
+];
+
 export default function SettingsPage() {
   const { user, goals, submissions, deleteGoalHistory } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
+    setAppSettings(getStoredAppSettings());
   }, []);
 
   const goalsWithHistory = useMemo(
@@ -70,6 +94,17 @@ export default function SettingsPage() {
     setHistorySettings(next);
     saveHistoryDisplaySettings(next);
     setSettingsMessage("History settings saved.");
+  };
+
+  const updateAppSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
+    const next: AppSettings = { ...appSettings, [key]: value };
+    setAppSettings(next);
+    saveAppSettings(next);
+    setSettingsMessage("Goal creation defaults saved.");
+  };
+
+  const updateDefaultPlantStyle = (variant: GoalPlantVariant) => {
+    updateAppSetting("defaultGoalPlantVariant", variant);
   };
 
   const handleDeleteGoalHistory = async (goalId: string, goalTitle: string) => {
@@ -115,11 +150,83 @@ export default function SettingsPage() {
             Settings
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Choose what appears in Goal History and manage saved history by goal.
+            Configure goal creation defaults, choose what appears in history, and manage saved history.
           </p>
         </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/45 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+          <h2 className="font-semibold text-emerald-900 dark:text-emerald-200">Goal creation defaults</h2>
+          <p className="mt-1 text-xs text-emerald-800/90 dark:text-emerald-300/90">
+            These apply when you create a new goal in Garden or Goals.
+          </p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="text-xs text-emerald-900 dark:text-emerald-200">
+              Default frequency
+              <select
+                value={appSettings.defaultGoalFrequency}
+                onChange={(event) =>
+                  updateAppSetting("defaultGoalFrequency", event.target.value as GoalFrequency)
+                }
+                className="mt-1 w-full rounded-md border border-emerald-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-emerald-700 dark:bg-emerald-950/35 dark:text-white"
+              >
+                {GOAL_FREQUENCY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-xs text-emerald-900 dark:text-emerald-200">
+              Default grace period
+              <select
+                value={appSettings.defaultGoalGracePeriod}
+                onChange={(event) =>
+                  updateAppSetting("defaultGoalGracePeriod", event.target.value as GracePeriod)
+                }
+                className="mt-1 w-full rounded-md border border-emerald-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-emerald-700 dark:bg-emerald-950/35 dark:text-white"
+              >
+                {GRACE_PERIOD_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs text-emerald-900 dark:text-emerald-200">Default plant style</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {GOAL_PLANT_VARIANTS.map((variant) => (
+                <button
+                  key={variant}
+                  type="button"
+                  onClick={() => updateDefaultPlantStyle(variant)}
+                  className={`rounded-md border p-1 ${
+                    appSettings.defaultGoalPlantVariant === variant
+                      ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                      : "border-emerald-200 bg-white dark:border-emerald-700 dark:bg-emerald-950/35"
+                  }`}
+                  aria-label={`Set default plant style ${variant}`}
+                >
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                    <PlantIllustration
+                      stage="flowering"
+                      wateringLevel={1}
+                      wateredGoals={1}
+                      size="small"
+                      variant={variant}
+                    />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="font-semibold text-slate-900 dark:text-white">History display</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             These options control what is shown on the Goal History page.

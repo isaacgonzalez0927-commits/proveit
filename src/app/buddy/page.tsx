@@ -24,6 +24,7 @@ import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { getPlan } from "@/lib/store";
+import { getStoredAppSettings } from "@/lib/appSettings";
 import type { Goal, GoalFrequency, GracePeriod } from "@/types";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -57,12 +58,18 @@ export default function BuddyPage() {
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newFrequency, setNewFrequency] = useState<GoalFrequency>("daily");
+  const [newFrequency, setNewFrequency] = useState<GoalFrequency>(
+    () => getStoredAppSettings().defaultGoalFrequency
+  );
   const [newDailyTime, setNewDailyTime] = useState("09:00");
   const [newWeeklyDay, setNewWeeklyDay] = useState(0);
   const [newWeeklyTime, setNewWeeklyTime] = useState("10:00");
-  const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>("eod");
-  const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(1);
+  const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
+    () => getStoredAppSettings().defaultGoalGracePeriod
+  );
+  const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
+    () => getStoredAppSettings().defaultGoalPlantVariant
+  );
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editDraft, setEditDraft] = useState<{
@@ -184,14 +191,15 @@ export default function BuddyPage() {
   const canCreateDaily = canAddGoal("daily");
   const canCreateWeekly = canAddGoal("weekly");
   const resetCreateGoalForm = () => {
+    const appSettings = getStoredAppSettings();
     setNewTitle("");
     setNewDescription("");
-    setNewFrequency("daily");
+    setNewFrequency(appSettings.defaultGoalFrequency);
     setNewDailyTime("09:00");
     setNewWeeklyDay(0);
     setNewWeeklyTime("10:00");
-    setNewGracePeriod("eod");
-    setNewPlantVariant(1);
+    setNewGracePeriod(appSettings.defaultGoalGracePeriod);
+    setNewPlantVariant(appSettings.defaultGoalPlantVariant);
   };
 
   const handleCreateGoal = async (e: React.FormEvent) => {

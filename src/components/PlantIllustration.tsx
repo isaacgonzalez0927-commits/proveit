@@ -178,7 +178,7 @@ function getStageDimensions(size: "default" | "large" | "small") {
 
 function getVariantSizeMultiplier(stage: PlantStageKey, variant: GoalPlantVariant): number {
   if (stage !== "flowering") return 1;
-  if (variant === 1) return 1.08;
+  if (variant === 1) return 1.14;
   if (variant === 2) return 0.93;
   return 1;
 }

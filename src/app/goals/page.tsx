@@ -7,6 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { getPlan } from "@/lib/store";
+import { getStoredAppSettings } from "@/lib/appSettings";
 import { safeParseISO } from "@/lib/dateUtils";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek } from "date-fns";
@@ -32,12 +33,18 @@ function GoalsContent() {
   const [addGoalError, setAddGoalError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [frequency, setFrequency] = useState<GoalFrequency>("daily");
+  const [frequency, setFrequency] = useState<GoalFrequency>(
+    () => getStoredAppSettings().defaultGoalFrequency
+  );
   const [dailyTime, setDailyTime] = useState("09:00");
   const [weeklyDay, setWeeklyDay] = useState<number>(0);
   const [weeklyTime, setWeeklyTime] = useState("10:00");
-  const [gracePeriod, setGracePeriod] = useState<GracePeriod>("eod");
-  const [selectedPlantVariant, setSelectedPlantVariant] = useState<GoalPlantVariant>(1);
+  const [gracePeriod, setGracePeriod] = useState<GracePeriod>(
+    () => getStoredAppSettings().defaultGoalGracePeriod
+  );
+  const [selectedPlantVariant, setSelectedPlantVariant] = useState<GoalPlantVariant>(
+    () => getStoredAppSettings().defaultGoalPlantVariant
+  );
   const [goalToDelete, setGoalToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
@@ -99,14 +106,15 @@ function GoalsContent() {
         return;
       }
       setGoalPlantVariant(created.id, selectedPlantVariant);
+      const appSettings = getStoredAppSettings();
       setTitle("");
       setDescription("");
-      setFrequency("daily");
+      setFrequency(appSettings.defaultGoalFrequency);
       setDailyTime("09:00");
       setWeeklyDay(0);
       setWeeklyTime("10:00");
-      setGracePeriod("eod");
-      setSelectedPlantVariant(1);
+      setGracePeriod(appSettings.defaultGoalGracePeriod);
+      setSelectedPlantVariant(appSettings.defaultGoalPlantVariant);
       setShowForm(false);
     } finally {
       setIsAddingGoal(false);
@@ -302,9 +310,12 @@ function GoalsContent() {
               <button
                 type="button"
                 onClick={() => {
+                  const appSettings = getStoredAppSettings();
                   setShowForm(false);
                   setAddGoalError(null);
-                  setSelectedPlantVariant(1);
+                  setFrequency(appSettings.defaultGoalFrequency);
+                  setGracePeriod(appSettings.defaultGoalGracePeriod);
+                  setSelectedPlantVariant(appSettings.defaultGoalPlantVariant);
                 }}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
