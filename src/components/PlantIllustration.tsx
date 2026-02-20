@@ -46,54 +46,60 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
-function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
+function buildVariantSpecificBaseNames(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
   const stageNumber = STAGE_TO_NUMBER[stage];
-  const baseNames =
-    stage === "flowering"
-      ? [
-          `plant-stage-${stageNumber}-${variant}`,
-          `plant-stage-${stageNumber}-${variant.toString().padStart(2, "0")}`,
-          `plant-stage-${stageNumber}-${variant.toString().padStart(3, "0")}`,
-          `stage-${stageNumber}-${variant}`,
-          `stage${stageNumber}-${variant}`,
-          `plant-${stageNumber}-${variant}`,
-          `${stageNumber}-${variant}`,
-          `flowering-${variant}`,
-          `final-plant-${variant}`,
-          `plant-stage-${stageNumber}`,
-          `stage-${stageNumber}`,
-          `stage${stageNumber}`,
-          `plant-${stageNumber}`,
-          `plant${stageNumber}`,
-          `${stageNumber}`,
-          ...STAGE_ALIASES[stage].map((alias) => `${alias}-${variant}`),
-          ...STAGE_ALIASES[stage],
-        ]
-      : [
-          `plant-stage-${stageNumber}-${variant}`,
-          `stage-${stageNumber}-${variant}`,
-          `stage${stageNumber}-${variant}`,
-          `plant-${stageNumber}-${variant}`,
-          `plant${stageNumber}-${variant}`,
-          `${stageNumber}-${variant}`,
-          ...STAGE_ALIASES[stage].map((alias) => `${alias}-${variant}`),
-          `plant-stage-${stageNumber}`,
-          `stage-${stageNumber}`,
-          `stage${stageNumber}`,
-          `plant-${stageNumber}`,
-          `plant${stageNumber}`,
-          `${stageNumber}`,
-          ...STAGE_ALIASES[stage],
-        ];
+  const variantNames = [
+    `plant-stage-${stageNumber}-${variant}`,
+    `plant-stage-${stageNumber}-${variant.toString().padStart(2, "0")}`,
+    `plant-stage-${stageNumber}-${variant.toString().padStart(3, "0")}`,
+    `stage-${stageNumber}-${variant}`,
+    `stage${stageNumber}-${variant}`,
+    `plant-${stageNumber}-${variant}`,
+    `plant${stageNumber}-${variant}`,
+    `${stageNumber}-${variant}`,
+    ...STAGE_ALIASES[stage].map((alias) => `${alias}-${variant}`),
+  ];
 
-  const names = unique(baseNames);
+  if (stage === "flowering") {
+    variantNames.push(`flowering-${variant}`, `final-plant-${variant}`);
+  }
+
+  return unique(variantNames);
+}
+
+function buildDefaultBaseNames(stage: PlantStageKey): string[] {
+  const stageNumber = STAGE_TO_NUMBER[stage];
+  return unique([
+    `plant-stage-${stageNumber}`,
+    `stage-${stageNumber}`,
+    `stage${stageNumber}`,
+    `plant-${stageNumber}`,
+    `plant${stageNumber}`,
+    `${stageNumber}`,
+    ...STAGE_ALIASES[stage],
+  ]);
+}
+
+function expandToPhotoPaths(baseNames: string[]): string[] {
   const candidates: string[] = [];
-  for (const name of names) {
+  for (const name of baseNames) {
     for (const ext of IMAGE_EXTENSIONS) {
       candidates.push(`/plants/${name}.${ext}`);
     }
   }
   return candidates;
+}
+
+function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): {
+  candidates: string[];
+  variantSpecificPaths: Set<string>;
+} {
+  const variantSpecificPaths = expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant));
+  const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNames(stage));
+  return {
+    candidates: unique([...variantSpecificPaths, ...fallbackPaths]),
+    variantSpecificPaths: new Set(variantSpecificPaths),
+  };
 }
 
 const STAGE_CONFIG: Record<
@@ -137,10 +143,19 @@ export function PlantIllustration({
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const { stageHeight, stageWidth } = getStageDimensions(size);
-  const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
+  const photoCandidateData = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
+  const photoCandidates = photoCandidateData.candidates;
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoFailed, setPhotoFailed] = useState(false);
   const photoSrc = photoCandidates[photoIndex];
+  const usingVariantSpecificPhoto =
+    !!photoSrc && photoCandidateData.variantSpecificPaths.has(photoSrc);
+  const fallbackStyleTransform =
+    variant === 2 && !usingVariantSpecificPhoto
+      ? "scaleX(-1)"
+      : variant === 3 && !usingVariantSpecificPhoto
+        ? "rotate(-4deg)"
+        : undefined;
 
   useEffect(() => {
     setPhotoFailed(false);
@@ -159,6 +174,7 @@ export function PlantIllustration({
           className="h-full w-full select-none object-contain"
           style={{
             filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+            transform: fallbackStyleTransform,
           }}
           onError={() => {
             setPhotoIndex((current) => {

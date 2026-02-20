@@ -351,6 +351,9 @@ export default function BuddyPage() {
             Every goal grows its own plant. Finish goals to water each one and unlock all stage-6 flowers.
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            One goal = one plant. You currently have {goals.length} plant{goals.length === 1 ? "" : "s"}.
+          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {plan.name} plan · {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
             {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
           </p>
