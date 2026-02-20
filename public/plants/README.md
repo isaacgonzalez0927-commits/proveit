@@ -26,7 +26,14 @@ Optional per-style files for *every* stage:
 - `plant-stage-2-1.png`, `plant-stage-2-2.png`, `plant-stage-2-3.png`, `plant-stage-2-4.png`
 - ...same pattern through stage 6.
 
-The app will also auto-try alternate names/extensions in `/public/plants`, such as:
+The app will also auto-try alternate names/extensions in:
+
+- `/public/plants`
+- `/public/plants/backup`
+- `/public/plants/back-up`
+- `/public/plants/back up`
+
+Examples:
 
 - `stage1.png`, `stage-1.jpg`, `plant1.webp`, `seedling.png`
 - `stage2.png`, `sprout.jpg`

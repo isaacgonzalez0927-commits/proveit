@@ -41,6 +41,7 @@ const STAGE_ALIASES: Record<PlantStageKey, string[]> = {
   flowering: ["flowering", "flowered", "bloom-final", "plant-6", "final-plant"],
 };
 const IMAGE_EXTENSIONS = ["png", "PNG", "webp", "WEBP", "jpg", "JPG", "jpeg", "JPEG"];
+const IMAGE_DIRECTORIES = ["/plants", "/plants/backup", "/plants/back-up", "/plants/back up"];
 const IMAGE_EXISTS_CACHE = new Map<string, boolean>();
 
 function unique(values: string[]): string[] {
@@ -112,9 +113,11 @@ function buildDefaultBaseNames(stage: PlantStageKey): string[] {
 
 function expandToPhotoPaths(baseNames: string[]): string[] {
   const candidates: string[] = [];
-  for (const name of baseNames) {
-    for (const ext of IMAGE_EXTENSIONS) {
-      candidates.push(`/plants/${name}.${ext}`);
+  for (const directory of IMAGE_DIRECTORIES) {
+    for (const name of baseNames) {
+      for (const ext of IMAGE_EXTENSIONS) {
+        candidates.push(`${directory}/${name}.${ext}`);
+      }
     }
   }
   return candidates;
