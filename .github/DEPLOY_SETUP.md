@@ -28,3 +28,5 @@ After adding the secrets, every push will trigger the deploy workflow.
 - The latest deployment link is shown in:
   - the workflow run summary, and
   - pull request comments/deployment status (when a PR exists)
+
+If secrets are missing, the workflow now skips deployment and tells you exactly which secrets to add.

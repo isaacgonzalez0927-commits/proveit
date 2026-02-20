@@ -9,6 +9,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      HAS_VERCEL_SECRETS: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
     permissions:
       contents: read
       pull-requests: write
@@ -24,9 +26,11 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
+        if: env.HAS_VERCEL_SECRETS == 'true'
         run: npm ci
 
       - name: Deploy to Vercel
+        if: env.HAS_VERCEL_SECRETS == 'true'
         id: vercel_deploy
         uses: amondnet/vercel-action@v25
         with:
@@ -39,8 +43,15 @@ jobs:
           github-deployment: true
           vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
 
+      - name: Vercel secrets missing
+        if: env.HAS_VERCEL_SECRETS != 'true'
+        run: |
+          echo "### Vercel deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Skipped: missing VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID secrets." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Add these in GitHub repo settings to auto-update the link on each push." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Add deployment link to workflow summary
-        if: always()
+        if: env.HAS_VERCEL_SECRETS == 'true' && always()
         run: |
           DEPLOY_URL="${{ steps.vercel_deploy.outputs['preview-url'] }}"
           if [ -z "$DEPLOY_URL" ]; then
