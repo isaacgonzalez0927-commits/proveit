@@ -66,8 +66,8 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    priceMonthly: 9.99,
-    priceYearly: 99,
+    priceMonthly: 4.99,
+    priceYearly: 49,
     dailyGoals: 5,
     weeklyGoals: 5,
     features: [
@@ -85,8 +85,8 @@ export const PLANS: Plan[] = [
   {
     id: "premium",
     name: "Premium",
-    priceMonthly: 19.99,
-    priceYearly: 199,
+    priceMonthly: 9.99,
+    priceYearly: 99,
     dailyGoals: -1,
     weeklyGoals: -1,
     features: [

@@ -521,7 +521,7 @@ export default function BuddyPage() {
                     }`}
                     aria-label={`Select plant style ${variant}`}
                   >
-                    <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
                       <PlantIllustration
                         stage="flowering"
                         wateringLevel={1}
@@ -718,7 +718,7 @@ export default function BuddyPage() {
                             }`}
                             aria-label={`Set plant style ${variant}`}
                           >
-                            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
                               <PlantIllustration
                                 stage="flowering"
                                 wateringLevel={1}
@@ -884,7 +884,7 @@ export default function BuddyPage() {
                               }`}
                               aria-label={`Set edit plant style ${variant}`}
                             >
-                              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
                                 <PlantIllustration
                                   stage="flowering"
                                   wateringLevel={1}

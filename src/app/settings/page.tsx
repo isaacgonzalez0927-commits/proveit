@@ -245,7 +245,7 @@ export default function SettingsPage() {
                   }`}
                   aria-label={`Set default plant style ${variant}`}
                 >
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
                     <PlantIllustration
                       stage="flowering"
                       wateringLevel={1}
