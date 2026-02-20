@@ -52,15 +52,26 @@ jobs:
           AUTH_HEADER="Authorization: Bearer ${{ github.token }}"
           ACCEPT_HEADER="Accept: application/vnd.github+json"
 
-          DEPLOYMENTS_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
-
-          DEPLOYMENT_ID=$(printf "%s" "$DEPLOYMENTS_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print(d[0]['id'] if d else '')")
-
           LINK=""
-          if [ -n "$DEPLOYMENT_ID" ]; then
-            DEPLOYMENT_STATUSES_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/deployments/$DEPLOYMENT_ID/statuses")
-            LINK=$(printf "%s" "$DEPLOYMENT_STATUSES_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print((d[0].get('environment_url') or d[0].get('target_url') or '') if d else '')")
-          fi
+          for _ in $(seq 1 20); do
+            DEPLOYMENTS_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" || echo "[]")
+            DEPLOYMENT_ID=$(printf "%s" "$DEPLOYMENTS_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print(d[0]['id'] if d else '')")
+
+            if [ -n "$DEPLOYMENT_ID" ]; then
+              DEPLOYMENT_STATUSES_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/deployments/$DEPLOYMENT_ID/statuses" || echo "[]")
+              LINK=$(printf "%s" "$DEPLOYMENT_STATUSES_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print((d[0].get('environment_url') or d[0].get('target_url') or '') if d else '')")
+            fi
+
+            if [ -z "$LINK" ]; then
+              COMMIT_STATUS_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/commits/$SHA/status" || echo "{}")
+              LINK=$(printf "%s" "$COMMIT_STATUS_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print(next((s.get('target_url','') for s in d.get('statuses',[]) if s.get('context')=='Vercel' and s.get('state')=='success'), ''))")
+            fi
+
+            if [ -n "$LINK" ]; then
+              break
+            fi
+            sleep 6
+          done
 
           echo "### Vercel deployment" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$LINK" ]; then
