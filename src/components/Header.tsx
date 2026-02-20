@@ -72,7 +72,11 @@ export function Header() {
 
   const handleSignOut = async () => {
     setAccountOpen(false);
-    await Promise.resolve(signOut());
+    try {
+      await Promise.resolve(signOut());
+    } catch {
+      // Still route to login so people are never stranded in-app.
+    }
     router.push("/?step=login");
   };
 
