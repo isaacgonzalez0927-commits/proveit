@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   History,
@@ -9,15 +10,31 @@ import {
   ChevronRight,
   Lock,
   Flame,
+  Trash2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { safeParseISO } from "@/lib/dateUtils";
 import { format, isThisWeek } from "date-fns";
+import {
+  DEFAULT_HISTORY_DISPLAY_SETTINGS,
+  getStoredHistoryDisplaySettings,
+  type HistoryDisplaySettings,
+} from "@/lib/historySettings";
 
 function HistoryContent() {
-  const { user, goals, submissions, getSubmissionsForGoal } = useApp();
+  const { user, goals, submissions, getSubmissionsForGoal, deleteGoalHistory } = useApp();
+  const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
+    DEFAULT_HISTORY_DISPLAY_SETTINGS
+  );
+  const [historyActionMessage, setHistoryActionMessage] = useState<string | null>(null);
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHistorySettings(getStoredHistoryDisplaySettings());
+  }, []);
 
   if (!user) {
     return (
@@ -72,6 +89,33 @@ function HistoryContent() {
     };
   }).filter((g) => g.completedDates.length > 0);
 
+  const enabledSettingCount = [
+    historySettings.showProofPhotos,
+    historySettings.showStreak,
+    historySettings.showVerifiedCount,
+    historySettings.showThisWeekBadge,
+  ].filter(Boolean).length;
+
+  const handleDeleteGoalHistory = async (goalId: string, goalTitle: string) => {
+    setHistoryActionMessage(null);
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        `Delete all history for "${goalTitle}"? This removes verified dates and proof entries for this goal.`
+      );
+      if (!confirmed) return;
+    }
+
+    setDeletingGoalId(goalId);
+    try {
+      await deleteGoalHistory(goalId);
+      setHistoryActionMessage(`Deleted history for "${goalTitle}".`);
+    } catch {
+      setHistoryActionMessage("Could not delete history right now. Please try again.");
+    } finally {
+      setDeletingGoalId(null);
+    }
+  };
+
   return (
     <>
       <Header />
@@ -84,6 +128,16 @@ function HistoryContent() {
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             {plan.name} plan · View your completed proofs and streaks over time
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            {enabledSettingCount}/4 history display options enabled
+            <Link
+              href="/settings"
+              className="font-medium text-prove-600 hover:underline dark:text-prove-400"
+            >
+              Edit in Settings
+            </Link>
+          </div>
         </div>
 
         {!isProOrPremium ? (
@@ -122,6 +176,11 @@ function HistoryContent() {
               </div>
             ) : (
               <div className="space-y-6">
+                {historyActionMessage && (
+                  <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    {historyActionMessage}
+                  </p>
+                )}
                 {byGoal.map(({ goal, completedDates, subsByDate, streak }) => (
                   <section
                     key={goal.id}
@@ -139,17 +198,37 @@ function HistoryContent() {
                             {goal.title}
                           </h3>
                           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Flame className="h-3.5 w-3.5 text-amber-500" />
-                            {streak} {goal.frequency === "daily" ? "day" : "week"} streak · {completedDates.length} verified
+                            {historySettings.showStreak && (
+                              <Flame className="h-3.5 w-3.5 text-amber-500" />
+                            )}
+                            {[
+                              historySettings.showStreak
+                                ? `${streak} ${goal.frequency === "daily" ? "day" : "week"} streak`
+                                : null,
+                              historySettings.showVerifiedCount ? `${completedDates.length} verified` : null,
+                            ]
+                              .filter((part): part is string => !!part)
+                              .join(" · ") || (goal.frequency === "daily" ? "Daily goal" : "Weekly goal")}
                           </p>
                         </div>
                       </div>
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="shrink-0 rounded-lg bg-prove-100 px-3 py-1.5 text-sm font-medium text-prove-700 hover:bg-prove-200 dark:bg-prove-900/50 dark:text-prove-300 dark:hover:bg-prove-800/50"
-                      >
-                        Submit
-                      </Link>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <Link
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          className="rounded-lg bg-prove-100 px-3 py-1.5 text-sm font-medium text-prove-700 hover:bg-prove-200 dark:bg-prove-900/50 dark:text-prove-300 dark:hover:bg-prove-800/50"
+                        >
+                          Submit
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteGoalHistory(goal.id, goal.title)}
+                          disabled={deletingGoalId === goal.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          {deletingGoalId === goal.id ? "Deleting..." : "Delete history"}
+                        </button>
+                      </div>
                     </div>
                     <ul className="mt-4 space-y-2">
                       {completedDates.slice(0, 10).map((dateStr) => {
@@ -157,7 +236,10 @@ function HistoryContent() {
                         const label = d ? format(d, "EEE, MMM d, yyyy") : dateStr;
                         const isThisWeekDate = d ? isThisWeek(d) : false;
                         const sub = subsByDate.get(dateStr);
-                        const hasImage = sub?.imageDataUrl && sub.imageDataUrl.length > 10;
+                        const hasImage =
+                          historySettings.showProofPhotos &&
+                          sub?.imageDataUrl &&
+                          sub.imageDataUrl.length > 10;
                         return (
                           <li
                             key={dateStr}
@@ -178,7 +260,7 @@ function HistoryContent() {
                             )}
                             <span className="text-sm text-slate-700 dark:text-slate-300">
                               {label}
-                              {isThisWeekDate && (
+                              {historySettings.showThisWeekBadge && isThisWeekDate && (
                                 <span className="ml-2 rounded bg-prove-100 px-1.5 py-0.5 text-xs font-medium text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
                                   This week
                                 </span>

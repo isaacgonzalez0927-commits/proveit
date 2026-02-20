@@ -12,6 +12,7 @@ import {
   Sprout,
   Target,
   UserCircle2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import clsx from "clsx";
@@ -31,6 +32,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/goals/history")) return "History";
   if (pathname.startsWith("/goals/submit")) return "Submit Proof";
   if (pathname.startsWith("/goals")) return "Goals";
+  if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/pricing")) return "Pricing";
   if (pathname.startsWith("/reset-password")) return "Reset Password";
   return "ProveIt";
@@ -114,6 +116,16 @@ export function Header() {
                   <ThemeToggle />
                 </div>
                 <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                <Link
+                  href="/settings"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  role="menuitem"
+                  aria-label="Open settings"
+                >
+                  <SlidersHorizontal className="h-4 w-4 shrink-0" />
+                  Settings
+                </Link>
                 <button
                   type="button"
                   onClick={handleSignOut}

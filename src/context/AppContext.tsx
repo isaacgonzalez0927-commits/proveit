@@ -52,6 +52,7 @@ interface AppContextValue {
   removeGoal: (id: string) => void | Promise<void>;
   addSubmission: (sub: Omit<ProofSubmission, "id" | "createdAt">) => ProofSubmission | Promise<ProofSubmission>;
   updateSubmission: (id: string, updates: Partial<ProofSubmission>) => void | Promise<void>;
+  deleteGoalHistory: (goalId: string) => void | Promise<void>;
   canAddGoal: (frequency: GoalFrequency) => boolean;
   getSubmissionsForGoal: (goalId: string) => ProofSubmission[];
   markGoalDone: (goalId: string) => Promise<void>;
@@ -361,6 +362,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [useSupabase]
   );
 
+  const deleteGoalHistory = useCallback(
+    async (goalId: string) => {
+      if (useSupabase) {
+        try {
+          await fetch(`/api/submissions?goalId=${encodeURIComponent(goalId)}`, { method: "DELETE" });
+        } catch {
+          // fallback to local
+        }
+        try {
+          await fetch("/api/goals", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: goalId, completedDates: [] }),
+          });
+        } catch {
+          // fallback to local
+        }
+      }
+      setSubmissionsState((prev) => prev.filter((s) => s.goalId !== goalId));
+      setGoalsState((prev) =>
+        prev.map((g) => (g.id === goalId ? { ...g, completedDates: [] } : g))
+      );
+    },
+    [useSupabase]
+  );
+
   const canAddGoalCheck = useCallback(
     (frequency: GoalFrequency) => {
       const planId = user?.plan ?? "free";
@@ -511,6 +538,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     removeGoal,
     addSubmission,
     updateSubmission,
+    deleteGoalHistory,
     canAddGoal: canAddGoalCheck,
     getSubmissionsForGoal,
     markGoalDone,

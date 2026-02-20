@@ -99,3 +99,26 @@ export async function PATCH(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const goalId = searchParams.get("goalId");
+  if (!id && !goalId) {
+    return NextResponse.json({ error: "Missing id or goalId" }, { status: 400 });
+  }
+
+  let query = supabase.from("submissions").delete();
+  if (id) query = query.eq("id", id);
+  if (goalId) query = query.eq("goal_id", goalId);
+
+  const { error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
