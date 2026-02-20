@@ -47,9 +47,30 @@ jobs:
       - name: Vercel secrets missing
         if: env.HAS_VERCEL_SECRETS != 'true'
         run: |
+          REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
+          AUTH_HEADER="Authorization: Bearer ${{ github.token }}"
+          ACCEPT_HEADER="Accept: application/vnd.github+json"
+
+          DEPLOYMENTS_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+
+          DEPLOYMENT_ID=$(printf "%s" "$DEPLOYMENTS_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print(d[0]['id'] if d else '')")
+
+          LINK=""
+          if [ -n "$DEPLOYMENT_ID" ]; then
+            DEPLOYMENT_STATUSES_JSON=$(curl -fsSL -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" "https://api.github.com/repos/$REPO/deployments/$DEPLOYMENT_ID/statuses")
+            LINK=$(printf "%s" "$DEPLOYMENT_STATUSES_JSON" | python -c "import json,sys; d=json.load(sys.stdin); print((d[0].get('environment_url') or d[0].get('target_url') or '') if d else '')")
+          fi
+
           echo "### Vercel deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Skipped: missing VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID secrets." >> "$GITHUB_STEP_SUMMARY"
-          echo "- Add these in GitHub repo settings to auto-update the link on each push." >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$LINK" ]; then
+            echo "- Latest URL: $LINK" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Source: Vercel Git Integration" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Note: production URL updates only from the Vercel production branch (usually \`main\`)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- No deployment URL found for this commit yet." >> "$GITHUB_STEP_SUMMARY"
+            echo "- Missing Actions secrets for direct CLI deploy: VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Add deployment link to workflow summary
         if: env.HAS_VERCEL_SECRETS == 'true' && always()

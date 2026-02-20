@@ -28,4 +28,4 @@ After adding the secrets, every push will trigger the deploy workflow to **produ
   - the workflow run summary, and
   - pull request comments/deployment status (when a PR exists)
 
-If secrets are missing, the workflow now skips deployment and tells you exactly which secrets to add.
+If secrets are missing, the workflow falls back to Vercel Git Integration and still prints the latest URL for the commit in the run summary.
