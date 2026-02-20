@@ -41,9 +41,32 @@ const STAGE_ALIASES: Record<PlantStageKey, string[]> = {
   flowering: ["flowering", "flowered", "bloom-final", "plant-6", "final-plant"],
 };
 const IMAGE_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
+const IMAGE_EXISTS_CACHE = new Map<string, boolean>();
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values));
+}
+
+function imageExists(src: string): Promise<boolean> {
+  const cached = IMAGE_EXISTS_CACHE.get(src);
+  if (typeof cached === "boolean") {
+    return Promise.resolve(cached);
+  }
+  if (typeof window === "undefined") {
+    return Promise.resolve(false);
+  }
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      IMAGE_EXISTS_CACHE.set(src, true);
+      resolve(true);
+    };
+    img.onerror = () => {
+      IMAGE_EXISTS_CACHE.set(src, false);
+      resolve(false);
+    };
+    img.src = src;
+  });
 }
 
 function buildVariantSpecificBaseNames(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
@@ -94,7 +117,21 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
   candidates: string[];
   variantSpecificPaths: Set<string>;
 } {
-  const variantSpecificPaths = expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant));
+  const styleFallbackBaseNames = unique([
+    `plant-style-${variant}`,
+    `style-${variant}`,
+    `plant-variant-${variant}`,
+    `variant-${variant}`,
+    `goal-plant-${variant}`,
+    `plant-${variant}`,
+    `plant-stage-6-${variant}`,
+    `flowering-${variant}`,
+    `final-plant-${variant}`,
+  ]);
+  const variantSpecificPaths = expandToPhotoPaths([
+    ...buildVariantSpecificBaseNames(stage, variant),
+    ...styleFallbackBaseNames,
+  ]);
   const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNames(stage));
   return {
     candidates: unique([...variantSpecificPaths, ...fallbackPaths]),
@@ -145,9 +182,7 @@ export function PlantIllustration({
   const { stageHeight, stageWidth } = getStageDimensions(size);
   const photoCandidateData = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const photoCandidates = photoCandidateData.candidates;
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const photoSrc = photoCandidates[photoIndex];
+  const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const usingVariantSpecificPhoto =
     !!photoSrc && photoCandidateData.variantSpecificPaths.has(photoSrc);
   const fallbackStyleTransform =
@@ -155,14 +190,32 @@ export function PlantIllustration({
       ? "scaleX(-1)"
       : variant === 3 && !usingVariantSpecificPhoto
         ? "rotate(-4deg)"
+      : variant === 4 && !usingVariantSpecificPhoto
+        ? "rotate(4deg)"
         : undefined;
 
   useEffect(() => {
-    setPhotoFailed(false);
-    setPhotoIndex(0);
+    let cancelled = false;
+    const resolvePhoto = async () => {
+      for (const candidate of photoCandidates) {
+        const exists = await imageExists(candidate);
+        if (cancelled) return;
+        if (exists) {
+          setPhotoSrc(candidate);
+          return;
+        }
+      }
+      if (!cancelled) {
+        setPhotoSrc(null);
+      }
+    };
+    void resolvePhoto();
+    return () => {
+      cancelled = true;
+    };
   }, [photoCandidates]);
 
-  if (!photoFailed && photoSrc) {
+  if (photoSrc) {
     return (
       <div
         className={`relative inline-flex items-center justify-center ${className}`}
@@ -175,15 +228,6 @@ export function PlantIllustration({
           style={{
             filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
             transform: fallbackStyleTransform,
-          }}
-          onError={() => {
-            setPhotoIndex((current) => {
-              if (current >= photoCandidates.length - 1) {
-                setPhotoFailed(true);
-                return current;
-              }
-              return current + 1;
-            });
           }}
           loading="eager"
           draggable={false}
