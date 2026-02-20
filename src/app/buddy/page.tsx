@@ -14,7 +14,11 @@ import {
   saveDeveloperModeSettings,
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
-import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
+import {
+  GOAL_PLANT_VARIANTS,
+  getGoalPlantVariantName,
+  type GoalPlantVariant,
+} from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { Header } from "@/components/Header";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
@@ -511,7 +515,7 @@ export default function BuddyPage() {
                         : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                     }`}
                   >
-                    Plant {variant}
+                    {getGoalPlantVariantName(variant)}
                   </button>
                 ))}
               </div>
@@ -588,7 +592,7 @@ export default function BuddyPage() {
         {goals.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
             <p className="text-slate-600 dark:text-slate-400">
-              No plants yet. Create your first goal and pick Plant 1, 2, 3, or 4 to start your garden.
+              No plants yet. Create your first goal and pick a plant style to start your garden.
             </p>
             <button
               type="button"
@@ -609,7 +613,7 @@ export default function BuddyPage() {
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-slate-900 dark:text-white">{entry.goal.title}</p>
                     <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                      Plant {entry.plantVariant} · {entry.goal.frequency === "daily" ? "Daily" : "Weekly"}
+                      {getGoalPlantVariantName(entry.plantVariant)} · {entry.goal.frequency === "daily" ? "Daily" : "Weekly"}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -698,7 +702,7 @@ export default function BuddyPage() {
                               : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                           }`}
                         >
-                          Plant {variant}
+                          {getGoalPlantVariantName(variant)}
                         </button>
                       );
                     })}
@@ -842,7 +846,7 @@ export default function BuddyPage() {
                                 : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                             }`}
                           >
-                            Plant {variant}
+                            {getGoalPlantVariantName(variant)}
                           </button>
                         ))}
                       </div>
@@ -913,7 +917,7 @@ export default function BuddyPage() {
                 • {stage.minStreak} {stage.minStreak === 1 ? "day" : "days"}: {stage.name}
               </li>
             ))}
-            <li>• Stage 6 supports four flower variants (Plant 1 / 2 / 3 / 4)</li>
+            <li>• Stage 6 supports four flower variants (Fern / Ivy / Poppy / Daisy)</li>
           </ul>
         </div>
 

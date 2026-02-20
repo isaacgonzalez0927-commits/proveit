@@ -1,5 +1,12 @@
 Drop your plant stage images in this folder.
 
+Style names shown in the app:
+
+- `1` = Fern
+- `2` = Ivy
+- `3` = Poppy
+- `4` = Daisy
+
 Preferred names (in order):
 
 1. `plant-stage-1.png` - seedling

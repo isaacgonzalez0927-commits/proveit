@@ -11,7 +11,11 @@ import { safeParseISO } from "@/lib/dateUtils";
 import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { format, isThisWeek } from "date-fns";
 import type { GoalFrequency, GracePeriod } from "@/types";
-import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
+import {
+  GOAL_PLANT_VARIANTS,
+  getGoalPlantVariantName,
+  type GoalPlantVariant,
+} from "@/lib/goalPlants";
 
 function GoalsContent() {
   const {
@@ -279,7 +283,7 @@ function GoalsContent() {
                           variant={variant}
                         />
                       </div>
-                      <p className="mt-1 font-medium">Plant {variant}</p>
+                      <p className="mt-1 font-medium">{getGoalPlantVariantName(variant)}</p>
                     </button>
                   );
                 })}
@@ -357,7 +361,7 @@ function GoalsContent() {
                       {!due && dueLabel && ` · ${dueLabel}`}
                     </p>
                     <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
-                      Plant {plantVariant}
+                      {getGoalPlantVariantName(plantVariant)}
                     </p>
                   </div>
                 </div>

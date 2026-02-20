@@ -1,5 +1,11 @@
 export const GOAL_PLANT_VARIANTS = [1, 2, 3, 4] as const;
 export type GoalPlantVariant = (typeof GOAL_PLANT_VARIANTS)[number];
+export const GOAL_PLANT_VARIANT_NAMES: Record<GoalPlantVariant, string> = {
+  1: "Fern",
+  2: "Ivy",
+  3: "Poppy",
+  4: "Daisy",
+};
 
 const STORAGE_KEY = "proveit_goal_plants";
 
@@ -44,4 +50,8 @@ export function saveGoalPlantSelections(selections: Record<string, GoalPlantVari
 export function clearGoalPlantSelections() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
+}
+
+export function getGoalPlantVariantName(variant: GoalPlantVariant): string {
+  return GOAL_PLANT_VARIANT_NAMES[variant];
 }
