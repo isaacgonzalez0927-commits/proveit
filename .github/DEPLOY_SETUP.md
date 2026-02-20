@@ -5,7 +5,7 @@
 1. Go to [vercel.com](https://vercel.com) and sign in
 2. Click **Add New** → **Project**
 3. Import your GitHub repo: `isaacgonzalez0927-commits/proveit`
-4. Vercel will auto-deploy on every push (preview for branches, production for `main`)
+4. Vercel will auto-deploy on every push to the same production URL
 
 No extra setup needed.
 
@@ -21,10 +21,9 @@ Add these secrets to your GitHub repo: **Settings** → **Secrets and variables*
 | `VERCEL_ORG_ID` | Vercel project **Settings** → **General** → scroll to "Project ID" section, or run `vercel link` and check `.vercel/project.json` |
 | `VERCEL_PROJECT_ID` | Same as above in `.vercel/project.json` |
 
-After adding the secrets, every push will trigger the deploy workflow.
+After adding the secrets, every push will trigger the deploy workflow to **production**.
 
-- Pushes to `main` deploy to **production**
-- Pushes to other branches deploy to **preview**
+- Pushes to any branch deploy to the same production URL
 - The latest deployment link is shown in:
   - the workflow run summary, and
   - pull request comments/deployment status (when a PR exists)

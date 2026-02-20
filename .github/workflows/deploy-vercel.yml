@@ -41,7 +41,8 @@ jobs:
           scope: isaacs-projects-94fcf528
           github-comment: true
           github-deployment: true
-          vercel-args: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
+          # Always deploy to production so your existing Vercel URL stays current.
+          vercel-args: "--prod"
 
       - name: Vercel secrets missing
         if: env.HAS_VERCEL_SECRETS != 'true'
@@ -71,11 +72,5 @@ jobs:
             LINK="https://$DEPLOY_URL"
           fi
 
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            ENVIRONMENT="production"
-          else
-            ENVIRONMENT="preview"
-          fi
-
           echo "- Latest URL: $LINK" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Environment: $ENVIRONMENT" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Environment: production" >> "$GITHUB_STEP_SUMMARY"
