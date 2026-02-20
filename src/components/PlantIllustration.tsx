@@ -40,7 +40,7 @@ const STAGE_ALIASES: Record<PlantStageKey, string[]> = {
   thriving: ["thriving", "plant-5", "full-plant"],
   flowering: ["flowering", "flowered", "bloom-final", "plant-6", "final-plant"],
 };
-const IMAGE_EXTENSIONS = ["png", "webp", "jpg", "jpeg"];
+const IMAGE_EXTENSIONS = ["png", "PNG", "webp", "WEBP", "jpg", "JPG", "jpeg", "JPEG"];
 const IMAGE_EXISTS_CACHE = new Map<string, boolean>();
 
 function unique(values: string[]): string[] {
@@ -73,14 +73,21 @@ function buildVariantSpecificBaseNames(stage: PlantStageKey, variant: GoalPlantV
   const stageNumber = STAGE_TO_NUMBER[stage];
   const variantNames = [
     `plant-stage-${stageNumber}-${variant}`,
+    `plant-stage-${stageNumber}_${variant}`,
+    `plant_stage_${stageNumber}_${variant}`,
     `plant-stage-${stageNumber}-${variant.toString().padStart(2, "0")}`,
     `plant-stage-${stageNumber}-${variant.toString().padStart(3, "0")}`,
     `stage-${stageNumber}-${variant}`,
+    `stage-${stageNumber}_${variant}`,
     `stage${stageNumber}-${variant}`,
     `plant-${stageNumber}-${variant}`,
+    `plant-${stageNumber}_${variant}`,
     `plant${stageNumber}-${variant}`,
+    `plant${stageNumber}_${variant}`,
     `${stageNumber}-${variant}`,
+    `${stageNumber}_${variant}`,
     ...STAGE_ALIASES[stage].map((alias) => `${alias}-${variant}`),
+    ...STAGE_ALIASES[stage].map((alias) => `${alias}_${variant}`),
   ];
 
   if (stage === "flowering") {
@@ -119,14 +126,30 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
 } {
   const styleFallbackBaseNames = unique([
     `plant-style-${variant}`,
+    `plant-style-${variant.toString().padStart(2, "0")}`,
+    `plant_style_${variant}`,
     `style-${variant}`,
+    `style${variant}`,
+    `style_${variant}`,
+    `style ${variant}`,
     `plant-variant-${variant}`,
+    `plant_variant_${variant}`,
     `variant-${variant}`,
+    `variant_${variant}`,
     `goal-plant-${variant}`,
+    `goal_plant_${variant}`,
     `plant-${variant}`,
+    `plant_${variant}`,
+    `plant ${variant}`,
+    `plantstyle${variant}`,
+    `plant-style-${variant}`,
     `plant-stage-6-${variant}`,
+    `plant-stage-6_${variant}`,
+    `plant_stage_6_${variant}`,
     `flowering-${variant}`,
+    `flowering_${variant}`,
     `final-plant-${variant}`,
+    `final_plant_${variant}`,
   ]);
   const variantSpecificPaths = expandToPhotoPaths([
     ...buildVariantSpecificBaseNames(stage, variant),
