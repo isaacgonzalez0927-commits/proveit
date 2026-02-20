@@ -265,7 +265,7 @@ function DashboardContent() {
               {displayMaxStreak} {displayMaxStreak === 1 ? "day" : "days"}
             </p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {effectiveDeveloperSettings.enabled
+              {isCreatorAccount && effectiveDeveloperSettings.enabled
                 ? "Developer mode preview is active."
                 : "Keep submitting verified proofs to grow your streak."}
             </p>

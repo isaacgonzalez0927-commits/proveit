@@ -43,7 +43,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Track progress from Home",
     body:
       "Dashboard shows your overall momentum: due goals, completed goals, streak pressure, and quick actions.",
-    note: "Use Creator Tools and Developer Mode (creator account only) to test states quickly.",
+    note: "Use Home stats to quickly spot what needs attention today.",
   },
   {
     title: "Use History + Plan tools",
