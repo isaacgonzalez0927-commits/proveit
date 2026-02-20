@@ -542,7 +542,7 @@ function SubmitProofContent() {
                 Back to dashboard
               </Link>
               <Link
-                href="/goals"
+                href="/buddy"
                 className="flex-1 rounded-lg border border-slate-300 py-3 text-center font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 All goals

@@ -275,14 +275,14 @@ function GoalsContent() {
                       key={variant}
                       type="button"
                       onClick={() => setSelectedPlantVariant(variant)}
-                      className={`rounded-xl border p-1.5 transition ${
+                      className={`rounded-xl border p-2 transition ${
                         isSelected
                           ? "border-prove-500 bg-prove-50 dark:border-prove-500 dark:bg-prove-950/40"
                           : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
                       }`}
                       aria-label={`Select plant style ${variant}`}
                     >
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900">
+                      <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900">
                         <PlantIllustration
                           stage="flowering"
                           wateringLevel={1}

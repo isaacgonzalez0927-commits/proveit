@@ -217,12 +217,6 @@ function HistoryContent() {
                         </div>
                       </div>
                       <div className="shrink-0 flex items-center gap-2">
-                        <Link
-                          href={`/goals/submit?goalId=${goal.id}`}
-                          className="rounded-lg bg-prove-100 px-3 py-1.5 text-sm font-medium text-prove-700 hover:bg-prove-200 dark:bg-prove-900/50 dark:text-prove-300 dark:hover:bg-prove-800/50"
-                        >
-                          Submit
-                        </Link>
                         <button
                           type="button"
                           onClick={() => handleHideGoalFromHistory(goal.id, goal.title)}
