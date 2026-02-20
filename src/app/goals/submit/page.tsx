@@ -62,6 +62,7 @@ function SubmitProofContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const autoStartCameraAttemptedRef = useRef(false);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasRedirected = useRef(false);
@@ -71,6 +72,9 @@ function SubmitProofContent() {
   useEffect(() => {
     if (user && goal) hasShownContent.current = true;
   }, [user, goal]);
+
+  const due = !!goal && isGoalDue(goal);
+  const inWindow = !!goal && isWithinSubmissionWindow(goal);
 
   useEffect(() => {
     if (!authReady || hasRedirected.current || pageLoading) return;
@@ -170,6 +174,15 @@ function SubmitProofContent() {
     }
   }, [step, streamReady]);
 
+  useEffect(() => {
+    if (!user || !goal) return;
+    if (!due || !inWindow) return;
+    if (step !== "capture" || cameraStarted || imageDataUrl) return;
+    if (autoStartCameraAttemptedRef.current) return;
+    autoStartCameraAttemptedRef.current = true;
+    void handleStartCamera();
+  }, [user, goal, due, inWindow, step, cameraStarted, imageDataUrl, handleStartCamera]);
+
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
     const video = videoRef.current;
@@ -178,11 +191,19 @@ function SubmitProofContent() {
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
+    if (facingMode === "user") {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0);
+    }
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     setImageDataUrl(dataUrl);
     stopCamera();
-  }, [stopCamera]);
+  }, [facingMode, stopCamera]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -302,7 +323,6 @@ function SubmitProofContent() {
     );
   }
 
-  const due = isGoalDue(goal);
   const dueDayName = getDueDayName(goal);
 
   if (!due) {
@@ -336,7 +356,6 @@ function SubmitProofContent() {
     );
   }
 
-  const inWindow = isWithinSubmissionWindow(goal);
   if (!inWindow) {
     const msg = getSubmissionWindowMessage(goal);
     return (
@@ -437,6 +456,9 @@ function SubmitProofContent() {
               playsInline
               muted
               className="absolute inset-0 h-full w-full object-cover"
+              style={{
+                transform: facingMode === "user" ? "scaleX(-1)" : undefined,
+              }}
             />
             {!streamReady && (
               <div className="absolute bottom-1/3 left-1/2 -translate-x-1/2 rounded-lg bg-black/50 px-4 py-3">
