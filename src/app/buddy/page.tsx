@@ -101,7 +101,8 @@ export default function BuddyPage() {
   const effectiveDeveloperSettings = isCreatorAccount
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
-  const canEditExistingGoalStyle = isCreatorAccount && developerSettings.enabled;
+  const isPaidPlan = user.plan === "pro" || user.plan === "premium";
+  const canEditExistingGoalStyle = isPaidPlan || (isCreatorAccount && developerSettings.enabled);
 
   useEffect(() => {
     if (!isCreatorAccount) return;
@@ -738,9 +739,11 @@ export default function BuddyPage() {
                       Plant style
                     </p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                      {isCreatorAccount
-                        ? "Locked after goal creation. Enable Developer mode to change it."
-                        : "Locked after goal creation."}
+                      Locked after goal creation.{" "}
+                      <Link href="/pricing" className="text-prove-600 hover:underline dark:text-prove-400">
+                        Upgrade to Pro
+                      </Link>{" "}
+                      to change styles anytime.
                     </p>
                   </div>
                 )}
