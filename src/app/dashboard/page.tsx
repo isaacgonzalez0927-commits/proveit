@@ -216,7 +216,7 @@ function DashboardContent() {
                   Creator tools (private)
                 </p>
                 <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
-                  This section is only visible to isaacgonzalez0927@gmail.com.
+                  This section is only visible to creator accounts.
                 </p>
               </div>
               <button
