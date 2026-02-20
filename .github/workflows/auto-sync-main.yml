@@ -1,0 +1,40 @@
+name: Auto Sync Main
+
+on:
+  push:
+    branches:
+      - "cursor/**"
+
+jobs:
+  sync-main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge pushed commit into main
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          SHA="${GITHUB_SHA}"
+
+          git fetch origin main "$BRANCH"
+          git checkout -B main origin/main
+
+          # If main already has the pushed commit, there is nothing to do.
+          if git merge-base --is-ancestor "$SHA" main; then
+            echo "Commit is already in main. Skipping."
+            exit 0
+          fi
+
+          git merge --no-ff --no-edit "$SHA"
+          git push origin main
