@@ -28,7 +28,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Start free. Upgrade when you need more goals and features.
+            Start free. Upgrade when you need higher goal limits and history tools.
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <button
@@ -72,9 +72,9 @@ function PricingContent() {
         </div>
 
         <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          All plans include AI photo verification and reminders. No credit card required for Free.
+          All plans include AI photo verification, reminders, and streak tracking.
           <br />
-          Pro and Premium: add Stripe in production for real payments.
+          Pro unlocks Goal History. Premium removes goal caps.
         </p>
       </main>
     </>
