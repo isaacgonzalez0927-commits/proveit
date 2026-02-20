@@ -176,6 +176,13 @@ function getStageDimensions(size: "default" | "large" | "small") {
   return { stageHeight, stageWidth };
 }
 
+function getVariantSizeMultiplier(stage: PlantStageKey, variant: GoalPlantVariant): number {
+  if (stage !== "flowering") return 1;
+  if (variant === 1) return 1.08;
+  if (variant === 2) return 0.93;
+  return 1;
+}
+
 export function PlantIllustration({
   stage,
   wateringLevel,
@@ -186,6 +193,7 @@ export function PlantIllustration({
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const { stageHeight, stageWidth } = getStageDimensions(size);
+  const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
   const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
 
@@ -220,7 +228,11 @@ export function PlantIllustration({
           src={photoSrc}
           alt=""
           className="h-full w-full select-none object-contain"
-          style={{ filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})` }}
+          style={{
+            filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+            transform: `scale(${variantSizeMultiplier})`,
+            transformOrigin: "center bottom",
+          }}
           loading="eager"
           draggable={false}
         />
@@ -244,11 +256,12 @@ function SvgPlantIllustration({
   stage,
   wateringLevel,
   wateredGoals: _wateredGoals,
-  variant: _variant = 1,
+  variant = 1,
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
+  const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
   const config = STAGE_CONFIG[stage];
   const id = useId();
   const { stageHeight, stageWidth } = getStageDimensions(size);
@@ -258,7 +271,10 @@ function SvgPlantIllustration({
   const stemThickness = 2 + safeWater * 0.8;
 
   return (
-    <div className={`relative inline-flex items-center justify-center ${className}`}>
+    <div
+      className={`relative inline-flex items-center justify-center ${className}`}
+      style={{ transform: `scale(${variantSizeMultiplier})`, transformOrigin: "center bottom" }}
+    >
       <svg
         viewBox="0 0 140 170"
         className="shrink-0 overflow-visible"
