@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Flame,
@@ -32,8 +33,11 @@ import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
 
 function DashboardContent() {
+  const router = useRouter();
   const {
     user,
+    authReady,
+    hasSelectedPlan,
     goals,
     submissions,
     getSubmissionsForGoal,
@@ -101,7 +105,18 @@ function DashboardContent() {
     setDeveloperSettings(stored);
   }, []);
 
-  if (!user) {
+  useEffect(() => {
+    if (!authReady) return;
+    if (!user) {
+      router.replace("/?step=login");
+      return;
+    }
+    if (!hasSelectedPlan) {
+      router.replace("/?step=plan");
+    }
+  }, [authReady, user, hasSelectedPlan, router]);
+
+  if (!authReady || !user || !hasSelectedPlan) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
         <p className="text-sm text-slate-500 dark:text-slate-400">Loading your dashboard…</p>

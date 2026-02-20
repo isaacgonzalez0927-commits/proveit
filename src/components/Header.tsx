@@ -70,10 +70,10 @@ export function Header() {
   const showBottomTabs = !pathname.startsWith("/goals/submit");
   const pageTitle = getPageTitle(pathname);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setAccountOpen(false);
-    signOut();
-    router.push("/");
+    await Promise.resolve(signOut());
+    router.push("/?step=login");
   };
 
   return (

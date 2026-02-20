@@ -13,9 +13,9 @@ function PricingContent() {
   const { user, setPlan } = useApp();
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
-  const handleSelectPlan = (planId: PlanId) => {
-    if (!user || planId === "free") return;
-    setPlan(planId, billing);
+  const handleSelectPlan = async (planId: PlanId) => {
+    if (!user) return;
+    await setPlan(planId, billing);
     router.push("/dashboard");
   };
 
@@ -149,9 +149,9 @@ function PricingCard({
           </div>
         ) : (
           <Link
-            href={hasUser ? "/dashboard" : "/dashboard"}
+            href={hasUser ? "/dashboard" : "/?step=login"}
             onClick={(e) => {
-              if (hasUser && !isFree) {
+              if (hasUser) {
                 e.preventDefault();
                 onSelect();
               }

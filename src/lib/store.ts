@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   user: "proveit_user",
   goals: "proveit_goals",
   submissions: "proveit_submissions",
+  planSelectedByUserPrefix: "proveit_plan_selected:",
 } as const;
 
 export interface StoredUser {
@@ -87,6 +88,20 @@ export function canAddGoal(planId: PlanId, frequency: GoalFrequency, currentCoun
 
 export function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function getPlanSelectionKey(userId: string) {
+  return `${STORAGE_KEYS.planSelectedByUserPrefix}${userId}`;
+}
+
+export function hasStoredPlanSelection(userId: string) {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(getPlanSelectionKey(userId)) === "1";
+}
+
+export function markStoredPlanSelection(userId: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(getPlanSelectionKey(userId), "1");
 }
 
 export {

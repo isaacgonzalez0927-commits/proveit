@@ -6,6 +6,8 @@ import {
   getStoredUser,
   getStoredGoals,
   getStoredSubmissions,
+  hasStoredPlanSelection,
+  markStoredPlanSelection,
   saveUser,
   saveGoals,
   saveSubmissions,
@@ -64,7 +66,8 @@ interface AppContextValue {
   getGoalPlantVariant: (goalId: string) => GoalPlantVariant;
   setGoalPlantVariant: (goalId: string, variant: GoalPlantVariant) => void;
   requestNotificationPermission: () => Promise<boolean>;
-  signOut: () => void;
+  hasSelectedPlan: boolean;
+  signOut: () => void | Promise<void>;
   useSupabase: boolean;
   supabase: import("@supabase/supabase-js").SupabaseClient | null;
 }
@@ -86,6 +89,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [earnedItems, setEarnedItems] = useState<string[]>([]);
   const [equippedItems, setEquippedItemsState] = useState<EquippedItems>({});
   const [goalPlantSelections, setGoalPlantSelections] = useState<Record<string, GoalPlantVariant>>({});
+  const [hasSelectedPlan, setHasSelectedPlan] = useState(false);
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
@@ -180,6 +184,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveSubmissions(submissions);
   }, [submissions, hydrated, useSupabase]);
 
+  useEffect(() => {
+    if (!user) {
+      setHasSelectedPlan(false);
+      return;
+    }
+    const selectedOnThisDevice = hasStoredPlanSelection(user.id);
+    const selectedByAccount = user.plan !== "free";
+    const likelyExistingFreeUser = goals.length > 0 || submissions.length > 0;
+    setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
+  }, [user, goals.length, submissions.length]);
+
   const setUser = useCallback((u: StoredUser | null) => {
     setUserState(u);
   }, []);
@@ -203,6 +218,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         plan,
         planBilling: plan === "free" ? undefined : billing,
       });
+      markStoredPlanSelection(user.id);
+      setHasSelectedPlan(true);
     },
     [user, useSupabase]
   );
@@ -483,6 +500,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
+    setHasSelectedPlan(false);
     setEarnedItems([]);
     setEquippedItemsState({});
     setGoalPlantSelections({});
@@ -508,6 +526,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
+    setHasSelectedPlan(false);
     setEarnedItems([]);
     setEquippedItemsState({});
     setGoalPlantSelections({});
@@ -550,6 +569,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     getGoalPlantVariant,
     setGoalPlantVariant,
     requestNotificationPermission,
+    hasSelectedPlan,
     signOut: useSupabase ? signOutWithSupabase : signOut,
     useSupabase,
     supabase: useSupabase ? supabase : null,

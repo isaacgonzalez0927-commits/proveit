@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { PLANS, type PlanId } from "@/types";
 
@@ -10,7 +10,8 @@ type AuthMode = "signin" | "signup";
 
 function LandingContent() {
   const router = useRouter();
-  const { user, setUser, setPlan, useSupabase, supabase } = useApp();
+  const searchParams = useSearchParams();
+  const { user, authReady, hasSelectedPlan, setUser, setPlan, useSupabase, supabase } = useApp();
 
   const [slide, setSlide] = useState<Slide>(0);
   const [email, setEmail] = useState("");
@@ -22,6 +23,30 @@ function LandingContent() {
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const requestedStep = searchParams.get("step");
+
+  useEffect(() => {
+    if (!authReady) return;
+
+    if (user) {
+      if (hasSelectedPlan) {
+        router.replace("/dashboard");
+        return;
+      }
+      setSlide(2);
+      return;
+    }
+
+    if (requestedStep === "login") {
+      setSlide(1);
+      return;
+    }
+    if (requestedStep === "plan") {
+      setSlide(2);
+      return;
+    }
+    setSlide(0);
+  }, [authReady, user, hasSelectedPlan, requestedStep, router]);
 
   const goTo = (next: Slide) => {
     setSlide(next);
@@ -160,8 +185,8 @@ function LandingContent() {
   };
 
   const handleChoosePlan = useCallback(
-    (planId: PlanId) => {
-      setPlan(planId);
+    async (planId: PlanId) => {
+      await setPlan(planId);
       if (typeof window !== "undefined") {
         window.localStorage.setItem("proveit_start_tour", "1");
         window.localStorage.removeItem("proveit_tour_done");
@@ -170,6 +195,14 @@ function LandingContent() {
     },
     [router, setPlan]
   );
+
+  if (!authReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading your account…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="fixed inset-0 flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
