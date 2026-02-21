@@ -32,6 +32,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/goals")) return "Goals";
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/pricing")) return "Pricing";
+  if (pathname.startsWith("/privacy")) return "Privacy";
+  if (pathname.startsWith("/terms")) return "Terms";
   if (pathname.startsWith("/reset-password")) return "Reset Password";
   return "ProveIt";
 }
@@ -126,6 +128,22 @@ export function Header() {
                 >
                   <SlidersHorizontal className="h-4 w-4 shrink-0" />
                   Settings
+                </Link>
+                <Link
+                  href="/privacy"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  role="menuitem"
+                >
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  role="menuitem"
+                >
+                  Terms of Use
                 </Link>
                 <button
                   type="button"

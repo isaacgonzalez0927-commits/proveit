@@ -11,6 +11,8 @@ ProveIt sends you reminders for daily and weekly goals. You take a photo of your
 - **AI verification** (OpenAI GPT-4 Vision when `OPENAI_API_KEY` is set; otherwise demo mode)
 - **Streaks** and recent activity
 - **Plans**: Free (2 daily + 2 weekly), Pro ($4.99/mo – 5 each + Goal History), Premium ($9.99/mo – unlimited goals + all Pro features)
+- **In-app account deletion** (Settings → Delete account)
+- **Legal pages**: Privacy Policy and Terms of Use
 
 ## Quick start
 
@@ -32,6 +34,14 @@ Priority: Custom AI → OpenAI → Demo mode.
 - **OpenAI**: Set `OPENAI_API_KEY` in `.env.local`. Uses GPT-4 Vision.
 - **Without either**: Demo mode (random pass/fail for testing).
 
+## Account deletion (Supabase)
+
+To enable in-app account deletion for Supabase users, set:
+
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side only)
+
+The app uses this key from `/api/account` to permanently delete the authenticated user account.
+
 ## Pricing (demo)
 
 - **Free**: 2 daily goals, 2 weekly goals, AI verification, reminders, streak tracking.
@@ -50,6 +60,8 @@ In production, wire paid plans to Stripe (or your payment provider) using the pl
 ## Project structure
 
 - `src/app/` – Pages (home, dashboard, goals, submit proof, pricing)
+- `src/app/privacy/page.tsx` – Privacy policy
+- `src/app/terms/page.tsx` – Terms of use
 - `src/components/` – Header, notification prompt, notification scheduler
 - `src/context/AppContext.tsx` – Global state (user, goals, submissions)
 - `src/lib/store.ts` – Local storage helpers and plan limits

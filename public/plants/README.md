@@ -26,20 +26,10 @@ Optional per-style files for *every* stage:
 - `plant-stage-2-1.png`, `plant-stage-2-2.png`, `plant-stage-2-3.png`, `plant-stage-2-4.png`
 - ...same pattern through stage 6.
 
-The app will also auto-try alternate names/extensions in:
+The app will auto-try alternate names/extensions in:
 
 - `/public/plants`
 - `/public/plants/backup`
-- `/public/plants/backup/plants`
-- `/public/plants/backup/public/plants`
-- `/public/plants/back-up`
-- `/public/plants/back up`
-- `/public/plants/proveit_backup_20260218_230946`
-- `/public/plants/proveit_backup_20260218_230946/plants`
-- `/public/plants/proveit_backup_20260218_230946/public/plants`
-- `/public/proveit_backup_20260218_230946`
-- `/public/proveit_backup_20260218_230946/plants`
-- `/public/proveit_backup_20260218_230946/public/plants`
 
 Examples:
 

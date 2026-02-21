@@ -1,16 +1,23 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+const defaultDevServerUrl = process.env.NODE_ENV === "development" ? "http://localhost:3000" : "";
+const serverUrl = process.env.CAPACITOR_SERVER_URL ?? defaultDevServerUrl;
+const usesInsecureHttp = /^http:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(serverUrl);
+
 const config: CapacitorConfig = {
   appId: 'com.proveit.app',
   appName: 'ProveIt',
   webDir: 'public',
-  server: {
-    // Load from your deployed URL. Set this when you deploy (e.g. Vercel).
-    // For local dev: use your computer's IP + :3000 (e.g. http://192.168.1.x:3000)
-    // when testing on a physical device. Simulator can use http://localhost:3000
-    url: process.env.CAPACITOR_SERVER_URL || 'http://localhost:3000',
-    cleartext: true,
-  },
+  ...(serverUrl
+    ? {
+        server: {
+          // For release builds, set CAPACITOR_SERVER_URL to your HTTPS production URL.
+          // Cleartext traffic is only allowed for explicit local-network HTTP development URLs.
+          url: serverUrl,
+          cleartext: usesInsecureHttp,
+        },
+      }
+    : {}),
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,
