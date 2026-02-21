@@ -422,7 +422,7 @@ export default function SettingsPage() {
               Terms of Use
             </Link>
             <a
-              href="mailto:ranchdressing971@gmail.com"
+              href="mailto:contact.proveit.app@gmail.com"
               className="text-prove-600 hover:underline dark:text-prove-400"
             >
               Contact support
