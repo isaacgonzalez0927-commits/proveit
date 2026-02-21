@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SlidersHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useApp } from "@/context/AppContext";
@@ -73,7 +74,8 @@ const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
 ];
 
 export default function SettingsPage() {
-  const { user, goals, submissions } = useApp();
+  const router = useRouter();
+  const { user, goals, submissions, signOut, useSupabase } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -82,6 +84,7 @@ export default function SettingsPage() {
   const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
   const [developerEnabled, setDeveloperEnabled] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const isCreatorAccount = hasCreatorAccess(user?.email);
 
   useEffect(() => {
@@ -158,6 +161,46 @@ export default function SettingsPage() {
     setHiddenGoalIds(nextHiddenGoalIds);
     saveHiddenHistoryGoalIds(nextHiddenGoalIds);
     setSettingsMessage(`Restored "${goalTitle}" in history.`);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deletingAccount) return;
+
+    if (typeof window !== "undefined") {
+      const firstConfirm = window.confirm(
+        "Delete your account permanently? This removes your profile, goals, and proof history."
+      );
+      if (!firstConfirm) return;
+      const secondConfirm = window.confirm(
+        "This action cannot be undone. Are you absolutely sure?"
+      );
+      if (!secondConfirm) return;
+    }
+
+    setDeletingAccount(true);
+    setSettingsMessage(null);
+
+    try {
+      if (useSupabase) {
+        const res = await fetch("/api/account", { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const message =
+            typeof data?.error === "string" && data.error
+              ? data.error
+              : "Could not delete account right now.";
+          setSettingsMessage(message);
+          return;
+        }
+      }
+
+      await Promise.resolve(signOut());
+      router.replace("/?step=login");
+    } catch {
+      setSettingsMessage("Could not delete account right now.");
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   if (!user) {
@@ -364,6 +407,42 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="font-semibold text-slate-900 dark:text-white">Legal & support</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Review legal policies and contact support.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm">
+            <Link href="/privacy" className="text-prove-600 hover:underline dark:text-prove-400">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-prove-600 hover:underline dark:text-prove-400">
+              Terms of Use
+            </Link>
+            <a
+              href="mailto:ranchdressing971@gmail.com"
+              className="text-prove-600 hover:underline dark:text-prove-400"
+            >
+              Contact support
+            </a>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-red-300 bg-red-50 p-5 dark:border-red-900/70 dark:bg-red-950/25">
+          <h2 className="font-semibold text-red-800 dark:text-red-200">Delete account</h2>
+          <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
+            Permanently delete your account and all associated data.
+          </p>
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deletingAccount}
+            className="mt-3 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {deletingAccount ? "Deleting account..." : "Delete my account"}
+          </button>
         </section>
 
         {settingsMessage && (

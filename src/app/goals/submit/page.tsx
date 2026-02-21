@@ -59,6 +59,7 @@ function SubmitProofContent() {
   const [feedback, setFeedback] = useState<string>("");
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [streamReady, setStreamReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -116,8 +117,8 @@ function SubmitProofContent() {
     const isSecure = window.isSecureContext;
 
     if (!isSecure && !isLocalhost) {
-      alert(
-        "Your browser is blocking the camera because this site is not using HTTPS.\n\nOn your phone, use the Upload button instead and choose Camera or Photo Library."
+      setCameraError(
+        "Camera access is blocked because this page is not running on HTTPS. Use Upload photo instead."
       );
       return;
     }
@@ -136,6 +137,7 @@ function SubmitProofContent() {
       }
       streamRef.current = stream;
       setFacingMode(targetFacing);
+      setCameraError(null);
       const video = videoRef.current;
       if (video) {
         video.srcObject = stream;
@@ -149,7 +151,7 @@ function SubmitProofContent() {
       setCameraStarted(true);
     } catch (e) {
       console.error(e);
-      alert("Could not access camera. You can upload a photo instead.");
+      setCameraError("Could not access camera. You can upload a photo instead.");
     }
   }, [facingMode]);
 
@@ -158,10 +160,6 @@ function SubmitProofContent() {
     stopCamera(true);
     handleStartCamera(next);
   }, [facingMode, stopCamera, handleStartCamera]);
-
-  useEffect(() => {
-    return () => stopCamera();
-  }, [stopCamera]);
 
   // Attach stream to video when both exist (handles timing when video mounts after stream)
   useEffect(() => {
@@ -210,6 +208,7 @@ function SubmitProofContent() {
     const reader = new FileReader();
     reader.onload = () => {
       setImageDataUrl(reader.result as string);
+      setCameraError(null);
       stopCamera();
     };
     reader.readAsDataURL(file);
@@ -383,6 +382,11 @@ function SubmitProofContent() {
 
         {step === "capture" && !showFullScreenCamera && !cameraStarted && (
           <div className="mt-8 animate-fade-in">
+            {cameraError && (
+              <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                {cameraError}
+              </p>
+            )}
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
               <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
                 <p className="text-center text-sm text-slate-300">

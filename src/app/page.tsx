@@ -441,6 +441,15 @@ function LandingContent() {
             />
           ))}
         </div>
+        <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs text-slate-500 dark:text-slate-400">
+          <Link href="/privacy" className="hover:underline">
+            Privacy
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/terms" className="hover:underline">
+            Terms
+          </Link>
+        </div>
       </div>
     </main>
   );

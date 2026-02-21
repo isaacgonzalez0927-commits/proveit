@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
@@ -19,13 +19,12 @@ export const metadata: Metadata = {
   title: "ProveIt – Set goals. Take a photo. Prove it.",
   description:
     "Get notified for daily and weekly goals, snap a photo of yourself doing it, and let AI verify you actually did it. Free and paid plans.",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: "cover",
-    userScalable: false,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const themeScript = `

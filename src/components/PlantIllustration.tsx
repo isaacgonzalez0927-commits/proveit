@@ -44,16 +44,6 @@ const IMAGE_EXTENSIONS = ["png", "PNG", "webp", "WEBP", "jpg", "JPG", "jpeg", "J
 const IMAGE_DIRECTORIES = [
   "/plants",
   "/plants/backup",
-  "/plants/backup/plants",
-  "/plants/backup/public/plants",
-  "/plants/back-up",
-  "/plants/back up",
-  "/plants/proveit_backup_20260218_230946",
-  "/plants/proveit_backup_20260218_230946/plants",
-  "/plants/proveit_backup_20260218_230946/public/plants",
-  "/proveit_backup_20260218_230946",
-  "/proveit_backup_20260218_230946/plants",
-  "/proveit_backup_20260218_230946/public/plants",
 ];
 const IMAGE_EXISTS_CACHE = new Map<string, boolean>();
 

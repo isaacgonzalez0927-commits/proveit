@@ -39,6 +39,18 @@ export function Footer() {
             >
               Pricing
             </Link>
+            <Link
+              href="/privacy"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Terms
+            </Link>
           </nav>
         </div>
         <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
