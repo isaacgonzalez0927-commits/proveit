@@ -81,6 +81,7 @@ export const PLANS: Plan[] = [
       "Custom reminder times",
       "Flexible proof grace period",
       "Change goal plant style after creation",
+      "Pink, violet, and ocean color themes",
     ],
     stripePriceId: "price_pro_monthly",
   },

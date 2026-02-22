@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+const proveColor = (step: number) => `rgb(var(--prove-${step}-rgb) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: "class",
   content: [
@@ -11,17 +13,17 @@ const config: Config = {
     extend: {
       colors: {
         prove: {
-          50: "#f0fdf6",
-          100: "#dcfceb",
-          200: "#bbf7d6",
-          300: "#86efb4",
-          400: "#4ade8a",
-          500: "#22c55e",
-          600: "#16a34a",
-          700: "#15803d",
-          800: "#166534",
-          900: "#14532d",
-          950: "#052e16",
+          50: proveColor(50),
+          100: proveColor(100),
+          200: proveColor(200),
+          300: proveColor(300),
+          400: proveColor(400),
+          500: proveColor(500),
+          600: proveColor(600),
+          700: proveColor(700),
+          800: proveColor(800),
+          900: proveColor(900),
+          950: proveColor(950),
         },
         accent: {
           coral: "#ff6b6b",

@@ -1,52 +1,41 @@
 import { useEffect, useState } from "react";
 import { MoonStar, SunMedium } from "lucide-react";
-
-type Theme = "light" | "dark" | "system";
-
-const STORAGE_KEY = "proveit-theme";
-
-function getPreferredTheme(): Theme {
-  if (typeof window === "undefined") return "system";
-  const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-  if (stored === "light" || stored === "dark" || stored === "system") {
-    return stored;
-  }
-  return "system";
-}
-
-export function applyTheme(theme: Theme) {
-  if (typeof document === "undefined" || typeof window === "undefined") return;
-
-  const root = document.documentElement;
-  const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const isDark = theme === "dark" || (theme === "system" && systemPrefersDark);
-
-  root.classList.toggle("dark", isDark);
-}
-
-function getEffectiveIsDark(theme: Theme): boolean {
-  if (typeof window === "undefined") return false;
-  const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return theme === "dark" || (theme === "system" && systemPrefersDark);
-}
+import { useApp } from "@/context/AppContext";
+import {
+  applyAccentTheme,
+  applyThemeMode,
+  getEffectiveIsDark,
+  getStoredAccentTheme,
+  getStoredThemeMode,
+  saveAndApplyAccentTheme,
+  saveAndApplyThemeMode,
+  sanitizeAccentThemeForPlan,
+  type ThemeMode,
+} from "@/lib/theme";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const { user } = useApp();
+  const [theme, setTheme] = useState<ThemeMode>("system");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const initial = getPreferredTheme();
+    const initial = getStoredThemeMode();
     setTheme(initial);
-    applyTheme(initial);
+    applyThemeMode(initial);
+    applyAccentTheme(getStoredAccentTheme());
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    const sanitizedAccent = sanitizeAccentThemeForPlan(getStoredAccentTheme(), user?.plan);
+    saveAndApplyAccentTheme(sanitizedAccent);
+  }, [user?.plan]);
+
   const handleClick = () => {
     const effectiveDark = getEffectiveIsDark(theme);
-    const updated: Theme = effectiveDark ? "light" : "dark";
+    const updated: ThemeMode = effectiveDark ? "light" : "dark";
     setTheme(updated);
-    window.localStorage.setItem(STORAGE_KEY, updated);
-    applyTheme(updated);
+    saveAndApplyThemeMode(updated);
   };
 
   const isDark = mounted && getEffectiveIsDark(theme);
