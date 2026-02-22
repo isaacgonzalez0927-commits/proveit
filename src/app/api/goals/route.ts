@@ -82,10 +82,12 @@ export async function POST(request: NextRequest) {
     // ignore
   }
 
+  const isDaily = frequency === "daily";
   const reminderDayVal = reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null);
   const reminderDaysVal = Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null;
 
-  const baseInsertData: Record<string, unknown> = {
+  // Minimal columns that exist in the base goals table (no reminder_day, reminder_days, grace_period).
+  const minimalInsert: Record<string, unknown> = {
     id,
     user_id: user.id,
     title,
@@ -94,44 +96,59 @@ export async function POST(request: NextRequest) {
     reminder_time: reminderTime ?? null,
   };
 
-  const insertGoal = async (opts: { gracePeriod?: boolean; reminderColumns?: boolean }) => {
-    const insertData = { ...baseInsertData };
-    if (opts.gracePeriod && gracePeriod != null) {
-      insertData.grace_period = gracePeriod;
-    }
-    if (opts.reminderColumns) {
-      insertData.reminder_day = reminderDayVal;
-      insertData.reminder_days = reminderDaysVal;
-    }
-    return supabase
-      .from("goals")
-      .insert(insertData)
-      .select()
-      .single();
+  // Daily: only use minimal columns so we never touch reminder_day/reminder_days (avoids "could not find reminder day" on strict or older DBs).
+  // Weekly: add reminder columns if present in schema.
+  const fullInsert: Record<string, unknown> = { ...minimalInsert };
+  if (!isDaily) {
+    fullInsert.reminder_day = reminderDayVal;
+    fullInsert.reminder_days = reminderDaysVal;
+  }
+  fullInsert.grace_period = gracePeriod ?? "eod";
+
+  const insertGoal = async (payload: Record<string, unknown>) => {
+    return supabase.from("goals").insert(payload).select().single();
   };
 
-  // Try full insert first (all columns)
-  let { data, error } = await insertGoal({ gracePeriod: true, reminderColumns: true });
-  if (error) {
-    const msg = error.message ?? "";
-    const missingReminder = /reminder_day|reminder_days|does not exist/i.test(msg);
-    const missingGrace = /grace_period/i.test(msg);
-    if (missingReminder || missingGrace) {
-      // Retry without optional columns (older schema or migrations not run)
-      ({ data, error } = await insertGoal({
-        gracePeriod: !missingGrace,
-        reminderColumns: !missingReminder,
-      }));
+  let data: Record<string, unknown> | null = null;
+  let error: { message: string } | null = null;
+
+  if (isDaily) {
+    // Daily: try minimal first (no grace_period, no reminder columns)
+    let result = await insertGoal(minimalInsert);
+    if (result.error) {
+      if (/grace_period|reminder|does not exist/i.test(result.error.message ?? "")) {
+        result = await insertGoal({ ...minimalInsert, grace_period: gracePeriod ?? "eod" });
+      }
+      if (result.error) {
+        error = result.error;
+        data = null;
+      } else {
+        data = result.data as Record<string, unknown>;
+      }
+    } else {
+      data = result.data as Record<string, unknown>;
+    }
+  } else {
+    const result = await insertGoal(fullInsert);
+    if (result.error) {
+      const msg = result.error.message ?? "";
+      if (/reminder_day|reminder_days|does not exist/i.test(msg)) {
+        const fallback = await insertGoal({ ...minimalInsert, grace_period: gracePeriod ?? "eod" });
+        if (!fallback.error) data = fallback.data as Record<string, unknown>;
+        else error = fallback.error;
+      } else {
+        error = result.error;
+      }
+    } else {
+      data = result.data as Record<string, unknown>;
     }
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Insert failed" }, { status: 500 });
 
-  const mapped = mapGoalRow(data as Record<string, unknown>);
-
-  return NextResponse.json({
-    goal: mapped,
-  });
+  const mapped = mapGoalRow(data);
+  return NextResponse.json({ goal: mapped });
 }
 
 export async function PATCH(request: NextRequest) {
