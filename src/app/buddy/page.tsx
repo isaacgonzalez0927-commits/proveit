@@ -232,7 +232,8 @@ export default function BuddyPage() {
         gracePeriod: newGracePeriod,
       });
       if (!result.created) {
-        setGoalManagerMessage(result.error ?? "Could not create goal right now. Please try again.");
+        const err = result.error?.trim() || "Something went wrong. Please try again.";
+        setGoalManagerMessage(err.startsWith("Could not") ? err : `Could not create goal: ${err}`);
         return;
       }
       setGoalPlantVariant(result.created.id, newPlantVariant);

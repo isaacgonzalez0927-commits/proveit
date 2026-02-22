@@ -269,17 +269,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               gracePeriod: goal.gracePeriod ?? "eod",
             }),
           });
-          const data = await res.json().catch(() => ({}));
+          let data: { goal?: Goal; error?: string; message?: string } = {};
+          try {
+            data = await res.json();
+          } catch {
+            // non-JSON response (e.g. 502 HTML)
+            const msg = res.ok ? "Invalid response from server" : `Server error (${res.status})`;
+            return { created: null, error: msg };
+          }
           if (!res.ok) {
-            const msg = typeof data?.error === "string" ? data.error : res.statusText || "Request failed";
+            const msg =
+              typeof data?.error === "string"
+                ? data.error
+                : typeof data?.message === "string"
+                  ? data.message
+                  : res.status === 401
+                    ? "Please sign in again"
+                    : res.status === 503
+                      ? "Server is not configured. Try again later."
+                      : res.statusText || `Error ${res.status}`;
             console.error("Failed to create goal:", msg);
             return { created: null, error: msg };
           }
-          const created = data.goal as Goal;
+          const created = data?.goal as Goal | undefined;
+          if (!created?.id) {
+            return { created: null, error: "Server did not return the new goal. Try again." };
+          }
           setGoalsState((prev) => [...prev, created]);
           return { created, error: undefined };
         } catch (error) {
-          const msg = error instanceof Error ? error.message : "Network or server error";
+          const msg =
+            error instanceof Error
+              ? (error.message || "Network error. Check your connection.")
+              : "Network error. Check your connection.";
           console.error("Failed to create goal:", error);
           return { created: null, error: msg };
         }
