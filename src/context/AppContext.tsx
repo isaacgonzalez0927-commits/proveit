@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import type { Goal, GoalFrequency, PlanId, ProofSubmission } from "@/types";
+import { normalizePlanId, type Goal, type GoalFrequency, type PlanId, type ProofSubmission } from "@/types";
 import {
   getStoredUser,
   getStoredGoals,
@@ -104,7 +104,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setUserState({
             id: p.id,
             email: p.email,
-            plan: p.plan ?? "free",
+            plan: normalizePlanId(p.plan),
             planBilling: p.planBilling,
             createdAt: p.createdAt ?? new Date().toISOString(),
           });
@@ -196,7 +196,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [user, goals.length, submissions.length]);
 
   const setUser = useCallback((u: StoredUser | null) => {
-    setUserState(u);
+    if (!u) {
+      setUserState(null);
+      return;
+    }
+    setUserState({
+      ...u,
+      plan: normalizePlanId(u.plan),
+    });
   }, []);
 
   const setPlan = useCallback(

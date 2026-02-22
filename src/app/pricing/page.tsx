@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Zap, Crown } from "lucide-react";
+import { Check, Zap } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
 import { PLANS, type PlanId } from "@/types";
@@ -57,7 +57,7 @@ function PricingContent() {
           </div>
         </div>
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-3">
+        <div className="mt-12 grid gap-8 sm:grid-cols-2">
           {PLANS.map((plan) => (
             <PricingCard
               key={plan.id}
@@ -74,7 +74,7 @@ function PricingContent() {
         <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
           All plans include AI photo verification, reminders, and streak tracking.
           <br />
-          Pro unlocks Goal Gallery. Premium removes goal caps.
+          Pro unlocks Goal Gallery, unlimited goals, and extra theme colors.
         </p>
       </main>
     </>
@@ -105,7 +105,7 @@ function PricingCard({
     currentPlanId === plan.id && currentPlanBilling === billing;
   const isFree = plan.id === "free";
 
-  const Icon = plan.id === "premium" ? Crown : plan.id === "pro" ? Zap : null;
+  const Icon = plan.id === "pro" ? Zap : null;
 
   return (
     <div

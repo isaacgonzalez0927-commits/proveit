@@ -152,7 +152,7 @@ export default function SettingsPage() {
 
   const updateAccentTheme = (nextAccent: AccentTheme) => {
     if (nextAccent !== "green" && !hasPaidThemeAccess) {
-      setSettingsMessage("Upgrade to Pro or Premium to unlock pink and other color themes.");
+      setSettingsMessage("Upgrade to Pro to unlock pink and other color themes.");
       return;
     }
     const label = ACCENT_THEME_OPTIONS.find((option) => option.id === nextAccent)?.label ?? "Theme";
@@ -337,7 +337,7 @@ export default function SettingsPage() {
             Theme colors
           </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Light and dark mode are free for everyone. Pink and other color accents are Pro/Premium.
+            Light and dark mode are free for everyone. Pink and other color accents are Pro-only.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {ACCENT_THEME_OPTIONS.map((option) => {
@@ -370,7 +370,7 @@ export default function SettingsPage() {
           </div>
           {!hasPaidThemeAccess && (
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              Upgrade to Pro or Premium to unlock pink, violet, and ocean themes.
+              Upgrade to Pro to unlock pink, violet, and ocean themes.
             </p>
           )}
         </section>
