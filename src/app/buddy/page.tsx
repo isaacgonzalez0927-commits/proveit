@@ -222,7 +222,7 @@ export default function BuddyPage() {
 
     setIsAddingGoal(true);
     try {
-      const created = await addGoal({
+      const result = await addGoal({
         title: newTitle.trim(),
         description: newDescription.trim() || undefined,
         frequency: newFrequency,
@@ -231,18 +231,11 @@ export default function BuddyPage() {
         reminderDays: weeklyDays,
         gracePeriod: newGracePeriod,
       });
-      if (!created) {
-        // Re-check limits in case of sync/race; show specific message if at limit
-        if (newFrequency === "daily" && !canAddGoal("daily")) {
-          setGoalManagerMessage("Daily goal limit reached for your current plan.");
-        } else if (newFrequency === "weekly" && !canAddGoal("weekly")) {
-          setGoalManagerMessage("Weekly goal limit reached for your current plan.");
-        } else {
-          setGoalManagerMessage("Could not create goal right now. Please try again.");
-        }
+      if (!result.created) {
+        setGoalManagerMessage(result.error ?? "Could not create goal right now. Please try again.");
         return;
       }
-      setGoalPlantVariant(created.id, newPlantVariant);
+      setGoalPlantVariant(result.created.id, newPlantVariant);
       setShowCreateForm(false);
       resetCreateGoalForm();
       setGoalManagerMessage("Goal added to your garden.");

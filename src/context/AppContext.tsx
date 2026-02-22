@@ -49,7 +49,7 @@ interface AppContextValue {
   authReady: boolean;
   setUser: (user: StoredUser | null) => void;
   setPlan: (plan: PlanId, billing?: "monthly" | "yearly") => void | Promise<void>;
-  addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Goal | null | Promise<Goal | null>;
+  addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Promise<{ created: Goal | null; error?: string }>;
   updateGoal: (id: string, updates: Partial<Goal>) => void | Promise<void>;
   removeGoal: (id: string) => void | Promise<void>;
   addSubmission: (sub: Omit<ProofSubmission, "id" | "createdAt">) => ProofSubmission | Promise<ProofSubmission>;
@@ -237,12 +237,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addGoal = useCallback(
-    async (input: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => {
+    async (input: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">): Promise<{ created: Goal | null; error?: string }> => {
       const uid = user?.id ?? "anonymous";
       const dailyCount = goals.filter((g) => g.frequency === "daily").length;
       const weeklyCount = goals.filter((g) => g.frequency === "weekly").length;
       const count = input.frequency === "daily" ? dailyCount : weeklyCount;
-      if (!canAddGoal(user?.plan ?? "free", input.frequency, count)) return null;
+      if (!canAddGoal(user?.plan ?? "free", input.frequency, count)) {
+        return { created: null, error: input.frequency === "daily" ? "Daily goal limit reached." : "Weekly goal limit reached." };
+      }
       const id = generateId();
       const goal: Goal = {
         ...input,
@@ -269,19 +271,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) {
-            console.error("Failed to create goal:", data?.error ?? res.statusText);
-            return null;
+            const msg = typeof data?.error === "string" ? data.error : res.statusText || "Request failed";
+            console.error("Failed to create goal:", msg);
+            return { created: null, error: msg };
           }
           const created = data.goal as Goal;
           setGoalsState((prev) => [...prev, created]);
-          return created;
+          return { created, error: undefined };
         } catch (error) {
+          const msg = error instanceof Error ? error.message : "Network or server error";
           console.error("Failed to create goal:", error);
-          return null;
+          return { created: null, error: msg };
         }
       }
       setGoalsState((prev) => [...prev, goal]);
-      return goal;
+      return { created: goal, error: undefined };
     },
     [user, goals, useSupabase]
   );

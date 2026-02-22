@@ -68,14 +68,12 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { id, title, description, frequency, reminderTime, reminderDay, reminderDays, gracePeriod } = body;
 
-  // Best-effort profile upsert for installs where the trigger wasn't present
-  // when the account was created. Ignore if table/columns differ.
+  // Ensure profile row exists (e.g. if trigger missed it). Do not overwrite plan.
   try {
     await supabase.from("profiles").upsert(
       {
         id: user.id,
         email: user.email ?? "",
-        plan: "free",
       },
       { onConflict: "id" }
     );
