@@ -186,20 +186,24 @@ export function PlantIllustration({
   const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
   const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
+  const [photoResolved, setPhotoResolved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setPhotoResolved(false);
     const resolvePhoto = async () => {
       for (const candidate of photoCandidates) {
         const exists = await imageExists(candidate);
         if (cancelled) return;
         if (exists) {
           setPhotoSrc(candidate);
+          setPhotoResolved(true);
           return;
         }
       }
       if (!cancelled) {
         setPhotoSrc(null);
+        setPhotoResolved(true);
       }
     };
     void resolvePhoto();
@@ -208,7 +212,7 @@ export function PlantIllustration({
     };
   }, [photoCandidates]);
 
-  if (photoSrc) {
+  if (photoResolved && photoSrc) {
     return (
       <div
         className={`relative inline-flex items-center justify-center ${className}`}
@@ -227,6 +231,16 @@ export function PlantIllustration({
           draggable={false}
         />
       </div>
+    );
+  }
+
+  if (!photoResolved) {
+    return (
+      <div
+        className={`relative inline-flex items-center justify-center ${className}`}
+        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", minWidth: stageWidth, minHeight: stageHeight }}
+        aria-hidden
+      />
     );
   }
 

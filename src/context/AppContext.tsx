@@ -8,6 +8,7 @@ import {
   getStoredSubmissions,
   hasStoredPlanSelection,
   markStoredPlanSelection,
+  clearStoredPlanSelection,
   saveUser,
   saveGoals,
   saveSubmissions,
@@ -35,6 +36,8 @@ import {
   saveGoalPlantSelections,
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
+import { NotificationScheduler } from "@/components/NotificationScheduler";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -67,6 +70,8 @@ interface AppContextValue {
   setGoalPlantVariant: (goalId: string, variant: GoalPlantVariant) => void;
   requestNotificationPermission: () => Promise<boolean>;
   hasSelectedPlan: boolean;
+  /** Dev-only: clear plan selection so app treats current user as new (plan picker). */
+  clearPlanSelectionForNewUser: () => void;
   signOut: () => void | Promise<void>;
   useSupabase: boolean;
   supabase: import("@supabase/supabase-js").SupabaseClient | null;
@@ -146,7 +151,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           createdAt: s.createdAt,
         })));
 
-        // Set hasSelectedPlan in the same tick so loading doesn't close before plan state is ready
+        // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
+        setGoalPlantSelections(getStoredGoalPlantSelections());
         const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
         const selectedByAccount = profileUser.plan !== "free";
         const likelyExistingFreeUser = gs.length > 0 || subs.length > 0;
@@ -244,6 +250,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     [user, useSupabase]
   );
+
+  const clearPlanSelectionForNewUser = useCallback(() => {
+    if (user?.id) {
+      clearStoredPlanSelection(user.id);
+      setHasSelectedPlan(false);
+    }
+  }, [user?.id]);
 
   const addGoal = useCallback(
     async (input: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">): Promise<{ created: Goal | null; error?: string }> => {
@@ -621,6 +634,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoalPlantVariant,
     requestNotificationPermission,
     hasSelectedPlan,
+    clearPlanSelectionForNewUser,
     signOut: useSupabase ? signOutWithSupabase : signOut,
     useSupabase,
     supabase: useSupabase ? supabase : null,
@@ -641,7 +655,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       ) : (
-        <>{children}</>
+        <>
+          <NotificationScheduler />
+          <NotificationPrompt />
+          {children}
+        </>
       )}
     </AppContext.Provider>
   );

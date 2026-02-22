@@ -115,6 +115,11 @@ export function markStoredPlanSelection(userId: string) {
   localStorage.setItem(getPlanSelectionKey(userId), "1");
 }
 
+export function clearStoredPlanSelection(userId: string) {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(getPlanSelectionKey(userId));
+}
+
 export {
   getStoredUser,
   getStoredGoals,

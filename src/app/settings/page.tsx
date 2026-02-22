@@ -83,7 +83,7 @@ const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, goals, submissions, signOut, useSupabase } = useApp();
+  const { user, goals, submissions, signOut, useSupabase, clearPlanSelectionForNewUser } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -416,6 +416,23 @@ export default function SettingsPage() {
               />
               {developerEnabled ? "Developer tools ON" : "Developer tools OFF"}
             </label>
+            {developerEnabled && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearPlanSelectionForNewUser();
+                    router.push("/");
+                  }}
+                  className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-50 dark:border-amber-600 dark:bg-amber-950/35 dark:text-amber-200 dark:hover:bg-amber-900/30"
+                >
+                  Treat as new user
+                </button>
+                <p className="mt-1.5 text-xs text-amber-800/90 dark:text-amber-300/90">
+                  Clears plan selection on this device so the app shows the plan picker. Turn developer tools back on here when done.
+                </p>
+              </div>
+            )}
           </section>
         )}
 

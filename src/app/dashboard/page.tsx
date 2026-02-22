@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Header } from "@/components/Header";
-import { NotificationPrompt } from "@/components/NotificationPrompt";
-import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { DashboardTour } from "@/components/DashboardTour";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { getPlan } from "@/lib/store";
@@ -171,7 +169,6 @@ function DashboardContent() {
 
   return (
     <>
-      <NotificationScheduler />
       <Header />
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
@@ -473,7 +470,6 @@ function DashboardContent() {
           Want more goals or Goal Gallery access? Upgrade to Pro →
         </Link>
       </main>
-      <NotificationPrompt />
     </>
   );
 }

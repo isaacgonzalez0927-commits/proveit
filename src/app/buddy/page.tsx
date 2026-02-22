@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
@@ -48,6 +49,7 @@ export default function BuddyPage() {
     getSubmissionsForGoal,
     getGoalPlantVariant,
     setGoalPlantVariant,
+    clearPlanSelectionForNewUser,
   } = useApp();
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(
     DEFAULT_DEVELOPER_MODE_SETTINGS
@@ -82,6 +84,7 @@ export default function BuddyPage() {
     weeklyDays: [],
     gracePeriod: "eod",
   });
+  const router = useRouter();
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
   useEffect(() => {
@@ -645,6 +648,18 @@ export default function BuddyPage() {
               >
                 Clear all goal streak overrides
               </button>
+              {developerSettings.enabled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearPlanSelectionForNewUser();
+                    router.push("/");
+                  }}
+                  className="rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                >
+                  Treat as new user
+                </button>
+              )}
             </div>
             {developerMessage && (
               <p className="mt-2 text-xs text-amber-900 dark:text-amber-200">{developerMessage}</p>

@@ -9,7 +9,7 @@ import type { Goal } from "@/types";
 const STORAGE_KEY_PREFIX = "proveit_notification_";
 
 function parseTime(value: string | undefined, fallback: string) {
-  const src = value && /^\d{2}:\d{2}$/.test(value) ? value : fallback;
+  const src = value && /^\d{1,2}:\d{2}$/.test(value) ? value : fallback;
   const [h, m] = src.split(":").map((n) => Number(n));
   return { hour: h, minute: m };
 }
@@ -45,10 +45,18 @@ export function NotificationScheduler() {
       const doneToday = subs.some((s) => s.date === today);
       if (doneToday) return;
 
-      new Notification("ProveIt", {
+      const n = new Notification("ProveIt", {
         body: `Time to ${goal.title}. Prove it with a photo.`,
         icon: "/favicon.ico",
+        tag: key,
       });
+      n.onclick = () => {
+        window.focus();
+        if (typeof window !== "undefined" && window.location) {
+          window.location.href = "/dashboard";
+        }
+        n.close();
+      };
       localStorage.setItem(key, "1");
     }
 
@@ -57,7 +65,7 @@ export function NotificationScheduler() {
     }
 
     check();
-    intervalRef.current = setInterval(check, 60 * 1000); // every minute
+    intervalRef.current = setInterval(check, 30 * 1000); // every 30s so we hit the 15-min reminder window
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
