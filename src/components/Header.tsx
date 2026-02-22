@@ -35,7 +35,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/privacy")) return "Privacy";
   if (pathname.startsWith("/terms")) return "Terms";
   if (pathname.startsWith("/reset-password")) return "Reset Password";
-  return "ProveIt";
+  return "Proveit";
 }
 
 function isTabActive(pathname: string, href: string): boolean {
@@ -91,7 +91,7 @@ export function Header() {
               href="/dashboard"
               className="block truncate font-display text-lg font-bold tracking-tight text-prove-700 dark:text-prove-400"
             >
-              ProveIt
+              Proveit
             </Link>
             <p className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               {pageTitle}
