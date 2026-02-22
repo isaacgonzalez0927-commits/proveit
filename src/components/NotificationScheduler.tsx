@@ -45,15 +45,15 @@ export function NotificationScheduler() {
       const doneToday = subs.some((s) => s.date === today);
       if (doneToday) return;
 
-      const n = new Notification("ProveIt", {
-        body: `Time to ${goal.title}. Prove it with a photo.`,
+      const n = new Notification(`Due now: ${goal.title}`, {
+        body: "Prove it with a photo.",
         icon: "/favicon.ico",
         tag: key,
       });
       n.onclick = () => {
         window.focus();
         if (typeof window !== "undefined" && window.location) {
-          window.location.href = "/dashboard";
+          window.location.href = `/goals/submit?goalId=${encodeURIComponent(goal.id)}`;
         }
         n.close();
       };
