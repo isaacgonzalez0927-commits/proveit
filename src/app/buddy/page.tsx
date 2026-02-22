@@ -27,6 +27,7 @@ import { PlantIllustration } from "@/components/PlantIllustration";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
+import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import type { Goal, GoalFrequency, GracePeriod } from "@/types";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -97,6 +98,7 @@ export default function BuddyPage() {
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
   const canEditExistingGoalStyle = user?.plan === "pro" || user?.plan === "premium";
   const canUseGoalBreak = user?.plan === "pro" || user?.plan === "premium";
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   useEffect(() => {
     if (!isCreatorAccount) return;
@@ -237,6 +239,7 @@ export default function BuddyPage() {
       if (!result.created) {
         const err = result.error?.trim() || "Something went wrong. Please try again.";
         setGoalManagerMessage(err.startsWith("Could not") ? err : `Could not create goal: ${err}`);
+        if (err && /limit|upgrade|pro|premium/i.test(err)) setShowUpgradePrompt(true);
         return;
       }
       setGoalPlantVariant(result.created.id, newPlantVariant);
@@ -393,11 +396,6 @@ export default function BuddyPage() {
             {plan.name} plan · {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
             {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
           </p>
-          {!canUseGoalBreak && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Upgrade to Pro or Premium to unlock Goal Break mode.
-            </p>
-          )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -703,17 +701,21 @@ export default function BuddyPage() {
                     <span className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
                       {entry.stage.name}
                     </span>
-                    {canUseGoalBreak && (
-                      <button
-                        type="button"
-                        onClick={() => toggleGoalBreak(entry.goal, entry.streak)}
-                        className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white/80 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900/60 dark:text-amber-300 dark:hover:bg-amber-900/30"
-                        aria-label={entry.isOnBreak ? "Resume goal from break" : "Put goal on break"}
-                      >
-                        {entry.isOnBreak ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-                        {entry.isOnBreak ? "Resume" : "Break"}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (canUseGoalBreak) {
+                          toggleGoalBreak(entry.goal, entry.streak);
+                        } else {
+                          setShowUpgradePrompt(true);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white/80 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900/60 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                      aria-label={entry.isOnBreak ? "Resume goal from break" : "Put goal on break"}
+                    >
+                      {entry.isOnBreak ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+                      {entry.isOnBreak ? "Resume" : "Break"}
+                    </button>
                     <button
                       type="button"
                       onClick={() =>
@@ -780,50 +782,45 @@ export default function BuddyPage() {
                   </Link>
                 )}
 
-                {canEditExistingGoalStyle ? (
-                  <div className="mt-3">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                      Plant style
-                    </p>
-                    <div className="mt-1 flex flex-wrap gap-1.5">
-                      {GOAL_PLANT_VARIANTS.map((variant) => {
-                        const selected = variant === entry.plantVariant;
-                        return (
-                          <button
-                            key={variant}
-                            type="button"
-                            onClick={() => setGoalPlantVariant(entry.goal.id, variant)}
-                            className={`rounded-md border p-1 transition ${
-                              selected
-                                ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
-                                : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
-                            }`}
-                            aria-label={`Set plant style ${variant}`}
-                          >
-                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
-                              <PlantIllustration
-                                stage="flowering"
-                                wateringLevel={1}
-                                wateredGoals={1}
-                                size="small"
-                                variant={variant}
-                              />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div className="mt-3">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                    Plant style
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {GOAL_PLANT_VARIANTS.map((variant) => {
+                      const selected = variant === entry.plantVariant;
+                      return (
+                        <button
+                          key={variant}
+                          type="button"
+                          onClick={() => {
+                            if (canEditExistingGoalStyle) {
+                              setGoalPlantVariant(entry.goal.id, variant);
+                            } else if (!selected) {
+                              setShowUpgradePrompt(true);
+                            }
+                          }}
+                          className={`rounded-md border p-1 transition ${
+                            selected
+                              ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
+                              : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800"
+                          }`}
+                          aria-label={`Set plant style ${variant}`}
+                        >
+                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                            <PlantIllustration
+                              stage="flowering"
+                              wateringLevel={1}
+                              wateredGoals={1}
+                              size="small"
+                              variant={variant}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <div className="mt-3">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                      Plant style
-                    </p>
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                      Upgrade to Pro or Premium to change plant style after goal creation.
-                    </p>
-                  </div>
-                )}
+                </div>
 
                 {editingGoalId === entry.goal.id && (
                   <div className="mt-3 rounded-lg border border-slate-300 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-900/70">
@@ -976,6 +973,12 @@ export default function BuddyPage() {
           ← Back to dashboard
         </Link>
       </main>
+      <UpgradePromptModal
+        open={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        title="Pro or Premium feature"
+        message="Upgrade to Pro or Premium to use Goal Break and change plant styles."
+      />
     </>
   );
 }
