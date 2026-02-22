@@ -17,17 +17,18 @@ function normalizeReminderDays(value: unknown): number[] | undefined {
 }
 
 function mapGoalRow(row: Record<string, unknown>) {
-  const reminderDay = (row.reminder_day as number | null) ?? undefined;
+  const reminderDay = row.reminder_day != null ? (row.reminder_day as number) : undefined;
   const reminderDays = normalizeReminderDays(row.reminder_days) ?? (typeof reminderDay === "number" ? [reminderDay] : undefined);
+  const frequency = row.frequency as string;
   return {
     id: row.id as string,
     userId: row.user_id as string,
     title: row.title as string,
     description: (row.description as string | null) ?? undefined,
-    frequency: row.frequency as string,
+    frequency: frequency ?? "daily",
     reminderTime: (row.reminder_time as string | null) ?? undefined,
     reminderDay,
-    reminderDays,
+    reminderDays: frequency === "daily" ? undefined : reminderDays,
     gracePeriod: (row.grace_period as string | null) ?? undefined,
     isOnBreak: row.is_on_break === true,
     breakStartedAt: (row.break_started_at as string | null) ?? undefined,
@@ -81,6 +82,9 @@ export async function POST(request: NextRequest) {
     // ignore
   }
 
+  const reminderDayVal = reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null);
+  const reminderDaysVal = Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null;
+
   const baseInsertData: Record<string, unknown> = {
     id,
     user_id: user.id,
@@ -88,14 +92,16 @@ export async function POST(request: NextRequest) {
     description: description ?? null,
     frequency,
     reminder_time: reminderTime ?? null,
-    reminder_day: reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null),
-    reminder_days: Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null,
   };
 
-  const insertGoal = async (includeGracePeriod: boolean) => {
+  const insertGoal = async (opts: { gracePeriod?: boolean; reminderColumns?: boolean }) => {
     const insertData = { ...baseInsertData };
-    if (includeGracePeriod && gracePeriod != null) {
+    if (opts.gracePeriod && gracePeriod != null) {
       insertData.grace_period = gracePeriod;
+    }
+    if (opts.reminderColumns) {
+      insertData.reminder_day = reminderDayVal;
+      insertData.reminder_days = reminderDaysVal;
     }
     return supabase
       .from("goals")
@@ -104,11 +110,19 @@ export async function POST(request: NextRequest) {
       .single();
   };
 
-  let { data, error } = await insertGoal(true);
-  if (error && /grace_period/i.test(error.message ?? "")) {
-    // Some deployments may not have run the grace_period migration yet.
-    // Retry without that column to keep goal creation functional.
-    ({ data, error } = await insertGoal(false));
+  // Try full insert first (all columns)
+  let { data, error } = await insertGoal({ gracePeriod: true, reminderColumns: true });
+  if (error) {
+    const msg = error.message ?? "";
+    const missingReminder = /reminder_day|reminder_days|does not exist/i.test(msg);
+    const missingGrace = /grace_period/i.test(msg);
+    if (missingReminder || missingGrace) {
+      // Retry without optional columns (older schema or migrations not run)
+      ({ data, error } = await insertGoal({
+        gracePeriod: !missingGrace,
+        reminderColumns: !missingReminder,
+      }));
+    }
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
