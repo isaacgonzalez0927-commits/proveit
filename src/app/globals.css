@@ -4,8 +4,19 @@
 
 /* Default to light - .dark on html overrides when user/system prefers dark */
 :root {
-  --prove-green: #16a34a;
-  --prove-dark: #052e16;
+  --prove-50-rgb: 240 253 246;
+  --prove-100-rgb: 220 252 235;
+  --prove-200-rgb: 187 247 214;
+  --prove-300-rgb: 134 239 180;
+  --prove-400-rgb: 74 222 138;
+  --prove-500-rgb: 34 197 94;
+  --prove-600-rgb: 22 163 74;
+  --prove-700-rgb: 21 128 61;
+  --prove-800-rgb: 22 101 52;
+  --prove-900-rgb: 20 83 45;
+  --prove-950-rgb: 5 46 22;
+  --prove-green: rgb(var(--prove-600-rgb));
+  --prove-dark: rgb(var(--prove-950-rgb));
   --accent-coral: #ff6b6b;
   --accent-gold: #f59e0b;
   --accent-violet: #8b5cf6;
@@ -15,6 +26,48 @@
   --text-muted: #64748b;
   --border: #e2e8f0;
   color-scheme: light;
+}
+
+:root[data-accent-theme="pink"] {
+  --prove-50-rgb: 255 241 242;
+  --prove-100-rgb: 255 228 230;
+  --prove-200-rgb: 254 205 211;
+  --prove-300-rgb: 253 164 175;
+  --prove-400-rgb: 251 113 133;
+  --prove-500-rgb: 244 63 94;
+  --prove-600-rgb: 225 29 72;
+  --prove-700-rgb: 190 18 60;
+  --prove-800-rgb: 159 18 57;
+  --prove-900-rgb: 136 19 55;
+  --prove-950-rgb: 76 5 25;
+}
+
+:root[data-accent-theme="violet"] {
+  --prove-50-rgb: 245 243 255;
+  --prove-100-rgb: 237 233 254;
+  --prove-200-rgb: 221 214 254;
+  --prove-300-rgb: 196 181 253;
+  --prove-400-rgb: 167 139 250;
+  --prove-500-rgb: 139 92 246;
+  --prove-600-rgb: 124 58 237;
+  --prove-700-rgb: 109 40 217;
+  --prove-800-rgb: 91 33 182;
+  --prove-900-rgb: 76 29 149;
+  --prove-950-rgb: 46 16 101;
+}
+
+:root[data-accent-theme="ocean"] {
+  --prove-50-rgb: 240 249 255;
+  --prove-100-rgb: 224 242 254;
+  --prove-200-rgb: 186 230 253;
+  --prove-300-rgb: 125 211 252;
+  --prove-400-rgb: 56 189 248;
+  --prove-500-rgb: 14 165 233;
+  --prove-600-rgb: 2 132 199;
+  --prove-700-rgb: 3 105 161;
+  --prove-800-rgb: 7 89 133;
+  --prove-900-rgb: 12 74 110;
+  --prove-950-rgb: 8 47 73;
 }
 
 .dark {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { SlidersHorizontal, Trash2 } from "lucide-react";
+import { SlidersHorizontal, Trash2, Palette, Lock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useApp } from "@/context/AppContext";
 import { PlantIllustration } from "@/components/PlantIllustration";
@@ -31,6 +31,14 @@ import {
   showGoalInHistory,
 } from "@/lib/historyVisibility";
 import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
+import {
+  ACCENT_THEME_OPTIONS,
+  canUsePaidAccentThemes,
+  getStoredAccentTheme,
+  saveAndApplyAccentTheme,
+  sanitizeAccentThemeForPlan,
+  type AccentTheme,
+} from "@/lib/theme";
 import type { GoalFrequency, GracePeriod } from "@/types";
 
 const HISTORY_SETTING_ITEMS: Array<{
@@ -84,15 +92,24 @@ export default function SettingsPage() {
   const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
   const [developerEnabled, setDeveloperEnabled] = useState(false);
+  const [accentTheme, setAccentTheme] = useState<AccentTheme>("green");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const isCreatorAccount = hasCreatorAccess(user?.email);
+  const hasPaidThemeAccess = canUsePaidAccentThemes(user?.plan);
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
     setAppSettings(getStoredAppSettings());
     setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
     setDeveloperEnabled(getStoredDeveloperModeSettings().enabled);
+    setAccentTheme(getStoredAccentTheme());
   }, []);
+
+  useEffect(() => {
+    const sanitized = sanitizeAccentThemeForPlan(getStoredAccentTheme(), user?.plan);
+    setAccentTheme(sanitized);
+    saveAndApplyAccentTheme(sanitized);
+  }, [user?.plan]);
 
   const goalHistoryEntries = useMemo(
     () =>
@@ -131,6 +148,17 @@ export default function SettingsPage() {
 
   const updateDefaultPlantStyle = (variant: GoalPlantVariant) => {
     updateAppSetting("defaultGoalPlantVariant", variant);
+  };
+
+  const updateAccentTheme = (nextAccent: AccentTheme) => {
+    if (nextAccent !== "green" && !hasPaidThemeAccess) {
+      setSettingsMessage("Upgrade to Pro or Premium to unlock pink and other color themes.");
+      return;
+    }
+    const label = ACCENT_THEME_OPTIONS.find((option) => option.id === nextAccent)?.label ?? "Theme";
+    setAccentTheme(nextAccent);
+    saveAndApplyAccentTheme(nextAccent);
+    setSettingsMessage(`${label} theme enabled.`);
   };
 
   const handleToggleDeveloperTools = (enabled: boolean) => {
@@ -301,6 +329,50 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+            <Palette className="h-4 w-4 text-prove-600 dark:text-prove-400" />
+            Theme colors
+          </h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Light and dark mode are free for everyone. Pink and other color accents are Pro/Premium.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {ACCENT_THEME_OPTIONS.map((option) => {
+              const selected = accentTheme === option.id;
+              const locked = option.paidOnly && !hasPaidThemeAccess;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => updateAccentTheme(option.id)}
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${
+                    selected
+                      ? "border-prove-500 bg-prove-50 text-prove-800 dark:border-prove-500 dark:bg-prove-950/40 dark:text-prove-300"
+                      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  }`}
+                  aria-label={`Set ${option.label} theme`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className={`h-3 w-3 rounded-full ${option.swatchClassName}`} />
+                    {option.label}
+                  </span>
+                  {locked ? (
+                    <Lock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  ) : selected ? (
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em]">Active</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          {!hasPaidThemeAccess && (
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              Upgrade to Pro or Premium to unlock pink, violet, and ocean themes.
+            </p>
+          )}
         </section>
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">

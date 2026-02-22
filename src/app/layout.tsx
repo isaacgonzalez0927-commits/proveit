@@ -29,11 +29,21 @@ export const viewport: Viewport = {
 
 const themeScript = `
   (function() {
-    var key = 'proveit-theme';
-    var stored = localStorage.getItem(key);
+    var themeKey = 'proveit-theme';
+    var accentKey = 'proveit-accent-theme';
+    var stored = localStorage.getItem(themeKey);
     var theme = stored === 'light' || stored === 'dark' ? stored : 'system';
+    var storedAccent = localStorage.getItem(accentKey);
+    var accentTheme =
+      storedAccent === 'green' ||
+      storedAccent === 'pink' ||
+      storedAccent === 'violet' ||
+      storedAccent === 'ocean'
+        ? storedAccent
+        : 'green';
     var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     var isDark = theme === 'dark' || (theme === 'system' && systemDark);
+    document.documentElement.setAttribute('data-accent-theme', accentTheme);
     document.documentElement.classList.toggle('dark', isDark);
   })();
 `;
