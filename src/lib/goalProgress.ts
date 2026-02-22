@@ -1,10 +1,11 @@
-import { addDays, addWeeks, format, isThisWeek, startOfWeek, subWeeks } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
 import type { Goal, ProofSubmission } from "@/types";
 import { safeParseISO } from "@/lib/dateUtils";
+import { getReminderDays } from "@/lib/goalDue";
 
 type GoalProgressGoal = Pick<
   Goal,
-  "id" | "frequency" | "isOnBreak" | "breakStreakSnapshot" | "streakCarryover" | "breakStartedAt"
+  "id" | "frequency" | "reminderDay" | "reminderDays" | "isOnBreak" | "breakStreakSnapshot" | "streakCarryover" | "breakStartedAt"
 >;
 type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
 
@@ -18,30 +19,21 @@ function getBaseGoalStreak(
     if (!minDateInclusive) return true;
     return s.date >= minDateInclusive;
   });
+  const submittedDates = new Set(subs.map((s) => s.date));
+  const reminderDays = getReminderDays(goal as Goal);
 
-  if (goal.frequency === "weekly") {
-    const weekStarts = new Set(
-      subs
-        .map((s) => safeParseISO(s.date))
-        .filter((d): d is Date => !!d)
-        .map((d) => format(startOfWeek(d, { weekStartsOn: 0 }), "yyyy-MM-dd"))
-    );
-
-    let streak = 0;
-    let cursor = startOfWeek(new Date(), { weekStartsOn: 0 });
-    while (weekStarts.has(format(cursor, "yyyy-MM-dd"))) {
-      streak += 1;
-      cursor = subWeeks(cursor, 1);
-    }
-    return streak;
-  }
-
-  const dates = new Set(subs.map((s) => s.date));
+  // Consecutive reminder-days (going backwards from today) that have a submission.
   let streak = 0;
-  const cursor = new Date();
-  while (dates.has(format(cursor, "yyyy-MM-dd"))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
+  let cursor = new Date();
+  while (true) {
+    const dateStr = format(cursor, "yyyy-MM-dd");
+    const dayOfWeek = cursor.getDay();
+    if (reminderDays.includes(dayOfWeek)) {
+      if (!submittedDates.has(dateStr)) break;
+      streak += 1;
+    }
+    cursor = subDays(cursor, 1);
+    if (cursor.getTime() < (minDateInclusive ? safeParseISO(minDateInclusive)?.getTime() ?? 0 : 0)) break;
   }
   return streak;
 }
@@ -50,10 +42,6 @@ function getPostBreakMinDate(goal: GoalProgressGoal): string | undefined {
   if (!goal.breakStartedAt) return undefined;
   const parsed = safeParseISO(goal.breakStartedAt);
   if (!parsed) return undefined;
-  if (goal.frequency === "weekly") {
-    const nextCycle = addWeeks(startOfWeek(parsed, { weekStartsOn: 0 }), 1);
-    return format(nextCycle, "yyyy-MM-dd");
-  }
   return format(addDays(parsed, 1), "yyyy-MM-dd");
 }
 
@@ -81,19 +69,12 @@ export function getGoalStreak(
   return baseStreak;
 }
 
+/** True if there is a verified submission for today (current reminder day). */
 export function isGoalDoneInCurrentWindow(
   goal: GoalProgressGoal,
   getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
   todayStr = format(new Date(), "yyyy-MM-dd")
 ): boolean {
   const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
-
-  if (goal.frequency === "daily") {
-    return subs.some((s) => s.date === todayStr);
-  }
-
-  return subs.some((s) => {
-    const d = safeParseISO(s.date);
-    return !!d && isThisWeek(d);
-  });
+  return subs.some((s) => s.date === todayStr);
 }

@@ -62,7 +62,8 @@ function GalleryContent() {
   }
 
   const plan = getPlan(user.plan);
-  const isPro = user.plan === "pro";
+  const hasGalleryAccess = user.plan === "pro" || user.plan === "premium";
+  const isPro = user.plan === "pro" || user.plan === "premium";
 
   // Build gallery source: verified submissions grouped by goal, sorted by date
   const verifiedSubs = submissions
@@ -153,7 +154,7 @@ function GalleryContent() {
               Goal gallery is a paid plan feature
             </h2>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Upgrade to Pro to browse your proof gallery and streak timelines.
+              Upgrade to Pro or Premium to browse your proof gallery and streak timelines.
             </p>
             <Link
               href="/pricing"

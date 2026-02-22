@@ -8,7 +8,17 @@ function normalizeCompletedDates(value: unknown): string[] {
   return [];
 }
 
+function normalizeReminderDays(value: unknown): number[] | undefined {
+  if (Array.isArray(value)) {
+    const nums = value.filter((v): v is number => typeof v === "number" && v >= 0 && v <= 6);
+    return nums.length > 0 ? nums.sort((a, b) => a - b) : undefined;
+  }
+  return undefined;
+}
+
 function mapGoalRow(row: Record<string, unknown>) {
+  const reminderDay = (row.reminder_day as number | null) ?? undefined;
+  const reminderDays = normalizeReminderDays(row.reminder_days) ?? (typeof reminderDay === "number" ? [reminderDay] : undefined);
   return {
     id: row.id as string,
     userId: row.user_id as string,
@@ -16,7 +26,8 @@ function mapGoalRow(row: Record<string, unknown>) {
     description: (row.description as string | null) ?? undefined,
     frequency: row.frequency as string,
     reminderTime: (row.reminder_time as string | null) ?? undefined,
-    reminderDay: (row.reminder_day as number | null) ?? undefined,
+    reminderDay,
+    reminderDays,
     gracePeriod: (row.grace_period as string | null) ?? undefined,
     isOnBreak: row.is_on_break === true,
     breakStartedAt: (row.break_started_at as string | null) ?? undefined,
@@ -55,7 +66,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, title, description, frequency, reminderTime, reminderDay, gracePeriod } = body;
+  const { id, title, description, frequency, reminderTime, reminderDay, reminderDays, gracePeriod } = body;
 
   // Best-effort profile upsert for installs where the trigger wasn't present
   // when the account was created. Ignore if table/columns differ.
@@ -79,7 +90,8 @@ export async function POST(request: NextRequest) {
     description: description ?? null,
     frequency,
     reminder_time: reminderTime ?? null,
-    reminder_day: reminderDay ?? null,
+    reminder_day: reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null),
+    reminder_days: Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null,
   };
 
   const insertGoal = async (includeGracePeriod: boolean) => {
@@ -126,6 +138,10 @@ export async function PATCH(request: NextRequest) {
   if ("frequency" in updates) dbUpdates.frequency = updates.frequency;
   if ("reminderTime" in updates) dbUpdates.reminder_time = updates.reminderTime ?? null;
   if ("reminderDay" in updates) dbUpdates.reminder_day = updates.reminderDay ?? null;
+  if ("reminderDays" in updates) {
+    const rd = updates.reminderDays;
+    dbUpdates.reminder_days = Array.isArray(rd) && rd.length > 0 ? rd : null;
+  }
   if ("gracePeriod" in updates) dbUpdates.grace_period = updates.gracePeriod ?? null;
   if ("completedDates" in updates) dbUpdates.completed_dates = updates.completedDates ?? [];
   if ("isOnBreak" in updates) dbUpdates.is_on_break = updates.isOnBreak === true;

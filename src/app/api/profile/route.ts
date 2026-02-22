@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-function normalizePlan(plan: unknown): "free" | "pro" {
-  return plan === "pro" || plan === "premium" ? "pro" : "free";
+function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
+  if (plan === "premium") return "premium";
+  if (plan === "pro") return "pro";
+  return "free";
 }
 
 export async function GET() {
@@ -52,7 +54,7 @@ export async function PATCH(request: NextRequest) {
   const { plan, planBilling } = body;
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (plan && ["free", "pro"].includes(plan)) {
+  if (plan && ["free", "pro", "premium"].includes(plan)) {
     updates.plan = plan;
   }
   if (planBilling && ["monthly", "yearly"].includes(planBilling)) {

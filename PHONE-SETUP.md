@@ -34,10 +34,10 @@ Deploy to Vercel so you always use the same URL:
 
 1. Push your code to GitHub
 2. Go to [vercel.com](https://vercel.com) → Import your repo → Deploy
-3. You’ll get a URL like `proveit.vercel.app`
-4. **Supabase** → Redirect URLs: add `https://proveit.vercel.app/api/auth/callback`
-5. **Supabase** → Site URL: set to `https://proveit.vercel.app`
-6. **Google OAuth** → Authorized domains: add `proveit.vercel.app`
-7. **Capacitor** → Edit `capacitor.config.ts`, set `server.url` to `https://proveit.vercel.app`
+3. You’ll get a URL like `proveit-sooty.vercel.app`
+4. **Supabase** → Redirect URLs: add `https://proveit-sooty.vercel.app/api/auth/callback`
+5. **Supabase** → Site URL: set to `https://proveit-sooty.vercel.app`
+6. **Google OAuth** → Authorized domains: add `proveit-sooty.vercel.app`
+7. **Capacitor** → Edit `capacitor.config.ts`, set `server.url` to `https://proveit-sooty.vercel.app`
 
 Sign‑in and OAuth will then work on any device.

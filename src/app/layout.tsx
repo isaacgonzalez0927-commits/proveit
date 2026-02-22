@@ -38,7 +38,13 @@ const themeScript = `
       storedAccent === 'green' ||
       storedAccent === 'pink' ||
       storedAccent === 'violet' ||
-      storedAccent === 'ocean'
+      storedAccent === 'ocean' ||
+      storedAccent === 'orange' ||
+      storedAccent === 'amber' ||
+      storedAccent === 'red' ||
+      storedAccent === 'purple' ||
+      storedAccent === 'indigo' ||
+      storedAccent === 'teal'
         ? storedAccent
         : 'green';
     var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

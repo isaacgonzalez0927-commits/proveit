@@ -33,7 +33,7 @@ import {
 import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
 import {
   ACCENT_THEME_OPTIONS,
-  canUsePaidAccentThemes,
+  canUseAccentTheme,
   getStoredAccentTheme,
   saveAndApplyAccentTheme,
   sanitizeAccentThemeForPlan,
@@ -95,7 +95,6 @@ export default function SettingsPage() {
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("green");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const isCreatorAccount = hasCreatorAccess(user?.email);
-  const hasPaidThemeAccess = canUsePaidAccentThemes(user?.plan);
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
@@ -151,8 +150,9 @@ export default function SettingsPage() {
   };
 
   const updateAccentTheme = (nextAccent: AccentTheme) => {
-    if (nextAccent !== "green" && !hasPaidThemeAccess) {
-      setSettingsMessage("Upgrade to Pro to unlock pink and other color themes.");
+    if (!canUseAccentTheme(user?.plan, nextAccent)) {
+      const option = ACCENT_THEME_OPTIONS.find((o) => o.id === nextAccent);
+      setSettingsMessage(option?.premiumOnly ? "Upgrade to Premium to unlock all 10 theme colors." : "Upgrade to Pro or Premium to unlock more themes.");
       return;
     }
     const label = ACCENT_THEME_OPTIONS.find((option) => option.id === nextAccent)?.label ?? "Theme";
@@ -337,12 +337,12 @@ export default function SettingsPage() {
             Theme colors
           </h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Light and dark mode are free for everyone. Pink and other color accents are Pro-only.
+            Green is free. Pro: 4 extra themes. Premium: all 10 theme colors.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {ACCENT_THEME_OPTIONS.map((option) => {
               const selected = accentTheme === option.id;
-              const locked = option.paidOnly && !hasPaidThemeAccess;
+              const locked = !canUseAccentTheme(user?.plan, option.id);
               return (
                 <button
                   key={option.id}
@@ -368,9 +368,9 @@ export default function SettingsPage() {
               );
             })}
           </div>
-          {!hasPaidThemeAccess && (
+          {user?.plan === "free" && (
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              Upgrade to Pro to unlock pink, violet, and ocean themes.
+              Upgrade to Pro for 4 themes, or Premium for all 10.
             </p>
           )}
         </section>

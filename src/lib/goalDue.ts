@@ -2,6 +2,14 @@ import type { Goal, GracePeriod } from "@/types";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+/** Effective reminder days (0–6). Daily = all 7; weekly = reminderDays or [reminderDay]. */
+export function getReminderDays(goal: Goal): number[] {
+  if (goal.frequency === "daily") return [0, 1, 2, 3, 4, 5, 6];
+  if (goal.reminderDays && goal.reminderDays.length > 0) return goal.reminderDays;
+  const d = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
+  return [d];
+}
+
 const GRACE_HOURS: Record<Exclude<GracePeriod, "eod">, number> = {
   "1h": 1,
   "3h": 3,
@@ -16,23 +24,13 @@ function parseTime(hhmm: string | undefined, defaultH = 9, defaultM = 0): { hour
 }
 
 function getDueDate(goal: Goal, now: Date): Date | null {
-  if (goal.frequency === "daily") {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-  if (now.getDay() !== day) return null;
+  const days = getReminderDays(goal);
+  if (!days.includes(now.getDay())) return null;
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 function getCurrentCycleDueDate(goal: Goal, now: Date): Date {
-  if (goal.frequency === "daily") {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-  const dueDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayDelta = day - now.getDay();
-  dueDate.setDate(dueDate.getDate() + dayDelta);
-  return dueDate;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 function getWeeklyCycleStart(now: Date): Date {
@@ -69,22 +67,17 @@ export function isGoalDue(goal: Goal, now: Date = new Date()): boolean {
 }
 
 /**
- * True when the user can submit proof any time before the due deadline:
- * - daily: from start of day until grace deadline
- * - weekly: from start of current week until grace deadline on due day
+ * True when the user can submit proof: from start of today until grace deadline on a reminder day.
  */
 export function isWithinSubmissionWindow(goal: Goal, now: Date = new Date()): boolean {
   if (goal.isOnBreak) return false;
+  const days = getReminderDays(goal);
+  if (!days.includes(now.getDay())) return false;
   const dueDate = getCurrentCycleDueDate(goal, now);
   const windowEnd = getWindowEnd(dueDate, goal.reminderTime, goal.gracePeriod);
-  if (goal.frequency === "daily") {
-    const dayStart = new Date(dueDate);
-    dayStart.setHours(0, 0, 0, 0);
-    return now >= dayStart && now <= windowEnd;
-  }
-
-  const weekStart = getWeeklyCycleStart(now);
-  return now >= weekStart && now <= windowEnd;
+  const dayStart = new Date(dueDate);
+  dayStart.setHours(0, 0, 0, 0);
+  return now >= dayStart && now <= windowEnd;
 }
 
 /**
@@ -101,27 +94,28 @@ export function getSubmissionWindowMessage(
   const windowEnd = getWindowEnd(dueDate, goal.reminderTime, goal.gracePeriod);
 
   if (now > windowEnd) {
-    if (goal.frequency === "weekly") {
-      const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-      return `Closed for this week (until next ${DAY_NAMES[day]})`;
-    }
-    return "Closed for today";
+    const days = getReminderDays(goal);
+    if (days.length === 1) return `Closed for today (next: ${DAY_NAMES[days[0]!]})`;
+    return "Closed for today.";
   }
   return "Submissions are not available right now.";
 }
 
 /**
- * Human-readable "Due [Day]" for weekly goals when not due; empty for daily.
+ * Human-readable label for when goal is due (e.g. "Due Mon, Wed, Fri" or "Daily").
  */
 export function getNextDueLabel(goal: Goal): string {
-  if (goal.frequency === "daily") return "";
-  const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-  return `Due ${DAY_NAMES[day]}`;
+  const days = getReminderDays(goal);
+  if (days.length === 7) return "Daily";
+  if (days.length === 0) return "";
+  const names = days.map((d) => DAY_NAMES[d]!.slice(0, 3)).join(", ");
+  return `Due ${names}`;
 }
 
-/** Day name only for weekly goals (e.g. "Saturday"); empty for daily. */
+/** Day names for weekly goals (e.g. "Mon, Wed, Sat"); "Daily" for all 7. */
 export function getDueDayName(goal: Goal): string {
-  if (goal.frequency === "daily") return "";
-  const day = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-  return DAY_NAMES[day];
+  const days = getReminderDays(goal);
+  if (days.length === 7) return "Daily";
+  if (days.length === 0) return "";
+  return days.map((d) => DAY_NAMES[d]!.slice(0, 3)).join(", ");
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { getSubmissionWindowMessage, isGoalDue, isWithinSubmissionWindow } from "@/lib/goalDue";
+import { getDueDayName, getReminderDays, getSubmissionWindowMessage, isGoalDue, isWithinSubmissionWindow } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
   applyGoalStreakOverride,
@@ -62,34 +62,24 @@ export default function BuddyPage() {
     () => getStoredAppSettings().defaultGoalFrequency
   );
   const [newDailyTime, setNewDailyTime] = useState("09:00");
-  const [newWeeklyDay, setNewWeeklyDay] = useState(0);
   const [newWeeklyTime, setNewWeeklyTime] = useState("10:00");
   const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
     () => getStoredAppSettings().defaultGoalGracePeriod
   );
+  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([1, 2, 3, 4, 5, 6]); // Mon–Sat
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editDraft, setEditDraft] = useState<{
-    title: string;
-    description: string;
-    frequency: GoalFrequency;
-    dailyTime: string;
-    weeklyDay: number;
-    weeklyTime: string;
+    reminderTime: string;
+    weeklyDays: number[];
     gracePeriod: GracePeriod;
-    plantVariant: GoalPlantVariant;
   }>({
-    title: "",
-    description: "",
-    frequency: "daily",
-    dailyTime: "09:00",
-    weeklyDay: 0,
-    weeklyTime: "10:00",
+    reminderTime: "09:00",
+    weeklyDays: [1, 2, 3, 4, 5, 6],
     gracePeriod: "eod",
-    plantVariant: 1,
   });
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
@@ -101,8 +91,8 @@ export default function BuddyPage() {
   const effectiveDeveloperSettings = isCreatorAccount
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
-  const canEditExistingGoalStyle = user?.plan === "pro";
-  const canUseGoalBreak = user?.plan === "pro";
+  const canEditExistingGoalStyle = true; // plant style change is free for all
+  const canUseGoalBreak = user?.plan === "pro" || user?.plan === "premium";
 
   useEffect(() => {
     if (!isCreatorAccount) return;
@@ -191,7 +181,7 @@ export default function BuddyPage() {
     setNewDescription("");
     setNewFrequency(appSettings.defaultGoalFrequency);
     setNewDailyTime("09:00");
-    setNewWeeklyDay(0);
+    setNewWeeklyDays([1, 2, 3, 4, 5, 6]);
     setNewWeeklyTime("10:00");
     setNewGracePeriod(appSettings.defaultGoalGracePeriod);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
@@ -212,6 +202,11 @@ export default function BuddyPage() {
       setGoalManagerMessage("Weekly goal limit reached for your current plan.");
       return;
     }
+    const weeklyDays = newFrequency === "weekly" ? newWeeklyDays : undefined;
+    if (weeklyDays && weeklyDays.length === 0) {
+      setGoalManagerMessage("Select at least one day for your reminder.");
+      return;
+    }
 
     setIsAddingGoal(true);
     try {
@@ -220,7 +215,8 @@ export default function BuddyPage() {
         description: newDescription.trim() || undefined,
         frequency: newFrequency,
         reminderTime: newFrequency === "daily" ? newDailyTime : newWeeklyTime,
-        reminderDay: newFrequency === "weekly" ? newWeeklyDay : undefined,
+        reminderDay: weeklyDays && weeklyDays.length > 0 ? weeklyDays[0] : undefined,
+        reminderDays: weeklyDays,
         gracePeriod: newGracePeriod,
       });
       if (!created) {
@@ -238,15 +234,11 @@ export default function BuddyPage() {
 
   const startEditingGoal = (goal: Goal) => {
     setEditingGoalId(goal.id);
+    const days = getReminderDays(goal);
     setEditDraft({
-      title: goal.title,
-      description: goal.description ?? "",
-      frequency: goal.frequency,
-      dailyTime: goal.frequency === "daily" ? (goal.reminderTime ?? "09:00") : "09:00",
-      weeklyDay: goal.frequency === "weekly" ? (goal.reminderDay ?? 0) : 0,
-      weeklyTime: goal.frequency === "weekly" ? (goal.reminderTime ?? "10:00") : "10:00",
+      reminderTime: goal.reminderTime ?? (goal.frequency === "daily" ? "09:00" : "10:00"),
+      weeklyDays: goal.frequency === "weekly" ? days : [1, 2, 3, 4, 5, 6],
       gracePeriod: goal.gracePeriod ?? "eod",
-      plantVariant: getGoalPlantVariant(goal.id),
     });
     setGoalManagerMessage(null);
   };
@@ -258,37 +250,22 @@ export default function BuddyPage() {
 
   const saveEditingGoal = async (goal: Goal) => {
     setGoalManagerMessage(null);
-    if (!editDraft.title.trim()) {
-      setGoalManagerMessage("Goal title is required.");
+    const reminderDays = goal.frequency === "weekly" ? editDraft.weeklyDays : undefined;
+    if (reminderDays && reminderDays.length === 0) {
+      setGoalManagerMessage("Select at least one day.");
       return;
-    }
-
-    if (editDraft.frequency !== goal.frequency) {
-      if (editDraft.frequency === "daily" && !canAddGoal("daily")) {
-        setGoalManagerMessage("Daily goal limit reached. Upgrade plan or remove a daily goal first.");
-        return;
-      }
-      if (editDraft.frequency === "weekly" && !canAddGoal("weekly")) {
-        setGoalManagerMessage("Weekly goal limit reached. Upgrade plan or remove a weekly goal first.");
-        return;
-      }
     }
 
     setIsSavingEdit(true);
     try {
       await updateGoal(goal.id, {
-        title: editDraft.title.trim(),
-        description: editDraft.description.trim() || undefined,
-        frequency: editDraft.frequency,
-        reminderTime: editDraft.frequency === "daily" ? editDraft.dailyTime : editDraft.weeklyTime,
-        reminderDay: editDraft.frequency === "weekly" ? editDraft.weeklyDay : undefined,
+        reminderTime: editDraft.reminderTime,
+        reminderDay: reminderDays && reminderDays.length > 0 ? reminderDays[0] : undefined,
+        reminderDays: reminderDays ?? undefined,
         gracePeriod: editDraft.gracePeriod,
       });
-      if (canEditExistingGoalStyle) {
-        setGoalPlantVariant(goal.id, editDraft.plantVariant);
-      }
       setEditingGoalId(null);
-      setGoalManagerMessage("Goal updated.");
+      setGoalManagerMessage("Schedule updated.");
     } finally {
       setIsSavingEdit(false);
     }
@@ -310,7 +287,7 @@ export default function BuddyPage() {
 
   const toggleGoalBreak = async (goal: Goal, displayedStreak: number) => {
     if (!canUseGoalBreak) {
-      setGoalManagerMessage("Upgrade to Pro to use goal breaks.");
+      setGoalManagerMessage("Upgrade to Pro or Premium to use goal breaks.");
       return;
     }
 
@@ -397,7 +374,7 @@ export default function BuddyPage() {
           </p>
           {!canUseGoalBreak && (
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Upgrade to Pro to unlock Goal Break mode.
+              Upgrade to Pro or Premium to unlock Goal Break mode.
             </p>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -491,24 +468,39 @@ export default function BuddyPage() {
               </label>
             </div>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {newFrequency === "weekly" && (
-                <label className="text-xs text-slate-700 dark:text-slate-300">
-                  Day of week
-                  <select
-                    value={newWeeklyDay}
-                    onChange={(e) => setNewWeeklyDay(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    {DAY_NAMES.map((day, index) => (
-                      <option key={day} value={index}>
-                        {day}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
+            {newFrequency === "weekly" && (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Reminder on these days</p>
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  You can complete the goal on each selected day (e.g. gym every day but Sunday).
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {DAY_NAMES.map((day, index) => (
+                    <label
+                      key={day}
+                      className={`inline-flex cursor-pointer items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                        newWeeklyDays.includes(index)
+                          ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
+                          : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newWeeklyDays.includes(index)}
+                        onChange={(e) => {
+                          if (e.target.checked) setNewWeeklyDays((d) => [...d, index].sort((a, b) => a - b));
+                          else setNewWeeklyDays((d) => d.filter((x) => x !== index));
+                        }}
+                        className="sr-only"
+                      />
+                      {day.slice(0, 3)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="text-xs text-slate-700 dark:text-slate-300">
                 Reminder time
                 <input
@@ -661,7 +653,7 @@ export default function BuddyPage() {
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-slate-900 dark:text-white">{entry.goal.title}</p>
                     <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                      {entry.goal.frequency === "daily" ? "Daily" : "Weekly"}
+                      {getDueDayName(entry.goal)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -722,7 +714,7 @@ export default function BuddyPage() {
 
                 <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
                   Streak: <span className="font-medium text-slate-900 dark:text-slate-200">{entry.streak}</span>{" "}
-                  {entry.goal.frequency === "daily" ? "days" : "weeks"}
+                  {getReminderDays(entry.goal).length === 7 ? "days" : "times"}
                   {entry.hasStreakOverride && (
                     <span className="ml-1 text-amber-700 dark:text-amber-300">
                       (real {entry.actualStreak})
@@ -790,7 +782,7 @@ export default function BuddyPage() {
                       Plant style
                     </p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                      Upgrade to Pro to change plant style after goal creation.
+                      Tap the plant to change its style.
                     </p>
                   </div>
                 )}
@@ -798,156 +790,77 @@ export default function BuddyPage() {
                 {editingGoalId === entry.goal.id && (
                   <div className="mt-3 rounded-lg border border-slate-300 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-900/70">
                     <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                      Edit goal
+                      Edit schedule (time &amp; days only)
                     </p>
 
-                    <input
-                      type="text"
-                      value={editDraft.title}
-                      onChange={(e) => setEditDraft((prev) => ({ ...prev, title: e.target.value }))}
-                      placeholder="Goal title"
-                      className="mt-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      required
-                    />
-                    <textarea
-                      value={editDraft.description}
-                      onChange={(e) => setEditDraft((prev) => ({ ...prev, description: e.target.value }))}
-                      placeholder="Description"
-                      rows={2}
-                      className="mt-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
+                    <label className="mt-2 block text-[11px] text-slate-700 dark:text-slate-300">
+                      Reminder time
+                      <input
+                        type="time"
+                        value={editDraft.reminderTime}
+                        onChange={(e) =>
+                          setEditDraft((prev) => ({ ...prev, reminderTime: e.target.value }))
+                        }
+                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </label>
 
-                    <div className="mt-2 flex flex-wrap gap-3">
-                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
-                        <input
-                          type="radio"
-                          checked={editDraft.frequency === "daily"}
-                          onChange={() =>
-                            setEditDraft((prev) => ({
-                              ...prev,
-                              frequency: "daily",
-                              dailyTime: prev.dailyTime || "09:00",
-                            }))
-                          }
-                          className="text-prove-600"
-                        />
-                        Daily
-                      </label>
-                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
-                        <input
-                          type="radio"
-                          checked={editDraft.frequency === "weekly"}
-                          onChange={() =>
-                            setEditDraft((prev) => ({
-                              ...prev,
-                              frequency: "weekly",
-                              weeklyDay: Number.isFinite(prev.weeklyDay) ? prev.weeklyDay : 0,
-                              weeklyTime: prev.weeklyTime || "10:00",
-                            }))
-                          }
-                          className="text-prove-600"
-                        />
-                        Weekly
-                      </label>
-                    </div>
-
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      {editDraft.frequency === "weekly" && (
-                        <label className="text-[11px] text-slate-700 dark:text-slate-300">
-                          Day
-                          <select
-                            value={editDraft.weeklyDay}
-                            onChange={(e) =>
-                              setEditDraft((prev) => ({
-                                ...prev,
-                                weeklyDay: Number(e.target.value),
-                              }))
-                            }
-                            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                          >
-                            {DAY_NAMES.map((day, index) => (
-                              <option key={day} value={index}>
-                                {day}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      )}
-
-                      <label className="text-[11px] text-slate-700 dark:text-slate-300">
-                        Time
-                        <input
-                          type="time"
-                          value={editDraft.frequency === "daily" ? editDraft.dailyTime : editDraft.weeklyTime}
-                          onChange={(e) =>
-                            setEditDraft((prev) =>
-                              prev.frequency === "daily"
-                                ? { ...prev, dailyTime: e.target.value }
-                                : { ...prev, weeklyTime: e.target.value }
-                            )
-                          }
-                          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                        />
-                      </label>
-
-                      <label className="text-[11px] text-slate-700 dark:text-slate-300">
-                        Grace period
-                        <select
-                          value={editDraft.gracePeriod}
-                          onChange={(e) =>
-                            setEditDraft((prev) => ({
-                              ...prev,
-                              gracePeriod: e.target.value as GracePeriod,
-                            }))
-                          }
-                          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                        >
-                          {GRACE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    {canEditExistingGoalStyle && (
+                    {entry.goal.frequency === "weekly" && (
                       <div className="mt-2">
-                        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                          Plant style (edit)
-                        </p>
+                        <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">Days</p>
                         <div className="mt-1 flex flex-wrap gap-1.5">
-                          {GOAL_PLANT_VARIANTS.map((variant) => (
-                            <button
-                              key={variant}
-                              type="button"
-                              onClick={() =>
-                                setEditDraft((prev) => ({
-                                  ...prev,
-                                  plantVariant: variant,
-                                }))
-                              }
-                              className={`rounded-md border p-1 ${
-                                editDraft.plantVariant === variant
-                                  ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
-                                  : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
+                          {DAY_NAMES.map((day, index) => (
+                            <label
+                              key={day}
+                              className={`inline-flex cursor-pointer items-center rounded-md border px-2 py-1 text-[11px] font-medium ${
+                                editDraft.weeklyDays.includes(index)
+                                  ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
+                                  : "border-slate-300 bg-white text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
                               }`}
-                              aria-label={`Set edit plant style ${variant}`}
                             >
-                              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
-                                <PlantIllustration
-                                  stage="flowering"
-                                  wateringLevel={1}
-                                  wateredGoals={1}
-                                  size="small"
-                                  variant={variant}
-                                />
-                              </div>
-                            </button>
+                              <input
+                                type="checkbox"
+                                checked={editDraft.weeklyDays.includes(index)}
+                                onChange={(e) => {
+                                  if (e.target.checked)
+                                    setEditDraft((prev) => ({
+                                      ...prev,
+                                      weeklyDays: [...prev.weeklyDays, index].sort((a, b) => a - b),
+                                    }));
+                                  else
+                                    setEditDraft((prev) => ({
+                                      ...prev,
+                                      weeklyDays: prev.weeklyDays.filter((x) => x !== index),
+                                    }));
+                                }}
+                                className="sr-only"
+                              />
+                              {day.slice(0, 3)}
+                            </label>
                           ))}
                         </div>
                       </div>
                     )}
+
+                    <label className="mt-2 block text-[11px] text-slate-700 dark:text-slate-300">
+                      Prove it within
+                      <select
+                        value={editDraft.gracePeriod}
+                        onChange={(e) =>
+                          setEditDraft((prev) => ({
+                            ...prev,
+                            gracePeriod: e.target.value as GracePeriod,
+                          }))
+                        }
+                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      >
+                        {GRACE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button

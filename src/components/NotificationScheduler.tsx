@@ -3,9 +3,10 @@
 import { useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { format } from "date-fns";
+import { getReminderDays } from "@/lib/goalDue";
+import type { Goal } from "@/types";
 
-const STORAGE_KEY_DAILY_PREFIX = "proveit_last_daily_notification_";
-const STORAGE_KEY_WEEKLY_PREFIX = "proveit_last_weekly_notification_";
+const STORAGE_KEY_PREFIX = "proveit_notification_";
 
 function parseTime(value: string | undefined, fallback: string) {
   const src = value && /^\d{2}:\d{2}$/.test(value) ? value : fallback;
@@ -21,75 +22,38 @@ export function NotificationScheduler() {
     if (!user || typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
-    const dailyGoals = goals.filter((g) => g.frequency === "daily" && !g.isOnBreak);
-    const weeklyGoals = goals.filter((g) => g.frequency === "weekly" && !g.isOnBreak);
-    if (dailyGoals.length === 0 && weeklyGoals.length === 0) return;
+    const activeGoals = goals.filter((g) => !g.isOnBreak);
+    if (activeGoals.length === 0) return;
 
-    function maybeSendDaily() {
+    function maybeSendForGoal(goal: Goal) {
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
+      const todayDay = now.getDay();
+      const reminderDays = getReminderDays(goal);
+      if (!reminderDays.includes(todayDay)) return;
 
-      dailyGoals.forEach((g) => {
-        const { hour, minute } = parseTime(g.reminderTime, "09:00");
-        const reminder = new Date(now);
-        reminder.setHours(hour, minute, 0, 0);
-        const diff = now.getTime() - reminder.getTime();
-        if (diff < 0 || diff > 15 * 60 * 1000) return;
+      const { hour, minute } = parseTime(goal.reminderTime, goal.frequency === "daily" ? "09:00" : "10:00");
+      const reminder = new Date(now);
+      reminder.setHours(hour, minute, 0, 0);
+      const diff = now.getTime() - reminder.getTime();
+      if (diff < 0 || diff > 15 * 60 * 1000) return;
 
-        const key = `${STORAGE_KEY_DAILY_PREFIX}${g.id}_${today}`;
-        if (localStorage.getItem(key)) return;
+      const key = `${STORAGE_KEY_PREFIX}${goal.id}_${today}`;
+      if (localStorage.getItem(key)) return;
 
-        const subs = getSubmissionsForGoal(g.id).filter((s) => s.status === "verified");
-        const doneToday = subs.some((s) => s.date === today);
-        if (doneToday) return;
+      const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
+      const doneToday = subs.some((s) => s.date === today);
+      if (doneToday) return;
 
-        new Notification("ProveIt – Daily goal", {
-          body: `Time to ${g.title}. Prove it with a photo before midnight.`,
-          icon: "/favicon.ico",
-        });
-        localStorage.setItem(key, "1");
+      new Notification("ProveIt", {
+        body: `Time to ${goal.title}. Prove it with a photo.`,
+        icon: "/favicon.ico",
       });
-    }
-
-    function maybeSendWeekly() {
-      const now = new Date();
-      const weekKey = format(now, "yyyy-'W'ww");
-
-      weeklyGoals.forEach((g) => {
-        const day = typeof g.reminderDay === "number" ? g.reminderDay : 0;
-        if (now.getDay() !== day) return;
-
-        const { hour, minute } = parseTime(g.reminderTime, "10:00");
-        const reminder = new Date(now);
-        reminder.setHours(hour, minute, 0, 0);
-        const diff = now.getTime() - reminder.getTime();
-        if (diff < 0 || diff > 15 * 60 * 1000) return;
-
-        const key = `${STORAGE_KEY_WEEKLY_PREFIX}${g.id}_${weekKey}`;
-        if (localStorage.getItem(key)) return;
-
-        const subs = getSubmissionsForGoal(g.id).filter((s) => s.status === "verified");
-        const thisWeek = subs.some((s) => {
-          const d = new Date(s.date);
-          const sun = new Date(now);
-          sun.setDate(sun.getDate() - sun.getDay());
-          const nextSun = new Date(sun);
-          nextSun.setDate(nextSun.getDate() + 7);
-          return d >= sun && d < nextSun;
-        });
-        if (thisWeek) return;
-
-        new Notification("ProveIt – Weekly goal", {
-          body: `You still need to complete: ${g.title}. Submit a photo before midnight.`,
-          icon: "/favicon.ico",
-        });
-        localStorage.setItem(key, "1");
-      });
+      localStorage.setItem(key, "1");
     }
 
     function check() {
-      maybeSendDaily();
-      maybeSendWeekly();
+      activeGoals.forEach(maybeSendForGoal);
     }
 
     check();

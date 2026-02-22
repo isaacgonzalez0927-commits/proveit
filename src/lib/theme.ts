@@ -1,43 +1,33 @@
 import type { PlanId } from "@/types";
 
 export type ThemeMode = "light" | "dark" | "system";
-export type AccentTheme = "green" | "pink" | "violet" | "ocean";
+export type AccentTheme = "green" | "pink" | "violet" | "ocean" | "orange" | "amber" | "red" | "purple" | "indigo" | "teal";
 
 export const THEME_STORAGE_KEY = "proveit-theme";
 export const ACCENT_THEME_STORAGE_KEY = "proveit-accent-theme";
 export const DEFAULT_THEME_MODE: ThemeMode = "system";
 export const DEFAULT_ACCENT_THEME: AccentTheme = "green";
 
+/** Themes included in Pro (4). Premium gets all. */
+export const PRO_ACCENT_THEMES: AccentTheme[] = ["pink", "violet", "ocean", "teal"];
+
 export const ACCENT_THEME_OPTIONS: Array<{
   id: AccentTheme;
   label: string;
   swatchClassName: string;
   paidOnly: boolean;
+  premiumOnly: boolean;
 }> = [
-  {
-    id: "green",
-    label: "Green",
-    swatchClassName: "bg-emerald-500",
-    paidOnly: false,
-  },
-  {
-    id: "pink",
-    label: "Pink",
-    swatchClassName: "bg-rose-500",
-    paidOnly: true,
-  },
-  {
-    id: "violet",
-    label: "Violet",
-    swatchClassName: "bg-violet-500",
-    paidOnly: true,
-  },
-  {
-    id: "ocean",
-    label: "Ocean",
-    swatchClassName: "bg-sky-500",
-    paidOnly: true,
-  },
+  { id: "green", label: "Green", swatchClassName: "bg-emerald-500", paidOnly: false, premiumOnly: false },
+  { id: "pink", label: "Pink", swatchClassName: "bg-rose-500", paidOnly: true, premiumOnly: false },
+  { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", paidOnly: true, premiumOnly: false },
+  { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", paidOnly: true, premiumOnly: false },
+  { id: "teal", label: "Teal", swatchClassName: "bg-teal-500", paidOnly: true, premiumOnly: false },
+  { id: "orange", label: "Orange", swatchClassName: "bg-orange-500", paidOnly: true, premiumOnly: true },
+  { id: "amber", label: "Amber", swatchClassName: "bg-amber-500", paidOnly: true, premiumOnly: true },
+  { id: "red", label: "Red", swatchClassName: "bg-red-500", paidOnly: true, premiumOnly: true },
+  { id: "purple", label: "Purple", swatchClassName: "bg-purple-500", paidOnly: true, premiumOnly: true },
+  { id: "indigo", label: "Indigo", swatchClassName: "bg-indigo-500", paidOnly: true, premiumOnly: true },
 ];
 
 function isThemeMode(value: string | null): value is ThemeMode {
@@ -45,7 +35,9 @@ function isThemeMode(value: string | null): value is ThemeMode {
 }
 
 function isAccentTheme(value: string | null): value is AccentTheme {
-  return value === "green" || value === "pink" || value === "violet" || value === "ocean";
+  return value === "green" || value === "pink" || value === "violet" || value === "ocean" || 
+         value === "orange" || value === "amber" || value === "red" || value === "purple" || 
+         value === "indigo" || value === "teal";
 }
 
 export function getStoredThemeMode(): ThemeMode {
@@ -91,15 +83,20 @@ export function getEffectiveIsDark(theme: ThemeMode): boolean {
 }
 
 export function canUsePaidAccentThemes(plan: PlanId | null | undefined): boolean {
-  return plan === "pro";
+  return plan === "pro" || plan === "premium";
+}
+
+export function canUseAccentTheme(plan: PlanId | null | undefined, accent: AccentTheme): boolean {
+  if (accent === "green") return true;
+  if (plan === "premium") return true;
+  if (plan === "pro") return PRO_ACCENT_THEMES.includes(accent);
+  return false;
 }
 
 export function sanitizeAccentThemeForPlan(
   accent: AccentTheme,
   plan: PlanId | null | undefined
 ): AccentTheme {
-  if (!canUsePaidAccentThemes(plan) && accent !== "green") {
-    return "green";
-  }
-  return accent;
+  if (canUseAccentTheme(plan, accent)) return accent;
+  return "green";
 }

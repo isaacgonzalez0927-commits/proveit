@@ -263,6 +263,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               frequency: goal.frequency,
               reminderTime: goal.reminderTime,
               reminderDay: goal.reminderDay,
+              reminderDays: goal.reminderDays,
               gracePeriod: goal.gracePeriod ?? "eod",
             }),
           });
@@ -297,6 +298,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               ...updates,
               reminderTime: updates.reminderTime,
               reminderDay: updates.reminderDay,
+              reminderDays: updates.reminderDays,
               gracePeriod: updates.gracePeriod,
             }),
           });
