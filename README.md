@@ -45,7 +45,7 @@ The app uses this key from `/api/account` to permanently delete the authenticate
 ## Pricing (demo)
 
 - **Free**: 2 daily goals, 2 weekly goals, AI verification, reminders, streak tracking.
-- **Pro** ($4.99/mo or $49/year): Unlimited daily/weekly goals, Goal Gallery access, gallery display controls, custom reminders, flexible grace period, post-creation plant style edits, and extra theme colors.
+- **Pro** ($4.99/mo or $49/year): Unlimited daily/weekly goals, Goal Gallery access, gallery display controls, custom reminders, flexible grace period, post-creation plant style edits, Goal Break mode (freeze streak/growth), and extra theme colors.
 
 In production, wire paid plans to Stripe (or your payment provider) using the plan IDs in `src/types/index.ts`.
 

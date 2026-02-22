@@ -64,6 +64,7 @@ function getWindowEnd(dueDate: Date, reminderTime: string | undefined, grace: Gr
  * True when the user should be asked to submit proof: daily = today, weekly = today is reminder day.
  */
 export function isGoalDue(goal: Goal, now: Date = new Date()): boolean {
+  if (goal.isOnBreak) return false;
   return getDueDate(goal, now) !== null;
 }
 
@@ -73,6 +74,7 @@ export function isGoalDue(goal: Goal, now: Date = new Date()): boolean {
  * - weekly: from start of current week until grace deadline on due day
  */
 export function isWithinSubmissionWindow(goal: Goal, now: Date = new Date()): boolean {
+  if (goal.isOnBreak) return false;
   const dueDate = getCurrentCycleDueDate(goal, now);
   const windowEnd = getWindowEnd(dueDate, goal.reminderTime, goal.gracePeriod);
   if (goal.frequency === "daily") {
@@ -93,6 +95,7 @@ export function getSubmissionWindowMessage(
   goal: Goal,
   now: Date = new Date()
 ): string | null {
+  if (goal.isOnBreak) return "This goal is on break.";
   if (isWithinSubmissionWindow(goal, now)) return null;
   const dueDate = getCurrentCycleDueDate(goal, now);
   const windowEnd = getWindowEnd(dueDate, goal.reminderTime, goal.gracePeriod);

@@ -18,6 +18,10 @@ function mapGoalRow(row: Record<string, unknown>) {
     reminderTime: (row.reminder_time as string | null) ?? undefined,
     reminderDay: (row.reminder_day as number | null) ?? undefined,
     gracePeriod: (row.grace_period as string | null) ?? undefined,
+    isOnBreak: row.is_on_break === true,
+    breakStartedAt: (row.break_started_at as string | null) ?? undefined,
+    breakStreakSnapshot: (row.break_streak_snapshot as number | null) ?? undefined,
+    streakCarryover: (row.streak_carryover as number | null) ?? undefined,
     createdAt: row.created_at as string,
     completedDates: normalizeCompletedDates(row.completed_dates),
   };
@@ -117,13 +121,23 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = body;
 
   const dbUpdates: Record<string, unknown> = {};
-  if (updates.title != null) dbUpdates.title = updates.title;
-  if (updates.description != null) dbUpdates.description = updates.description;
-  if (updates.frequency != null) dbUpdates.frequency = updates.frequency;
-  if (updates.reminderTime != null) dbUpdates.reminder_time = updates.reminderTime;
-  if (updates.reminderDay != null) dbUpdates.reminder_day = updates.reminderDay;
-  if (updates.gracePeriod != null) dbUpdates.grace_period = updates.gracePeriod;
-  if (updates.completedDates != null) dbUpdates.completed_dates = updates.completedDates;
+  if ("title" in updates) dbUpdates.title = updates.title;
+  if ("description" in updates) dbUpdates.description = updates.description ?? null;
+  if ("frequency" in updates) dbUpdates.frequency = updates.frequency;
+  if ("reminderTime" in updates) dbUpdates.reminder_time = updates.reminderTime ?? null;
+  if ("reminderDay" in updates) dbUpdates.reminder_day = updates.reminderDay ?? null;
+  if ("gracePeriod" in updates) dbUpdates.grace_period = updates.gracePeriod ?? null;
+  if ("completedDates" in updates) dbUpdates.completed_dates = updates.completedDates ?? [];
+  if ("isOnBreak" in updates) dbUpdates.is_on_break = updates.isOnBreak === true;
+  if ("breakStartedAt" in updates) dbUpdates.break_started_at = updates.breakStartedAt ?? null;
+  if ("breakStreakSnapshot" in updates) {
+    dbUpdates.break_streak_snapshot = updates.breakStreakSnapshot ?? null;
+  }
+  if ("streakCarryover" in updates) dbUpdates.streak_carryover = updates.streakCarryover ?? null;
+
+  if (Object.keys(dbUpdates).length === 0) {
+    return NextResponse.json({ ok: true });
+  }
 
   const { error } = await supabase
     .from("goals")

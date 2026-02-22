@@ -23,6 +23,10 @@ CREATE TABLE IF NOT EXISTS goals (
   frequency TEXT NOT NULL CHECK (frequency IN ('daily', 'weekly')),
   reminder_time TEXT,
   reminder_day INTEGER,
+  is_on_break BOOLEAN NOT NULL DEFAULT false,
+  break_started_at TIMESTAMPTZ,
+  break_streak_snapshot INTEGER,
+  streak_carryover INTEGER,
   completed_dates JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

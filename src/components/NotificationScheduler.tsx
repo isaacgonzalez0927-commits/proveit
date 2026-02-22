@@ -21,8 +21,8 @@ export function NotificationScheduler() {
     if (!user || typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
-    const dailyGoals = goals.filter((g) => g.frequency === "daily");
-    const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
+    const dailyGoals = goals.filter((g) => g.frequency === "daily" && !g.isOnBreak);
+    const weeklyGoals = goals.filter((g) => g.frequency === "weekly" && !g.isOnBreak);
     if (dailyGoals.length === 0 && weeklyGoals.length === 0) return;
 
     function maybeSendDaily() {

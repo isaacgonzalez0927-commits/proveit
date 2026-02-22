@@ -338,10 +338,15 @@ function DashboardContent() {
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           Daily · Streak: {displayStreakByGoalId.get(goal.id) ?? 0} days
+                          {goal.isOnBreak ? " · On break" : ""}
                         </p>
                       </div>
                     </div>
-                    {verified ? (
+                    {goal.isOnBreak ? (
+                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                        On break
+                      </span>
+                    ) : verified ? (
                       <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
                         <CheckCircle2 className="h-4 w-4" />
                         Done
@@ -389,11 +394,16 @@ function DashboardContent() {
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           Weekly · Streak: {displayStreakByGoalId.get(goal.id) ?? 0} weeks
+                          {goal.isOnBreak ? " · On break" : ""}
                           {!due && dueLabel && ` · ${dueLabel}`}
                         </p>
                       </div>
                     </div>
-                    {thisWeekProof ? (
+                    {goal.isOnBreak ? (
+                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                        On break
+                      </span>
+                    ) : thisWeekProof ? (
                       <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
                         <CheckCircle2 className="h-4 w-4" />
                         Done

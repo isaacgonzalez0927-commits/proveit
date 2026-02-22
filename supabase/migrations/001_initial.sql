@@ -22,6 +22,10 @@ create table if not exists public.goals (
   frequency text not null check (frequency in ('daily', 'weekly')),
   reminder_time text,
   reminder_day integer,
+  is_on_break boolean not null default false,
+  break_started_at timestamptz,
+  break_streak_snapshot integer,
+  streak_carryover integer,
   created_at timestamptz not null default now(),
   completed_dates text[] not null default '{}'
 );

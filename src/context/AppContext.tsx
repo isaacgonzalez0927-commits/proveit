@@ -122,6 +122,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           reminderTime: g.reminderTime,
           reminderDay: g.reminderDay,
           gracePeriod: g.gracePeriod,
+          isOnBreak: g.isOnBreak === true,
+          breakStartedAt: typeof g.breakStartedAt === "string" ? g.breakStartedAt : undefined,
+          breakStreakSnapshot:
+            typeof g.breakStreakSnapshot === "number" ? g.breakStreakSnapshot : undefined,
+          streakCarryover: typeof g.streakCarryover === "number" ? g.streakCarryover : undefined,
           createdAt: g.createdAt,
           completedDates: g.completedDates ?? [],
         })));
