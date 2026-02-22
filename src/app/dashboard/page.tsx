@@ -276,9 +276,12 @@ function DashboardContent() {
               </span>
             </div>
             <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-              {dailyGoals.length} daily, {weeklyGoals.length} weekly
+              {goals.length}
             </p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {dailyGoals.length} daily, {weeklyGoals.length} weekly
+            </p>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
               {plan?.dailyGoals === -1 ? "Unlimited" : plan?.dailyGoals} daily,{" "}
               {plan?.weeklyGoals === -1 ? "Unlimited" : plan?.weeklyGoals} weekly on your plan.
             </p>
