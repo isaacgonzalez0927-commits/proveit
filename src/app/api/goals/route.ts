@@ -98,12 +98,12 @@ export async function POST(request: NextRequest) {
 
   // Daily: only use minimal columns so we never touch reminder_day/reminder_days (avoids "could not find reminder day" on strict or older DBs).
   // Weekly: add reminder columns if present in schema.
-  const fullInsert: Record<string, unknown> = { ...minimalInsert };
+  const weeklyInsert: Record<string, unknown> = { ...minimalInsert, reminder_day: reminderDayVal, reminder_days: reminderDaysVal };
+  const fullInsert: Record<string, unknown> = { ...minimalInsert, grace_period: gracePeriod ?? "eod" };
   if (!isDaily) {
     fullInsert.reminder_day = reminderDayVal;
     fullInsert.reminder_days = reminderDaysVal;
   }
-  fullInsert.grace_period = gracePeriod ?? "eod";
 
   const insertGoal = async (payload: Record<string, unknown>) => {
     return supabase.from("goals").insert(payload).select().single();
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     // Daily: try minimal first (no grace_period, no reminder columns)
     let result = await insertGoal(minimalInsert);
     if (result.error) {
-      if (/grace_period|reminder|does not exist/i.test(result.error.message ?? "")) {
+      if (/grace_period|grace period|reminder|does not exist/i.test(result.error.message ?? "")) {
         result = await insertGoal({ ...minimalInsert, grace_period: gracePeriod ?? "eod" });
       }
       if (result.error) {
@@ -129,15 +129,25 @@ export async function POST(request: NextRequest) {
       data = result.data as Record<string, unknown>;
     }
   } else {
-    const result = await insertGoal(fullInsert);
+    // Weekly: try full (with grace_period and reminder columns), then strip grace_period if DB doesn't have it
+    let result = await insertGoal(fullInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
-      if (/reminder_day|reminder_days|does not exist/i.test(msg)) {
-        const fallback = await insertGoal({ ...minimalInsert, grace_period: gracePeriod ?? "eod" });
-        if (!fallback.error) data = fallback.data as Record<string, unknown>;
-        else error = fallback.error;
+      if (/grace_period|grace period|does not exist/i.test(msg)) {
+        result = await insertGoal(weeklyInsert);
+      }
+      if (result.error) {
+        const retryMsg = result.error.message ?? "";
+        if (/reminder_day|reminder_days|does not exist/i.test(retryMsg)) {
+          result = await insertGoal(minimalInsert);
+        }
+        if (result.error) {
+          error = result.error;
+        } else {
+          data = result.data as Record<string, unknown>;
+        }
       } else {
-        error = result.error;
+        data = result.data as Record<string, unknown>;
       }
     } else {
       data = result.data as Record<string, unknown>;

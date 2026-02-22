@@ -666,13 +666,10 @@ export default function BuddyPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-wrap items-start justify-center gap-6 sm:gap-8">
             {garden.map((entry) => (
-              <article
-                key={entry.goal.id}
-                className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-cyan-50/40 p-4 dark:border-emerald-900/60 dark:from-emerald-950/25 dark:to-cyan-950/20"
-              >
-                <div className="flex items-start justify-between gap-2">
+              <article key={entry.goal.id} className="flex min-w-[160px] max-w-[200px] flex-col items-center">
+                <div className="flex w-full items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-slate-900 dark:text-white">{entry.goal.title}</p>
                     <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
@@ -726,7 +723,7 @@ export default function BuddyPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-center rounded-xl bg-white/70 py-3 dark:bg-slate-900/50">
+                <div className="mt-2 flex items-center justify-center py-2">
                   <PlantIllustration
                     stage={entry.stage.stage}
                     wateringLevel={entry.wateringLevel}

@@ -100,20 +100,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         fetch("/api/submissions").then((r) => r.json()),
       ]).then(([profileResult, goalsResult, subsResult]) => {
         const p = profileResult.status === "fulfilled" ? profileResult.value?.profile : null;
-        if (p) {
-          setUserState({
-            id: p.id,
-            email: p.email,
-            plan: normalizePlanId(p.plan),
-            planBilling: p.planBilling,
-            createdAt: p.createdAt ?? new Date().toISOString(),
-          });
-        } else if (supabaseUser) {
-          setUserState({ id: supabaseUser.id, email: supabaseUser.email ?? "", plan: "free", createdAt: supabaseUser.created_at });
-        }
+        const profileUser = p
+          ? {
+              id: p.id,
+              email: p.email,
+              plan: normalizePlanId(p.plan),
+              planBilling: p.planBilling,
+              createdAt: p.createdAt ?? new Date().toISOString(),
+            }
+          : { id: supabaseUser.id, email: supabaseUser.email ?? "", plan: "free" as const, planBilling: undefined as undefined, createdAt: supabaseUser.created_at };
+        setUserState(profileUser);
+
         const goalsRes = goalsResult.status === "fulfilled" ? goalsResult.value : null;
         const gs = goalsRes?.goals ?? [];
-        setGoalsState(gs.map((g: Record<string, unknown>) => ({
+        const mappedGoals = gs.map((g: Record<string, unknown>) => ({
           id: g.id,
           userId: g.userId,
           title: g.title,
@@ -121,6 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           frequency: g.frequency,
           reminderTime: g.reminderTime,
           reminderDay: g.reminderDay,
+          reminderDays: Array.isArray(g.reminderDays) ? g.reminderDays : undefined,
           gracePeriod: g.gracePeriod,
           isOnBreak: g.isOnBreak === true,
           breakStartedAt: typeof g.breakStartedAt === "string" ? g.breakStartedAt : undefined,
@@ -129,7 +130,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           streakCarryover: typeof g.streakCarryover === "number" ? g.streakCarryover : undefined,
           createdAt: g.createdAt,
           completedDates: g.completedDates ?? [],
-        })));
+        }));
+        setGoalsState(mappedGoals);
+
         const subsRes = subsResult.status === "fulfilled" ? subsResult.value : null;
         const subs = subsRes?.submissions ?? [];
         setSubmissionsState(subs.map((s: Record<string, unknown>) => ({
@@ -142,6 +145,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           verifiedAt: s.verifiedAt,
           createdAt: s.createdAt,
         })));
+
+        // Set hasSelectedPlan in the same tick so loading doesn't close before plan state is ready
+        const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
+        const selectedByAccount = profileUser.plan !== "free";
+        const likelyExistingFreeUser = gs.length > 0 || subs.length > 0;
+        setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
       }).finally(() => setDataLoaded(true));
       setHydrated(true);
       return;
@@ -617,7 +626,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={value}>
-      {children}
+      {useSupabase && !authReady ? (
+        <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
+          <div className="flex flex-col items-center gap-3">
+            <div
+              className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-prove-600 dark:border-slate-700 dark:border-t-prove-500"
+              aria-hidden
+            />
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
+          </div>
+        </main>
+      ) : (
+        children
+      )}
     </AppContext.Provider>
   );
 }
