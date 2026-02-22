@@ -624,9 +624,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     supabase: useSupabase ? supabase : null,
   };
 
+  const showLoading = useSupabase && !authReady;
+
   return (
     <AppContext.Provider value={value}>
-      {useSupabase && !authReady ? (
+      {showLoading ? (
         <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
           <div className="flex flex-col items-center gap-3">
             <div
@@ -637,7 +639,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       ) : (
-        children
+        <>{children}</>
       )}
     </AppContext.Provider>
   );
