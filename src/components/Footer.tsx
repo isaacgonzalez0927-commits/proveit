@@ -28,10 +28,10 @@ export function Footer() {
               Dashboard
             </Link>
             <Link
-              href="/goals"
+              href="/buddy"
               className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
             >
-              Goals
+              Goal Garden
             </Link>
             <Link
               href="/pricing"

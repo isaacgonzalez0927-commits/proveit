@@ -19,7 +19,7 @@ const TOUR_STEPS: TourStep[] = [
     emoji: "🌱",
     body:
       "You just picked your plan. Next you will set goals, choose each goal's plant style, and start building your garden.",
-    note: "Quick tip: use the bottom tabs to move between Home, Garden, Goals, History, and Plan.",
+    note: "Quick tip: use the bottom tabs to move between Home, Garden, Gallery, and Plan.",
   },
   {
     title: "Create a goal + choose plant style",
@@ -30,7 +30,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Complete goals with proof photos",
     body:
-      "When a goal is due, tap Submit proof and take a photo. AI verifies it and waters that goal's plant.",
+      "When a goal is due, tap Prove it and take a photo. AI verifies it and waters that goal's plant.",
     note: "Stay inside the due window to protect your streak.",
   },
   {
@@ -46,9 +46,9 @@ const TOUR_STEPS: TourStep[] = [
     note: "Use Home stats to quickly spot what needs attention today.",
   },
   {
-    title: "Use History + Plan tools",
+    title: "Use Gallery + Plan tools",
     body:
-      "History helps you audit past proofs, and Plan lets you change limits/features when you need more room.",
+      "Gallery helps you review past proofs, and Plan lets you change limits/features when you need more room.",
     note: "You're ready. Build consistency, water your plants, and keep proving it.",
   },
 ] as const;

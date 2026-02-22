@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   CreditCard,
-  History,
+  Images,
   LogOut,
   ChevronDown,
   Sprout,
@@ -20,16 +20,16 @@ import { ThemeToggle } from "./ThemeToggle";
 const APP_TABS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/buddy", label: "Goal Garden", icon: Sprout },
-  { href: "/goals/history", label: "History", icon: History },
+  { href: "/goals/history", label: "Gallery", icon: Images },
   { href: "/pricing", label: "Plan", icon: CreditCard },
 ] as const;
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/dashboard")) return "Dashboard";
   if (pathname.startsWith("/buddy")) return "Goal Garden";
-  if (pathname.startsWith("/goals/history")) return "History";
-  if (pathname.startsWith("/goals/submit")) return "Submit Proof";
-  if (pathname.startsWith("/goals")) return "Goals";
+  if (pathname.startsWith("/goals/history")) return "Gallery";
+  if (pathname.startsWith("/goals/submit")) return "Prove It";
+  if (pathname.startsWith("/goals")) return "Goal Garden";
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/pricing")) return "Pricing";
   if (pathname.startsWith("/privacy")) return "Privacy";
