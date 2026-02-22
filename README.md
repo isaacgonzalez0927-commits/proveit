@@ -10,7 +10,7 @@ ProveIt sends you reminders for daily and weekly goals. You take a photo of your
 - **Photo proof** via camera or file upload
 - **AI verification** (OpenAI GPT-4 Vision when `OPENAI_API_KEY` is set; otherwise demo mode)
 - **Streaks** and recent activity
-- **Plans**: Free (1 daily + 1 weekly, plant style change free), Pro ($5.99/mo – 5 each + Gallery + 4 themes), Premium ($12.99/mo – unlimited + all 10 themes)
+- **Plans**: Free (2 daily, 1 weekly, full garden, fixed plant style, no gallery), Pro ($5.99/mo – 5 each, Gallery, Goal Break up to 3 days, 4 themes), Premium ($12.99/mo – unlimited, all themes, Goal Break any duration)
 - **In-app account deletion** (Settings → Delete account)
 - **Legal pages**: Privacy Policy and Terms of Use
 
@@ -46,9 +46,9 @@ The app uses this key from `/api/account` to permanently delete the authenticate
 
 ## Pricing (demo)
 
-- **Free**: 1 daily goal, 1 weekly goal, AI verification, reminders, streak tracking, green theme, change goal plant style (free for all).
-- **Pro** ($5.99/mo or $54/year): 5 daily + 5 weekly goals, Goal Gallery, custom reminders, grace period, Goal Break mode, 4 extra themes (Pink, Violet, Ocean, Teal).
-- **Premium** ($12.99/mo or $99/year): Unlimited goals, everything in Pro, all 10 theme colors, priority AI verification, Accountability Buddy full access.
+- **Free**: 2 daily goals, 1 weekly goal. Full garden (Seedling → Flowering), 1 fixed plant style per goal. Full AI verification (GPT-4 Vision). Basic notifications. No Goal Gallery.
+- **Pro** ($5.99/mo or $54/year): 5 daily + 5 weekly goals. 4 plant styles, 4 color themes (Pink, Violet, Ocean, Teal). Goal Break (freeze streak up to 3 days). Goal Gallery. Priority support.
+- **Premium** ($12.99/mo or $99/year): Unlimited goals. All 10 plant styles & color themes. Goal Break for any duration. Unlimited Goal Gallery. Exclusive achievements. Priority & dedicated support.
 
 In production, wire paid plans to Stripe using the plan IDs and `stripePriceId` in `src/types/index.ts`.
 

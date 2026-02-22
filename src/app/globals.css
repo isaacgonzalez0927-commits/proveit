@@ -43,36 +43,36 @@
   color-scheme: dark;
 }
 
-/* Pink theme - Light mode */
+/* Pink theme - Light mode (softer pink, less red) */
 :root[data-accent-theme="pink"] {
-  --prove-50-rgb: 255 241 242;
-  --prove-100-rgb: 255 228 230;
-  --prove-200-rgb: 254 205 211;
-  --prove-300-rgb: 253 164 175;
-  --prove-400-rgb: 251 113 133;
-  --prove-500-rgb: 244 63 94;
-  --prove-600-rgb: 225 29 72;
-  --prove-700-rgb: 190 18 60;
-  --prove-800-rgb: 159 18 57;
-  --prove-900-rgb: 136 19 55;
-  --prove-950-rgb: 76 5 25;
-  --bg-app: #fef7f7;
+  --prove-50-rgb: 253 242 248;
+  --prove-100-rgb: 252 231 243;
+  --prove-200-rgb: 249 204 231;
+  --prove-300-rgb: 246 173 198;
+  --prove-400-rgb: 244 114 182;
+  --prove-500-rgb: 236 72 153;
+  --prove-600-rgb: 219 39 119;
+  --prove-700-rgb: 190 24 93;
+  --prove-800-rgb: 157 23 77;
+  --prove-900-rgb: 131 24 67;
+  --prove-950-rgb: 80 7 36;
+  --bg-app: #fdf2f8;
   --bg-card: #ffffff;
-  --text-primary: #1f0f14;
-  --text-muted: #7f1d2e;
-  --border: #fce7e9;
-  --gradient-1: rgba(244, 63, 94, 0.08);
-  --gradient-2: rgba(225, 29, 72, 0.08);
+  --text-primary: #1f0f18;
+  --text-muted: #831843;
+  --border: #fce7f3;
+  --gradient-1: rgba(236, 72, 153, 0.08);
+  --gradient-2: rgba(219, 39, 119, 0.08);
 }
 
 :root[data-accent-theme="pink"].dark {
-  --bg-app: #1a0a0e;
-  --bg-card: rgba(76, 5, 25, 0.9);
-  --text-primary: #fef2f4;
-  --text-muted: #fda4af;
-  --border: rgba(190, 18, 60, 0.5);
-  --gradient-1: rgba(244, 63, 94, 0.12);
-  --gradient-2: rgba(225, 29, 72, 0.08);
+  --bg-app: #1a0a12;
+  --bg-card: rgba(80, 7, 36, 0.9);
+  --text-primary: #fdf2f8;
+  --text-muted: #f9a8d4;
+  --border: rgba(190, 24, 93, 0.5);
+  --gradient-1: rgba(236, 72, 153, 0.12);
+  --gradient-2: rgba(219, 39, 119, 0.08);
 }
 
 /* Violet theme - Light mode */

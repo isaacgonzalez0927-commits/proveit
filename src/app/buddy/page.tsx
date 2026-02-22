@@ -19,6 +19,7 @@ import {
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
+import { getBreakDurationDays, isProBreakExpired, PRO_GOAL_BREAK_MAX_DAYS } from "@/lib/goalBreak";
 import { Header } from "@/components/Header";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
@@ -66,7 +67,7 @@ export default function BuddyPage() {
   const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
     () => getStoredAppSettings().defaultGoalGracePeriod
   );
-  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([1, 2, 3, 4, 5, 6]); // Mon–Sat
+  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([]); // user selects which days
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
@@ -78,7 +79,7 @@ export default function BuddyPage() {
     gracePeriod: GracePeriod;
   }>({
     reminderTime: "09:00",
-    weeklyDays: [1, 2, 3, 4, 5, 6],
+    weeklyDays: [],
     gracePeriod: "eod",
   });
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -91,7 +92,7 @@ export default function BuddyPage() {
   const effectiveDeveloperSettings = isCreatorAccount
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
-  const canEditExistingGoalStyle = true; // plant style change is free for all
+  const canEditExistingGoalStyle = user?.plan === "pro" || user?.plan === "premium";
   const canUseGoalBreak = user?.plan === "pro" || user?.plan === "premium";
 
   useEffect(() => {
@@ -103,6 +104,17 @@ export default function BuddyPage() {
     }
     setGoalStreakDrafts(nextDrafts);
   }, [goals, developerSettings.goalStreakOverrides, isCreatorAccount]);
+
+  // Pro: auto-resume goals that have been on break for 3+ days
+  useEffect(() => {
+    if (user?.plan !== "pro" || !goals.length) return;
+    for (const goal of goals) {
+      if (isProBreakExpired(goal, user.plan)) {
+        const snapshot = goal.breakStreakSnapshot ?? 0;
+        updateGoal(goal.id, { isOnBreak: false, streakCarryover: snapshot });
+      }
+    }
+  }, [goals, user?.plan]);
 
   if (!user) {
     return (
@@ -220,7 +232,14 @@ export default function BuddyPage() {
         gracePeriod: newGracePeriod,
       });
       if (!created) {
-        setGoalManagerMessage("Could not create goal right now. Please try again.");
+        // Re-check limits in case of sync/race; show specific message if at limit
+        if (newFrequency === "daily" && !canAddGoal("daily")) {
+          setGoalManagerMessage("Daily goal limit reached for your current plan.");
+        } else if (newFrequency === "weekly" && !canAddGoal("weekly")) {
+          setGoalManagerMessage("Weekly goal limit reached for your current plan.");
+        } else {
+          setGoalManagerMessage("Could not create goal right now. Please try again.");
+        }
         return;
       }
       setGoalPlantVariant(created.id, newPlantVariant);
@@ -237,7 +256,7 @@ export default function BuddyPage() {
     const days = getReminderDays(goal);
     setEditDraft({
       reminderTime: goal.reminderTime ?? (goal.frequency === "daily" ? "09:00" : "10:00"),
-      weeklyDays: goal.frequency === "weekly" ? days : [1, 2, 3, 4, 5, 6],
+      weeklyDays: goal.frequency === "weekly" ? days : [],
       gracePeriod: goal.gracePeriod ?? "eod",
     });
     setGoalManagerMessage(null);
@@ -306,7 +325,8 @@ export default function BuddyPage() {
       breakStreakSnapshot: displayedStreak,
       streakCarryover: displayedStreak,
     });
-    setGoalManagerMessage(`"${goal.title}" is now on break. Streak and growth are frozen.`);
+    const breakLimitMsg = user?.plan === "pro" ? " (up to 3 days)" : "";
+    setGoalManagerMessage(`"${goal.title}" is now on break${breakLimitMsg}. Streak and growth are frozen.`);
   };
 
   const garden = goals.map((goal) => {
@@ -324,9 +344,13 @@ export default function BuddyPage() {
         ? (getSubmissionWindowMessage(goal) ?? "Submission window closed")
         : null;
     const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
+    const breakDays = getBreakDurationDays(goal);
+    const isProPlan = user?.plan === "pro";
     return {
       goal,
       isOnBreak,
+      breakDays,
+      isProPlan,
       actualStreak,
       streak,
       stage,
@@ -472,8 +496,13 @@ export default function BuddyPage() {
               <div className="mt-3">
                 <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Reminder on these days</p>
                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  You can complete the goal on each selected day (e.g. gym every day but Sunday).
+                  Select at least one day. You can complete the goal on each selected day.
                 </p>
+                {newWeeklyDays.length === 0 && (
+                  <p className="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                    Pick one or more days above.
+                  </p>
+                )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {DAY_NAMES.map((day, index) => (
                     <label
@@ -659,7 +688,7 @@ export default function BuddyPage() {
                   <div className="flex shrink-0 items-center gap-1.5">
                     {entry.isOnBreak && (
                       <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-                        On break
+                        {entry.isProPlan ? `Break (${Math.min(entry.breakDays, PRO_GOAL_BREAK_MAX_DAYS)}/${PRO_GOAL_BREAK_MAX_DAYS} days)` : "On break"}
                       </span>
                     )}
                     <span className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
@@ -782,7 +811,7 @@ export default function BuddyPage() {
                       Plant style
                     </p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                      Tap the plant to change its style.
+                      Upgrade to Pro or Premium to change plant style after goal creation.
                     </p>
                   </div>
                 )}

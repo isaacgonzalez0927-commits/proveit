@@ -28,7 +28,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Start free. Upgrade to Pro for more goals and themes, or Premium for unlimited everything.
+            Free: 2 daily + 1 weekly goal, full garden, AI verification. Pro: more goals, Goal Gallery, Goal Break. Premium: unlimited.
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <button
@@ -72,9 +72,7 @@ function PricingContent() {
         </div>
 
         <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          All plans include AI photo verification, reminders, and streak tracking.
-          <br />
-          Pro: 5 goals each, 4 themes. Premium: unlimited goals, all 10 themes, priority verification.
+          Free: full plant growth, streak tracking, basic dashboard. Pro: Goal Gallery, Goal Break (up to 3 days), 4 themes. Premium: unlimited goals, all 10 themes, Goal Break any duration.
         </p>
       </main>
     </>

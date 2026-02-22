@@ -19,7 +19,7 @@ export const ACCENT_THEME_OPTIONS: Array<{
   premiumOnly: boolean;
 }> = [
   { id: "green", label: "Green", swatchClassName: "bg-emerald-500", paidOnly: false, premiumOnly: false },
-  { id: "pink", label: "Pink", swatchClassName: "bg-rose-500", paidOnly: true, premiumOnly: false },
+  { id: "pink", label: "Pink", swatchClassName: "bg-pink-500", paidOnly: true, premiumOnly: false },
   { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", paidOnly: true, premiumOnly: false },
   { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", paidOnly: true, premiumOnly: false },
   { id: "teal", label: "Teal", swatchClassName: "bg-teal-500", paidOnly: true, premiumOnly: false },
