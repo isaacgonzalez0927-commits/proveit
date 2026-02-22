@@ -354,12 +354,16 @@ function SubmitProofContent() {
   }
 
   const showFullScreenCamera = step === "capture" && cameraStarted && !imageDataUrl;
+  const showStartingCamera =
+    step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && inWindow;
+  const showCameraOrUploadChoice =
+    step === "capture" && !showFullScreenCamera && !cameraStarted && !!cameraError;
 
   return (
     <>
-      {!showFullScreenCamera && <Header />}
+      {!showFullScreenCamera && !showStartingCamera && <Header />}
       <main className="mx-auto max-w-lg px-4 py-8">
-        {!showFullScreenCamera && (
+        {!showFullScreenCamera && !showStartingCamera && (
           <Link
             href="/buddy"
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
@@ -369,7 +373,7 @@ function SubmitProofContent() {
           </Link>
         )}
 
-        {!showFullScreenCamera && (
+        {!showFullScreenCamera && !showStartingCamera && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
@@ -380,13 +384,18 @@ function SubmitProofContent() {
           </>
         )}
 
-        {step === "capture" && !showFullScreenCamera && !cameraStarted && (
+        {showStartingCamera && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+            <Loader2 className="h-12 w-12 animate-spin text-white" />
+            <p className="mt-4 text-sm text-white">Opening camera…</p>
+          </div>
+        )}
+
+        {showCameraOrUploadChoice && (
           <div className="mt-8 animate-fade-in">
-            {cameraError && (
-              <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
-                {cameraError}
-              </p>
-            )}
+            <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+              {cameraError}
+            </p>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
               <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
                 <p className="text-center text-sm text-slate-300">
@@ -394,7 +403,10 @@ function SubmitProofContent() {
                 </p>
                 <div className="flex gap-4">
                   <button
-                    onClick={() => handleStartCamera()}
+                    onClick={() => {
+                      setCameraError(null);
+                      handleStartCamera();
+                    }}
                     className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
                   >
                     <Camera className="h-6 w-6" />
