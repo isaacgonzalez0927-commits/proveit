@@ -18,6 +18,7 @@ import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { safeParseISO } from "@/lib/dateUtils";
 import { format, isThisWeek } from "date-fns";
+import { getGoalStreak } from "@/lib/goalProgress";
 import {
   DEFAULT_HISTORY_DISPLAY_SETTINGS,
   getStoredHistoryDisplaySettings,
@@ -68,21 +69,6 @@ function GalleryContent() {
     .filter((s) => s.status === "verified")
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  function getStreak(goalId: string) {
-    const subs = getSubmissionsForGoal(goalId).filter((s) => s.status === "verified");
-    const dates = Array.from(new Set(subs.map((s) => s.date))).sort().reverse();
-    let streak = 0;
-    let d = new Date();
-    for (const dateStr of dates) {
-      const check = format(d, "yyyy-MM-dd");
-      if (dateStr === check) {
-        streak++;
-        d.setDate(d.getDate() - 1);
-      } else break;
-    }
-    return streak;
-  }
-
   const byGoal = useMemo(
     () =>
       goals
@@ -94,11 +80,11 @@ function GalleryContent() {
             goal,
             completedDates,
             subsByDate,
-            streak: getStreak(goal.id),
+            streak: getGoalStreak(goal, getSubmissionsForGoal),
           };
         })
         .filter((g) => g.completedDates.length > 0 && !hiddenGoalIds.includes(g.goal.id)),
-    [goals, verifiedSubs, hiddenGoalIds]
+    [goals, verifiedSubs, hiddenGoalIds, getSubmissionsForGoal]
   );
 
   useEffect(() => {

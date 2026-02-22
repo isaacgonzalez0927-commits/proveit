@@ -1,15 +1,23 @@
-import { format, isThisWeek, startOfWeek, subWeeks } from "date-fns";
+import { addDays, addWeeks, format, isThisWeek, startOfWeek, subWeeks } from "date-fns";
 import type { Goal, ProofSubmission } from "@/types";
 import { safeParseISO } from "@/lib/dateUtils";
 
-type GoalProgressGoal = Pick<Goal, "id" | "frequency">;
+type GoalProgressGoal = Pick<
+  Goal,
+  "id" | "frequency" | "isOnBreak" | "breakStreakSnapshot" | "streakCarryover" | "breakStartedAt"
+>;
 type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
 
-export function getGoalStreak(
+function getBaseGoalStreak(
   goal: GoalProgressGoal,
-  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[]
+  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
+  minDateInclusive?: string
 ): number {
-  const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
+  const subs = getSubmissionsForGoal(goal.id).filter((s) => {
+    if (s.status !== "verified") return false;
+    if (!minDateInclusive) return true;
+    return s.date >= minDateInclusive;
+  });
 
   if (goal.frequency === "weekly") {
     const weekStarts = new Set(
@@ -36,6 +44,41 @@ export function getGoalStreak(
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
+}
+
+function getPostBreakMinDate(goal: GoalProgressGoal): string | undefined {
+  if (!goal.breakStartedAt) return undefined;
+  const parsed = safeParseISO(goal.breakStartedAt);
+  if (!parsed) return undefined;
+  if (goal.frequency === "weekly") {
+    const nextCycle = addWeeks(startOfWeek(parsed, { weekStartsOn: 0 }), 1);
+    return format(nextCycle, "yyyy-MM-dd");
+  }
+  return format(addDays(parsed, 1), "yyyy-MM-dd");
+}
+
+export function getGoalStreak(
+  goal: GoalProgressGoal,
+  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[]
+): number {
+  const baseStreak = getBaseGoalStreak(goal, getSubmissionsForGoal);
+  const carryover = Math.max(0, goal.streakCarryover ?? 0);
+
+  if (goal.isOnBreak) {
+    const frozen = goal.breakStreakSnapshot;
+    if (typeof frozen === "number" && Number.isFinite(frozen)) {
+      return Math.max(0, frozen);
+    }
+    return carryover + baseStreak;
+  }
+
+  if (carryover > 0) {
+    // Keep the streak from resetting after a break; new verified proofs grow on top.
+    const postBreakBase = getBaseGoalStreak(goal, getSubmissionsForGoal, getPostBreakMinDate(goal));
+    return carryover + postBreakBase;
+  }
+
+  return baseStreak;
 }
 
 export function isGoalDoneInCurrentWindow(

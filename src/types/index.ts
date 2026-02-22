@@ -37,6 +37,11 @@ export interface Goal {
   reminderDay?: number; // 0-6 for weekly (0 = Sunday)
   /** How long after due time to submit: 1h, 3h, 6h, 12h, or eod (end of day) */
   gracePeriod?: GracePeriod;
+  /** Pro-only: freeze streak/growth while goal is paused */
+  isOnBreak?: boolean;
+  breakStartedAt?: string;
+  breakStreakSnapshot?: number;
+  streakCarryover?: number;
   createdAt: string;
   completedDates: string[]; // ISO date strings when verified
 }
@@ -85,6 +90,7 @@ export const PLANS: Plan[] = [
       "Custom reminder times",
       "Flexible proof grace period",
       "Change goal plant style after creation",
+      "Goal break mode (freeze streak and growth)",
       "Pink, violet, and ocean color themes",
       "No plan cap when adding goals",
       "Best for larger goal routines",

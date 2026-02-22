@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Plus, Pencil, Save, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { getSubmissionWindowMessage, isGoalDue, isWithinSubmissionWindow } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
@@ -102,6 +102,7 @@ export default function BuddyPage() {
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
   const canEditExistingGoalStyle = user?.plan === "pro";
+  const canUseGoalBreak = user?.plan === "pro";
 
   useEffect(() => {
     if (!isCreatorAccount) return;
@@ -307,20 +308,48 @@ export default function BuddyPage() {
     setGoalManagerMessage("Goal deleted.");
   };
 
+  const toggleGoalBreak = async (goal: Goal, displayedStreak: number) => {
+    if (!canUseGoalBreak) {
+      setGoalManagerMessage("Upgrade to Pro to use goal breaks.");
+      return;
+    }
+
+    if (goal.isOnBreak) {
+      await updateGoal(goal.id, {
+        isOnBreak: false,
+        streakCarryover: displayedStreak,
+      });
+      setGoalManagerMessage(`"${goal.title}" is active again. Streak continuity is preserved.`);
+      return;
+    }
+
+    await updateGoal(goal.id, {
+      isOnBreak: true,
+      breakStartedAt: new Date().toISOString(),
+      breakStreakSnapshot: displayedStreak,
+      streakCarryover: displayedStreak,
+    });
+    setGoalManagerMessage(`"${goal.title}" is now on break. Streak and growth are frozen.`);
+  };
+
   const garden = goals.map((goal) => {
     const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
     const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
     const stage = getPlantStageForStreak(streak);
+    const isOnBreak = goal.isOnBreak === true;
     const due = isGoalDue(goal);
-    const doneInCurrentWindow = isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
+    const doneInCurrentWindow = isOnBreak
+      ? false
+      : isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
     const canSubmitNow = isWithinSubmissionWindow(goal);
     const submissionWindowMessage =
       !doneInCurrentWindow && !canSubmitNow
         ? (getSubmissionWindowMessage(goal) ?? "Submission window closed")
         : null;
-    const wateringLevel = doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
+    const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
     return {
       goal,
+      isOnBreak,
       actualStreak,
       streak,
       stage,
@@ -366,6 +395,11 @@ export default function BuddyPage() {
             {plan.name} plan · {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
             {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
           </p>
+          {!canUseGoalBreak && (
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Upgrade to Pro to unlock Goal Break mode.
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -631,9 +665,25 @@ export default function BuddyPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
+                    {entry.isOnBreak && (
+                      <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                        On break
+                      </span>
+                    )}
                     <span className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
                       {entry.stage.name}
                     </span>
+                    {canUseGoalBreak && (
+                      <button
+                        type="button"
+                        onClick={() => toggleGoalBreak(entry.goal, entry.streak)}
+                        className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white/80 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900/60 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                        aria-label={entry.isOnBreak ? "Resume goal from break" : "Put goal on break"}
+                      >
+                        {entry.isOnBreak ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+                        {entry.isOnBreak ? "Resume" : "Break"}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() =>
@@ -680,7 +730,9 @@ export default function BuddyPage() {
                   )}
                 </p>
                 <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
-                  {entry.doneInCurrentWindow
+                  {entry.isOnBreak
+                    ? "On break. Streak and growth are paused."
+                    : entry.doneInCurrentWindow
                     ? "Watered this cycle."
                     : entry.canSubmitNow
                       ? "Needs water now."
