@@ -594,11 +594,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [useSupabase, supabase]);
 
+  const authReady = useSupabase ? (!authLoading && (!supabaseUser || dataLoaded)) : true;
+
   const value: AppContextValue = {
     user,
     goals,
     submissions,
-    authReady: useSupabase ? (!authLoading && (!supabaseUser || dataLoaded)) : true,
+    authReady,
     setUser,
     setPlan,
     addGoal,
