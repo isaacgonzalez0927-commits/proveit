@@ -491,7 +491,7 @@ export default function BuddyPage() {
               </label>
 
               <label className="text-xs text-slate-700 dark:text-slate-300">
-                Submit proof within
+                Prove it within
                 <select
                   value={newGracePeriod}
                   onChange={(e) => setNewGracePeriod(e.target.value as GracePeriod)}

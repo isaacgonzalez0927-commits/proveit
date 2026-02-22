@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  History,
+  Images,
   CheckCircle2,
   Calendar,
   Sun,
@@ -29,7 +29,7 @@ import {
   saveHiddenHistoryGoalIds,
 } from "@/lib/historyVisibility";
 
-function HistoryContent() {
+function GalleryContent() {
   const { user, goals, submissions, getSubmissionsForGoal } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
@@ -37,6 +37,7 @@ function HistoryContent() {
   const [historyActionMessage, setHistoryActionMessage] = useState<string | null>(null);
   const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
+  const [selectedGoalId, setSelectedGoalId] = useState<string>("all");
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
@@ -62,7 +63,7 @@ function HistoryContent() {
   const plan = getPlan(user.plan);
   const isProOrPremium = user.plan === "pro" || user.plan === "premium";
 
-  // Build history: verified submissions grouped by goal, sorted by date
+  // Build gallery source: verified submissions grouped by goal, sorted by date
   const verifiedSubs = submissions
     .filter((s) => s.status === "verified")
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -82,19 +83,32 @@ function HistoryContent() {
     return streak;
   }
 
-  // Group verified subs by goal for history view (with submission for each date to get image)
-  const byGoal = goals.map((goal) => {
-    const goalSubs = verifiedSubs.filter((s) => s.goalId === goal.id);
-    const completedDates = Array.from(new Set(goalSubs.map((s) => s.date))).sort().reverse();
-    const subsByDate = new Map(goalSubs.map((s) => [s.date, s]));
-    return {
-      goal,
-      submissions: goalSubs,
-      completedDates,
-      subsByDate,
-      streak: getStreak(goal.id),
-    };
-  }).filter((g) => g.completedDates.length > 0 && !hiddenGoalIds.includes(g.goal.id));
+  const byGoal = useMemo(
+    () =>
+      goals
+        .map((goal) => {
+          const goalSubs = verifiedSubs.filter((s) => s.goalId === goal.id);
+          const completedDates = Array.from(new Set(goalSubs.map((s) => s.date))).sort().reverse();
+          const subsByDate = new Map(goalSubs.map((s) => [s.date, s]));
+          return {
+            goal,
+            completedDates,
+            subsByDate,
+            streak: getStreak(goal.id),
+          };
+        })
+        .filter((g) => g.completedDates.length > 0 && !hiddenGoalIds.includes(g.goal.id)),
+    [goals, verifiedSubs, hiddenGoalIds]
+  );
+
+  useEffect(() => {
+    if (selectedGoalId === "all") return;
+    const exists = byGoal.some((entry) => entry.goal.id === selectedGoalId);
+    if (!exists) setSelectedGoalId("all");
+  }, [selectedGoalId, byGoal]);
+
+  const filteredGoals =
+    selectedGoalId === "all" ? byGoal : byGoal.filter((entry) => entry.goal.id === selectedGoalId);
 
   const enabledSettingCount = [
     historySettings.showProofPhotos,
@@ -107,7 +121,7 @@ function HistoryContent() {
     setHistoryActionMessage(null);
     if (typeof window !== "undefined") {
       const confirmed = window.confirm(
-        `Hide "${goalTitle}" from Goal History? You can restore hidden goals from Settings.`
+        `Hide "${goalTitle}" from Gallery? You can restore hidden goals from Settings.`
       );
       if (!confirmed) return;
     }
@@ -116,7 +130,7 @@ function HistoryContent() {
     const nextHiddenGoalIds = hideGoalFromHistory(goalId, hiddenGoalIds);
     setHiddenGoalIds(nextHiddenGoalIds);
     saveHiddenHistoryGoalIds(nextHiddenGoalIds);
-    setHistoryActionMessage(`Hidden "${goalTitle}" from history.`);
+    setHistoryActionMessage(`Hidden "${goalTitle}" from gallery.`);
     setHidingGoalId(null);
   };
 
@@ -126,15 +140,15 @@ function HistoryContent() {
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <History className="h-7 w-7 text-prove-600 dark:text-prove-400" />
-            Goal history
+            <Images className="h-7 w-7 text-prove-600 dark:text-prove-400" />
+            Goal gallery
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            {plan.name} plan · View your completed proofs and streaks over time
+            {plan.name} plan · Browse your verified proofs goal by goal
           </p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            {enabledSettingCount}/4 history display options enabled
+            {enabledSettingCount}/4 gallery display options enabled
             <Link
               href="/settings"
               className="font-medium text-prove-600 hover:underline dark:text-prove-400"
@@ -150,10 +164,10 @@ function HistoryContent() {
               <Lock className="h-7 w-7 text-prove-600 dark:text-prove-400" />
             </div>
             <h2 className="mt-4 font-display text-lg font-semibold text-slate-900 dark:text-white">
-              Goal history is a paid plan feature
+              Goal gallery is a paid plan feature
             </h2>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Upgrade to Pro or Premium to view your full proof history, completed dates per goal, and streak timelines.
+              Upgrade to Pro or Premium to browse your proof gallery and streak timelines.
             </p>
             <Link
               href="/pricing"
@@ -167,9 +181,9 @@ function HistoryContent() {
           <>
             {byGoal.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
-                <History className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500" />
+                <Images className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500" />
                 <p className="mt-4 text-slate-600 dark:text-slate-400">
-                  No completed proofs yet. Submit proof for your goals to see your history here.
+                  No completed proofs yet. Prove it for your goals to fill your gallery.
                 </p>
                 <Link
                   href="/dashboard"
@@ -180,28 +194,47 @@ function HistoryContent() {
               </div>
             ) : (
               <div className="space-y-6">
+                <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <label className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                    Choose goal
+                  </label>
+                  <select
+                    value={selectedGoalId}
+                    onChange={(e) => setSelectedGoalId(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    <option value="all">All goals</option>
+                    {byGoal.map((entry) => (
+                      <option key={entry.goal.id} value={entry.goal.id}>
+                        {entry.goal.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {historyActionMessage && (
                   <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                     {historyActionMessage}
                   </p>
                 )}
-                {byGoal.map(({ goal, completedDates, subsByDate, streak }) => (
+
+                {filteredGoals.map(({ goal, completedDates, subsByDate, streak }) => (
                   <section
                     key={goal.id}
                     className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex min-w-0 items-center gap-3">
                         {goal.frequency === "daily" ? (
                           <Sun className="h-5 w-5 shrink-0 text-amber-500" />
                         ) : (
                           <Calendar className="h-5 w-5 shrink-0 text-prove-500" />
                         )}
                         <div>
-                          <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+                          <h3 className="truncate font-semibold text-slate-900 dark:text-white">
                             {goal.title}
                           </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                          <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                             {historySettings.showStreak && (
                               <Flame className="h-3.5 w-3.5 text-amber-500" />
                             )}
@@ -216,61 +249,73 @@ function HistoryContent() {
                           </p>
                         </div>
                       </div>
-                      <div className="shrink-0 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleHideGoalFromHistory(goal.id, goal.title)}
-                          disabled={hidingGoalId === goal.id}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          {hidingGoalId === goal.id ? "Hiding..." : "Hide from history"}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleHideGoalFromHistory(goal.id, goal.title)}
+                        disabled={hidingGoalId === goal.id}
+                        title="Hide from gallery"
+                        aria-label={`Hide ${goal.title} from gallery`}
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                    <ul className="mt-4 space-y-2">
-                      {completedDates.slice(0, 10).map((dateStr) => {
-                        const d = safeParseISO(dateStr);
-                        const label = d ? format(d, "EEE, MMM d, yyyy") : dateStr;
-                        const isThisWeekDate = d ? isThisWeek(d) : false;
-                        const sub = subsByDate.get(dateStr);
-                        const hasImage =
-                          historySettings.showProofPhotos &&
-                          sub?.imageDataUrl &&
-                          sub.imageDataUrl.length > 10;
-                        return (
-                          <li
-                            key={dateStr}
-                            className="flex items-center gap-3 rounded-lg bg-slate-50 py-2 px-3 dark:bg-slate-800/50"
-                          >
-                            {hasImage ? (
-                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-200 dark:bg-slate-700">
-                                <img
-                                  src={sub!.imageDataUrl}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                />
+
+                    {historySettings.showProofPhotos ? (
+                      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {completedDates.slice(0, 24).map((dateStr) => {
+                          const d = safeParseISO(dateStr);
+                          const label = d ? format(d, "MMM d, yyyy") : dateStr;
+                          const isThisWeekDate = d ? isThisWeek(d) : false;
+                          const sub = subsByDate.get(dateStr);
+                          const hasImage = !!(sub?.imageDataUrl && sub.imageDataUrl.length > 10);
+
+                          return (
+                            <li
+                              key={dateStr}
+                              className="rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/50"
+                            >
+                              <div className="aspect-square overflow-hidden rounded-md bg-slate-200 dark:bg-slate-700">
+                                {hasImage ? (
+                                  <img src={sub!.imageDataUrl} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <CheckCircle2 className="h-6 w-6 text-prove-500" />
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-prove-100 dark:bg-prove-900/50">
-                                <CheckCircle2 className="h-5 w-5 text-prove-500" />
-                              </div>
-                            )}
-                            <span className="text-sm text-slate-700 dark:text-slate-300">
+                              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                {label}
+                                {historySettings.showThisWeekBadge && isThisWeekDate && (
+                                  <span className="ml-1 rounded bg-prove-100 px-1 py-0.5 text-[10px] font-medium text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
+                                    This week
+                                  </span>
+                                )}
+                              </p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <ul className="mt-4 flex flex-wrap gap-2">
+                        {completedDates.slice(0, 24).map((dateStr) => {
+                          const d = safeParseISO(dateStr);
+                          const label = d ? format(d, "MMM d") : dateStr;
+                          return (
+                            <li
+                              key={dateStr}
+                              className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            >
                               {label}
-                              {historySettings.showThisWeekBadge && isThisWeekDate && (
-                                <span className="ml-2 rounded bg-prove-100 px-1.5 py-0.5 text-xs font-medium text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
-                                  This week
-                                </span>
-                              )}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    {completedDates.length > 10 && (
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    {completedDates.length > 24 && (
                       <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        + {completedDates.length - 10} more completed
+                        + {completedDates.length - 24} more completed
                       </p>
                     )}
                   </section>
@@ -292,5 +337,5 @@ function HistoryContent() {
 }
 
 export default function GoalHistoryPage() {
-  return <HistoryContent />;
+  return <GalleryContent />;
 }

@@ -41,12 +41,12 @@ const HISTORY_SETTING_ITEMS: Array<{
   {
     key: "showProofPhotos",
     label: "Show proof photos",
-    description: "Display image thumbnails in goal history when a submission has a photo.",
+    description: "Display image thumbnails in goal gallery when a submission has a photo.",
   },
   {
     key: "showStreak",
     label: "Show streak details",
-    description: "Show current streak for each goal inside history cards.",
+    description: "Show current streak for each goal inside gallery cards.",
   },
   {
     key: "showVerifiedCount",
@@ -119,7 +119,7 @@ export default function SettingsPage() {
     const next = { ...historySettings, [key]: checked };
     setHistorySettings(next);
     saveHistoryDisplaySettings(next);
-    setSettingsMessage("History settings saved.");
+    setSettingsMessage("Gallery settings saved.");
   };
 
   const updateAppSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -144,7 +144,7 @@ export default function SettingsPage() {
     setSettingsMessage(null);
     if (typeof window !== "undefined") {
       const confirmed = window.confirm(
-        `Hide "${goalTitle}" from Goal History? You can restore it below any time.`
+        `Hide "${goalTitle}" from Goal Gallery? You can restore it below any time.`
       );
       if (!confirmed) return;
     }
@@ -152,7 +152,7 @@ export default function SettingsPage() {
     const nextHiddenGoalIds = hideGoalFromHistory(goalId, hiddenGoalIds);
     setHiddenGoalIds(nextHiddenGoalIds);
     saveHiddenHistoryGoalIds(nextHiddenGoalIds);
-    setSettingsMessage(`Hidden "${goalTitle}" from history.`);
+    setSettingsMessage(`Hidden "${goalTitle}" from gallery.`);
     setHidingGoalId(null);
   };
 
@@ -160,7 +160,7 @@ export default function SettingsPage() {
     const nextHiddenGoalIds = showGoalInHistory(goalId, hiddenGoalIds);
     setHiddenGoalIds(nextHiddenGoalIds);
     saveHiddenHistoryGoalIds(nextHiddenGoalIds);
-    setSettingsMessage(`Restored "${goalTitle}" in history.`);
+    setSettingsMessage(`Restored "${goalTitle}" in gallery.`);
   };
 
   const handleDeleteAccount = async () => {
@@ -168,7 +168,7 @@ export default function SettingsPage() {
 
     if (typeof window !== "undefined") {
       const firstConfirm = window.confirm(
-        "Delete your account permanently? This removes your profile, goals, and proof history."
+        "Delete your account permanently? This removes your profile, goals, and proof gallery data."
       );
       if (!firstConfirm) return;
       const secondConfirm = window.confirm(
@@ -227,14 +227,14 @@ export default function SettingsPage() {
             Settings
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Configure goal creation defaults, choose what appears in history, and manage saved history.
+            Configure goal creation defaults, choose what appears in your gallery, and manage saved gallery visibility.
           </p>
         </div>
 
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/45 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
           <h2 className="font-semibold text-emerald-900 dark:text-emerald-200">Goal creation defaults</h2>
           <p className="mt-1 text-xs text-emerald-800/90 dark:text-emerald-300/90">
-            These apply when you create a new goal in Garden or Goals.
+            These apply when you create a new goal in Goal Garden.
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -304,9 +304,9 @@ export default function SettingsPage() {
         </section>
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="font-semibold text-slate-900 dark:text-white">History display</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Gallery display</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            These options control what is shown on the Goal History page.
+            These options control what is shown on the Goal Gallery page.
           </p>
           <div className="mt-4 space-y-3">
             {HISTORY_SETTING_ITEMS.map((item) => (
@@ -348,13 +348,13 @@ export default function SettingsPage() {
         )}
 
         <section className="mt-6 rounded-2xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/60 dark:bg-red-950/20">
-          <h2 className="font-semibold text-red-800 dark:text-red-200">Hide goals from history</h2>
+          <h2 className="font-semibold text-red-800 dark:text-red-200">Hide goals from gallery</h2>
           <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
-            Hiding removes the goal from History view only. It does not delete proof data.
+            Hiding removes the goal from Gallery view only. It does not delete proof data.
           </p>
           {visibleGoalHistoryEntries.length === 0 ? (
             <p className="mt-3 text-sm text-red-700/90 dark:text-red-300/90">
-              No visible goal history right now.
+              No visible goal gallery right now.
             </p>
           ) : (
             <div className="mt-3 space-y-2">
@@ -378,7 +378,7 @@ export default function SettingsPage() {
                     className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/40"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    {hidingGoalId === entry.goal.id ? "Hiding..." : "Hide from history"}
+                    {hidingGoalId === entry.goal.id ? "Hiding..." : "Hide from gallery"}
                   </button>
                 </div>
               ))}

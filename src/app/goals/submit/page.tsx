@@ -81,7 +81,7 @@ function SubmitProofContent() {
     if (hasShownContent.current) return; // Already showed content - don't redirect
     if (!goalId) {
       hasRedirected.current = true;
-      router.replace("/goals");
+      router.replace("/buddy");
       return;
     }
     if (!user) {
@@ -91,7 +91,7 @@ function SubmitProofContent() {
     }
     if (!goal) {
       hasRedirected.current = true;
-      router.replace("/goals");
+      router.replace("/buddy");
       return;
     }
   }, [authReady, user, goalId, goal, router, pageLoading]);
@@ -328,11 +328,11 @@ function SubmitProofContent() {
         <Header />
         <main className="mx-auto max-w-lg px-4 py-8">
           <Link
-            href="/goals"
+            href="/buddy"
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to goals
+            Back to garden
           </Link>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
@@ -361,18 +361,18 @@ function SubmitProofContent() {
       <main className="mx-auto max-w-lg px-4 py-8">
         {!showFullScreenCamera && (
           <Link
-            href="/goals"
+            href="/buddy"
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to goals
+            Back to garden
           </Link>
         )}
 
         {!showFullScreenCamera && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
-              Submit proof: {goal.title}
+              Prove it: {goal.title}
             </h1>
             <p className="mt-1 text-slate-600 dark:text-slate-400">
               Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time before the due deadline.
@@ -499,7 +499,7 @@ function SubmitProofContent() {
                     onClick={submitForVerification}
                     className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
                   >
-                    Verify with AI
+                    Prove it
                   </button>
                 </div>
               </div>
@@ -549,7 +549,7 @@ function SubmitProofContent() {
                 href="/buddy"
                 className="flex-1 rounded-lg border border-slate-300 py-3 text-center font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                All goals
+                Goal Garden
               </Link>
             </div>
           </div>

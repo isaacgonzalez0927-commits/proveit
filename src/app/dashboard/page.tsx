@@ -352,7 +352,7 @@ function DashboardContent() {
                         className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
                       >
                         <Camera className="h-4 w-4" />
-                        Submit proof
+                        Prove it
                       </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
@@ -404,7 +404,7 @@ function DashboardContent() {
                         className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
                       >
                         <Camera className="h-4 w-4" />
-                        Submit proof
+                        Prove it
                       </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
@@ -460,7 +460,7 @@ function DashboardContent() {
           href="/pricing"
           className="mt-8 block rounded-xl border border-prove-200 bg-prove-50/50 p-4 text-center text-sm text-prove-800 dark:border-prove-800 dark:bg-prove-950/30 dark:text-prove-200"
         >
-          Want more goals or Goal History access? Upgrade to Pro or Premium →
+          Want more goals or Goal Gallery access? Upgrade to Pro or Premium →
         </Link>
       </main>
       <NotificationPrompt />
