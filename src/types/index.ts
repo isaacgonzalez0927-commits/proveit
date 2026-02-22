@@ -1,4 +1,8 @@
-export type PlanId = "free" | "pro" | "premium";
+export type PlanId = "free" | "pro";
+
+export function normalizePlanId(plan: unknown): PlanId {
+  return plan === "pro" || plan === "premium" ? "pro" : "free";
+}
 
 export interface Plan {
   id: PlanId;
@@ -69,11 +73,11 @@ export const PLANS: Plan[] = [
     name: "Pro",
     priceMonthly: 4.99,
     priceYearly: 49,
-    dailyGoals: 5,
-    weeklyGoals: 5,
+    dailyGoals: -1,
+    weeklyGoals: -1,
     features: [
-      "5 daily goals",
-      "5 weekly goals",
+      "Unlimited daily goals",
+      "Unlimited weekly goals",
       "AI photo verification",
       "Goal Gallery page access",
       "Gallery display controls",
@@ -82,23 +86,9 @@ export const PLANS: Plan[] = [
       "Flexible proof grace period",
       "Change goal plant style after creation",
       "Pink, violet, and ocean color themes",
-    ],
-    stripePriceId: "price_pro_monthly",
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    priceMonthly: 9.99,
-    priceYearly: 99,
-    dailyGoals: -1,
-    weeklyGoals: -1,
-    features: [
-      "Unlimited daily goals",
-      "Unlimited weekly goals",
-      "All Pro features",
       "No plan cap when adding goals",
       "Best for larger goal routines",
     ],
-    stripePriceId: "price_premium_monthly",
+    stripePriceId: "price_pro_monthly",
   },
 ];

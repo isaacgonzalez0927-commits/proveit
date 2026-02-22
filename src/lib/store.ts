@@ -6,6 +6,7 @@ import {
   type PlanId,
   type ProofSubmission,
   PLANS,
+  normalizePlanId,
 } from "@/types";
 
 const STORAGE_KEYS = {
@@ -28,7 +29,11 @@ function getStoredUser(): StoredUser | null {
   const raw = localStorage.getItem(STORAGE_KEYS.user);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as StoredUser;
+    const parsed = JSON.parse(raw) as StoredUser & { plan?: unknown };
+    return {
+      ...parsed,
+      plan: normalizePlanId(parsed.plan),
+    };
   } catch {
     return null;
   }
@@ -58,7 +63,13 @@ function getStoredSubmissions(): ProofSubmission[] {
 
 export function saveUser(user: StoredUser) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
+  localStorage.setItem(
+    STORAGE_KEYS.user,
+    JSON.stringify({
+      ...user,
+      plan: normalizePlanId(user.plan),
+    })
+  );
 }
 
 export function saveGoals(goals: Goal[]) {

@@ -8,7 +8,7 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
-  plan text not null default 'free' check (plan in ('free', 'pro', 'premium')),
+  plan text not null default 'free' check (plan in ('free', 'pro')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -91,7 +91,7 @@ export function getEffectiveIsDark(theme: ThemeMode): boolean {
 }
 
 export function canUsePaidAccentThemes(plan: PlanId | null | undefined): boolean {
-  return plan === "pro" || plan === "premium";
+  return plan === "pro";
 }
 
 export function sanitizeAccentThemeForPlan(
