@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "ProveIt – Set goals. Take a photo. Prove it.",
   description:
     "Get notified for daily and weekly goals, snap a photo of yourself doing it, and let AI verify you actually did it. Free and paid plans.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

@@ -47,7 +47,7 @@ export function NotificationScheduler() {
 
       const n = new Notification(`Due now: ${goal.title}`, {
         body: "Prove it with a photo.",
-        icon: "/favicon.ico",
+        icon: "/icon.png",
         tag: key,
       });
       n.onclick = () => {
