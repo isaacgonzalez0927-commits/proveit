@@ -127,12 +127,9 @@ function expandToPhotoPaths(baseNames: string[]): string[] {
 }
 
 function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
-  const allowVariantSpecificAssets = stage === "flowering";
-  const variantSpecificPaths = allowVariantSpecificAssets
-    ? expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant))
-    : [];
+  const variantSpecificPaths = expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant));
   const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNames(stage));
-  return unique(allowVariantSpecificAssets ? [...variantSpecificPaths, ...fallbackPaths] : fallbackPaths);
+  return unique([...variantSpecificPaths, ...fallbackPaths]);
 }
 
 const STAGE_CONFIG: Record<

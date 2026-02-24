@@ -16,7 +16,8 @@ import {
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
 import {
-  GOAL_PLANT_VARIANTS,
+  getMaxPlantVariantForPlan,
+  getPlantVariantsForPlan,
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
@@ -97,6 +98,7 @@ export default function BuddyPage() {
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
   const canEditExistingGoalStyle = user?.plan === "pro" || user?.plan === "premium";
+  const plantVariantsForPlan = getPlantVariantsForPlan(user?.plan ?? "free");
   const canUseGoalBreak = user?.plan === "pro" || user?.plan === "premium";
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
@@ -242,7 +244,8 @@ export default function BuddyPage() {
         if (err && /limit|upgrade|pro|premium/i.test(err)) setShowUpgradePrompt(true);
         return;
       }
-      setGoalPlantVariant(result.created.id, newPlantVariant);
+      const maxVariant = getMaxPlantVariantForPlan(user?.plan ?? "free");
+      setGoalPlantVariant(result.created.id, Math.min(newPlantVariant, maxVariant) as GoalPlantVariant);
       setShowCreateForm(false);
       resetCreateGoalForm();
       setGoalManagerMessage("Goal added to your garden.");
@@ -559,13 +562,13 @@ export default function BuddyPage() {
             <div className="mt-3">
               <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Plant style</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {GOAL_PLANT_VARIANTS.map((variant) => (
+                {plantVariantsForPlan.map((variant) => (
                   <button
                     key={variant}
                     type="button"
                     onClick={() => setNewPlantVariant(variant)}
                     className={`rounded-md border p-1 ${
-                      newPlantVariant === variant
+                      (Math.min(newPlantVariant, getMaxPlantVariantForPlan(user?.plan ?? "free")) as GoalPlantVariant) === variant
                         ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
                         : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
                     }`}
@@ -787,7 +790,7 @@ export default function BuddyPage() {
                     Plant style
                   </p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {GOAL_PLANT_VARIANTS.map((variant) => {
+                    {plantVariantsForPlan.map((variant) => {
                       const selected = variant === entry.plantVariant;
                       return (
                         <button

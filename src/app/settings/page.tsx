@@ -30,7 +30,11 @@ import {
   saveHiddenHistoryGoalIds,
   showGoalInHistory,
 } from "@/lib/historyVisibility";
-import { GOAL_PLANT_VARIANTS, type GoalPlantVariant } from "@/lib/goalPlants";
+import {
+  getMaxPlantVariantForPlan,
+  getPlantVariantsForPlan,
+  type GoalPlantVariant,
+} from "@/lib/goalPlants";
 import {
   ACCENT_THEME_OPTIONS,
   canUseAccentTheme,
@@ -304,13 +308,13 @@ export default function SettingsPage() {
           <div className="mt-4">
             <p className="text-xs text-emerald-900 dark:text-emerald-200">Default plant style</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {GOAL_PLANT_VARIANTS.map((variant) => (
+              {getPlantVariantsForPlan(user?.plan ?? "free").map((variant) => (
                 <button
                   key={variant}
                   type="button"
                   onClick={() => updateDefaultPlantStyle(variant)}
                   className={`rounded-md border p-1 ${
-                    appSettings.defaultGoalPlantVariant === variant
+                    (Math.min(appSettings.defaultGoalPlantVariant, getMaxPlantVariantForPlan(user?.plan ?? "free")) as GoalPlantVariant) === variant
                       ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
                       : "border-emerald-200 bg-white dark:border-emerald-700 dark:bg-emerald-950/35"
                   }`}

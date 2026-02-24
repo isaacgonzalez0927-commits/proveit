@@ -2,7 +2,9 @@ Drop your plant stage images in this folder.
 
 Style options shown in the app:
 
-- `1`, `2`, `3`, and `4` (image-only selectors, no text labels)
+- **Free:** 1 style (fixed).
+- **Pro:** styles `1`, `2`, `3`, `4`.
+- **Premium:** all 10 styles `1`–`10`.
 
 Preferred names (in order):
 
@@ -13,18 +15,23 @@ Preferred names (in order):
 5. `plant-stage-5.png` - thriving
 6. `plant-stage-6.png` - default flowering image
 
-Optional stage-6 goal variants (for Garden mode):
+Optional per-style files (Pro: styles 1–4, Premium: styles 1–10):
 
-- `plant-stage-6-1.png` - style 1 flower
-- `plant-stage-6-2.png` - style 2 flower
-- `plant-stage-6-3.png` - style 3 flower
-- `plant-stage-6-4.png` - style 4 flower
+For each **stage** (1–6) and **style** (1–10), the app looks for e.g.:
 
-Optional per-style files for *every* stage:
+- `plant-stage-1-1.png` … `plant-stage-1-10.png` (seedling)
+- `plant-stage-2-1.png` … `plant-stage-2-10.png` (sprout)
+- `plant-stage-3-1.png` … `plant-stage-3-10.png` (leafy)
+- `plant-stage-4-1.png` … `plant-stage-4-10.png` (blooming)
+- `plant-stage-5-1.png` … `plant-stage-5-10.png` (thriving)
+- `plant-stage-6-1.png` … `plant-stage-6-10.png` (flowering)
 
-- `plant-stage-1-1.png`, `plant-stage-1-2.png`, `plant-stage-1-3.png`, `plant-stage-1-4.png`
-- `plant-stage-2-1.png`, `plant-stage-2-2.png`, `plant-stage-2-3.png`, `plant-stage-2-4.png`
-- ...same pattern through stage 6.
+**Adding new Premium styles (5–10):**  
+Add one image per stage for that style. Example for style `5`:
+
+- `plant-stage-1-5.png`, `plant-stage-2-5.png`, `plant-stage-3-5.png`, `plant-stage-4-5.png`, `plant-stage-5-5.png`, `plant-stage-6-5.png`
+
+Repeat for styles 6, 7, 8, 9, 10. If a stage is missing, the app falls back to the default stage image.
 
 The app will auto-try alternate names/extensions in:
 
@@ -38,7 +45,7 @@ Examples:
 - `stage3.png`, `leafy.jpeg`
 - `stage4.png`, `blooming.webp`
 - `stage5.png`, `thriving.png`
-- `stage6.png`, `flowering.png`, `plant-stage-6-1.png`, `plant-stage-6-2.png`, `plant-stage-6-3.png`, `plant-stage-6-4.png`
+- `stage6.png`, `flowering.png`, `plant-stage-6-1.png` … `plant-stage-6-10.png` (and same pattern for stages 1–5)
 
 Supported image extensions: `.png`, `.webp`, `.jpg`, `.jpeg`.
 

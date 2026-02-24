@@ -32,6 +32,7 @@ import {
 import {
   clearGoalPlantSelections,
   getDefaultGoalPlantVariant,
+  getMaxPlantVariantForPlan,
   getStoredGoalPlantSelections,
   saveGoalPlantSelections,
   type GoalPlantVariant,
@@ -553,9 +554,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const getGoalPlantVariant = useCallback(
     (goalId: string): GoalPlantVariant => {
-      return goalPlantSelections[goalId] ?? getDefaultGoalPlantVariant(goalId);
+      const raw = goalPlantSelections[goalId] ?? getDefaultGoalPlantVariant(goalId);
+      const max = getMaxPlantVariantForPlan(userState?.plan ?? "free");
+      return Math.min(raw, max) as GoalPlantVariant;
     },
-    [goalPlantSelections]
+    [goalPlantSelections, userState?.plan]
   );
 
   const signOut = useCallback(() => {

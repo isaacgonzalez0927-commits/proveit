@@ -28,11 +28,9 @@ function normalizeGracePeriod(value: unknown): GracePeriod | null {
 }
 
 function normalizePlantVariant(value: unknown): GoalPlantVariant | null {
-  if (value === 1 || value === 2 || value === 3 || value === 4) return value;
-  if (value === "1" || value === "2" || value === "3" || value === "4") {
-    return Number(value) as GoalPlantVariant;
-  }
-  return null;
+  const n = typeof value === "string" ? parseInt(value, 10) : value;
+  if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > 10) return null;
+  return n as GoalPlantVariant;
 }
 
 export function getStoredAppSettings(): AppSettings {
