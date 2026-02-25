@@ -555,10 +555,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getGoalPlantVariant = useCallback(
     (goalId: string): GoalPlantVariant => {
       const raw = goalPlantSelections[goalId] ?? getDefaultGoalPlantVariant(goalId);
-      const max = getMaxPlantVariantForPlan(userState?.plan ?? "free");
+      const max = getMaxPlantVariantForPlan(user?.plan ?? "free");
       return Math.min(raw, max) as GoalPlantVariant;
     },
-    [goalPlantSelections, userState?.plan]
+    [goalPlantSelections, user?.plan]
   );
 
   const signOut = useCallback(() => {

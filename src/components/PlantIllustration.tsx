@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import type { GoalPlantVariant } from "@/lib/goalPlants";
+import { getImageStageForVariant, type GoalPlantVariant } from "@/lib/goalPlants";
 
 export type PlantStageKey =
   | "seedling"
@@ -74,7 +74,8 @@ function imageExists(src: string): Promise<boolean> {
 }
 
 function buildVariantSpecificBaseNames(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
-  const stageNumber = STAGE_TO_NUMBER[stage];
+  const logicalStageNumber = STAGE_TO_NUMBER[stage];
+  const stageNumber = getImageStageForVariant(logicalStageNumber, variant);
   const variantNames = [
     `plant-stage-${stageNumber}-${variant}`,
     `plant-stage-${stageNumber}_${variant}`,
