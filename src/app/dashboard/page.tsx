@@ -106,7 +106,7 @@ function DashboardContent() {
   useEffect(() => {
     if (!authReady) return;
     if (!user) {
-      router.replace("/?step=login");
+      router.replace("/");
       return;
     }
     if (!hasSelectedPlan) {
@@ -172,17 +172,17 @@ function DashboardContent() {
       <Header />
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <div className="mb-8">
+        <div className="mb-5">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Dashboard
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            {user?.email} · {plan?.name} plan
+            {(user?.name || user?.email) ?? ""} · {plan?.name} plan
           </p>
         </div>
 
         <section className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-cyan-50/40 p-4 dark:border-emerald-900/60 dark:from-emerald-950/25 dark:to-cyan-950/20">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
                 Garden snapshot
@@ -193,19 +193,28 @@ function DashboardContent() {
             </div>
             <Link
               href="/buddy"
-              className="rounded-lg border border-emerald-300 bg-white/70 px-2.5 py-1 text-xs font-medium text-emerald-800 hover:bg-white dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
             >
               Open Garden
+              <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
           <GardenSnapshot plants={gardenSnapshotPlants} className="mt-3" />
           <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-200">
-            Watered today: {displayGoalsDoneToday}/{displayTotalDueToday} · Top streak:{" "}
-            {displayMaxStreak} day{displayMaxStreak === 1 ? "" : "s"}
+            {goals.length === 0 ? (
+              "Add goals in the Garden to start tracking streaks and watering."
+            ) : displayTotalDueToday === 0 ? (
+              "No goals due today — add more in the Garden or check back on due days."
+            ) : (
+              <>
+                Watered today: {displayGoalsDoneToday}/{displayTotalDueToday} · Top streak:{" "}
+                {displayMaxStreak} day{displayMaxStreak === 1 ? "" : "s"}
+              </>
+            )}
           </p>
         </section>
 
-        {isCreatorAccount && (
+        {isCreatorAccount && effectiveDeveloperSettings.enabled && (
           <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-800/60 dark:bg-amber-950/20">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -238,7 +247,7 @@ function DashboardContent() {
                 Turn developer tools on/off from Settings only.
               </p>
               <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
-                Current status: {effectiveDeveloperSettings.enabled ? "ON" : "OFF"}.
+                Current status: ON.
               </p>
               <Link
                 href="/settings"
@@ -250,52 +259,80 @@ function DashboardContent() {
           </section>
         )}
 
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-amber-500" />
-              <span className="font-semibold text-slate-900 dark:text-white">
-                Current streak
-              </span>
+        {goals.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+              <div className="flex gap-3">
+                <Flame className="h-8 w-8 shrink-0 text-amber-500" />
+                <Target className="h-8 w-8 shrink-0 text-prove-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-white">
+                  You’re all set — add your first goal
+                </p>
+                <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                  Create a daily or weekly goal in the Garden to start proving it and growing streaks.
+                </p>
+              </div>
+              <Link
+                href="/buddy"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
+              >
+                Open Garden
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
-            <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-              {displayMaxStreak} {displayMaxStreak === 1 ? "day" : "days"}
-            </p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {isCreatorAccount && effectiveDeveloperSettings.enabled
-                ? "Developer mode preview is active."
-                : "Keep submitting verified proofs to grow your streak."}
-            </p>
           </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-prove-600 dark:text-prove-400" />
-              <span className="font-semibold text-slate-900 dark:text-white">
-                Goals
-              </span>
+        ) : (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-amber-500" />
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Current streak
+                </span>
+              </div>
+              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
+                {displayMaxStreak} {displayMaxStreak === 1 ? "day" : "days"}
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {isCreatorAccount && effectiveDeveloperSettings.enabled
+                  ? "Developer mode preview is active."
+                  : displayMaxStreak === 0
+                    ? "Complete a goal to start your streak."
+                    : "Keep submitting verified proofs to grow your streak."}
+              </p>
             </div>
-            <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-              {goals.length}
-            </p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {dailyGoals.length} daily, {weeklyGoals.length} weekly
-            </p>
-            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-              {plan?.dailyGoals === -1 ? "Unlimited" : plan?.dailyGoals} daily,{" "}
-              {plan?.weeklyGoals === -1 ? "Unlimited" : plan?.weeklyGoals} weekly on your plan.
-            </p>
-          </div>
-        </div>
 
-        <section className="mt-10">
-          <div className="flex items-center justify-between">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-prove-600 dark:text-prove-400" />
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Goals
+                </span>
+              </div>
+              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
+                {goals.length}
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {dailyGoals.length} daily, {weeklyGoals.length} weekly
+              </p>
+              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                {plan?.dailyGoals === -1 ? "Unlimited" : plan?.dailyGoals} daily,{" "}
+                {plan?.weeklyGoals === -1 ? "Unlimited" : plan?.weeklyGoals} weekly on your plan.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <section className="mt-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
               Today&apos;s goals
             </h2>
             <Link
               href="/buddy"
-              className="flex items-center gap-1 text-sm font-medium text-prove-600 hover:text-prove-700 dark:text-prove-400"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50"
             >
               Manage in Garden
               <ChevronRight className="h-4 w-4" />
@@ -303,13 +340,13 @@ function DashboardContent() {
           </div>
 
           {goals.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-900/50">
               <p className="text-slate-600 dark:text-slate-400">
-                No goals yet. Add a daily or weekly goal to get reminders and start proving it.
+                Add a daily or weekly goal in the Garden to see today’s tasks and start proving it.
               </p>
               <Link
                 href="/buddy"
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
               >
                 <Plus className="h-4 w-4" />
                 Add goal in Garden
@@ -337,7 +374,9 @@ function DashboardContent() {
                           {goal.title}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Daily · Streak: {displayStreakByGoalId.get(goal.id) ?? 0} days
+                          Daily · Streak: {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
+                            ? `${displayStreakByGoalId.get(goal.id)} days`
+                            : "—"}
                           {goal.isOnBreak ? " · On break" : ""}
                         </p>
                       </div>
@@ -393,7 +432,9 @@ function DashboardContent() {
                           {goal.title}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Weekly · Streak: {displayStreakByGoalId.get(goal.id) ?? 0} weeks
+                          Weekly · Streak: {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
+                            ? `${displayStreakByGoalId.get(goal.id)} weeks`
+                            : "—"}
                           {goal.isOnBreak ? " · On break" : ""}
                           {!due && dueLabel && ` · ${dueLabel}`}
                         </p>
@@ -428,7 +469,7 @@ function DashboardContent() {
           )}
         </section>
 
-        <section className="mt-10">
+        <section className="mt-6">
           <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
             Weekly recap
           </h2>
@@ -439,7 +480,9 @@ function DashboardContent() {
                   {thisWeekVerified.length}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  goals completed this week
+                  {thisWeekVerified.length === 0
+                    ? "Complete a goal this week to see your recap here."
+                    : "goals completed this week"}
                 </p>
               </div>
               <div className="flex flex-wrap justify-end gap-1 sm:gap-2">

@@ -26,6 +26,21 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with any email (dem
 
 **Live app**: [proveit-sooty.vercel.app](https://proveit-sooty.vercel.app)
 
+### One-time setup so the AI can run `pf` (push + deploy)
+
+After a fresh clone or new machine, run these once so `npm run pf` works when the AI runs it:
+
+```bash
+# Link this folder to your Vercel project (pick the ProveIt project when prompted)
+npx vercel link --scope isaacs-projects-94fcf528
+
+# Optional: if git push ever hangs, run once:
+# git config core.fsyncMethod batch
+# git config http.postBuffer 524288000
+```
+
+Then run **`npm run pf`** yourself once. When Cursor asks to allow **git write** and **network**, approve it. After that, the AI can run `npm run pf` for you.
+
 On macOS Catalina? Use the recovery checklist in [MACOS-10.15-SETUP.md](./MACOS-10.15-SETUP.md).
 
 ## AI verification

@@ -64,6 +64,7 @@ function GalleryContent() {
   const plan = getPlan(user.plan);
   const hasGalleryAccess = user.plan === "pro" || user.plan === "premium";
   const isPro = user.plan === "pro" || user.plan === "premium";
+  const isPremium = user.plan === "premium";
 
   // Build gallery source: verified submissions grouped by goal, sorted by date
   const verifiedSubs = submissions
@@ -96,6 +97,83 @@ function GalleryContent() {
 
   const filteredGoals =
     selectedGoalId === "all" ? byGoal : byGoal.filter((entry) => entry.goal.id === selectedGoalId);
+
+  const downloadWeeklyCollage = async (
+    goalTitle: string,
+    completedDates: string[],
+    subsByDate: Map<string, (typeof submissions)[number]>
+  ) => {
+    if (typeof document === "undefined") return;
+    const thisWeekDates = completedDates.filter((dateStr) => {
+      const d = safeParseISO(dateStr);
+      return d ? isThisWeek(d) : false;
+    });
+    const imageDataUrls = thisWeekDates
+      .map((dateStr) => subsByDate.get(dateStr))
+      .filter((sub): sub is (typeof submissions)[number] => !!sub && !!sub.imageDataUrl && sub.imageDataUrl.length > 10)
+      .map((sub) => sub.imageDataUrl);
+
+    if (imageDataUrls.length === 0) {
+      if (typeof window !== "undefined") {
+        window.alert("No photos for this goal this week yet.");
+      }
+      return;
+    }
+
+    const maxPerRow = imageDataUrls.length <= 2 ? imageDataUrls.length : imageDataUrls.length <= 4 ? 2 : 3;
+    const cols = maxPerRow || 1;
+    const rows = Math.ceil(imageDataUrls.length / cols);
+    const cellSize = 320;
+    const padding = 8;
+    const width = cols * cellSize + (cols + 1) * padding;
+    const height = rows * cellSize + (rows + 1) * padding;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.fillStyle = "#020617"; // slate-950 background
+    ctx.fillRect(0, 0, width, height);
+
+    await Promise.all(
+      imageDataUrls.map(
+        (src, index) =>
+          new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const col = index % cols;
+              const row = Math.floor(index / cols);
+              const x = padding + col * (cellSize + padding);
+              const y = padding + row * (cellSize + padding);
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(x, y, cellSize, cellSize);
+              ctx.clip();
+              ctx.drawImage(img, x, y, cellSize, cellSize);
+              ctx.restore();
+              resolve();
+            };
+            img.onerror = () => resolve();
+            img.src = src;
+          })
+      )
+    );
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    const link = document.createElement("a");
+    const safeTitle =
+      goalTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "goal";
+    link.href = dataUrl;
+    link.download = `${safeTitle}-week-collage.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const enabledSettingCount = [
     historySettings.showProofPhotos,
@@ -247,6 +325,22 @@ function GalleryContent() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
+
+                    {isPremium && historySettings.showProofPhotos && (
+                      <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="truncate">
+                          Premium: download a collage of this week&apos;s proof photos for this goal.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => downloadWeeklyCollage(goal.title, completedDates, subsByDate)}
+                          className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                          <Images className="h-3 w-3" />
+                          Download this week
+                        </button>
+                      </div>
+                    )}
 
                     {historySettings.showProofPhotos ? (
                       <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">

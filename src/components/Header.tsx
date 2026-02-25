@@ -79,7 +79,7 @@ export function Header() {
     } catch {
       // Still route to login so people are never stranded in-app.
     }
-    router.push("/?step=login");
+    router.push("/");
   };
 
   return (
@@ -100,7 +100,10 @@ export function Header() {
           <div className="relative shrink-0" ref={accountRef}>
             <button
               type="button"
-              onClick={() => setAccountOpen((o) => !o)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setAccountOpen((o) => !o);
+              }}
               className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
               aria-expanded={accountOpen}
               aria-haspopup="true"
@@ -113,10 +116,13 @@ export function Header() {
               <div
                 className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl border border-slate-200 bg-white py-2 shadow-lg dark:border-slate-700 dark:bg-slate-900"
                 role="menu"
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between gap-3 px-3 py-2" role="none">
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Theme</span>
-                  <ThemeToggle />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <ThemeToggle />
+                  </div>
                 </div>
                 <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
                 <Link

@@ -227,7 +227,7 @@ export default function SettingsPage() {
       }
 
       await Promise.resolve(signOut());
-      router.replace("/?step=login");
+      router.replace("/");
     } catch {
       setSettingsMessage("Could not delete account right now.");
     } finally {
@@ -360,7 +360,9 @@ export default function SettingsPage() {
                   aria-label={`Set ${option.label} theme`}
                 >
                   <span className="inline-flex items-center gap-2">
-                    <span className={`h-3 w-3 rounded-full ${option.swatchClassName}`} />
+                    <span
+                      className={`h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600 ${option.swatchClassName}`}
+                    />
                     {option.label}
                   </span>
                   {locked ? (

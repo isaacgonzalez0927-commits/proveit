@@ -28,7 +28,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Free: 2 daily + 1 weekly goal, full garden, AI verification. Pro: more goals, Goal Gallery, Goal Break. Premium: unlimited.
+            Free: 2 daily + 1 weekly goal, 3 plant styles. Pro: 5 daily + 5 weekly, 6 plant styles, Goal Gallery, Goal Break. Premium: unlimited goals, all 8 plant styles.
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <button
@@ -72,7 +72,7 @@ function PricingContent() {
         </div>
 
         <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          Free: full plant growth, streak tracking, basic dashboard. Pro: Goal Gallery, Goal Break (up to 3 days), 4 themes. Premium: unlimited goals, all 10 themes, Goal Break any duration.
+          Free: full plant growth, streak tracking, dashboard. Pro: 4 accent themes, Goal Gallery, Goal Break (up to 3 days). Premium: all 10 accent themes, 8 plant styles, weekly goal photo collages, Goal Break any duration.
         </p>
       </main>
     </>
@@ -158,7 +158,7 @@ function PricingCard({
           </div>
         ) : (
           <Link
-            href={hasUser ? "/dashboard" : "/?step=login"}
+            href={hasUser ? "/dashboard" : "/"}
             onClick={(e) => {
               if (hasUser) {
                 e.preventDefault();

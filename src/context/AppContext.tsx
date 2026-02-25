@@ -106,6 +106,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         fetch("/api/submissions").then((r) => r.json()),
       ]).then(([profileResult, goalsResult, subsResult]) => {
         const p = profileResult.status === "fulfilled" ? profileResult.value?.profile : null;
+        const storedName =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("proveit_display_name") ?? undefined
+            : undefined;
         const profileUser = p
           ? {
               id: p.id,
@@ -113,8 +117,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               plan: normalizePlanId(p.plan),
               planBilling: p.planBilling,
               createdAt: p.createdAt ?? new Date().toISOString(),
+              name: p.name ?? storedName,
             }
-          : { id: supabaseUser.id, email: supabaseUser.email ?? "", plan: "free" as const, planBilling: undefined as undefined, createdAt: supabaseUser.created_at };
+          : {
+              id: supabaseUser.id,
+              email: supabaseUser.email ?? "",
+              plan: "free" as const,
+              planBilling: undefined as undefined,
+              createdAt: supabaseUser.created_at,
+              name: storedName,
+            };
         setUserState(profileUser);
 
         const goalsRes = goalsResult.status === "fulfilled" ? goalsResult.value : null;

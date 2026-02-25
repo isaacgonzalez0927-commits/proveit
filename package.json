@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "deploy": "npx vercel --prod --scope isaacs-projects-94fcf528",
+    "pf": "sh scripts/pf.sh",
     "clean": "node -e \"var f=require('fs');if(f.existsSync('.next')){f.rmSync('.next',{recursive:true});console.log('Cleared .next');}else{console.log('.next not found');}\"",
     "i": "npm.cmd install"
   },

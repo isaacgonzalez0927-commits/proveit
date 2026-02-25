@@ -620,7 +620,7 @@ export default function BuddyPage() {
           <GardenSnapshot plants={snapshotPlants} className="mt-2" />
         </section>
 
-        {isCreatorAccount && (
+        {isCreatorAccount && developerSettings.enabled && (
           <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-800/60 dark:bg-amber-950/25">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -639,7 +639,7 @@ export default function BuddyPage() {
               </Link>
             </div>
             <p className="mt-2 text-xs text-amber-900 dark:text-amber-200">
-              Current status: {developerSettings.enabled ? "ON" : "OFF"}.
+              Current status: ON.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
@@ -649,18 +649,16 @@ export default function BuddyPage() {
               >
                 Clear all goal streak overrides
               </button>
-              {developerSettings.enabled && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearPlanSelectionForNewUser();
-                    router.push("/");
-                  }}
-                  className="rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                >
-                  Treat as new user
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  clearPlanSelectionForNewUser();
+                  router.push("/");
+                }}
+                className="rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+              >
+                Treat as new user
+              </button>
             </div>
             {developerMessage && (
               <p className="mt-2 text-xs text-amber-900 dark:text-amber-200">{developerMessage}</p>

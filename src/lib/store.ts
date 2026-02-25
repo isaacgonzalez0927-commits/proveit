@@ -22,6 +22,7 @@ export interface StoredUser {
   plan: PlanId;
   planBilling?: "monthly" | "yearly";
   createdAt: string;
+  name?: string;
 }
 
 function getStoredUser(): StoredUser | null {

@@ -346,8 +346,8 @@ function LandingContent() {
             </div>
           </section>
 
-          {/* Slide 1 – Login (compact, scrollable so Google button is always visible) */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3">
+          {/* Slide 1 – Login: form + filled bottom so no blank half */}
+          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
             <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 2 of 3</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
@@ -435,55 +435,78 @@ function LandingContent() {
                   )}
                 </form>
               </div>
+              {/* Bottom half fill: next step + trust so screen isn’t blank */}
+              <div className="mt-4 flex flex-1 min-h-[120px] flex-col justify-end rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-slate-50/80 dark:bg-slate-800/40 px-4 py-4 shrink-0">
+                <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300">
+                  Next: choose your plan
+                </p>
+                <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
+                  Free plan — no card required. Upgrade or cancel anytime.
+                </p>
+              </div>
             </div>
-            <div className="mt-3 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
+            <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
               <button type="button" onClick={() => goTo(0)} className="active:opacity-70">Back</button>
               <span>Swipe → plan</span>
             </div>
           </section>
 
-          {/* Slide 2 – Choose plan (iOS-style: simple list, same colors) */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3">
+          {/* Slide 2 – Choose plan: clean, appetizing cards */}
+          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
             <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 3 of 3</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
-                Pick your plan
+                Choose your plan
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                Start free. Upgrade anytime.
+                Start free — no card required. Upgrade whenever you’re ready.
               </p>
-              <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/50 divide-y divide-slate-100 dark:divide-slate-700/80">
+              <div className="mt-4 min-h-0 flex-1 overflow-y-auto space-y-3 pb-2">
                 {PLANS.map((plan) => (
                   <button
                     key={plan.id}
                     type="button"
                     onClick={() => handleChoosePlan(plan.id as PlanId)}
-                    className="flex w-full flex-col items-stretch gap-2 px-3 py-3 text-left active:bg-slate-50 dark:active:bg-slate-700/30"
+                    className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] ${
+                      plan.id === "free"
+                        ? "border-prove-400 dark:border-prove-500 bg-prove-50/80 dark:bg-prove-950/40 shadow-sm shadow-prove-200/50 dark:shadow-prove-900/30"
+                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600"
+                    }`}
                   >
-                    <div className="flex w-full items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[15px] font-semibold text-slate-900 dark:text-white">{plan.name}</p>
-                        <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
-                          {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily · {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
-                        </p>
+                    <div className="px-4 pt-4 pb-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          {plan.id === "free" && (
+                            <span className="inline-block rounded-full bg-prove-200 dark:bg-prove-800/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-prove-700 dark:text-prove-300 mb-1.5">
+                              Recommended to start
+                            </span>
+                          )}
+                          <p className="text-[17px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
+                          <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
+                            {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily · {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly goals
+                          </p>
+                        </div>
+                        <span className={`text-[16px] font-bold shrink-0 ${plan.id === "free" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>
+                          {plan.priceMonthly === 0 ? "Free" : `£${plan.priceMonthly}/mo`}
+                        </span>
                       </div>
-                      <span className="text-[14px] font-semibold text-prove-600 dark:text-prove-400 shrink-0">
-                        {plan.priceMonthly === 0 ? "Free" : `£${plan.priceMonthly}/mo`}
-                      </span>
+                      <ul className="mt-3 flex flex-col gap-1.5 text-[12px] text-slate-600 dark:text-slate-400">
+                        {plan.features.slice(0, 4).map((f, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-prove-500 dark:text-prove-400 shrink-0 mt-0.5" aria-hidden>✓</span>
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-3 text-[13px] font-semibold text-prove-600 dark:text-prove-400">
+                        {plan.id === "free" ? "Get started free →" : `Choose ${plan.name} →`}
+                      </p>
                     </div>
-                    <ul className="flex flex-col gap-0.5 text-[11px] text-slate-600 dark:text-slate-400 text-left">
-                      {plan.features.slice(0, 5).map((f, i) => (
-                        <li key={i} className="flex gap-1.5">
-                          <span className="text-prove-500 dark:text-prove-400 shrink-0">·</span>
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mt-3 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
+            <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
               <button type="button" onClick={() => goTo(1)} className="active:opacity-70">Back</button>
               <span>Swipe ← back</span>
             </div>
