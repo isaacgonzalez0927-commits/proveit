@@ -18,18 +18,25 @@ function LandingContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+  const [authMode, setAuthMode] = useState<AuthMode>("signup");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const requestedStep = searchParams.get("step");
+  const [sessionSettled, setSessionSettled] = useState(false);
+  const welcomeDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!authReady) return;
 
     if (user) {
+      if (welcomeDelayRef.current) {
+        clearTimeout(welcomeDelayRef.current);
+        welcomeDelayRef.current = null;
+      }
+      setSessionSettled(true);
       if (hasSelectedPlan) {
         router.replace("/dashboard");
         return;
@@ -38,16 +45,37 @@ function LandingContent() {
       return;
     }
 
-    if (requestedStep === "login") {
-      setSlide(1);
-      return;
-    }
     if (requestedStep === "plan") {
+      setSessionSettled(true);
       setSlide(2);
       return;
     }
-    setSlide(0);
-  }, [authReady, user, hasSelectedPlan, requestedStep, router]);
+    if (requestedStep === "login") {
+      setSessionSettled(true);
+      setSlide(1);
+      return;
+    }
+
+    // No user and no step: might be first-time or returning from email confirmation.
+    // Wait briefly for session to restore; if user appears we go to plan/dashboard above.
+    if (!sessionSettled) {
+      if (welcomeDelayRef.current) return;
+      welcomeDelayRef.current = setTimeout(() => {
+        welcomeDelayRef.current = null;
+        setSessionSettled(true);
+        setSlide(0);
+      }, 700);
+    } else {
+      setSlide(0);
+    }
+
+    return () => {
+      if (welcomeDelayRef.current) {
+        clearTimeout(welcomeDelayRef.current);
+        welcomeDelayRef.current = null;
+      }
+    };
+  }, [authReady, user, hasSelectedPlan, requestedStep, router, sessionSettled]);
 
   const goTo = (next: Slide) => {
     setSlide(next);
@@ -205,6 +233,15 @@ function LandingContent() {
     );
   }
 
+  // After redirect (e.g. email confirmation), wait briefly for session to restore before showing welcome
+  if (!sessionSettled && !user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
+      </main>
+    );
+  }
+
   return (
     <main className="fixed inset-0 flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
       {/* Decorative background shapes */}
@@ -233,15 +270,15 @@ function LandingContent() {
           <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
             <div className="flex w-full flex-1 flex-col items-center justify-center text-center">
               <div
-                className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] animate-welcome-step [animation-fill-mode:forwards] dark:bg-prove-900/50"
+                className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.875rem,3vw,1.5rem)] py-[clamp(0.35rem,1.25vh,0.6rem)] animate-welcome-step [animation-fill-mode:forwards] dark:bg-prove-900/50"
               >
-                <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
-                <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">
+                <span className="h-[clamp(0.3rem,1.75vw,0.6rem)] w-[clamp(0.3rem,1.75vw,0.6rem)] rounded-full bg-prove-500" />
+                <p className="text-[clamp(0.75rem,2.25vw,1rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">
                   Step 1 of 3
                 </p>
               </div>
               <h1
-                className="mt-[clamp(0.75rem,3vh,1.5rem)] max-w-[12ch] font-display text-[clamp(2.6rem,10.5vmin,6rem)] font-bold leading-[1.02] tracking-tight text-slate-900 animate-welcome-headline [animation-fill-mode:forwards] dark:text-white"
+                className="mt-[clamp(0.5rem,2vh,1rem)] max-w-[14ch] font-display text-[clamp(3.5rem,16vmin,9rem)] font-bold leading-[1.02] tracking-tight text-slate-900 animate-welcome-headline [animation-fill-mode:forwards] dark:text-white"
               >
                 Prove your
                 <br />
@@ -250,177 +287,154 @@ function LandingContent() {
                 photos.
               </h1>
               <div
-                className="mt-[clamp(0.5rem,2.5vh,1.25rem)] w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/60 p-[clamp(0.75rem,3vw,1.25rem)] backdrop-blur-sm animate-welcome-list [animation-fill-mode:forwards] dark:border-slate-700/50 dark:bg-slate-900/40"
+                className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/60 p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-sm animate-welcome-list [animation-fill-mode:forwards] dark:border-slate-700/50 dark:bg-slate-900/40"
               >
-                <ol className="space-y-[clamp(0.25rem,1.5vh,0.75rem)] text-left text-[clamp(0.8125rem,2.5vmin,1.125rem)] leading-relaxed text-slate-600 dark:text-slate-400">
-                  <li className="flex gap-3">
-                    <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
+                <ol className="space-y-[clamp(0.5rem,2vh,1rem)] text-left text-[clamp(1rem,3.5vmin,1.5rem)] leading-snug text-slate-600 dark:text-slate-400">
+                  <li className="flex gap-4">
+                    <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
                     Set a daily or weekly goal, reminder time, and plant style.
                   </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>
+                  <li className="flex gap-4">
+                    <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>
                     Get a notification on your phone.
                   </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-[clamp(1.25rem,4vmin,1.75rem)] w-[clamp(1.25rem,4vmin,1.75rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.625rem,2vmin,0.875rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">3</span>
+                  <li className="flex gap-4">
+                    <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">3</span>
                     Take a photo before midnight to keep your streak.
                   </li>
               </ol>
               </div>
             </div>
             <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full items-center justify-between animate-welcome-cta [animation-fill-mode:forwards]">
-              <span className="text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">Swipe → to continue</span>
+              <span className="text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-500 dark:text-slate-400">Swipe → to continue</span>
               <button
                 type="button"
                 onClick={() => goTo(1)}
-                className="rounded-full bg-prove-600 px-[clamp(1rem,4vw,1.5rem)] py-[clamp(0.5rem,2vh,0.75rem)] text-[clamp(0.8125rem,2.5vmin,1rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
+                className="rounded-full bg-prove-600 px-[clamp(1.25rem,4.5vw,1.75rem)] py-[clamp(0.6rem,2.5vh,0.9rem)] text-[clamp(0.9375rem,2.75vmin,1.125rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
               >
                 Get started
               </button>
             </div>
           </section>
 
-          {/* Slide 1 – Login */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
-            <div className="flex w-full flex-1 flex-col items-stretch justify-center">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] dark:bg-prove-900/50">
-                <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
-                <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">Step 2 of 3</p>
-              </div>
-              <h2 className="mt-[clamp(0.5rem,2vh,1rem)] font-display text-[clamp(1.5rem,5vmin,2.5rem)] font-bold tracking-tight text-slate-900 dark:text-white">
+          {/* Slide 1 – Login (iOS-style: simple grouped list, same colors) */}
+          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4">
+            <div className="flex w-full flex-1 flex-col items-stretch justify-start min-h-0 max-w-sm mx-auto pt-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 2 of 3</p>
+              <h2 className="mt-1.5 font-display text-2xl font-bold text-slate-900 dark:text-white">
                 {authMode === "signin" ? "Sign in" : "Create account"}
               </h2>
-              <form onSubmit={handleLoginSubmit} className="mt-[clamp(0.75rem,3vh,1.5rem)]">
-                <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/50">
-                  {useSupabase && (
-                    <div className="mb-4 flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOAuthSignIn("google")}
-                        disabled={loading}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1rem)] font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                      >
-                        <svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                        Continue with Google
-                      </button>
-                      <div className="relative my-2">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-                        </div>
-                        <div className="relative flex justify-center text-xs">
-                          <span className="bg-white px-2 text-slate-500 dark:bg-slate-900/50 dark:text-slate-400">or</span>
-                        </div>
-                      </div>
+              <p className="mt-0.5 text-[15px] text-slate-500 dark:text-slate-400">
+                {authMode === "signin" ? "Welcome back." : "Free to start."}
+              </p>
+              <form onSubmit={handleLoginSubmit} className="mt-5 space-y-3">
+                {useSupabase && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleOAuthSignIn("google")}
+                      disabled={loading}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl bg-white dark:bg-slate-800/80 py-3 text-[15px] font-medium text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 active:opacity-90"
+                    >
+                      <svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                      {authMode === "signup" ? "Create account with Google" : "Continue with Google"}
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                      <span className="text-[13px] text-slate-400 dark:text-slate-500">or</span>
+                      <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                     </div>
-                  )}
-                  <div className="space-y-[clamp(0.75rem,2.5vh,1.25rem)]">
-                <div>
-                      <label className="text-[clamp(0.8125rem,2.5vmin,1rem)] font-medium text-slate-700 dark:text-slate-300">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-900 placeholder-slate-400 transition focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
-                <div>
-                      <label className="text-[clamp(0.8125rem,2.5vmin,1rem)] font-medium text-slate-700 dark:text-slate-300">Password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-[clamp(0.625rem,2vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1.125rem)] text-slate-900 placeholder-slate-400 transition focus:border-prove-500 focus:outline-none focus:ring-2 focus:ring-prove-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    placeholder="At least 6 characters"
-                    required
-                  />
-                      {useSupabase && authMode === "signin" && (
-                        <button
-                          type="button"
-                          onClick={handleForgotPassword}
-                          disabled={loading}
-                          className="mt-1.5 text-sm text-prove-600 hover:underline dark:text-prove-400"
-                        >
-                          Forgot password?
-                        </button>
-                      )}
-                </div>
-                    {resetSent && (
-                      <p className="text-sm text-prove-600 dark:text-prove-400" role="status">Check your email for the reset link.</p>
-                    )}
-                {loginError && (
-                      <p className="text-[clamp(0.8125rem,2vmin,0.9375rem)] text-red-500" role="alert">{loginError}</p>
+                  </>
                 )}
+                <div className="rounded-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/50 [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0">
+                  <label className="block">
+                    <span className="sr-only">Email</span>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-transparent px-4 py-3 text-[16px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                      placeholder="Email"
+                      required
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="sr-only">Password</span>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-transparent px-4 py-3 text-[16px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                      placeholder={authMode === "signup" ? "Password (6+ characters)" : "Password"}
+                      required
+                    />
+                  </label>
+                </div>
+                {useSupabase && authMode === "signin" && (
+                  <button type="button" onClick={handleForgotPassword} disabled={loading} className="text-[15px] text-prove-600 dark:text-prove-400">
+                    Forgot password?
+                  </button>
+                )}
+                {resetSent && <p className="text-[15px] text-prove-600 dark:text-prove-400" role="status">Check your email.</p>}
+                {loginError && <p className="text-[15px] text-red-500" role="alert">{loginError}</p>}
                 <button
                   type="submit"
-                      disabled={loading}
-                      className="mt-2 w-full rounded-xl bg-prove-600 py-[clamp(0.625rem,2.5vh,0.875rem)] text-[clamp(0.875rem,2.5vmin,1rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 disabled:opacity-70 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
+                  disabled={loading}
+                  className="w-full rounded-xl bg-prove-600 dark:bg-prove-500 py-3 text-[16px] font-semibold text-white active:opacity-90 disabled:opacity-70"
                 >
-                      {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
+                  {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
                 </button>
-                    {useSupabase && (
-                      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                        {authMode === "signin" ? (
-                          <>Don&apos;t have an account?{" "}
-                            <button type="button" onClick={() => { setAuthMode("signup"); setLoginError(""); }} className="font-medium text-prove-600 hover:underline dark:text-prove-400">Sign up</button>
-                          </>
-                        ) : (
-                          <>Already have an account?{" "}
-                            <button type="button" onClick={() => { setAuthMode("signin"); setLoginError(""); }} className="font-medium text-prove-600 hover:underline dark:text-prove-400">Sign in</button>
-                          </>
-                        )}
-                      </p>
+                {useSupabase && (
+                  <p className="text-center text-[15px] text-slate-500 dark:text-slate-400">
+                    {authMode === "signin" ? (
+                      <>New?{" "}<button type="button" onClick={() => { setAuthMode("signup"); setLoginError(""); }} className="font-medium text-prove-600 dark:text-prove-400">Create account</button></>
+                    ) : (
+                      <>Have an account?{" "}<button type="button" onClick={() => { setAuthMode("signin"); setLoginError(""); }} className="font-medium text-prove-600 dark:text-prove-400">Sign in</button></>
                     )}
-                  </div>
-                </div>
+                  </p>
+                )}
               </form>
             </div>
-            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full items-center justify-between text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={() => goTo(0)} className="hover:text-slate-700 dark:hover:text-slate-300">
-                ← Back
-              </button>
-              <span>Swipe → to choose plan</span>
+            <div className="mt-6 flex w-full max-w-sm mx-auto items-center justify-between text-[13px] text-slate-500 dark:text-slate-400">
+              <button type="button" onClick={() => goTo(0)} className="active:opacity-70">Back</button>
+              <span>Swipe → plan</span>
             </div>
           </section>
 
-          {/* Slide 2 – Choose plan */}
-          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-[5vw] py-[env(safe-area-inset-top)]">
-            <div className="flex w-full max-w-md flex-col items-stretch">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1.25rem)] py-[clamp(0.25rem,1vh,0.5rem)] dark:bg-prove-900/50">
-                <span className="h-[clamp(0.25rem,1.5vw,0.5rem)] w-[clamp(0.25rem,1.5vw,0.5rem)] rounded-full bg-prove-500" />
-                <p className="text-[clamp(0.625rem,2vw,0.875rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">Step 3 of 3</p>
-              </div>
-              <h2 className="mt-[clamp(0.5rem,2vh,1rem)] font-display text-[clamp(1.5rem,5vmin,2.5rem)] font-bold tracking-tight text-slate-900 dark:text-white">
+          {/* Slide 2 – Choose plan (iOS-style: simple list, same colors) */}
+          <section className="flex w-1/3 shrink-0 flex-col justify-center overflow-hidden px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6">
+            <div className="flex w-full max-w-sm mx-auto flex-col">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 3 of 3</p>
+              <h2 className="mt-2 font-display text-2xl font-bold text-slate-900 dark:text-white">
                 Pick your plan
               </h2>
-              <div className="mt-[clamp(0.75rem,3vh,1.5rem)] space-y-[clamp(0.5rem,2vh,0.75rem)]">
+              <p className="mt-1 text-[15px] text-slate-500 dark:text-slate-400">
+                Start free. Upgrade anytime.
+              </p>
+              <div className="mt-4 rounded-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/50 divide-y divide-slate-100 dark:divide-slate-700/80">
                 {PLANS.map((plan) => (
                   <button
                     key={plan.id}
                     type="button"
                     onClick={() => handleChoosePlan(plan.id as PlanId)}
-                    className="flex w-full items-center justify-between rounded-2xl border border-slate-200/80 bg-white/80 px-[clamp(1rem,4vw,1.25rem)] py-[clamp(0.75rem,2.5vh,1rem)] text-left backdrop-blur-sm transition hover:border-prove-300 hover:bg-prove-50/50 dark:border-slate-700/50 dark:bg-slate-900/50 dark:hover:border-prove-700 dark:hover:bg-prove-900/30"
+                    className="flex w-full items-center justify-between px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-700/30"
                   >
                     <div>
-                      <p className="text-[clamp(0.9375rem,2.5vmin,1.25rem)] font-semibold text-slate-900 dark:text-white">{plan.name}</p>
-                      <p className="mt-0.5 text-[clamp(0.8125rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
-                        {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
-                        {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
+                      <p className="text-[17px] font-semibold text-slate-900 dark:text-white">{plan.name}</p>
+                      <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
+                        {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily · {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
                       </p>
                     </div>
-                    <span className="rounded-full bg-prove-100 px-[clamp(0.75rem,2.5vw,1rem)] py-[clamp(0.25rem,1vh,0.5rem)] text-[clamp(0.8125rem,2vmin,0.9375rem)] font-semibold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
+                    <span className="text-[15px] font-semibold text-prove-600 dark:text-prove-400">
                       {plan.priceMonthly === 0 ? "Free" : `£${plan.priceMonthly}/mo`}
                     </span>
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full max-w-md items-center justify-between text-[clamp(0.75rem,2vmin,0.9375rem)] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={() => goTo(1)} className="hover:text-slate-700 dark:hover:text-slate-300">
-                ← Back
-              </button>
-              <span>Swipe ← to go back</span>
+            <div className="mt-4 flex w-full max-w-sm mx-auto items-center justify-between text-[13px] text-slate-500 dark:text-slate-400">
+              <button type="button" onClick={() => goTo(1)} className="active:opacity-70">Back</button>
+              <span>Swipe ← back</span>
             </div>
           </section>
         </div>
