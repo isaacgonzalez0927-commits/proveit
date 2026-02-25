@@ -188,6 +188,7 @@ export function PlantIllustration({
 
   useEffect(() => {
     let cancelled = false;
+    setPhotoSrc(null);
     setPhotoResolved(false);
     const resolvePhoto = async () => {
       for (const candidate of photoCandidates) {
