@@ -161,6 +161,11 @@ function LandingContent() {
         setLoading(false);
       }
     } else {
+      // No Supabase: only allow demo “sign up”, never sign in (would accept any password).
+      if (authMode === "signin") {
+        setLoginError("Sign-in requires server configuration. Use “Create account” or set up Supabase.");
+        return;
+      }
       const now = new Date().toISOString();
       setUser({
         id: user?.id ?? `user-${Date.now()}`,
@@ -201,15 +206,20 @@ function LandingContent() {
   };
 
   const handleOAuthSignIn = async (provider: "google" | "apple") => {
-    if (!useSupabase || !supabase) return;
+    if (!useSupabase || !supabase) {
+      setLoginError("Sign-in with Google isn’t available. Check your environment setup.");
+      return;
+    }
     setLoading(true);
     setLoginError("");
     try {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/api/auth/callback`
+          : undefined;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined,
-        },
+        options: { redirectTo },
       });
       if (error) {
         setLoginError(error.message);
@@ -219,6 +229,9 @@ function LandingContent() {
         window.location.href = data.url;
         return;
       }
+      setLoginError(
+        "Google sign-in didn’t return a link. In Supabase Dashboard: enable the Google provider and add your Google Client ID and Secret. In Google Cloud, add redirect URI: https://yzxokiqggwpaovggwnsn.supabase.co/auth/v1/callback"
+      );
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

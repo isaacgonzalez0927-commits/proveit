@@ -51,6 +51,19 @@ Priority: Custom AI → OpenAI → Demo mode.
 - **OpenAI**: Set `OPENAI_API_KEY` in `.env.local`. Uses GPT-4 Vision.
 - **Without either**: Demo mode (random pass/fail for testing).
 
+## Sign in with Google (Supabase)
+
+If “Create account with Google” does nothing or shows an error:
+
+1. **Supabase Dashboard** → Authentication → Providers → **Google**: turn on, paste your **Client ID** and **Client Secret** from Google Cloud.
+2. **Google Cloud Console** → APIs & Services → Credentials → your OAuth 2.0 Client → **Authorized redirect URIs**: add  
+   `https://YOUR_SUPABASE_PROJECT_REF.supabase.co/auth/v1/callback`  
+   (e.g. `https://yzxokiqggwpaovggwnsn.supabase.co/auth/v1/callback` for this project).
+3. **Supabase** → Authentication → URL Configuration → **Redirect URLs**: add your app URL, e.g.  
+   `https://proveit-sooty.vercel.app/api/auth/callback` and `http://localhost:3000/api/auth/callback` for local dev.
+
+Redeploy or restart dev after changing env. If the button still fails, the app will show a short message under the form with what to check.
+
 ## Account deletion (Supabase)
 
 To enable in-app account deletion for Supabase users, set:
