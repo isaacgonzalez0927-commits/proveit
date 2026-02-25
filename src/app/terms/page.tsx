@@ -46,8 +46,8 @@ export default function TermsPage() {
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contact</h2>
           <p className="mt-2">
             For support or legal inquiries, contact:{" "}
-            <a className="text-prove-600 hover:underline dark:text-prove-400" href="mailto:contact.proveit.app@gmail.com">
-              contact.proveit.app@gmail.com
+            <a className="text-prove-600 hover:underline dark:text-prove-400" href="mailto:proveit-app@googlegroups.com">
+              proveit-app@googlegroups.com
             </a>
           </p>
         </section>

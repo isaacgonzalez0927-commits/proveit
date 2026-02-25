@@ -6,6 +6,9 @@ export type GoalPlantVariant = (typeof GOAL_PLANT_VARIANTS)[number];
 /** Cactus variant is premium-only and has 5 growth stages (no stage-6 image). */
 export const CACTUS_VARIANT: GoalPlantVariant = 5;
 
+/** Strawberry variant; Pro gets this instead of cactus. */
+export const STRAWBERRY_VARIANT: GoalPlantVariant = 7;
+
 const STORAGE_KEY = "proveit_goal_plants";
 
 /** Max image stage number for variant: cactus (5) has 5 stages; others have 6. */
@@ -19,17 +22,30 @@ export function getImageStageForVariant(logicalStageNumber: number, variant: Goa
   return Math.min(logicalStageNumber, max);
 }
 
-/** Max plant style number allowed by plan: free=3, pro=5, premium=8 */
+/** Max plant style number allowed by plan: free=3, pro=7 (strawberry, no cactus), premium=8 */
 export function getMaxPlantVariantForPlan(planId: PlanId): GoalPlantVariant {
   if (planId === "premium") return 8;
-  if (planId === "pro") return 5;
+  if (planId === "pro") return 7;
   return 3;
 }
 
-/** Plant style variants available for the given plan (for picker UIs) */
+/** Plant style variants available for the given plan (for picker UIs). Pro gets strawberry (7), not cactus (5). */
 export function getPlantVariantsForPlan(planId: PlanId): GoalPlantVariant[] {
   const max = getMaxPlantVariantForPlan(planId);
-  return GOAL_PLANT_VARIANTS.filter((v) => v <= max) as GoalPlantVariant[];
+  const variants = GOAL_PLANT_VARIANTS.filter((v) => v <= max) as GoalPlantVariant[];
+  if (planId === "pro") return variants.filter((v) => v !== CACTUS_VARIANT);
+  return variants;
+}
+
+/** Clamp a chosen variant to what the plan allows. Pro: 5 (cactus) → 7 (strawberry). */
+export function clampVariantForPlan(raw: GoalPlantVariant, planId: PlanId): GoalPlantVariant {
+  const allowed = getPlantVariantsForPlan(planId);
+  if (allowed.includes(raw)) return raw;
+  if (planId === "pro" && raw === CACTUS_VARIANT) return STRAWBERRY_VARIANT;
+  const under = allowed.filter((v) => v <= raw);
+  const over = allowed.filter((v) => v >= raw);
+  if (under.length) return under[under.length - 1];
+  return over[0];
 }
 
 function normalizeVariant(value: unknown): GoalPlantVariant | null {
