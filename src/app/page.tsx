@@ -346,9 +346,9 @@ function LandingContent() {
             </div>
           </section>
 
-          {/* Slide 1 – Login: form + filled bottom so no blank half */}
+          {/* Slide 1 – Sign in: form centered in the screen */}
           <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
-            <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full">
+            <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 2 of 3</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
                 {authMode === "signin" ? "Sign in" : "Create account"}
@@ -356,7 +356,7 @@ function LandingContent() {
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
                 {authMode === "signin" ? "Welcome back." : "Free to start."}
               </p>
-              <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
+              <div className="mt-4 overflow-y-auto">
                 <form onSubmit={handleLoginSubmit} className="space-y-2.5 pb-2">
                   <button
                     type="button"
@@ -434,15 +434,6 @@ function LandingContent() {
                     </p>
                   )}
                 </form>
-              </div>
-              {/* Bottom half fill: next step + trust so screen isn’t blank */}
-              <div className="mt-4 flex flex-1 min-h-[120px] flex-col justify-end rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-slate-50/80 dark:bg-slate-800/40 px-4 py-4 shrink-0">
-                <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300">
-                  Next: choose your plan
-                </p>
-                <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
-                  Free plan — no card required. Upgrade or cancel anytime.
-                </p>
               </div>
             </div>
             <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
