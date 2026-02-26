@@ -407,11 +407,11 @@ input[type="file"] {
   border-radius: 4px;
 }
 
-/* Plant final stage celebration */
+/* Plant final stage: one-time cutscene then back to normal */
 @keyframes plant-final-glow {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.06); }
 }
 .animate-plant-final {
-  animation: plant-final-glow 2s ease-in-out infinite;
+  animation: plant-final-glow 1.8s ease-in-out 1;
 }

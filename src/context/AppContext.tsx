@@ -71,8 +71,10 @@ interface AppContextValue {
   setGoalPlantVariant: (goalId: string, variant: GoalPlantVariant) => void;
   requestNotificationPermission: () => Promise<boolean>;
   hasSelectedPlan: boolean;
-  /** Dev-only: clear plan selection so app treats current user as new (plan picker). */
+  /** Dev-only: treat as new guest (empty state); then use restoreActualAccount to go back. */
   clearPlanSelectionForNewUser: () => void;
+  /** Dev-only: leave guest mode and reload with real account data. */
+  restoreActualAccount: () => void;
   signOut: () => void | Promise<void>;
   useSupabase: boolean;
   supabase: import("@supabase/supabase-js").SupabaseClient | null;
@@ -166,10 +168,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
         setGoalPlantSelections(getStoredGoalPlantSelections());
-        const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
-        const selectedByAccount = profileUser.plan !== "free";
-        const likelyExistingFreeUser = gs.length > 0 || subs.length > 0;
-        setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
+        const devGuestMode = typeof window !== "undefined" && window.localStorage.getItem("proveit_dev_guest_mode");
+        if (devGuestMode) {
+          setGoalsState([]);
+          setSubmissionsState([]);
+          setHasSelectedPlan(false);
+        } else {
+          const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
+          const selectedByAccount = profileUser.plan !== "free";
+          const likelyExistingFreeUser = gs.length > 0 || subs.length > 0;
+          setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
+        }
       }).finally(() => setDataLoaded(true));
       setHydrated(true);
       return;
@@ -265,11 +274,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const clearPlanSelectionForNewUser = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("proveit_dev_guest_mode", "1");
+    }
     if (user?.id) {
       clearStoredPlanSelection(user.id);
-      setHasSelectedPlan(false);
     }
+    setGoalsState([]);
+    setSubmissionsState([]);
+    setHasSelectedPlan(false);
   }, [user?.id]);
+
+  const restoreActualAccount = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("proveit_dev_guest_mode");
+    }
+    window.location.reload();
+  }, []);
 
   const addGoal = useCallback(
     async (input: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">): Promise<{ created: Goal | null; error?: string }> => {
@@ -649,6 +670,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     requestNotificationPermission,
     hasSelectedPlan,
     clearPlanSelectionForNewUser,
+    restoreActualAccount,
     signOut: useSupabase ? signOutWithSupabase : signOut,
     useSupabase,
     supabase: useSupabase ? supabase : null,

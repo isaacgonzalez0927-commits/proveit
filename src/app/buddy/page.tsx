@@ -52,6 +52,7 @@ export default function BuddyPage() {
     getGoalPlantVariant,
     setGoalPlantVariant,
     clearPlanSelectionForNewUser,
+    restoreActualAccount,
   } = useApp();
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(
     DEFAULT_DEVELOPER_MODE_SETTINGS
@@ -658,6 +659,13 @@ export default function BuddyPage() {
                 className="rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
               >
                 Treat as new user
+              </button>
+              <button
+                type="button"
+                onClick={restoreActualAccount}
+                className="rounded-md border border-emerald-500 px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 dark:border-emerald-600 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+              >
+                Go back to my actual account
               </button>
             </div>
             {developerMessage && (
