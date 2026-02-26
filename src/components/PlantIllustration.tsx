@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import { getImageStageForVariant, type GoalPlantVariant } from "@/lib/goalPlants";
+import { CACTUS_VARIANT, getImageStageForVariant, type GoalPlantVariant } from "@/lib/goalPlants";
 
 export type PlantStageKey =
   | "seedling"
@@ -171,6 +171,12 @@ function getVariantSizeMultiplier(stage: PlantStageKey, variant: GoalPlantVarian
   return 1;
 }
 
+/** True when this variant is at its final growth stage (cactus: thriving or flowering; others: flowering). */
+function isFinalStage(stage: PlantStageKey, variant: GoalPlantVariant): boolean {
+  if (variant === CACTUS_VARIANT) return stage === "thriving" || stage === "flowering";
+  return stage === "flowering";
+}
+
 export function PlantIllustration({
   stage,
   wateringLevel,
@@ -182,6 +188,7 @@ export function PlantIllustration({
   const safeWater = clamp(wateringLevel, 0, 1);
   const { stageHeight, stageWidth } = getStageDimensions(size);
   const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
+  const finalStage = isFinalStage(stage, variant);
   const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [photoResolved, setPhotoResolved] = useState(false);
@@ -214,8 +221,8 @@ export function PlantIllustration({
   if (photoResolved && photoSrc) {
     return (
       <div
-        className={`relative inline-flex items-center justify-center ${className}`}
-        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%" }}
+        className={`relative inline-flex items-center justify-center ${finalStage ? "animate-plant-final" : ""} ${className}`}
+        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", transformOrigin: "center bottom" }}
       >
         <img
           src={photoSrc}
@@ -265,6 +272,7 @@ function SvgPlantIllustration({
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
+  const finalStage = isFinalStage(stage, variant);
   const config = STAGE_CONFIG[stage];
   const id = useId();
   const { stageHeight, stageWidth } = getStageDimensions(size);
@@ -275,7 +283,7 @@ function SvgPlantIllustration({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center ${className}`}
+      className={`relative inline-flex items-center justify-center ${finalStage ? "animate-plant-final" : ""} ${className}`}
       style={{ transform: `scale(${variantSizeMultiplier})`, transformOrigin: "center bottom" }}
     >
       <svg

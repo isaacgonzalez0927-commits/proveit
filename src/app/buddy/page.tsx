@@ -335,7 +335,7 @@ export default function BuddyPage() {
   const garden = goals.map((goal) => {
     const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
     const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
-    const stage = getPlantStageForStreak(streak);
+    const stage = getPlantStageForStreak(streak); // stage is from streak only; changing plant style (variant) does not change stage
     const isOnBreak = goal.isOnBreak === true;
     const due = isGoalDue(goal);
     const doneInCurrentWindow = isOnBreak
@@ -371,7 +371,7 @@ export default function BuddyPage() {
 
   const hydratedNow = garden.filter((g) => g.doneInCurrentWindow).length;
   const goalsDueNow = garden.filter((g) => g.due).length;
-  const floweringPlants = garden.filter((g) => g.stage.stage === "flowering").length;
+  const fullyGrownCount = garden.filter((g) => g.stage.stage === "flowering").length;
   const snapshotPlants = [...garden]
     .sort((a, b) => b.streak - a.streak)
     .map((entry) => ({
@@ -390,7 +390,7 @@ export default function BuddyPage() {
             Goal Garden
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Every goal grows its own plant. Finish goals to water each one and unlock all stage-6 flowers.
+            Every goal grows its own plant. Finish goals to water each one and reach the final stage.
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             One goal = one plant. You currently have {goals.length} plant{goals.length === 1 ? "" : "s"}.
@@ -427,9 +427,9 @@ export default function BuddyPage() {
             </p>
           </div>
           <div className="rounded-xl border border-fuchsia-200 bg-fuchsia-50/70 p-3 dark:border-fuchsia-900/70 dark:bg-fuchsia-950/30">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-fuchsia-700 dark:text-fuchsia-300">Flowering</p>
-            <p className="mt-1 text-lg font-semibold text-fuchsia-800 dark:text-fuchsia-200">{floweringPlants}</p>
-            <p className="text-[10px] text-fuchsia-700/80 dark:text-fuchsia-300/80">Stage 6 plants</p>
+            <p className="text-[11px] uppercase tracking-[0.15em] text-fuchsia-700 dark:text-fuchsia-300">Fully grown</p>
+            <p className="mt-1 text-lg font-semibold text-fuchsia-800 dark:text-fuchsia-200">{fullyGrownCount}</p>
+            <p className="text-[10px] text-fuchsia-700/80 dark:text-fuchsia-300/80">Final stage</p>
           </div>
         </div>
 
@@ -964,7 +964,7 @@ export default function BuddyPage() {
                 • {stage.minStreak} {stage.minStreak === 1 ? "day" : "days"}: {stage.name}
               </li>
             ))}
-            <li>• Stage 6 supports four flower style variants</li>
+            <li>• Final stage varies by plant style (flowers, cactus, etc.)</li>
           </ul>
         </div>
 

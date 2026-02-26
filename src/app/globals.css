@@ -406,3 +406,12 @@ input[type="file"] {
   background: rgb(var(--prove-600-rgb));
   border-radius: 4px;
 }
+
+/* Plant final stage celebration */
+@keyframes plant-final-glow {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.06); filter: brightness(1.08); }
+}
+.animate-plant-final {
+  animation: plant-final-glow 2s ease-in-out infinite;
+}

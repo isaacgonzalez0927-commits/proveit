@@ -6,13 +6,14 @@ export interface PlantGrowthStage {
   name: string;
 }
 
+/** Generic names that work for any plant style (including cactus). */
 export const PLANT_GROWTH_STAGES: PlantGrowthStage[] = [
-  { minStreak: 0, stage: "seedling", name: "Seedling" },
-  { minStreak: 7, stage: "sprout", name: "Sprout" },
-  { minStreak: 14, stage: "leafy", name: "Leafy Plant" },
-  { minStreak: 30, stage: "blooming", name: "Blooming Plant" },
-  { minStreak: 60, stage: "thriving", name: "Thriving Plant" },
-  { minStreak: 100, stage: "flowering", name: "Flowering Garden" },
+  { minStreak: 0, stage: "seedling", name: "Just planted" },
+  { minStreak: 7, stage: "sprout", name: "Sprouting" },
+  { minStreak: 14, stage: "leafy", name: "Growing" },
+  { minStreak: 30, stage: "blooming", name: "Flourishing" },
+  { minStreak: 60, stage: "thriving", name: "Thriving" },
+  { minStreak: 100, stage: "flowering", name: "Fully grown" },
 ];
 
 export function getPlantStageForStreak(streak: number): PlantGrowthStage {
