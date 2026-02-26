@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Outfit, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -74,7 +75,9 @@ export default function RootLayout({
           Skip to main content
         </a>
         <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col min-h-screen">
-          <AppProvider>{children}</AppProvider>
+          <ErrorBoundary>
+            <AppProvider>{children}</AppProvider>
+          </ErrorBoundary>
         </div>
       </body>
     </html>

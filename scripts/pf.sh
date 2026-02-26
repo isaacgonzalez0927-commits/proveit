@@ -1,12 +1,14 @@
 #!/usr/bin/env sh
-# pf = push and deploy: stage all, commit (if changes), push, then deploy to Vercel prod.
+# pf = push and deploy: stage all, commit (if changes), push. Production deploys from Git (Vercel auto-deploy)
+# so env vars (e.g. Supabase) are always applied. Running vercel --prod from CLI can create a second deploy
+# that sometimes doesn't get the same env vars and breaks sign-in.
 set -e
 MSG="${1:-pf}"
 git add -A
 if git diff --cached --quiet; then
-  echo "No changes to commit, pushing and deploying..."
+  echo "No changes to commit, pushing..."
 else
   git commit -m "$MSG"
 fi
 git push
-npx vercel --prod --yes --scope isaacs-projects-94fcf528
+echo "Done. Vercel will deploy from Git; production uses your project env vars."

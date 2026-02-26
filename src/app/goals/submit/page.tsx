@@ -51,6 +51,20 @@ function SubmitProofContent() {
     return () => { cancelled = true; };
   }, [goalId, authReady, contextUser, contextGoals, localUser, localGoal]);
 
+  useEffect(() => {
+    if (verified && typeof window !== "undefined") {
+      try {
+        const seen = localStorage.getItem("proveit_first_proof_seen");
+        if (!seen) {
+          setShowFirstProofCelebration(true);
+          localStorage.setItem("proveit_first_proof_seen", "1");
+        }
+      } catch {
+        setShowFirstProofCelebration(true);
+      }
+    }
+  }, [verified]);
+
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
   const [cameraStarted, setCameraStarted] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
@@ -60,6 +74,7 @@ function SubmitProofContent() {
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [streamReady, setStreamReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [showFirstProofCelebration, setShowFirstProofCelebration] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -549,6 +564,11 @@ function SubmitProofContent() {
                 {verified ? "Verified!" : "Not verified"}
               </h2>
               <p className="mt-2 text-slate-600 dark:text-slate-400">{feedback}</p>
+              {verified && showFirstProofCelebration && (
+                <p className="mt-3 text-sm font-medium text-prove-700 dark:text-prove-300">
+                  First proof — you&apos;re on a streak! 🌱
+                </p>
+              )}
             </div>
             <div className="mt-6 flex gap-3">
               <Link
