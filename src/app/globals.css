@@ -409,8 +409,8 @@ input[type="file"] {
 
 /* Plant final stage celebration */
 @keyframes plant-final-glow {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.06); filter: brightness(1.08); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
 }
 .animate-plant-final {
   animation: plant-final-glow 2s ease-in-out infinite;
