@@ -51,20 +51,6 @@ function SubmitProofContent() {
     return () => { cancelled = true; };
   }, [goalId, authReady, contextUser, contextGoals, localUser, localGoal]);
 
-  useEffect(() => {
-    if (verified && typeof window !== "undefined") {
-      try {
-        const seen = localStorage.getItem("proveit_first_proof_seen");
-        if (!seen) {
-          setShowFirstProofCelebration(true);
-          localStorage.setItem("proveit_first_proof_seen", "1");
-        }
-      } catch {
-        setShowFirstProofCelebration(true);
-      }
-    }
-  }, [verified]);
-
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
   const [cameraStarted, setCameraStarted] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
@@ -83,6 +69,20 @@ function SubmitProofContent() {
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasRedirected = useRef(false);
   const hasShownContent = useRef(false);
+
+  useEffect(() => {
+    if (verified && typeof window !== "undefined") {
+      try {
+        const seen = localStorage.getItem("proveit_first_proof_seen");
+        if (!seen) {
+          setShowFirstProofCelebration(true);
+          localStorage.setItem("proveit_first_proof_seen", "1");
+        }
+      } catch {
+        setShowFirstProofCelebration(true);
+      }
+    }
+  }, [verified]);
 
   // Once we've shown the submit UI (camera/upload), never redirect - avoids auth blips
   useEffect(() => {

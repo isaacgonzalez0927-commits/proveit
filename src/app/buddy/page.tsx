@@ -97,17 +97,21 @@ export default function BuddyPage() {
     setDeveloperSettings(getStoredDeveloperModeSettings());
   }, []);
 
-  // Mark goals that are at final stage so we only play the full-grown animation once per goal
+  // Mark goals at final stage so we only play the full-grown animation once (use goals + streak/variant, no garden ref)
+  const finalStageDeps = goals.map((g) => `${g.id}:${getGoalStreak(g, getSubmissionsForGoal)}:${getGoalPlantVariant(g.id)}`).join("|");
   useEffect(() => {
     let added = false;
-    for (const entry of garden) {
-      if (isFinalStage(entry.stage.stage, entry.plantVariant) && !hasPlayedFinalAnimationForGoal.current.has(entry.goal.id)) {
-        hasPlayedFinalAnimationForGoal.current.add(entry.goal.id);
+    for (const goal of goals) {
+      const streak = getGoalStreak(goal, getSubmissionsForGoal);
+      const stage = getPlantStageForStreak(streak).stage;
+      const variant = getGoalPlantVariant(goal.id);
+      if (isFinalStage(stage, variant) && !hasPlayedFinalAnimationForGoal.current.has(goal.id)) {
+        hasPlayedFinalAnimationForGoal.current.add(goal.id);
         added = true;
       }
     }
     if (added) setFinalAnimationTick((t) => t + 1);
-  }, [garden]);
+  }, [finalStageDeps, goals]);
 
   const isCreatorAccount = hasCreatorAccess(user?.email);
   const effectiveDeveloperSettings = isCreatorAccount
