@@ -207,68 +207,7 @@ export function PlantIllustration({
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
-  const safeWater = clamp(wateringLevel, 0, 1);
-  const { stageHeight, stageWidth } = getStageDimensions(size);
-  const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
-  const finalStage = isFinalStage(stage, variant);
-  const showFinalAnimation = finalStage && playFinalStageAnimation;
-  const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
-  const [photoSrc, setPhotoSrc] = useState<string | null>(null);
-  const [photoResolved, setPhotoResolved] = useState(false);
-  const loadedForRef = useRef<{ stage: PlantStageKey; variant: GoalPlantVariant } | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadedForRef.current = null;
-    setPhotoSrc(null);
-    setPhotoResolved(false);
-    const resolvePhoto = async () => {
-      for (const candidate of photoCandidates) {
-        if (cancelled) return;
-        const exists = await imageExists(candidate);
-        if (cancelled) return;
-        if (exists) {
-          loadedForRef.current = { stage, variant };
-          setPhotoSrc(candidate);
-          setPhotoResolved(true);
-          return;
-        }
-      }
-      if (!cancelled) {
-        setPhotoSrc(null);
-        setPhotoResolved(true);
-      }
-    };
-    void resolvePhoto();
-    return () => {
-      cancelled = true;
-    };
-  }, [photoCandidates, stage, variant]);
-
-  const photoMatchesCurrent = loadedForRef.current?.stage === stage && loadedForRef.current?.variant === variant;
-  if (photoResolved && photoSrc && photoMatchesCurrent) {
-    return (
-      <div
-        className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
-        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", transformOrigin: "center bottom" }}
-      >
-        <img
-          src={photoSrc}
-          alt=""
-          className="h-full w-full select-none object-contain"
-          style={{
-            filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
-            transform: `scale(${variantSizeMultiplier})`,
-            transformOrigin: "center bottom",
-          }}
-          loading="eager"
-          draggable={false}
-        />
-      </div>
-    );
-  }
-
-  // Always show SVG while loading or when no image found — never leave plant invisible
+  // Always use SVG so stage comes only from props (streak). Changing plant style never changes stage.
   return (
     <SvgPlantIllustration
       stage={stage}
