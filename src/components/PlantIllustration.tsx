@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CACTUS_VARIANT, getImageStageForVariant, type GoalPlantVariant } from "@/lib/goalPlants";
 
 export type PlantStageKey =
@@ -211,22 +211,24 @@ export function PlantIllustration({
   const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [photoResolved, setPhotoResolved] = useState(false);
+  const loadedForRef = useRef<{ stage: PlantStageKey; variant: GoalPlantVariant } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    loadedForRef.current = null;
     setPhotoSrc(null);
     setPhotoResolved(false);
     const resolvePhoto = async () => {
-      for (const candidate of photoCandidates) {
-        const exists = await imageExists(candidate);
-        if (cancelled) return;
-        if (exists) {
-          setPhotoSrc(candidate);
-          setPhotoResolved(true);
-          return;
-        }
-      }
-      if (!cancelled) {
+      // First candidate that exists wins (parallel checks, no 20s wait for all)
+      const found = await Promise.any(
+        photoCandidates.map((c) => imageExists(c).then((exists) => (exists ? c : Promise.reject())))
+      ).catch(() => null);
+      if (cancelled) return;
+      if (found) {
+        loadedForRef.current = { stage, variant };
+        setPhotoSrc(found);
+        setPhotoResolved(true);
+      } else {
         setPhotoSrc(null);
         setPhotoResolved(true);
       }
@@ -235,9 +237,10 @@ export function PlantIllustration({
     return () => {
       cancelled = true;
     };
-  }, [photoCandidates]);
+  }, [photoCandidates, stage, variant]);
 
-  if (photoResolved && photoSrc) {
+  const photoMatchesCurrent = loadedForRef.current?.stage === stage && loadedForRef.current?.variant === variant;
+  if (photoResolved && photoSrc && photoMatchesCurrent) {
     return (
       <div
         className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
