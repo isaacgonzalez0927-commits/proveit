@@ -774,7 +774,7 @@ export default function BuddyPage() {
 
                 <div className="mt-2 flex min-h-[120px] items-center justify-center py-2">
                   <PlantIllustration
-                    key={entry.goal.id}
+                    key={`plant-${entry.goal.id}-${entry.stage.stage}-${entry.plantVariant}`}
                     stage={entry.stage.stage}
                     wateringLevel={entry.wateringLevel}
                     wateredGoals={entry.doneInCurrentWindow ? 1 : 0}

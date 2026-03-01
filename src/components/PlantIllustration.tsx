@@ -197,6 +197,13 @@ export function PlantIllustration({
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [photoResolved, setPhotoResolved] = useState(false);
 
+  // Reset image state when stage or variant change so we never show the wrong image
+  const stageVariantKey = `${stage}-${variant}`;
+  useEffect(() => {
+    setPhotoSrc(null);
+    setPhotoResolved(false);
+  }, [stageVariantKey]);
+
   useEffect(() => {
     let cancelled = false;
     setPhotoSrc(null);
