@@ -143,15 +143,23 @@ function expandToPhotoPaths(baseNames: string[]): string[] {
   return candidates;
 }
 
-/** Minimal list: one primary path + one fallback. No 50+ candidates = no long wait. */
+/**
+ * Your convention: first number = growth stage, second number = style.
+ * Style only affects the last stage — for stages 1–5 use plant-stage-N.png only.
+ * For final stage (6, or 5 for cactus) use plant-stage-N-V.png so each style has its own image.
+ */
 function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
   const logicalStageNumber = STAGE_TO_NUMBER[stage];
   const imageStageNumber = getImageStageForVariant(logicalStageNumber, variant);
-  return [
-    `/plants/plant-stage-${imageStageNumber}-${variant}.png`,
-    `/plants/plant-stage-${imageStageNumber}-${variant}.webp`,
-    `/plants/plant-stage-${imageStageNumber}.png`,
-  ];
+  const isFinalStageForVariant = isFinalStage(stage, variant);
+
+  if (isFinalStageForVariant) {
+    return [
+      `/plants/plant-stage-${imageStageNumber}-${variant}.png`,
+      `/plants/plant-stage-${imageStageNumber}.png`,
+    ];
+  }
+  return [`/plants/plant-stage-${imageStageNumber}.png`];
 }
 
 const STAGE_CONFIG: Record<
@@ -207,7 +215,67 @@ export function PlantIllustration({
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
-  // Always use SVG so stage comes only from props (streak). Changing plant style never changes stage.
+  const { stageHeight, stageWidth } = getStageDimensions(size);
+  const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
+  const finalStage = isFinalStage(stage, variant);
+  const showFinalAnimation = finalStage && playFinalStageAnimation;
+  const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
+  const [photoSrc, setPhotoSrc] = useState<string | null>(null);
+  const [photoResolved, setPhotoResolved] = useState(false);
+  const loadedForRef = useRef<{ stage: PlantStageKey; variant: GoalPlantVariant } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadedForRef.current = null;
+    setPhotoSrc(null);
+    setPhotoResolved(false);
+    const resolvePhoto = async () => {
+      for (const candidate of photoCandidates) {
+        if (cancelled) return;
+        const exists = await imageExists(candidate);
+        if (cancelled) return;
+        if (exists) {
+          loadedForRef.current = { stage, variant };
+          setPhotoSrc(candidate);
+          setPhotoResolved(true);
+          return;
+        }
+      }
+      if (!cancelled) {
+        setPhotoSrc(null);
+        setPhotoResolved(true);
+      }
+    };
+    void resolvePhoto();
+    return () => {
+      cancelled = true;
+    };
+  }, [photoCandidates, stage, variant]);
+
+  const safeWater = clamp(wateringLevel, 0, 1);
+  const photoMatchesCurrent = loadedForRef.current?.stage === stage && loadedForRef.current?.variant === variant;
+  if (photoResolved && photoSrc && photoMatchesCurrent) {
+    return (
+      <div
+        className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
+        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", transformOrigin: "center bottom" }}
+      >
+        <img
+          src={photoSrc}
+          alt=""
+          className="h-full w-full select-none object-contain"
+          style={{
+            filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+            transform: `scale(${variantSizeMultiplier})`,
+            transformOrigin: "center bottom",
+          }}
+          loading="eager"
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
   return (
     <SvgPlantIllustration
       stage={stage}

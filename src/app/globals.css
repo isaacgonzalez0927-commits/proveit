@@ -407,12 +407,11 @@ input[type="file"] {
   border-radius: 4px;
 }
 
-/* Plant final stage: one-time animation when first reaching full grown (no loop) */
+/* Plant final stage: one-time cutscene then back to normal */
 @keyframes plant-final-glow {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.06); }
 }
 .animate-plant-final {
-  animation: plant-final-glow 1.8s ease-in-out 1 forwards;
-  animation-fill-mode: both;
+  animation: plant-final-glow 1.8s ease-in-out 1;
 }
