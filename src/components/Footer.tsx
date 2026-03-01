@@ -51,6 +51,12 @@ export function Footer() {
             >
               Terms
             </Link>
+            <Link
+              href="/support"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Support
+            </Link>
           </nav>
         </div>
         <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">

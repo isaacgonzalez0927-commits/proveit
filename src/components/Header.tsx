@@ -34,6 +34,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/pricing")) return "Pricing";
   if (pathname.startsWith("/privacy")) return "Privacy";
   if (pathname.startsWith("/terms")) return "Terms";
+  if (pathname.startsWith("/support")) return "Support";
   if (pathname.startsWith("/reset-password")) return "Reset Password";
   return "Proveit";
 }
@@ -150,6 +151,14 @@ export function Header() {
                   role="menuitem"
                 >
                   Terms of Use
+                </Link>
+                <Link
+                  href="/support"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  role="menuitem"
+                >
+                  Support
                 </Link>
                 <button
                   type="button"

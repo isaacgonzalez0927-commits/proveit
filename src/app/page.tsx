@@ -452,6 +452,14 @@ function LandingContent() {
                   >
                     {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
                   </button>
+                  {authMode === "signup" && (
+                    <p className="text-center text-[12px] text-slate-500 dark:text-slate-400">
+                      By creating an account you agree to our{" "}
+                      <Link href="/privacy" className="text-prove-600 hover:underline dark:text-prove-400">Privacy Policy</Link>
+                      {" "}and{" "}
+                      <Link href="/terms" className="text-prove-600 hover:underline dark:text-prove-400">Terms of Use</Link>.
+                    </p>
+                  )}
                   {useSupabase && (
                     <p className="text-center text-[14px] text-slate-500 dark:text-slate-400">
                       {authMode === "signin" ? (

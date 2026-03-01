@@ -47,5 +47,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>ProveIt needs camera access to take photos as proof when you complete a goal.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ProveIt can use a photo from your library as proof when you complete a goal.</string>
 </dict>
 </plist>
