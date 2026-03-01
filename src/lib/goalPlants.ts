@@ -22,6 +22,15 @@ export function getImageStageForVariant(logicalStageNumber: number, variant: Goa
   return Math.min(logicalStageNumber, max);
 }
 
+/** True when this variant is at its final growth stage (cactus: thriving or flowering; others: flowering). */
+export function isFinalStage(
+  stage: "seedling" | "sprout" | "leafy" | "blooming" | "thriving" | "flowering",
+  variant: GoalPlantVariant
+): boolean {
+  if (variant === CACTUS_VARIANT) return stage === "thriving" || stage === "flowering";
+  return stage === "flowering";
+}
+
 /** Max plant style number allowed by plan: free=3, pro=7 (strawberry, no cactus), premium=8 */
 export function getMaxPlantVariantForPlan(planId: PlanId): GoalPlantVariant {
   if (planId === "premium") return 8;

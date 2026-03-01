@@ -71,7 +71,9 @@ interface AppContextValue {
   setGoalPlantVariant: (goalId: string, variant: GoalPlantVariant) => void;
   requestNotificationPermission: () => Promise<boolean>;
   hasSelectedPlan: boolean;
-  /** Dev-only: treat as new guest (empty state); then use restoreActualAccount to go back. */
+  /** True when in temporary guest mode (0 goals, plan picker); restore via Settings. */
+  isDevGuestMode: boolean;
+  /** Dev-only: treat as new guest (empty state); then use restoreActualAccount in Settings to go back. */
   clearPlanSelectionForNewUser: () => void;
   /** Dev-only: leave guest mode and reload with real account data. */
   restoreActualAccount: () => void;
@@ -98,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [equippedItems, setEquippedItemsState] = useState<EquippedItems>({});
   const [goalPlantSelections, setGoalPlantSelections] = useState<Record<string, GoalPlantVariant>>({});
   const [hasSelectedPlan, setHasSelectedPlan] = useState(false);
+  const [isDevGuestMode, setIsDevGuestMode] = useState(false);
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
@@ -173,7 +176,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setGoalsState([]);
           setSubmissionsState([]);
           setHasSelectedPlan(false);
+          setIsDevGuestMode(true);
+          setGoalPlantSelections({});
         } else {
+          setIsDevGuestMode(false);
           const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
           const selectedByAccount = profileUser.plan !== "free";
           const likelyExistingFreeUser = gs.length > 0 || subs.length > 0;
@@ -193,8 +199,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     if (!useSupabase) {
       setUserState(getStoredUser());
-      setGoalsState(getStoredGoals());
-      setSubmissionsState(getStoredSubmissions());
+      const devGuestMode = typeof window !== "undefined" && window.localStorage.getItem("proveit_dev_guest_mode");
+      if (devGuestMode) {
+        setGoalsState([]);
+        setSubmissionsState([]);
+        setHasSelectedPlan(false);
+        setIsDevGuestMode(true);
+        setGoalPlantSelections({});
+      } else {
+        setGoalsState(getStoredGoals());
+        setSubmissionsState(getStoredSubmissions());
+        setIsDevGuestMode(false);
+      }
       setDataLoaded(true);
       setHydrated(true);
       return;
@@ -283,6 +299,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoalsState([]);
     setSubmissionsState([]);
     setHasSelectedPlan(false);
+    setIsDevGuestMode(true);
+    setGoalPlantSelections({});
+    if (typeof window !== "undefined") {
+      clearGoalPlantSelections();
+    }
   }, [user?.id]);
 
   const restoreActualAccount = useCallback(() => {
@@ -669,6 +690,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoalPlantVariant,
     requestNotificationPermission,
     hasSelectedPlan,
+    isDevGuestMode,
     clearPlanSelectionForNewUser,
     restoreActualAccount,
     signOut: useSupabase ? signOutWithSupabase : signOut,

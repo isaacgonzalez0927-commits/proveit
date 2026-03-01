@@ -87,7 +87,7 @@ const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, goals, submissions, signOut, useSupabase, clearPlanSelectionForNewUser, restoreActualAccount } = useApp();
+  const { user, goals, submissions, signOut, useSupabase, isDevGuestMode, clearPlanSelectionForNewUser, restoreActualAccount } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -253,6 +253,21 @@ export default function SettingsPage() {
     <>
       <Header />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+        {isDevGuestMode && (
+          <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 dark:border-amber-500 dark:bg-amber-950/40">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">Guest mode</p>
+            <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-300/90">
+              You’re viewing the app as a new player (0 goals). Your real account data is unchanged.
+            </p>
+            <button
+              type="button"
+              onClick={restoreActualAccount}
+              className="mt-3 rounded-lg border border-emerald-500 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+            >
+              Go back to my actual account
+            </button>
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-slate-900 dark:text-white">
             <SlidersHorizontal className="h-6 w-6 text-prove-600 dark:text-prove-400" />

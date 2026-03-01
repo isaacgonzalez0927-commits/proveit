@@ -19,6 +19,8 @@ interface PlantIllustrationProps {
   wateredGoals: number;
   /** Optional style variant used across all stages */
   variant?: GoalPlantVariant;
+  /** When true and at final stage, play the one-time "full grown" animation (default false) */
+  playFinalStageAnimation?: boolean;
   className?: string;
   size?: "default" | "large" | "small";
 }
@@ -182,6 +184,7 @@ export function PlantIllustration({
   wateringLevel,
   wateredGoals,
   variant = 1,
+  playFinalStageAnimation = false,
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
@@ -189,6 +192,7 @@ export function PlantIllustration({
   const { stageHeight, stageWidth } = getStageDimensions(size);
   const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
   const finalStage = isFinalStage(stage, variant);
+  const showFinalAnimation = finalStage && playFinalStageAnimation;
   const photoCandidates = useMemo(() => buildPhotoCandidates(stage, variant), [stage, variant]);
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [photoResolved, setPhotoResolved] = useState(false);
@@ -221,7 +225,7 @@ export function PlantIllustration({
   if (photoResolved && photoSrc) {
     return (
       <div
-        className={`relative inline-flex items-center justify-center ${finalStage ? "animate-plant-final" : ""} ${className}`}
+        className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
         style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", transformOrigin: "center bottom" }}
       >
         <img
@@ -256,6 +260,7 @@ export function PlantIllustration({
       wateringLevel={wateringLevel}
       wateredGoals={wateredGoals}
       variant={variant}
+      playFinalStageAnimation={playFinalStageAnimation}
       className={className}
       size={size}
     />
@@ -267,12 +272,14 @@ function SvgPlantIllustration({
   wateringLevel,
   wateredGoals: _wateredGoals,
   variant = 1,
+  playFinalStageAnimation = false,
   className = "",
   size = "default",
 }: PlantIllustrationProps) {
   const safeWater = clamp(wateringLevel, 0, 1);
   const variantSizeMultiplier = getVariantSizeMultiplier(stage, variant);
   const finalStage = isFinalStage(stage, variant);
+  const showFinalAnimation = finalStage && playFinalStageAnimation;
   const config = STAGE_CONFIG[stage];
   const id = useId();
   const { stageHeight, stageWidth } = getStageDimensions(size);
@@ -283,7 +290,7 @@ function SvgPlantIllustration({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center ${finalStage ? "animate-plant-final" : ""} ${className}`}
+      className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
       style={{ transform: `scale(${variantSizeMultiplier})`, transformOrigin: "center bottom" }}
     >
       <svg

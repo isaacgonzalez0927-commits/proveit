@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -18,6 +18,7 @@ import {
 import {
   getMaxPlantVariantForPlan,
   getPlantVariantsForPlan,
+  isFinalStage,
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
@@ -89,10 +90,24 @@ export default function BuddyPage() {
   });
   const router = useRouter();
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const hasPlayedFinalAnimationForGoal = useRef<Set<string>>(new Set());
+  const [, setFinalAnimationTick] = useState(0);
 
   useEffect(() => {
     setDeveloperSettings(getStoredDeveloperModeSettings());
   }, []);
+
+  // Mark goals that are at final stage so we only play the full-grown animation once per goal
+  useEffect(() => {
+    let added = false;
+    for (const entry of garden) {
+      if (isFinalStage(entry.stage.stage, entry.plantVariant) && !hasPlayedFinalAnimationForGoal.current.has(entry.goal.id)) {
+        hasPlayedFinalAnimationForGoal.current.add(entry.goal.id);
+        added = true;
+      }
+    }
+    if (added) setFinalAnimationTick((t) => t + 1);
+  }, [garden]);
 
   const isCreatorAccount = hasCreatorAccess(user?.email);
   const effectiveDeveloperSettings = isCreatorAccount
@@ -755,11 +770,12 @@ export default function BuddyPage() {
 
                 <div className="mt-2 flex min-h-[120px] items-center justify-center py-2">
                   <PlantIllustration
-                    key={`${entry.goal.id}-${entry.stage.stage}`}
+                    key={entry.goal.id}
                     stage={entry.stage.stage}
                     wateringLevel={entry.wateringLevel}
                     wateredGoals={entry.doneInCurrentWindow ? 1 : 0}
                     variant={entry.plantVariant}
+                    playFinalStageAnimation={isFinalStage(entry.stage.stage, entry.plantVariant) && !hasPlayedFinalAnimationForGoal.current.has(entry.goal.id)}
                   />
                 </div>
 
