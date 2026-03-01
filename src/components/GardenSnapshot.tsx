@@ -39,7 +39,7 @@ export function GardenSnapshot({
               className="flex h-[96px] w-[74px] shrink-0 items-end justify-center"
             >
               <PlantIllustration
-                key={`${plant.id}-${plant.stage}-${plant.variant}`}
+                key={`${plant.id}-${plant.stage}`}
                 stage={plant.stage}
                 wateringLevel={plant.wateringLevel}
                 wateredGoals={plant.wateringLevel >= 0.99 ? 1 : 0}

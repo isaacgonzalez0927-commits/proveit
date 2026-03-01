@@ -336,7 +336,8 @@ export default function BuddyPage() {
   const garden = goals.map((goal) => {
     const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
     const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
-    const stage = getPlantStageForStreak(streak); // stage is from streak only; changing plant style (variant) does not change stage
+    // Stage is derived from streak only. Changing plant style (variant) must not affect stage.
+    const stage = getPlantStageForStreak(streak);
     const isOnBreak = goal.isOnBreak === true;
     const due = isGoalDue(goal);
     const doneInCurrentWindow = isOnBreak
@@ -754,7 +755,7 @@ export default function BuddyPage() {
 
                 <div className="mt-2 flex min-h-[120px] items-center justify-center py-2">
                   <PlantIllustration
-                    key={`${entry.goal.id}-${entry.stage.stage}-${entry.plantVariant}`}
+                    key={`${entry.goal.id}-${entry.stage.stage}`}
                     stage={entry.stage.stage}
                     wateringLevel={entry.wateringLevel}
                     wateredGoals={entry.doneInCurrentWindow ? 1 : 0}
