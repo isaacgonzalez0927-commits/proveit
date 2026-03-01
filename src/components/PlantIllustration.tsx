@@ -117,6 +117,18 @@ function buildDefaultBaseNames(stage: PlantStageKey): string[] {
   ]);
 }
 
+/** Default base names by image stage number (so cactus flowering uses 5 not 6 for fallback). */
+function buildDefaultBaseNamesByImageStage(imageStageNumber: number): string[] {
+  return unique([
+    `plant-stage-${imageStageNumber}`,
+    `stage-${imageStageNumber}`,
+    `stage${imageStageNumber}`,
+    `plant-${imageStageNumber}`,
+    `plant${imageStageNumber}`,
+    `${imageStageNumber}`,
+  ]);
+}
+
 function expandToPhotoPaths(baseNames: string[]): string[] {
   const candidates: string[] = [];
   for (const directory of IMAGE_DIRECTORIES) {
@@ -130,8 +142,11 @@ function expandToPhotoPaths(baseNames: string[]): string[] {
 }
 
 function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
+  const logicalStageNumber = STAGE_TO_NUMBER[stage];
+  const imageStageNumber = getImageStageForVariant(logicalStageNumber, variant);
   const variantSpecificPaths = expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant));
-  const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNames(stage));
+  // Fallback must use same image stage number so e.g. cactus flowering looks for stage 5, not 6
+  const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNamesByImageStage(imageStageNumber));
   return unique([...variantSpecificPaths, ...fallbackPaths]);
 }
 
@@ -197,13 +212,6 @@ export function PlantIllustration({
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [photoResolved, setPhotoResolved] = useState(false);
 
-  // Reset image state when stage or variant change so we never show the wrong image
-  const stageVariantKey = `${stage}-${variant}`;
-  useEffect(() => {
-    setPhotoSrc(null);
-    setPhotoResolved(false);
-  }, [stageVariantKey]);
-
   useEffect(() => {
     let cancelled = false;
     setPhotoSrc(null);
@@ -251,16 +259,7 @@ export function PlantIllustration({
     );
   }
 
-  if (!photoResolved) {
-    return (
-      <div
-        className={`relative inline-flex items-center justify-center ${className}`}
-        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", minWidth: stageWidth, minHeight: stageHeight }}
-        aria-hidden
-      />
-    );
-  }
-
+  // Always show SVG while loading or when no image found — never leave plant invisible
   return (
     <SvgPlantIllustration
       stage={stage}
