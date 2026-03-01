@@ -143,15 +143,15 @@ function expandToPhotoPaths(baseNames: string[]): string[] {
   return candidates;
 }
 
+/** Minimal list: one primary path + one fallback. No 50+ candidates = no long wait. */
 function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
   const logicalStageNumber = STAGE_TO_NUMBER[stage];
   const imageStageNumber = getImageStageForVariant(logicalStageNumber, variant);
-  const variantSpecificPaths = expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant));
-  const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNamesByImageStage(imageStageNumber));
-  const all = unique([...variantSpecificPaths, ...fallbackPaths]);
-  // Try most likely path first so we usually resolve in one fast check
-  const primary = `/plants/plant-stage-${imageStageNumber}-${variant}.png`;
-  return all[0] === primary ? all : [primary, ...all.filter((p) => p !== primary)];
+  return [
+    `/plants/plant-stage-${imageStageNumber}-${variant}.png`,
+    `/plants/plant-stage-${imageStageNumber}-${variant}.webp`,
+    `/plants/plant-stage-${imageStageNumber}.png`,
+  ];
 }
 
 const STAGE_CONFIG: Record<
