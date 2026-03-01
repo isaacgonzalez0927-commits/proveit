@@ -78,8 +78,12 @@ export function DashboardTour() {
     finish();
   };
 
-  const next = () => {
-    setStep((prev) => (prev < TOUR_STEPS.length - 1 ? prev + 1 : prev));
+  const handleNextOrFinish = () => {
+    if (step < TOUR_STEPS.length - 1) {
+      setStep((prev) => prev + 1);
+    } else {
+      finish();
+    }
   };
 
   const prev = () => {
@@ -139,23 +143,13 @@ export function DashboardTour() {
                 Back
               </button>
             )}
-            {step < TOUR_STEPS.length - 1 ? (
-              <button
-                type="button"
-                onClick={next}
-                className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 dark:bg-white dark:text-black dark:hover:bg-slate-200"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={finish}
-                className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 dark:bg-white dark:text-black dark:hover:bg-slate-200"
-              >
-                Finish
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleNextOrFinish}
+              className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 dark:bg-white dark:text-black dark:hover:bg-slate-200"
+            >
+              {step < TOUR_STEPS.length - 1 ? "Next" : "Finish"}
+            </button>
           </div>
         </div>
       </div>

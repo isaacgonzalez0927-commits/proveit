@@ -171,6 +171,8 @@ export async function PATCH(request: NextRequest) {
   const body = await request.json();
   const { id, ...updates } = body;
 
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
   const dbUpdates: Record<string, unknown> = {};
   if ("title" in updates) dbUpdates.title = updates.title;
   if ("description" in updates) dbUpdates.description = updates.description ?? null;

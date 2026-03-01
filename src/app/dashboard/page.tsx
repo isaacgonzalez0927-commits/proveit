@@ -340,16 +340,19 @@ function DashboardContent() {
           </div>
 
           {goals.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-900/50">
-              <p className="text-slate-600 dark:text-slate-400">
-                Add a daily or weekly goal in the Garden to see today’s tasks and start proving it.
+            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+              <p className="text-base font-medium text-slate-700 dark:text-slate-300">
+                No goals yet
+              </p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                Add a daily or weekly goal in the Garden to see today’s tasks and start building your streak.
               </p>
               <Link
                 href="/buddy"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
               >
                 <Plus className="h-4 w-4" />
-                Add goal in Garden
+                Add your first goal
               </Link>
             </div>
           ) : (

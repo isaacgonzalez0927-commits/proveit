@@ -31,8 +31,19 @@ Use this when submitting ProveIt to the Apple App Store. The app already include
    - From Xcode/Capacitor: archive and upload, or use CI
    - As of 2025: build with Xcode 16+ / iOS 18 SDK for new submissions
 
-5. **TestFlight**
-   - Test the build before submitting for review
+5. **TestFlight (test before submitting)**
+   - In Xcode: Product → Archive. Then Distribute App → App Store Connect → Upload.
+   - In App Store Connect: go to your app → TestFlight. Wait for the build to process.
+   - Add internal testers (your Apple ID or team) or external testers (up to 10,000).
+   - Install the TestFlight app on your iPhone; accept the invite and install ProveIt.
+   - Test signup, goals, proof photo, and notifications on a real device. Fix any crashes or broken flows.
+   - When stable, submit the build from App Store Connect for App Review (same build can be promoted to production).
+
+6. **Before you submit for review**
+   - [ ] Privacy Policy and Support URLs work and are linked in the app.
+   - [ ] Account deletion works (Settings → Delete account).
+   - [ ] TestFlight build tested on at least one real device.
+   - [ ] Screenshots and description match the app; no placeholder text.
 
 ## Quick reference URLs (replace with your domain)
 

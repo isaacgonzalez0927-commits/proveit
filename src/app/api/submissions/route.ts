@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+type SupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
+
+async function getGoalIdsForUser(supabase: SupabaseClient, userId: string): Promise<string[]> {
+  const { data } = await supabase.from("goals").select("id").eq("user_id", userId);
+  return (data ?? []).map((r) => r.id);
+}
+
+async function goalBelongsToUser(supabase: SupabaseClient, goalId: string, userId: string): Promise<boolean> {
+  const { data } = await supabase.from("goals").select("id").eq("id", goalId).eq("user_id", userId).single();
+  return !!data?.id;
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ submissions: [] });
@@ -11,14 +23,19 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const goalId = searchParams.get("goalId");
 
-  let query = supabase
+  if (goalId) {
+    const allowed = await goalBelongsToUser(supabase, goalId, user.id);
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const goalIds = goalId ? [goalId] : await getGoalIdsForUser(supabase, user.id);
+  if (goalIds.length === 0) return NextResponse.json({ submissions: [] });
+
+  const { data, error } = await supabase
     .from("submissions")
     .select("*")
+    .in("goal_id", goalIds)
     .order("created_at", { ascending: false });
-
-  if (goalId) query = query.eq("goal_id", goalId);
-
-  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -45,6 +62,10 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { id, goalId, date, imageDataUrl, status, aiFeedback, verifiedAt } = body;
+
+  if (!goalId) return NextResponse.json({ error: "goalId is required" }, { status: 400 });
+  const allowed = await goalBelongsToUser(supabase, goalId, user.id);
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { data, error } = await supabase
     .from("submissions")
@@ -86,6 +107,13 @@ export async function PATCH(request: NextRequest) {
   const body = await request.json();
   const { id, ...updates } = body;
 
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  const { data: sub } = await supabase.from("submissions").select("goal_id").eq("id", id).single();
+  if (!sub?.goal_id) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const allowed = await goalBelongsToUser(supabase, sub.goal_id, user.id);
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const dbUpdates: Record<string, unknown> = {};
   if (updates.status != null) dbUpdates.status = updates.status;
   if (updates.aiFeedback != null) dbUpdates.ai_feedback = updates.aiFeedback;
@@ -112,6 +140,16 @@ export async function DELETE(request: NextRequest) {
   const goalId = searchParams.get("goalId");
   if (!id && !goalId) {
     return NextResponse.json({ error: "Missing id or goalId" }, { status: 400 });
+  }
+
+  if (goalId) {
+    const allowed = await goalBelongsToUser(supabase, goalId, user.id);
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  } else if (id) {
+    const { data: sub } = await supabase.from("submissions").select("goal_id").eq("id", id).single();
+    if (!sub?.goal_id) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const allowed = await goalBelongsToUser(supabase, sub.goal_id, user.id);
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   let query = supabase.from("submissions").delete();

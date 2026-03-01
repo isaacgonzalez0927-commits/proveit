@@ -424,8 +424,12 @@ export default function BuddyPage() {
             <button
               type="button"
               onClick={() => {
-                setShowCreateForm((prev) => !prev);
                 setGoalManagerMessage(null);
+                if (!canCreateDaily && !canCreateWeekly) {
+                  setShowUpgradePrompt(true);
+                  return;
+                }
+                setShowCreateForm((prev) => !prev);
               }}
               className="inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700"
             >
@@ -471,6 +475,17 @@ export default function BuddyPage() {
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               You can now create goals without leaving this page.
             </p>
+            {(!canCreateDaily || !canCreateWeekly) && (
+              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                {!canCreateDaily && !canCreateWeekly
+                  ? "You've reached your goal limit. Upgrade to add more."
+                  : !canCreateDaily
+                    ? "Daily goal limit reached. Upgrade or add a weekly goal."
+                    : "Weekly goal limit reached. Upgrade or add a daily goal."}
+                {" "}
+                <Link href="/pricing" className="font-medium underline">View plans</Link>
+              </p>
+            )}
 
             <input
               type="text"
@@ -696,14 +711,24 @@ export default function BuddyPage() {
 
         {goals.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-slate-600 dark:text-slate-400">
-              No plants yet. Create your first goal and pick a plant style to start your garden.
+            <p className="text-base font-medium text-slate-700 dark:text-slate-300">
+              No plants yet
+            </p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Create your first goal and pick a plant style to start your garden.
             </p>
             <button
               type="button"
-              onClick={() => setShowCreateForm(true)}
-              className="mt-3 inline-flex rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
+              onClick={() => {
+                if (!canCreateDaily && !canCreateWeekly) {
+                  setShowUpgradePrompt(true);
+                } else {
+                  setShowCreateForm(true);
+                }
+              }}
+              className="mt-5 inline-flex rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
             >
+              <Plus className="h-4 w-4 mr-1.5" />
               Add your first goal
             </button>
           </div>

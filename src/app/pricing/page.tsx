@@ -55,6 +55,9 @@ function PricingContent() {
               </span>
             </button>
           </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Yearly = pay once per year. Pro saves 25%, Premium saves 36% vs monthly.
+          </p>
         </div>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-3">
@@ -71,8 +74,8 @@ function PricingContent() {
           ))}
         </div>
 
-        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          Free: full plant growth, streak tracking, dashboard. Pro: 4 accent themes, Goal Gallery, Goal Break (up to 3 days). Premium: all 10 accent themes, 8 plant styles, weekly goal photo collages, Goal Break any duration.
+        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+          <strong>Free:</strong> Full plant growth, streak tracking, dashboard. &bull; <strong>Pro:</strong> 4 accent themes, Goal Gallery, Goal Break (up to 3 days). &bull; <strong>Premium:</strong> All 10 accent themes, 8 plant styles, weekly photo collages, Goal Break any duration.
         </p>
       </main>
     </>
