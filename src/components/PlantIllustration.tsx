@@ -62,16 +62,18 @@ function imageExists(src: string): Promise<boolean> {
     return Promise.resolve(false);
   }
   return new Promise((resolve) => {
-    const img = new window.Image();
-    img.onload = () => {
-      IMAGE_EXISTS_CACHE.set(src, true);
-      resolve(true);
+    const done = (exists: boolean) => {
+      IMAGE_EXISTS_CACHE.set(src, exists);
+      resolve(exists);
     };
-    img.onerror = () => {
-      IMAGE_EXISTS_CACHE.set(src, false);
-      resolve(false);
-    };
-    img.src = src;
+    fetch(src, { method: "HEAD", cache: "force-cache" })
+      .then((r) => done(r.ok))
+      .catch(() => {
+        const img = new window.Image();
+        img.onload = () => done(true);
+        img.onerror = () => done(false);
+        img.src = src;
+      });
   });
 }
 
@@ -145,9 +147,11 @@ function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): 
   const logicalStageNumber = STAGE_TO_NUMBER[stage];
   const imageStageNumber = getImageStageForVariant(logicalStageNumber, variant);
   const variantSpecificPaths = expandToPhotoPaths(buildVariantSpecificBaseNames(stage, variant));
-  // Fallback must use same image stage number so e.g. cactus flowering looks for stage 5, not 6
   const fallbackPaths = expandToPhotoPaths(buildDefaultBaseNamesByImageStage(imageStageNumber));
-  return unique([...variantSpecificPaths, ...fallbackPaths]);
+  const all = unique([...variantSpecificPaths, ...fallbackPaths]);
+  // Try most likely path first so we usually resolve in one fast check
+  const primary = `/plants/plant-stage-${imageStageNumber}-${variant}.png`;
+  return all[0] === primary ? all : [primary, ...all.filter((p) => p !== primary)];
 }
 
 const STAGE_CONFIG: Record<
@@ -219,16 +223,18 @@ export function PlantIllustration({
     setPhotoSrc(null);
     setPhotoResolved(false);
     const resolvePhoto = async () => {
-      // First candidate that exists wins (parallel checks, no 20s wait for all)
-      const found = await Promise.any(
-        photoCandidates.map((c) => imageExists(c).then((exists) => (exists ? c : Promise.reject())))
-      ).catch(() => null);
-      if (cancelled) return;
-      if (found) {
-        loadedForRef.current = { stage, variant };
-        setPhotoSrc(found);
-        setPhotoResolved(true);
-      } else {
+      for (const candidate of photoCandidates) {
+        if (cancelled) return;
+        const exists = await imageExists(candidate);
+        if (cancelled) return;
+        if (exists) {
+          loadedForRef.current = { stage, variant };
+          setPhotoSrc(candidate);
+          setPhotoResolved(true);
+          return;
+        }
+      }
+      if (!cancelled) {
         setPhotoSrc(null);
         setPhotoResolved(true);
       }
