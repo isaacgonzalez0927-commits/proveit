@@ -278,6 +278,24 @@ export function PlantIllustration({
     );
   }
 
+  // While loading the stage image, show a same-size placeholder to avoid flashing the generic SVG
+  if (!photoResolved) {
+    return (
+      <div
+        className={`relative inline-flex items-center justify-center ${className}`}
+        style={{
+          width: stageWidth,
+          height: stageHeight,
+          maxWidth: "100%",
+          maxHeight: "100%",
+          minHeight: stageHeight,
+          backgroundColor: "transparent",
+        }}
+        aria-hidden
+      />
+    );
+  }
+
   return (
     <SvgPlantIllustration
       stage={stage}

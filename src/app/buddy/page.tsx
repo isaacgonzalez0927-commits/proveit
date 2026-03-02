@@ -597,6 +597,11 @@ export default function BuddyPage() {
 
             <div className="mt-3">
               <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Plant style</p>
+              {goals.length === 0 && (
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  Style only affects the final stage — your plant looks the same until it&apos;s fully grown, then shows your chosen style.
+                </p>
+              )}
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {plantVariantsForPlan.map((variant) => (
                   <button
@@ -733,7 +738,7 @@ export default function BuddyPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {garden.map((entry) => (
               <article
                 key={entry.goal.id}
