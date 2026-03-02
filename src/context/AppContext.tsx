@@ -199,7 +199,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     if (!useSupabase) {
       setUserState(getStoredUser());
-      const devGuestMode = typeof window !== "undefined" && window.localStorage.getItem("proveit_dev_guest_mode");
+      // Restore locally stored plant style selections for demo / no-Supabase mode
+      setGoalPlantSelections(getStoredGoalPlantSelections());
+      const devGuestMode =
+        typeof window !== "undefined" && window.localStorage.getItem("proveit_dev_guest_mode");
       if (devGuestMode) {
         setGoalsState([]);
         setSubmissionsState([]);
