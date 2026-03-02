@@ -19,7 +19,7 @@ ProveIt is configured for iOS via Capacitor. The app loads your web app from a U
 3. **For production** – Deploy to Vercel (or any host), then update `capacitor.config.ts`:
    ```ts
    server: {
-     url: 'https://proveit-sooty.vercel.app',
+     url: 'https://proveit-goals.com',
      cleartext: false,
    },
    ```

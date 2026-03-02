@@ -24,7 +24,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Sign in with any email (demo; no password). Add goals, submit a photo, and see AI verification in action.
 
-**Live app**: [proveit-sooty.vercel.app](https://proveit-sooty.vercel.app)
+**Live app**: [proveit-goals.com](https://proveit-goals.com)
 
 ### One-time setup so the AI can run `pf` (push + deploy)
 
@@ -60,7 +60,7 @@ If “Create account with Google” does nothing or shows an error:
    `https://YOUR_SUPABASE_PROJECT_REF.supabase.co/auth/v1/callback`  
    (e.g. `https://yzxokiqggwpaovggwnsn.supabase.co/auth/v1/callback` for this project).
 3. **Supabase** → Authentication → URL Configuration → **Redirect URLs**: add your app URL, e.g.  
-   `https://proveit-sooty.vercel.app/api/auth/callback` and `http://localhost:3000/api/auth/callback` for local dev.
+   `https://proveit-goals.com/api/auth/callback` and `http://localhost:3000/api/auth/callback` for local dev.
 
 Redeploy or restart dev after changing env. If the button still fails, the app will show a short message under the form with what to check.
 

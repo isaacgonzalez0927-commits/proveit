@@ -226,6 +226,7 @@ export function PlantIllustration({
 
   useEffect(() => {
     let cancelled = false;
+    const loadingFor = { stage, variant };
     loadedForRef.current = null;
     setPhotoSrc(null);
     setPhotoResolved(false);
@@ -235,7 +236,8 @@ export function PlantIllustration({
         const exists = await imageExists(candidate);
         if (cancelled) return;
         if (exists) {
-          loadedForRef.current = { stage, variant };
+          if (cancelled) return;
+          loadedForRef.current = loadingFor;
           setPhotoSrc(candidate);
           setPhotoResolved(true);
           return;

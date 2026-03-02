@@ -4,9 +4,9 @@ Use this when submitting ProveIt to the Apple App Store. The app already include
 
 ## In-app (already done)
 
-- **Privacy Policy** – [/privacy](https://your-domain.com/privacy) — linked in Settings, Header, Footer, and before signup
-- **Terms of Use** – [/terms](https://your-domain.com/terms) — linked in Settings, Header, Footer, and before signup
-- **Support URL** – [/support](https://your-domain.com/support) — contact email and links; use as **Support URL** in App Store Connect
+- **Privacy Policy** – [proveit-goals.com/privacy](https://proveit-goals.com/privacy) — linked in Settings, Header, Footer, and before signup
+- **Terms of Use** – [proveit-goals.com/terms](https://proveit-goals.com/terms) — linked in Settings, Header, Footer, and before signup
+- **Support URL** – [proveit-goals.com/support](https://proveit-goals.com/support) — contact email and links; use as **Support URL** in App Store Connect
 - **Account deletion** – Settings → Delete account (required when app has accounts)
 - **Consent before signup** – “By creating an account you agree to our Privacy Policy and Terms of Use”
 - **iOS permission strings** – Camera and Photo Library usage descriptions in `ios/App/App/Info.plist`
@@ -14,8 +14,8 @@ Use this when submitting ProveIt to the Apple App Store. The app already include
 ## App Store Connect
 
 1. **App information**
-   - **Privacy Policy URL**: `https://your-production-domain.com/privacy`
-   - **Support URL**: `https://your-production-domain.com/support`
+   - **Privacy Policy URL**: `https://proveit-goals.com/privacy`
+   - **Support URL**: `https://proveit-goals.com/support`
    - **Category**: e.g. Health & Fitness or Productivity
    - **Age rating**: Complete the questionnaire (likely 4+)
 
@@ -45,10 +45,10 @@ Use this when submitting ProveIt to the Apple App Store. The app already include
    - [ ] TestFlight build tested on at least one real device.
    - [ ] Screenshots and description match the app; no placeholder text.
 
-## Quick reference URLs (replace with your domain)
+## Quick reference URLs
 
 | Field             | URL                                      |
 |-------------------|------------------------------------------|
-| Privacy Policy    | `https://YOUR_DOMAIN/privacy`            |
-| Terms of Use      | `https://YOUR_DOMAIN/terms`              |
-| Support           | `https://YOUR_DOMAIN/support`            |
+| Privacy Policy    | `https://proveit-goals.com/privacy`      |
+| Terms of Use      | `https://proveit-goals.com/terms`        |
+| Support           | `https://proveit-goals.com/support`      |
