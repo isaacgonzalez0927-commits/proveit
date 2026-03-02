@@ -145,13 +145,22 @@ function expandToPhotoPaths(baseNames: string[]): string[] {
 
 /**
  * Your convention: first number = growth stage, second number = style.
- * Style only affects the last stage — for stages 1–5 use plant-stage-N.png only.
+ * Style only affects the last stage for most plants — for stages 1–5 use plant-stage-N.png only.
+ * Cactus (variant 5) has its own images for every stage: plant-stage-1-5.png … plant-stage-5-5.png.
  * For final stage (6, or 5 for cactus) use plant-stage-N-V.png so each style has its own image.
  */
 function buildPhotoCandidates(stage: PlantStageKey, variant: GoalPlantVariant): string[] {
   const logicalStageNumber = STAGE_TO_NUMBER[stage];
   const imageStageNumber = getImageStageForVariant(logicalStageNumber, variant);
   const isFinalStageForVariant = isFinalStage(stage, variant);
+
+  // Cactus has its own growth stage images for all stages (1–5)
+  if (variant === CACTUS_VARIANT) {
+    return [
+      `/plants/plant-stage-${imageStageNumber}-${variant}.png`,
+      `/plants/plant-stage-${imageStageNumber}.png`,
+    ];
+  }
 
   if (isFinalStageForVariant) {
     return [
