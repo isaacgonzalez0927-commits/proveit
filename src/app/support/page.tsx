@@ -16,10 +16,10 @@ export default function SupportPage() {
           <p className="mt-1">
             For support, feedback, or account issues, email:{" "}
             <a
-              href="mailto:proveit-app@googlegroups.com"
+              href="mailto:contact.proveit.app@gmail.com"
               className="text-prove-600 hover:underline dark:text-prove-400"
             >
-              proveit-app@googlegroups.com
+              contact.proveit.app@gmail.com
             </a>
           </p>
         </section>
