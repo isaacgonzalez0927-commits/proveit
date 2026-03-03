@@ -85,10 +85,10 @@ export const PLANS: Plan[] = [
     name: "Pro",
     priceMonthly: 5.99,
     priceYearly: 54,
-    dailyGoals: 5,
-    weeklyGoals: 5,
+    dailyGoals: 4,
+    weeklyGoals: 3,
     features: [
-      "5 daily goals, 5 weekly goals",
+      "4 daily goals, 3 weekly goals",
       "6 plant styles (including strawberry)",
       "4 accent themes (Pink, Violet, Ocean, Teal)",
       "AI verification with feedback",
