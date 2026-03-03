@@ -512,12 +512,14 @@ function DashboardContent() {
           </div>
         </section>
 
-        <Link
-          href="/pricing"
-          className="mt-8 block rounded-xl border border-prove-200 bg-prove-50/50 p-4 text-center text-sm text-prove-800 dark:border-prove-800 dark:bg-prove-950/30 dark:text-prove-200"
-        >
-          Want more goals or Goal Gallery access? Upgrade to Pro →
-        </Link>
+        {user?.plan === "free" && (
+          <Link
+            href="/pricing"
+            className="mt-8 block rounded-xl border border-prove-200 bg-prove-50/50 p-4 text-center text-sm text-prove-800 dark:border-prove-800 dark:bg-prove-950/30 dark:text-prove-200"
+          >
+            Want more goals or Goal Gallery access? Upgrade to Pro →
+          </Link>
+        )}
       </main>
     </>
   );
