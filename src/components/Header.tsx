@@ -85,7 +85,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl pt-[env(safe-area-inset-top)] [border-color:var(--glass-border)] dark:bg-slate-950/80">
+      <header className="sticky top-0 z-40 border-b border-transparent pt-[env(safe-area-inset-top)] glass-surface">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="min-w-0">
             <Link
@@ -105,7 +105,7 @@ export function Header() {
                 e.stopPropagation();
                 setAccountOpen((o) => !o);
               }}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border bg-white/90 px-3 text-sm text-slate-600 shadow-sm backdrop-blur-md hover:bg-white hover:text-slate-900 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 [border-color:var(--glass-border)]"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-slate-600 shadow-sm hover:opacity-90 dark:text-slate-300 glass-surface"
               aria-expanded={accountOpen}
               aria-haspopup="true"
               aria-label="Account menu"
@@ -115,7 +115,7 @@ export function Header() {
             </button>
             {accountOpen && (
               <div
-                className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl border bg-white/95 py-2 shadow-lg backdrop-blur-xl dark:bg-slate-900/95 [border-color:var(--glass-border)]"
+                className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl py-2 shadow-xl glass-surface"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -179,7 +179,7 @@ export function Header() {
       {showBottomTabs && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <nav className="pointer-events-auto grid grid-cols-4 rounded-2xl border border-slate-200/80 bg-white/95 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.15)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/95 dark:shadow-[0_10px_30px_rgba(2,6,23,0.5)]">
+            <nav className="pointer-events-auto grid grid-cols-4 rounded-2xl p-1 shadow-[0_10px_40px_rgba(15,23,42,0.15)] glass-surface">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);

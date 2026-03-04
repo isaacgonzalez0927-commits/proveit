@@ -331,18 +331,20 @@
   --gradient-2: rgba(13, 148, 136, 0.08);
 }
 
-/* Apple-style liquid glass: translucent panels + thin light outline */
+/* Liquid glass: frosted blur + thin light border + top-left glossy highlight */
 :root {
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-border-subtle: rgba(255, 255, 255, 0.25);
-  --glass-bg: rgba(255, 255, 255, 0.2);
-  --glass-bg-strong: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-border-subtle: rgba(255, 255, 255, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.18);
+  --glass-bg-strong: rgba(255, 255, 255, 0.28);
+  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.08) 35%, transparent 60%);
 }
 .dark {
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-subtle: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(15, 23, 42, 0.5);
-  --glass-bg-strong: rgba(30, 41, 59, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-border-subtle: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(15, 23, 42, 0.45);
+  --glass-bg-strong: rgba(30, 41, 59, 0.55);
+  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 65%);
 }
 
 * {
@@ -396,33 +398,55 @@ body {
     border-color: var(--border);
   }
 
-  /* Glass panel: frosted blur + thin outline (Apple liquid glass style) */
+  /* Glass panel: frosted blur + thin light border + liquid highlight (top-left shine) */
   .glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--glass-highlight), var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border);
+    border-radius: 1rem;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   }
   .dark .glass-panel {
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
   }
 
-  /* Glass outline only (add to existing buttons/cards for the thin light edge) */
+  /* Glass outline only (thin light edge) */
   .glass-outline {
     border: 1px solid var(--glass-border);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   }
   .glass-outline-subtle {
     border: 1px solid var(--glass-border-subtle);
   }
 
-  /* Primary button with glass-style outline (keep solid fill, add light rim) */
+  /* Liquid glass surface: for nav, header, dropdowns – blur + border + highlight */
+  .glass-surface {
+    background: var(--glass-highlight), var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Primary button: liquid highlight overlay + thin light rim */
   .btn-glass-primary {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1px 2px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28) inset, 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  .btn-glass-primary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.06) 40%, transparent 65%);
   }
   .dark .btn-glass-primary {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset, 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset, 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  .dark .btn-glass-primary::before {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 45%, transparent 70%);
   }
 }
 

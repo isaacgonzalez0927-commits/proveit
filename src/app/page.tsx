@@ -365,7 +365,7 @@ function LandingContent() {
                   {loginError && (
                     <p className="text-[13px] text-red-500" role="alert">{loginError}</p>
                   )}
-                  <div className="rounded-xl overflow-hidden border bg-white/90 dark:bg-slate-800/70 backdrop-blur-sm [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0 [border-color:var(--glass-border)]">
+                  <div className="rounded-xl overflow-hidden [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0 glass-surface">
                     {authMode === "signup" && (
                       <label className="block">
                         <span className="sr-only">Name or nickname</span>
