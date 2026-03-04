@@ -14,7 +14,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { Header } from "@/components/Header";
 import { getPlan } from "@/lib/store";
 import { safeParseISO } from "@/lib/dateUtils";
 import { format, isThisWeek } from "date-fns";
@@ -48,7 +47,6 @@ function GalleryContent() {
   if (!user) {
     return (
       <>
-        <Header />
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12 pb-[max(6.5rem,env(safe-area-inset-bottom))] text-center">
           <p className="text-slate-600 dark:text-slate-400">
             Please sign in from the dashboard.
@@ -123,7 +121,6 @@ function GalleryContent() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">

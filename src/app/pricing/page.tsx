@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Zap, Crown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { Header } from "@/components/Header";
 import { PLANS, type PlanId } from "@/types";
 
 function PricingContent() {
@@ -21,7 +20,6 @@ function PricingContent() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="text-center">
           <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">

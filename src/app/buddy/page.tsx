@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { LoadingView } from "@/components/LoadingView";
 import { getDueDayName, getReminderDays, getSubmissionWindowMessage, isGoalDue, isWithinSubmissionWindow } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
@@ -23,7 +24,6 @@ import {
 } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getBreakDurationDays, isProBreakExpired, PRO_GOAL_BREAK_MAX_DAYS } from "@/lib/goalBreak";
-import { Header } from "@/components/Header";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
@@ -145,12 +145,9 @@ export default function BuddyPage() {
 
   if (!user) {
     return (
-      <>
-        <Header />
-        <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-        </main>
-      </>
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
+        <LoadingView />
+      </main>
     );
   }
 
@@ -404,7 +401,6 @@ export default function BuddyPage() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">

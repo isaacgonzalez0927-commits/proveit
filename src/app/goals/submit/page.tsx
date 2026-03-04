@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { Header } from "@/components/Header";
+import { useHideHeader } from "@/context/HideHeaderContext";
+import { LoadingView } from "@/components/LoadingView";
 import { isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
 import { format } from "date-fns";
@@ -90,6 +91,14 @@ function SubmitProofContent() {
   }, [user, goal]);
 
   const inWindow = !!goal && isWithinSubmissionWindow(goal);
+  const [, setHideHeader] = useHideHeader();
+  const hideHeaderForCamera =
+    step === "capture" &&
+    ((cameraStarted && !imageDataUrl) || (!cameraStarted && !imageDataUrl && !cameraError && !!goal && inWindow));
+  useEffect(() => {
+    setHideHeader(hideHeaderForCamera);
+    return () => setHideHeader(false);
+  }, [hideHeaderForCamera, setHideHeader]);
 
   useEffect(() => {
     if (!authReady || hasRedirected.current || pageLoading) return;
@@ -327,21 +336,16 @@ function SubmitProofContent() {
 
   if (!authReady || pageLoading || !user || !goal) {
     return (
-      <>
-        <Header />
-        <main className="mx-auto max-w-lg px-4 py-16 text-center">
-          <p className="text-slate-600 dark:text-slate-400">Loading…</p>
-        </main>
-      </>
+      <main className="flex min-h-[50vh] items-center justify-center">
+        <LoadingView />
+      </main>
     );
   }
 
   if (!inWindow) {
     const msg = getSubmissionWindowMessage(goal);
     return (
-      <>
-        <Header />
-        <main className="mx-auto max-w-lg px-4 py-8">
+      <main className="mx-auto max-w-lg px-4 py-8">
           <Link
             href="/buddy"
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
@@ -376,7 +380,6 @@ function SubmitProofContent() {
 
   return (
     <>
-      {!showFullScreenCamera && !showStartingCamera && <Header />}
       <main className="mx-auto max-w-lg px-4 py-8">
         {!showFullScreenCamera && !showStartingCamera && (
           <Link

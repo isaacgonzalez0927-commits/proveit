@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useHideHeader } from "@/context/HideHeaderContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -51,6 +52,7 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useApp();
+  const [hideHeader] = useHideHeader();
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +67,8 @@ export function Header() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [accountOpen]);
 
-  // Hide the top toolbar until someone is "logged in" and never show it on the onboarding screen
-  if (!user || pathname === "/") {
+  // Hide the top toolbar until someone is "logged in", on onboarding, or when page requests it (e.g. full-screen camera)
+  if (!user || pathname === "/" || hideHeader) {
     return null;
   }
 

@@ -37,6 +37,7 @@ import {
   saveGoalPlantSelections,
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
+import { LoadingView } from "@/components/LoadingView";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 
@@ -707,13 +708,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={value}>
       {showLoading ? (
         <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-prove-600 dark:border-slate-700 dark:border-t-prove-500"
-              aria-hidden
-            />
-            <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-          </div>
+          <LoadingView />
         </main>
       ) : (
         <>

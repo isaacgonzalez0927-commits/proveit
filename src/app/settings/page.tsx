@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, Trash2, Palette, Lock } from "lucide-react";
-import { Header } from "@/components/Header";
 import { useApp } from "@/context/AppContext";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { hasCreatorAccess } from "@/lib/accountAccess";
@@ -238,7 +237,6 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <>
-        <Header />
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12 pb-[max(6.5rem,env(safe-area-inset-bottom))] text-center">
           <p className="text-slate-600 dark:text-slate-400">Please sign in from the dashboard.</p>
           <Link href="/dashboard" className="mt-4 inline-block text-prove-600 hover:underline">
@@ -251,7 +249,6 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Header />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-slate-900 dark:text-white">

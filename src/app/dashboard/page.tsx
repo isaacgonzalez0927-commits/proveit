@@ -12,8 +12,8 @@ import {
   Camera,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { Header } from "@/components/Header";
 import { DashboardTour } from "@/components/DashboardTour";
+import { LoadingView } from "@/components/LoadingView";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { getPlan } from "@/lib/store";
 import { hasCreatorAccess } from "@/lib/accountAccess";
@@ -117,7 +117,7 @@ function DashboardContent() {
   if (!authReady || !user || !hasSelectedPlan) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading your dashboard…</p>
+        <LoadingView message="Loading your dashboard…" />
       </main>
     );
   }
@@ -169,7 +169,6 @@ function DashboardContent() {
 
   return (
     <>
-      <Header />
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-5">
