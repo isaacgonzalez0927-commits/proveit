@@ -39,6 +39,7 @@ const config: Config = {
         "fade-in": "fadeIn 0.4s ease-out",
         "slide-up": "slideUp 0.4s ease-out",
         "nav-enter": "navEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "page-enter": "pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards",
         "welcome": "welcome 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards",
         "welcome-step": "welcome 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards",
         "welcome-headline": "welcome 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards",
@@ -50,6 +51,10 @@ const config: Config = {
         fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
         slideUp: { "0%": { opacity: "0", transform: "translateY(12px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
         navEnter: {
+          "0%": { opacity: "0", filter: "blur(8px)", transform: "translateY(12px)" },
+          "100%": { opacity: "1", filter: "blur(0px)", transform: "translateY(0)" },
+        },
+        pageEnter: {
           "0%": { opacity: "0", filter: "blur(8px)", transform: "translateY(12px)" },
           "100%": { opacity: "1", filter: "blur(0px)", transform: "translateY(0)" },
         },
