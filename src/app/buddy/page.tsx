@@ -431,7 +431,7 @@ export default function BuddyPage() {
                 }
                 setShowCreateForm((prev) => !prev);
               }}
-              className="inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700"
+              className="inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 btn-glass-primary"
             >
               <Plus className="h-3.5 w-3.5" />
               {showCreateForm ? "Close add goal" : "Add goal in garden"}
@@ -633,7 +633,7 @@ export default function BuddyPage() {
               <button
                 type="submit"
                 disabled={isAddingGoal}
-                className="rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 disabled:opacity-70"
+                className="rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
               >
                 {isAddingGoal ? "Adding..." : "Add goal"}
               </button>

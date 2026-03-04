@@ -51,7 +51,7 @@ export function NotificationPrompt() {
           <div className="mt-3 flex gap-2">
             <button
               onClick={handleAllow}
-              className="rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+              className="rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
             >
               Allow
             </button>

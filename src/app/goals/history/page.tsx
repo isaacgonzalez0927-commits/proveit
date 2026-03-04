@@ -158,7 +158,7 @@ function GalleryContent() {
             </p>
             <Link
               href="/pricing"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-prove-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-prove-700"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-prove-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
             >
               View plans
               <ChevronRight className="h-4 w-4" />

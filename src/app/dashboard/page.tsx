@@ -193,7 +193,7 @@ function DashboardContent() {
             </div>
             <Link
               href="/buddy"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 btn-glass-primary"
             >
               Open Garden
               <ChevronRight className="h-4 w-4" />
@@ -276,7 +276,7 @@ function DashboardContent() {
               </div>
               <Link
                 href="/buddy"
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
               >
                 Open Garden
                 <ChevronRight className="h-4 w-4" />
@@ -332,7 +332,7 @@ function DashboardContent() {
             </h2>
             <Link
               href="/buddy"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 glass-outline-subtle"
             >
               Manage in Garden
               <ChevronRight className="h-4 w-4" />
@@ -349,7 +349,7 @@ function DashboardContent() {
               </p>
               <Link
                 href="/buddy"
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
               >
                 <Plus className="h-4 w-4" />
                 Add your first goal
@@ -396,7 +396,7 @@ function DashboardContent() {
                     ) : isWithinSubmissionWindow(goal) ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
                       >
                         <Camera className="h-4 w-4" />
                         Prove it
@@ -455,7 +455,7 @@ function DashboardContent() {
                     ) : canSubmitNow ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700"
+                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
                       >
                         <Camera className="h-4 w-4" />
                         Prove it

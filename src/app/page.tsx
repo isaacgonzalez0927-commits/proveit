@@ -304,7 +304,7 @@ function LandingContent() {
                 Set goals. Snap proof. Grow your garden.
               </p>
               <div
-                className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white/60 p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-sm animate-welcome-list [animation-fill-mode:forwards] dark:border-slate-700/50 dark:bg-slate-900/40"
+                className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-2xl border p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-xl animate-welcome-list [animation-fill-mode:forwards] glass-panel [border-color:var(--glass-border)]"
               >
                 <ol className="space-y-[clamp(0.5rem,2vh,1rem)] text-left text-[clamp(1rem,3.5vmin,1.5rem)] leading-snug text-slate-600 dark:text-slate-400">
                   <li className="flex gap-4">
@@ -331,7 +331,7 @@ function LandingContent() {
                     setLoginError("");
                     goTo(1);
                   }}
-                  className="rounded-full border border-slate-300 px-3 py-[clamp(0.4rem,1.8vh,0.7rem)] text-[clamp(0.8rem,2.4vmin,1rem)] font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900/60"
+                  className="rounded-full border px-3 py-[clamp(0.4rem,1.8vh,0.7rem)] text-[clamp(0.8rem,2.4vmin,1rem)] font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900/60 glass-outline-subtle [border-color:var(--glass-border)]"
                 >
                   I already have an account
                 </button>
@@ -342,7 +342,7 @@ function LandingContent() {
                     setLoginError("");
                     goTo(1);
                   }}
-                  className="rounded-full bg-prove-600 px-[clamp(1.25rem,4.5vw,1.75rem)] py-[clamp(0.6rem,2.5vh,0.9rem)] text-[clamp(0.9375rem,2.75vmin,1.125rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400"
+                  className="rounded-full bg-prove-600 px-[clamp(1.25rem,4.5vw,1.75rem)] py-[clamp(0.6rem,2.5vh,0.9rem)] text-[clamp(0.9375rem,2.75vmin,1.125rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400 btn-glass-primary"
                 >
                   Get started
                 </button>
@@ -365,7 +365,7 @@ function LandingContent() {
                   {loginError && (
                     <p className="text-[13px] text-red-500" role="alert">{loginError}</p>
                   )}
-                  <div className="rounded-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/50 [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0">
+                  <div className="rounded-xl overflow-hidden border bg-white/90 dark:bg-slate-800/70 backdrop-blur-sm [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0 [border-color:var(--glass-border)]">
                     {authMode === "signup" && (
                       <label className="block">
                         <span className="sr-only">Name or nickname</span>
@@ -410,7 +410,7 @@ function LandingContent() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full rounded-xl bg-prove-600 dark:bg-prove-500 py-2.5 text-[15px] font-semibold text-white active:opacity-90 disabled:opacity-70"
+                    className="w-full rounded-xl bg-prove-600 dark:bg-prove-500 py-2.5 text-[15px] font-semibold text-white active:opacity-90 disabled:opacity-70 btn-glass-primary"
                   >
                     {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
                   </button>
@@ -459,7 +459,7 @@ function LandingContent() {
                     className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] ${
                       plan.id === "free"
                         ? "border-prove-400 dark:border-prove-500 bg-prove-50/80 dark:bg-prove-950/40 shadow-sm shadow-prove-200/50 dark:shadow-prove-900/30"
-                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600"
+                        : "border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/70 backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600 [border-color:var(--glass-border)]"
                     }`}
                   >
                     <div className="px-4 pt-4 pb-2">

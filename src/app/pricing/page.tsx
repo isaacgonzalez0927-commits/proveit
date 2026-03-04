@@ -35,7 +35,7 @@ function PricingContent() {
               onClick={() => setBilling("monthly")}
               className={`rounded-lg px-4 py-2 text-sm font-medium ${
                 billing === "monthly"
-                  ? "bg-prove-600 text-white"
+                  ? "bg-prove-600 text-white btn-glass-primary"
                   : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
               }`}
             >
@@ -45,7 +45,7 @@ function PricingContent() {
               onClick={() => setBilling("yearly")}
               className={`rounded-lg px-4 py-2 text-sm font-medium ${
                 billing === "yearly"
-                  ? "bg-prove-600 text-white"
+                  ? "bg-prove-600 text-white btn-glass-primary"
                   : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
               }`}
             >
@@ -172,7 +172,7 @@ function PricingCard({
               isPremium
                 ? "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
                 : isPro
-                  ? "bg-prove-600 text-white hover:bg-prove-700"
+                  ? "bg-prove-600 text-white hover:bg-prove-700 btn-glass-primary"
                   : isFree
                     ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                     : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"

@@ -524,7 +524,7 @@ function SubmitProofContent() {
                   </button>
                   <button
                     onClick={submitForVerification}
-                    className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700"
+                    className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
                   >
                     Prove it
                   </button>
@@ -573,7 +573,7 @@ function SubmitProofContent() {
             <div className="mt-6 flex gap-3">
               <Link
                 href="/dashboard"
-                className="flex-1 rounded-lg bg-prove-600 py-3 text-center font-medium text-white hover:bg-prove-700"
+                className="flex-1 rounded-lg bg-prove-600 py-3 text-center font-medium text-white hover:bg-prove-700 btn-glass-primary"
               >
                 Back to dashboard
               </Link>

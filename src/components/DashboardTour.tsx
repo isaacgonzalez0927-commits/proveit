@@ -97,7 +97,7 @@ export function DashboardTour() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-4 text-sm shadow-xl dark:bg-slate-900">
+      <div className="w-full max-w-sm rounded-2xl border bg-white/95 p-4 text-sm shadow-xl backdrop-blur-xl dark:bg-slate-900/95 [border-color:var(--glass-border)]">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
           Step {step + 1} of {stepCount}
         </p>

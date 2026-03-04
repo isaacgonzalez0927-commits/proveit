@@ -47,7 +47,7 @@ export function UpgradePromptModal({
           <Link
             href="/pricing"
             onClick={onClose}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
           >
             View Pro & Premium plans
             <ChevronRight className="h-4 w-4" />

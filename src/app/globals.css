@@ -331,6 +331,20 @@
   --gradient-2: rgba(13, 148, 136, 0.08);
 }
 
+/* Apple-style liquid glass: translucent panels + thin light outline */
+:root {
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-border-subtle: rgba(255, 255, 255, 0.25);
+  --glass-bg: rgba(255, 255, 255, 0.2);
+  --glass-bg-strong: rgba(255, 255, 255, 0.35);
+}
+.dark {
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(15, 23, 42, 0.5);
+  --glass-bg-strong: rgba(30, 41, 59, 0.6);
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -380,6 +394,35 @@ body {
   
   .border-theme {
     border-color: var(--border);
+  }
+
+  /* Glass panel: frosted blur + thin outline (Apple liquid glass style) */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+  .dark .glass-panel {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Glass outline only (add to existing buttons/cards for the thin light edge) */
+  .glass-outline {
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  }
+  .glass-outline-subtle {
+    border: 1px solid var(--glass-border-subtle);
+  }
+
+  /* Primary button with glass-style outline (keep solid fill, add light rim) */
+  .btn-glass-primary {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .dark .btn-glass-primary {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset, 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 }
 
