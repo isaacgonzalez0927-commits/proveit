@@ -115,7 +115,7 @@ export function Header() {
             </button>
             {accountOpen && (
               <div
-                className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl py-2 shadow-xl glass-surface"
+                className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl py-2 shadow-xl glass-dropdown"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -177,9 +177,9 @@ export function Header() {
       </header>
 
       {showBottomTabs && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40" key={pathname}>
           <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <nav className="pointer-events-auto grid grid-cols-4 rounded-2xl p-1 shadow-[0_10px_40px_rgba(15,23,42,0.15)] glass-surface">
+            <nav className="pointer-events-auto grid grid-cols-4 rounded-2xl p-1 shadow-[0_10px_40px_rgba(15,23,42,0.15)] glass-nav animate-nav-enter">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);
