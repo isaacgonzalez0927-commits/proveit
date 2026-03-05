@@ -368,7 +368,6 @@ function SubmitProofContent() {
             </Link>
           </div>
         </main>
-      </>
     );
   }
 
