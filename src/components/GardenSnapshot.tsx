@@ -1,7 +1,6 @@
 "use client";
 
 import { PlantIllustration, type PlantStageKey } from "@/components/PlantIllustration";
-import { SproutSilhouette } from "@/components/SproutSilhouette";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
 
 export interface GardenSnapshotPlant {
@@ -29,8 +28,7 @@ export function GardenSnapshot({
   return (
     <div className={className}>
       {visiblePlants.length === 0 ? (
-        <div className="flex min-h-[100px] flex-col items-center justify-center gap-3 text-center">
-          <SproutSilhouette className="opacity-60" />
+        <div className="flex min-h-[100px] items-center justify-center text-center">
           <p className="max-w-[22ch] text-xs text-slate-600 dark:text-slate-400">{emptyLabel}</p>
         </div>
       ) : (
