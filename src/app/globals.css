@@ -26,8 +26,8 @@
   --text-primary: #0f172a;
   --text-muted: #64748b;
   --border: #e2e8f0;
-  --gradient-1: rgba(34, 197, 94, 0.08);
-  --gradient-2: rgba(22, 163, 74, 0.08);
+  --gradient-1: rgba(34, 197, 94, 0.2);
+  --gradient-2: rgba(22, 163, 74, 0.14);
   color-scheme: light;
 }
 
@@ -61,8 +61,8 @@
   --text-primary: #1f0f18;
   --text-muted: #831843;
   --border: #fce7f3;
-  --gradient-1: rgba(236, 72, 153, 0.08);
-  --gradient-2: rgba(219, 39, 119, 0.08);
+  --gradient-1: rgba(236, 72, 153, 0.2);
+  --gradient-2: rgba(219, 39, 119, 0.14);
 }
 
 :root[data-accent-theme="pink"].dark {
@@ -93,8 +93,8 @@
   --text-primary: #1e0f2e;
   --text-muted: #6b4d8f;
   --border: #ede9fe;
-  --gradient-1: rgba(139, 92, 246, 0.08);
-  --gradient-2: rgba(124, 58, 237, 0.08);
+  --gradient-1: rgba(139, 92, 246, 0.2);
+  --gradient-2: rgba(124, 58, 237, 0.14);
 }
 
 :root[data-accent-theme="violet"].dark {
@@ -125,8 +125,8 @@
   --text-primary: #0c1e2e;
   --text-muted: #0e7490;
   --border: #e0f2fe;
-  --gradient-1: rgba(14, 165, 233, 0.08);
-  --gradient-2: rgba(2, 132, 199, 0.08);
+  --gradient-1: rgba(14, 165, 233, 0.2);
+  --gradient-2: rgba(2, 132, 199, 0.14);
 }
 
 :root[data-accent-theme="ocean"].dark {
@@ -157,8 +157,8 @@
   --text-primary: #1c0f07;
   --text-muted: #9a3412;
   --border: #ffedd5;
-  --gradient-1: rgba(249, 115, 22, 0.08);
-  --gradient-2: rgba(234, 88, 12, 0.08);
+  --gradient-1: rgba(249, 115, 22, 0.2);
+  --gradient-2: rgba(234, 88, 12, 0.14);
 }
 
 :root[data-accent-theme="orange"].dark {
@@ -189,8 +189,8 @@
   --text-primary: #1c1305;
   --text-muted: #92400e;
   --border: #fef3c7;
-  --gradient-1: rgba(245, 158, 11, 0.08);
-  --gradient-2: rgba(217, 119, 6, 0.08);
+  --gradient-1: rgba(245, 158, 11, 0.2);
+  --gradient-2: rgba(217, 119, 6, 0.14);
 }
 
 :root[data-accent-theme="amber"].dark {
@@ -221,8 +221,8 @@
   --text-primary: #1f0f0f;
   --text-muted: #991b1b;
   --border: #fee2e2;
-  --gradient-1: rgba(239, 68, 68, 0.08);
-  --gradient-2: rgba(220, 38, 38, 0.08);
+  --gradient-1: rgba(239, 68, 68, 0.2);
+  --gradient-2: rgba(220, 38, 38, 0.14);
 }
 
 :root[data-accent-theme="red"].dark {
@@ -253,8 +253,8 @@
   --text-primary: #1e0f2e;
   --text-muted: #6b21a8;
   --border: #f3e8ff;
-  --gradient-1: rgba(168, 85, 247, 0.08);
-  --gradient-2: rgba(147, 51, 234, 0.08);
+  --gradient-1: rgba(168, 85, 247, 0.2);
+  --gradient-2: rgba(147, 51, 234, 0.14);
 }
 
 :root[data-accent-theme="purple"].dark {
@@ -285,8 +285,8 @@
   --text-primary: #0f0f1e;
   --text-muted: #4338ca;
   --border: #e0e7ff;
-  --gradient-1: rgba(99, 102, 241, 0.08);
-  --gradient-2: rgba(79, 70, 229, 0.08);
+  --gradient-1: rgba(99, 102, 241, 0.2);
+  --gradient-2: rgba(79, 70, 229, 0.14);
 }
 
 :root[data-accent-theme="indigo"].dark {
@@ -317,8 +317,8 @@
   --text-primary: #0d1f1e;
   --text-muted: #0f766e;
   --border: #ccfbf1;
-  --gradient-1: rgba(20, 184, 166, 0.08);
-  --gradient-2: rgba(13, 148, 136, 0.08);
+  --gradient-1: rgba(20, 184, 166, 0.2);
+  --gradient-2: rgba(13, 148, 136, 0.14);
 }
 
 :root[data-accent-theme="teal"].dark {
@@ -360,8 +360,8 @@ html {
 
 body {
   background:
-    radial-gradient(1200px 600px at 80% -10%, var(--gradient-1), transparent 60%),
-    radial-gradient(1000px 500px at 0% 0%, var(--gradient-2), transparent 65%),
+    radial-gradient(1400px 700px at 80% -10%, var(--gradient-1), transparent 55%),
+    radial-gradient(1200px 600px at 0% 0%, var(--gradient-2), transparent 60%),
     var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-dm-sans, system-ui, sans-serif);
@@ -444,20 +444,20 @@ body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   }
 
-  /* Cards: liquid glass, more transparent + clear shine */
+  /* Cards: liquid glass – translucent so background shows, clear rim */
   .glass-card {
-    --card-glass-bg: rgba(255, 255, 255, 0.45);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.14) 40%, transparent 72%);
+    --card-glass-bg: rgba(255, 255, 255, 0.32);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 42%, transparent 70%);
     background:
-      radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.65) 0%, transparent 55%),
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
       var(--card-glass-highlight),
       var(--card-glass-bg);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.16) inset,
-      0 10px 30px rgba(15, 23, 42, 0.18);
+      0 0 0 1px rgba(255, 255, 255, 0.25) inset,
+      0 8px 24px rgba(15, 23, 42, 0.12);
   }
   .dark .glass-card {
     --card-glass-bg: rgba(15, 23, 42, 0.82);
