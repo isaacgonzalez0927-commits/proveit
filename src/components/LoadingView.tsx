@@ -8,7 +8,7 @@ export function LoadingView({ message = "Loading…" }: { message?: string }) {
         alt=""
         width={56}
         height={56}
-        className="shrink-0 dark:brightness-110 dark:saturate-125 dark:contrast-105"
+        className="proveit-mark shrink-0"
       />
       <div
         className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-prove-600 dark:border-slate-700 dark:border-t-prove-500"

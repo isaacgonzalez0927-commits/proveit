@@ -100,7 +100,7 @@ export function Header() {
                 alt=""
                 width={28}
                 height={28}
-                className="shrink-0 dark:brightness-110 dark:saturate-125 dark:contrast-105"
+                className="proveit-mark shrink-0"
               />
               <span>Proveit</span>
             </Link>
