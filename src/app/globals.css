@@ -444,20 +444,27 @@ body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   }
 
-  /* Cards: liquid glass, readable (less transparent) + shine */
+  /* Cards: liquid glass, more transparent + clear shine */
   .glass-card {
-    --card-glass-bg: rgba(255, 255, 255, 0.7);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 70%);
-    background: var(--card-glass-highlight), var(--card-glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    --card-glass-bg: rgba(255, 255, 255, 0.45);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.14) 40%, transparent 72%);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.65) 0%, transparent 55%),
+      var(--card-glass-highlight),
+      var(--card-glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 4px 16px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+      0 10px 30px rgba(15, 23, 42, 0.18);
   }
   .dark .glass-card {
-    --card-glass-bg: rgba(15, 23, 42, 0.75);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 70%);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 4px 16px rgba(0, 0, 0, 0.2);
+    --card-glass-bg: rgba(15, 23, 42, 0.72);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, transparent 72%);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 10px 30px rgba(0, 0, 0, 0.6);
   }
 
   /* Secondary/outline button: liquid glass border + subtle shine */
@@ -550,13 +557,9 @@ body {
     overflow: hidden;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    background:
-      radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 55%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(0, 0, 0, 0.12) 100%),
-      rgba(var(--prove-500-rgb), 0.4);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.55) inset,
-      0 8px 22px rgba(15, 23, 42, 0.32);
+      0 0 0 1px rgba(255, 255, 255, 0.45) inset,
+      0 8px 22px rgba(15, 23, 42, 0.3);
   }
   .btn-glass-primary::before {
     content: "";
@@ -566,16 +569,12 @@ body {
     pointer-events: none;
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.7) 0%,
-      rgba(255, 255, 255, 0.2) 35%,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.16) 38%,
       transparent 70%
     );
   }
   .dark .btn-glass-primary {
-    background:
-      radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.24) 100%),
-      rgba(var(--prove-500-rgb), 0.7);
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.3) inset,
       0 8px 22px rgba(0, 0, 0, 0.5);
@@ -583,8 +582,8 @@ body {
   .dark .btn-glass-primary::before {
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.4) 0%,
-      rgba(255, 255, 255, 0.12) 35%,
+      rgba(255, 255, 255, 0.32) 0%,
+      rgba(255, 255, 255, 0.1) 38%,
       transparent 70%
     );
   }
