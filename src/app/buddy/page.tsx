@@ -26,6 +26,7 @@ import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getBreakDurationDays, isProBreakExpired, PRO_GOAL_BREAK_MAX_DAYS } from "@/lib/goalBreak";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
+import { SproutSilhouette } from "@/components/SproutSilhouette";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
@@ -712,7 +713,10 @@ export default function BuddyPage() {
 
         {goals.length === 0 ? (
           <div className="rounded-2xl p-6 text-center glass-card">
-            <p className="text-base font-medium text-slate-700 dark:text-slate-300">
+            <div className="flex justify-center">
+              <SproutSilhouette className="opacity-50" />
+            </div>
+            <p className="mt-3 text-base font-medium text-slate-700 dark:text-slate-300">
               No plants yet
             </p>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">

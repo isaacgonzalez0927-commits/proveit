@@ -10,7 +10,9 @@ import {
   Target,
   CheckCircle2,
   Camera,
+  ChevronDown,
 } from "lucide-react";
+import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
 import { DashboardTour } from "@/components/DashboardTour";
 import { LoadingView } from "@/components/LoadingView";
@@ -46,6 +48,7 @@ function DashboardContent() {
   const [creatorActionBusy, setCreatorActionBusy] = useState(false);
   const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(DEFAULT_DEVELOPER_MODE_SETTINGS);
+  const [streakCardExpanded, setStreakCardExpanded] = useState(false);
   const thisWeekVerified = submissions.filter((s) => {
     if (s.status !== "verified") return false;
     const d = safeParseISO(s.date);
@@ -285,12 +288,22 @@ function DashboardContent() {
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl p-5 glass-card">
-              <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-amber-500" />
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  Current streak
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() => setStreakCardExpanded((e) => !e)}
+                className="flex w-full items-center justify-between gap-2 text-left"
+                aria-expanded={streakCardExpanded}
+              >
+                <div className="flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-amber-500" />
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    Current streak
+                  </span>
+                </div>
+                <ChevronDown
+                  className={clsx("h-5 w-5 shrink-0 text-slate-400 transition", streakCardExpanded && "rotate-180")}
+                />
+              </button>
               <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
                 {displayMaxStreak} {displayMaxStreak === 1 ? "day" : "days"}
               </p>
@@ -301,6 +314,24 @@ function DashboardContent() {
                     ? "Complete a goal to start your streak."
                     : "Keep submitting verified proofs to grow your streak."}
               </p>
+              {streakCardExpanded && (
+                <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                  <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">This week</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                      <div
+                        key={day}
+                        className="flex flex-col items-center rounded-lg bg-slate-50 px-2.5 py-1.5 dark:bg-slate-800/50"
+                      >
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{day}</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">
+                          {weeklyByDay[day] ?? 0}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl p-5 glass-card">
@@ -392,6 +423,18 @@ function DashboardContent() {
                         <CheckCircle2 className="h-4 w-4" />
                         Done
                       </span>
+                    ) : isWithinSubmissionWindow(goal) && todayProof?.imageDataUrl ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
+                        aria-label="View or change proof"
+                      >
+                        <img
+                          src={todayProof.imageDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </Link>
                     ) : isWithinSubmissionWindow(goal) ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
@@ -413,6 +456,10 @@ function DashboardContent() {
                 const thisWeekProof = subs.some((s) => {
                   const d = safeParseISO(s.date);
                   return !!d && isThisWeek(d) && s.status === "verified";
+                });
+                const thisWeekSub = subs.find((s) => {
+                  const d = safeParseISO(s.date);
+                  return !!d && isThisWeek(d) && s.imageDataUrl;
                 });
                 const due = isGoalDue(goal);
                 const dueLabel = getNextDueLabel(goal);
@@ -451,6 +498,18 @@ function DashboardContent() {
                         <CheckCircle2 className="h-4 w-4" />
                         Done
                       </span>
+                    ) : canSubmitNow && thisWeekSub?.imageDataUrl ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
+                        aria-label="View or change proof"
+                      >
+                        <img
+                          src={thisWeekSub.imageDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </Link>
                     ) : canSubmitNow ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}

@@ -17,6 +17,7 @@ import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
+import { ProveitLogo } from "./ProveitLogo";
 
 const APP_TABS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -92,9 +93,10 @@ export function Header() {
           <div className="min-w-0">
             <Link
               href="/dashboard"
-              className="block truncate font-display text-lg font-bold tracking-tight text-prove-700 dark:text-prove-400"
+              className="flex items-center gap-2 truncate font-display text-lg font-bold tracking-tight text-prove-700 dark:text-prove-400"
             >
-              Proveit
+              <ProveitLogo size={28} />
+              <span>Proveit</span>
             </Link>
             <p className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               {pageTitle}

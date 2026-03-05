@@ -31,9 +31,9 @@
   color-scheme: light;
 }
 
-/* Green theme - Dark mode */
+/* Green theme - Dark mode (the grind: deep navy) */
 .dark {
-  --bg-app: #020617;
+  --bg-app: #0F172A;
   --bg-card: rgba(15, 23, 42, 0.9);
   --text-primary: #f9fafb;
   --text-muted: #94a3b8;
@@ -359,10 +359,14 @@ html {
 }
 
 body {
+  /* Background soul: two large green blobs so glass has color to distort */
   background:
+    radial-gradient(1000px 1000px at 90% 0%, var(--gradient-1), transparent 50%),
+    radial-gradient(900px 900px at 0% 100%, var(--gradient-2), transparent 50%),
     radial-gradient(1400px 700px at 80% -10%, var(--gradient-1), transparent 55%),
     radial-gradient(1200px 600px at 0% 0%, var(--gradient-2), transparent 60%),
     var(--bg-app);
+  position: relative;
   color: var(--text-primary);
   font-family: var(--font-dm-sans, system-ui, sans-serif);
   min-height: 100vh;
@@ -370,6 +374,16 @@ body {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Light mode: soft mint-to-white mesh gradient base */
+html:not(.dark) body {
+  background:
+    radial-gradient(1000px 1000px at 90% 0%, var(--gradient-1), transparent 50%),
+    radial-gradient(900px 900px at 0% 100%, var(--gradient-2), transparent 50%),
+    radial-gradient(1400px 700px at 80% -10%, var(--gradient-1), transparent 55%),
+    radial-gradient(1200px 600px at 0% 0%, var(--gradient-2), transparent 60%),
+    linear-gradient(165deg, #e8f5e9 0%, #f1f8f2 35%, #ffffff 100%);
 }
 
 @layer utilities {
@@ -444,31 +458,20 @@ body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   }
 
-  /* Cards: liquid glass – translucent so background shows, clear rim */
+  /* Cards: real glass – very low opacity so blur distorts background */
   .glass-card {
-    --card-glass-bg: rgba(255, 255, 255, 0.32);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 42%, transparent 70%);
-    background:
-      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
-      var(--card-glass-highlight),
-      var(--card-glass-bg);
+    --card-glass-bg: rgba(255, 255, 255, 0.04);
+    background: var(--card-glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.25) inset,
-      0 8px 24px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
   }
   .dark .glass-card {
-    --card-glass-bg: rgba(15, 23, 42, 0.82);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 45%, transparent 75%);
-    background:
-      var(--card-glass-highlight),
-      var(--card-glass-bg);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-      0 8px 24px rgba(0, 0, 0, 0.4);
+    --card-glass-bg: rgba(15, 23, 42, 0.05);
+    background: var(--card-glass-bg);
+    border: 0.5px solid rgba(var(--prove-500-rgb), 0.35);
+    box-shadow: 0 0 0 0.5px rgba(var(--prove-500-rgb), 0.15);
   }
 
   /* Secondary/outline button: liquid glass border + subtle shine */
@@ -591,6 +594,28 @@ body {
       rgba(255, 255, 255, 0.04) 45%,
       transparent 75%
     );
+  }
+
+  /* Micro-interactions: press effect on all buttons */
+  button,
+  [role="button"],
+  .btn-glass,
+  .btn-glass-primary,
+  .btn-glass-outline,
+  a.btn-glass,
+  a.btn-glass-primary,
+  a.btn-glass-outline {
+    transition: transform 0.15s ease;
+  }
+  button:active,
+  [role="button"]:active,
+  .btn-glass:active,
+  .btn-glass-primary:active,
+  .btn-glass-outline:active,
+  a.btn-glass:active,
+  a.btn-glass-primary:active,
+  a.btn-glass-outline:active {
+    transform: scale(0.95);
   }
 }
 
