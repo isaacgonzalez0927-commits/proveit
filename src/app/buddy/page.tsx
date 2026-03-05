@@ -833,7 +833,7 @@ export default function BuddyPage() {
                 {entry.canSubmitNow && !entry.doneInCurrentWindow && !entry.submissionWindowMessage && (
                   <Link
                     href={`/goals/submit?goalId=${entry.goal.id}`}
-                    className="mt-2 inline-flex rounded-md bg-prove-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-prove-700"
+                    className="mt-2 inline-flex rounded-md bg-prove-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 btn-glass-primary"
                   >
                     Water now
                   </Link>
