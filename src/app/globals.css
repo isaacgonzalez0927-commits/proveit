@@ -430,7 +430,7 @@ body {
 
   /* Bottom toolbar: less transparent + strong top-left shine */
   .glass-nav {
-    --nav-glass-bg: rgba(255, 255, 255, 0.72);
+    --nav-glass-bg: rgba(255, 255, 255, 0.45);
     --nav-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 25%, rgba(255, 255, 255, 0.04) 50%, transparent 70%);
     background: var(--nav-glass-highlight), var(--nav-glass-bg);
     backdrop-filter: blur(24px);
@@ -439,7 +439,7 @@ body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
   }
   .dark .glass-nav {
-    --nav-glass-bg: rgba(15, 23, 42, 0.88);
+    --nav-glass-bg: rgba(15, 23, 42, 0.75);
     --nav-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 30%, transparent 60%);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   }
