@@ -444,6 +444,59 @@ body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   }
 
+  /* Cards: liquid glass, readable (less transparent) + shine */
+  .glass-card {
+    --card-glass-bg: rgba(255, 255, 255, 0.7);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 70%);
+    background: var(--card-glass-highlight), var(--card-glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+  .dark .glass-card {
+    --card-glass-bg: rgba(15, 23, 42, 0.75);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 70%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Secondary/outline button: liquid glass border + subtle shine */
+  .btn-glass {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  }
+  .btn-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  }
+  .dark .btn-glass::before {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+  }
+
+  /* Outline button: keep your border, add liquid glass shine only */
+  .btn-glass-outline {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  }
+  .btn-glass-outline::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+  }
+  .dark .btn-glass-outline::before {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  }
+
   /* Account dropdown: less transparent, same shine */
   .glass-dropdown {
     --dropdown-glass-bg: rgba(255, 255, 255, 0.92);

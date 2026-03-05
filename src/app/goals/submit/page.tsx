@@ -537,7 +537,7 @@ function SubmitProofContent() {
         )}
 
         {step === "uploading" && (
-          <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-900">
+          <div className="mt-8 flex flex-col items-center justify-center rounded-2xl py-16 glass-card">
             <Loader2 className="h-12 w-12 animate-spin text-prove-600" />
             <p className="mt-4 font-medium text-slate-900 dark:text-white">
               Verifying with AI…

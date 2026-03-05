@@ -332,7 +332,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <section className="mt-6 rounded-2xl p-5 glass-card">
           <h2 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
             <Palette className="h-4 w-4 text-prove-600 dark:text-prove-400" />
             Theme colors
@@ -378,7 +378,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <section className="mt-6 rounded-2xl p-5 glass-card">
           <h2 className="font-semibold text-slate-900 dark:text-white">Gallery display</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             These options control what is shown on the Goal Gallery page.
@@ -515,7 +515,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <section className="mt-6 rounded-2xl p-5 glass-card">
           <h2 className="font-semibold text-slate-900 dark:text-white">Legal & support</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Review legal policies and contact support.

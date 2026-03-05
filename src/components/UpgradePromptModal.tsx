@@ -30,7 +30,7 @@ export function UpgradePromptModal({
         aria-hidden
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+      <div className="relative w-full max-w-sm rounded-2xl p-5 shadow-xl glass-card">
         <button
           type="button"
           onClick={onClose}

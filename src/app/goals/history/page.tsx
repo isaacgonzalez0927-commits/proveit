@@ -178,7 +178,7 @@ function GalleryContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                <div className="rounded-xl p-3 glass-card">
                   <label className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                     Choose goal
                   </label>
@@ -205,7 +205,7 @@ function GalleryContent() {
                 {filteredGoals.map(({ goal, completedDates, subsByDate, streak }) => (
                   <section
                     key={goal.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                    className="rounded-2xl p-5 glass-card"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">

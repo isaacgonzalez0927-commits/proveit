@@ -259,7 +259,7 @@ function DashboardContent() {
         )}
 
         {goals.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="mt-4 rounded-2xl p-5 glass-card">
             <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
               <div className="flex gap-3">
                 <Flame className="h-8 w-8 shrink-0 text-amber-500" />
@@ -284,7 +284,7 @@ function DashboardContent() {
           </div>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-2xl p-5 glass-card">
               <div className="flex items-center gap-2">
                 <Flame className="h-5 w-5 text-amber-500" />
                 <span className="font-semibold text-slate-900 dark:text-white">
@@ -303,7 +303,7 @@ function DashboardContent() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-2xl p-5 glass-card">
               <div className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-prove-600 dark:text-prove-400" />
                 <span className="font-semibold text-slate-900 dark:text-white">
@@ -331,7 +331,7 @@ function DashboardContent() {
             </h2>
             <Link
               href="/buddy"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 glass-outline-subtle"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 btn-glass-outline"
             >
               Manage in Garden
               <ChevronRight className="h-4 w-4" />
@@ -363,7 +363,7 @@ function DashboardContent() {
                 return (
                   <li
                     key={goal.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+                    className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
                     <div className="flex items-center gap-3">
                       {verified ? (
@@ -421,7 +421,7 @@ function DashboardContent() {
                 return (
                   <li
                     key={goal.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+                    className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
                     <div className="flex items-center gap-3">
                       {thisWeekProof ? (
@@ -475,7 +475,7 @@ function DashboardContent() {
           <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
             Weekly recap
           </h2>
-          <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="mt-3 rounded-2xl p-5 glass-card">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">
