@@ -95,7 +95,13 @@ export function Header() {
               href="/dashboard"
               className="flex items-center gap-2 truncate font-display text-lg font-bold tracking-tight text-prove-600 dark:text-prove-300"
             >
-              <Image src="/proveit-mark.png" alt="" width={28} height={28} className="shrink-0" />
+              <Image
+                src="/proveit-mark.png"
+                alt=""
+                width={28}
+                height={28}
+                className="shrink-0 dark:brightness-110 dark:saturate-125 dark:contrast-105"
+              />
               <span>Proveit</span>
             </Link>
             <p className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
