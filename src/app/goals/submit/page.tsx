@@ -9,6 +9,7 @@ import { useHideHeader } from "@/context/HideHeaderContext";
 import { LoadingView } from "@/components/LoadingView";
 import { isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
+import { lightImpact, success } from "@/lib/haptics";
 import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
@@ -241,6 +242,7 @@ function SubmitProofContent() {
 
   const submitForVerification = useCallback(async () => {
     if (!imageDataUrl || !goal || !user) return;
+    lightImpact();
     setStep("uploading");
 
     let imageToStore = imageDataUrl;
@@ -558,7 +560,7 @@ function SubmitProofContent() {
               }`}
             >
               {verified ? (
-                <CheckCircle2 className="h-16 w-16 text-prove-600 dark:text-prove-400" />
+                <CheckCircle2 className="h-16 w-16 text-prove-600 dark:text-prove-400 animate-success-pop" />
               ) : (
                 <XCircle className="h-16 w-16 text-red-600 dark:text-red-400" />
               )}

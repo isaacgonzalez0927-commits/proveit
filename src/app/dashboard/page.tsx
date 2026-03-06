@@ -15,8 +15,9 @@ import {
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
 import { DashboardTour } from "@/components/DashboardTour";
-import { LoadingView } from "@/components/LoadingView";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { getPlan } from "@/lib/store";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
@@ -118,11 +119,7 @@ function DashboardContent() {
   }, [authReady, user, hasSelectedPlan, router]);
 
   if (!authReady || !user || !hasSelectedPlan) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
-        <LoadingView message="Loading your dashboard…" />
-      </main>
-    );
+    return <DashboardSkeleton />;
   }
 
   const creatorPendingDueGoals = goalsDueToday.filter((g) => !isGoalCompletedInCurrentWindow(g));
@@ -171,7 +168,7 @@ function DashboardContent() {
   };
 
   return (
-    <>
+    <PullToRefresh>
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-5">
@@ -579,7 +576,7 @@ function DashboardContent() {
           </Link>
         )}
       </main>
-    </>
+    </PullToRefresh>
   );
 }
 

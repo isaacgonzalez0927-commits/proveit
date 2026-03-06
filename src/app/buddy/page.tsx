@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { LoadingView } from "@/components/LoadingView";
+import { BuddySkeleton } from "@/components/BuddySkeleton";
 import { getDueDayName, getReminderDays, getSubmissionWindowMessage, isGoalDue, isWithinSubmissionWindow } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
@@ -144,11 +144,7 @@ export default function BuddyPage() {
   }, [goals, user?.plan]);
 
   if (!user) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
-        <LoadingView />
-      </main>
-    );
+    return <BuddySkeleton />;
   }
 
   const parseNonNegativeInt = (value: string): number | null => {
