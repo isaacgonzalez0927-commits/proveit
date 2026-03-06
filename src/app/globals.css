@@ -482,23 +482,24 @@ html:not(.dark) body {
 
   /* Cards: real glass – very low opacity so blur distorts background */
   .glass-card {
-    --card-glass-bg: rgba(255, 255, 255, 0.04);
-    background: var(--card-glass-bg);
+    --card-glass-bg: rgba(255, 255, 255, 0.08);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.06) 45%, transparent 75%);
+    background: var(--card-glass-highlight), var(--card-glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 1);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
   }
   .dark .glass-card {
-    --card-glass-bg: rgba(15, 23, 42, 0.55);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 45%, transparent 75%);
+    --card-glass-bg: rgba(15, 23, 42, 0.38);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 45%, transparent 75%);
     background: var(--card-glass-highlight), var(--card-glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 0.5px solid rgba(var(--prove-500-rgb), 0.35);
     box-shadow:
       0 0 0 0.5px rgba(var(--prove-500-rgb), 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   }
 
   /* Secondary/outline button: liquid glass border + subtle shine */
