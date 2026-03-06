@@ -595,7 +595,7 @@ html:not(.dark) body {
     -webkit-backdrop-filter: blur(18px);
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.45) inset,
-      0 8px 22px rgba(15, 23, 42, 0.3);
+      0 2px 8px rgba(15, 23, 42, 0.12);
   }
   .btn-glass-primary::before {
     content: "";
@@ -613,7 +613,7 @@ html:not(.dark) body {
   .dark .btn-glass-primary {
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.15) inset,
-      0 6px 20px rgba(0, 0, 0, 0.45);
+      0 2px 8px rgba(0, 0, 0, 0.25);
   }
   .dark .btn-glass-primary::before {
     background: linear-gradient(
