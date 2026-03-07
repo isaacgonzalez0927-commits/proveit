@@ -527,46 +527,6 @@ function DashboardContent() {
           )}
         </section>
 
-        <section className="mt-6">
-          <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-            Weekly recap
-          </h2>
-          <div className="mt-3 rounded-2xl p-5 glass-card">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {thisWeekVerified.length}
-                </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {thisWeekVerified.length === 0
-                    ? "Complete a goal this week to see your recap here."
-                    : "goals completed this week"}
-                </p>
-              </div>
-              <div className="flex flex-wrap justify-end gap-1 sm:gap-2">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div
-                    key={day}
-                    className="flex flex-col items-center rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-slate-800/50"
-                  >
-                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                      {day}
-                    </span>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">
-                      {weeklyByDay[day] ?? 0}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {thisWeekVerified.length > 0 && (
-              <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
-                Keep it up! Your plant gets healthier with every completed goal.
-              </p>
-            )}
-          </div>
-        </section>
-
         {user?.plan === "free" && (
           <Link
             href="/pricing"
