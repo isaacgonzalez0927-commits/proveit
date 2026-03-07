@@ -491,15 +491,15 @@ html:not(.dark) body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
   }
   .dark .glass-card {
-    --card-glass-bg: rgba(15, 23, 42, 0.38);
-    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 45%, transparent 75%);
+    --card-glass-bg: rgba(15, 23, 42, 0.22);
+    --card-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 45%, transparent 75%);
     background: var(--card-glass-highlight), var(--card-glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 0.5px solid rgba(var(--prove-500-rgb), 0.35);
     box-shadow:
-      0 0 0 0.5px rgba(var(--prove-500-rgb), 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+      0 0 0 0.5px rgba(var(--prove-500-rgb), 0.12),
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
   }
 
   /* Secondary/outline button: liquid glass border + subtle shine */
