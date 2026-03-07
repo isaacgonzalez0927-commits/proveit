@@ -40,6 +40,7 @@ import {
 import { LoadingView } from "@/components/LoadingView";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
+import { ThemeSync } from "@/components/ThemeSync";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -706,6 +707,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={value}>
+      <ThemeSync />
       {showLoading ? (
         <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
           <LoadingView />
