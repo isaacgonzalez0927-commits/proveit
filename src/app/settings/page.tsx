@@ -86,7 +86,7 @@ const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, goals, submissions, signOut, useSupabase, clearPlanSelectionForNewUser, restoreActualAccount } = useApp();
+  const { user, goals, submissions, signOut, useSupabase, supabase, clearPlanSelectionForNewUser, restoreActualAccount } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -97,6 +97,8 @@ export default function SettingsPage() {
   const [developerEnabled, setDeveloperEnabled] = useState(false);
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("green");
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [confirmEmailLoading, setConfirmEmailLoading] = useState(false);
+  const [confirmEmailMessage, setConfirmEmailMessage] = useState<string | null>(null);
   const isCreatorAccount = hasCreatorAccess(user?.email);
 
   useEffect(() => {
@@ -403,6 +405,49 @@ export default function SettingsPage() {
             ))}
           </div>
         </section>
+
+        {useSupabase && user?.email && (
+          <section className="mt-6 rounded-2xl p-5 glass-card">
+            <h2 className="font-semibold text-slate-900 dark:text-white">Confirm email</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Confirming your email secures your account and lets you reset your password if you forget it. If you didn&apos;t receive the confirmation link when you signed up, you can resend it below.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!supabase || !user?.email) return;
+                  setConfirmEmailMessage(null);
+                  setConfirmEmailLoading(true);
+                  try {
+                    const { error } = await supabase.auth.resend({
+                      type: "signup",
+                      email: user.email,
+                    });
+                    if (error) {
+                      setConfirmEmailMessage(error.message);
+                    } else {
+                      setConfirmEmailMessage("Check your inbox — we sent a new confirmation link.");
+                    }
+                  } catch {
+                    setConfirmEmailMessage("Something went wrong. Try again later.");
+                  } finally {
+                    setConfirmEmailLoading(false);
+                  }
+                }}
+                disabled={confirmEmailLoading}
+                className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
+              >
+                {confirmEmailLoading ? "Sending…" : "Resend confirmation email"}
+              </button>
+            </div>
+            {confirmEmailMessage && (
+              <p className={`mt-2 text-sm ${confirmEmailMessage.startsWith("Check") ? "text-prove-700 dark:text-prove-300" : "text-amber-700 dark:text-amber-300"}`} role="status">
+                {confirmEmailMessage}
+              </p>
+            )}
+          </section>
+        )}
 
         {isCreatorAccount && (
           <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/55 p-5 dark:border-amber-900/60 dark:bg-amber-950/25">

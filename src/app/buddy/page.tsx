@@ -30,7 +30,10 @@ import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
+import { CongratulationsModal } from "@/components/CongratulationsModal";
 import type { Goal, GoalFrequency, GracePeriod } from "@/types";
+
+const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
@@ -121,6 +124,8 @@ export default function BuddyPage() {
   const plantVariantsForPlan = getPlantVariantsForPlan(user?.plan ?? "free");
   const canUseGoalBreak = user?.plan === "pro" || user?.plan === "premium";
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [showFirstGoalCongrats, setShowFirstGoalCongrats] = useState(false);
+  const [showFirstFullGrownCongrats, setShowFirstFullGrownCongrats] = useState(false);
 
   useEffect(() => {
     if (!isCreatorAccount) return;
@@ -240,6 +245,7 @@ export default function BuddyPage() {
       return;
     }
 
+    const hadNoGoals = goals.length === 0;
     setIsAddingGoal(true);
     try {
       const result = await addGoal({
@@ -262,6 +268,7 @@ export default function BuddyPage() {
       setShowCreateForm(false);
       resetCreateGoalForm();
       setGoalManagerMessage("Goal added to your garden.");
+      if (hadNoGoals) setShowFirstGoalCongrats(true);
     } finally {
       setIsAddingGoal(false);
     }
@@ -385,7 +392,9 @@ export default function BuddyPage() {
 
   const hydratedNow = garden.filter((g) => g.doneInCurrentWindow).length;
   const goalsDueNow = garden.filter((g) => g.due).length;
-  const fullyGrownCount = garden.filter((g) => g.stage.stage === "flowering").length;
+  const fullyGrownCount = garden.filter((g) =>
+    isFinalStage(g.stage.stage, g.plantVariant)
+  ).length;
   const snapshotPlants = [...garden]
     .sort((a, b) => b.streak - a.streak)
     .map((entry) => ({
@@ -395,8 +404,32 @@ export default function BuddyPage() {
       variant: entry.plantVariant,
     }));
 
+  useEffect(() => {
+    if (fullyGrownCount < 1) return;
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(FIRST_FULL_GROWN_STORAGE_KEY)) return;
+    setShowFirstFullGrownCongrats(true);
+  }, [fullyGrownCount]);
+
   return (
     <>
+      {showFirstGoalCongrats && (
+        <CongratulationsModal
+          variant="first_goal"
+          onClose={() => setShowFirstGoalCongrats(false)}
+        />
+      )}
+      {showFirstFullGrownCongrats && (
+        <CongratulationsModal
+          variant="first_full_grown"
+          onClose={() => {
+            if (typeof window !== "undefined") {
+              localStorage.setItem(FIRST_FULL_GROWN_STORAGE_KEY, "1");
+            }
+            setShowFirstFullGrownCongrats(false);
+          }}
+        />
+      )}
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
