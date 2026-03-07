@@ -374,6 +374,7 @@ function SubmitProofContent() {
   }
 
   const showFullScreenCamera = step === "capture" && cameraStarted && !imageDataUrl;
+  const showFullScreenPreview = step === "capture" && cameraStarted && !!imageDataUrl;
   const showStartingCamera =
     step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && inWindow;
   const showCameraOrUploadChoice =
@@ -382,7 +383,7 @@ function SubmitProofContent() {
   return (
     <>
       <main className="mx-auto max-w-lg px-4 py-8">
-        {!showFullScreenCamera && !showStartingCamera && (
+        {!showFullScreenCamera && !showFullScreenPreview && !showStartingCamera && (
           <Link
             href="/buddy"
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
@@ -392,7 +393,7 @@ function SubmitProofContent() {
           </Link>
         )}
 
-        {!showFullScreenCamera && !showStartingCamera && (
+        {!showFullScreenCamera && !showFullScreenPreview && !showStartingCamera && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
@@ -506,34 +507,39 @@ function SubmitProofContent() {
           </div>
         )}
 
-        {step === "capture" && !showFullScreenCamera && imageDataUrl && (
-          <div className="mt-8 animate-fade-in">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
-              <div className="flex h-full flex-col items-center justify-center p-4">
-                <img
-                  src={imageDataUrl}
-                  alt="Your proof"
-                  className="max-h-full max-w-full rounded-lg object-contain"
-                />
-                <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={() => {
-                      setImageDataUrl(null);
-                      setCameraStarted(true);
-                      handleStartCamera();
-                    }}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-300"
-                  >
-                    Retake
-                  </button>
-                  <button
-                    onClick={submitForVerification}
-                    className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
-                  >
-                    Prove it
-                  </button>
-                </div>
-              </div>
+        {showFullScreenPreview && imageDataUrl && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-black">
+            <img
+              src={imageDataUrl}
+              alt="Your proof"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <button
+              onClick={() => {
+                stopCamera();
+                setCameraStarted(false);
+              }}
+              className="absolute left-4 top-[env(safe-area-inset-top,1rem)] z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
+              <button
+                onClick={() => {
+                  setImageDataUrl(null);
+                  handleStartCamera(facingMode);
+                }}
+                className="rounded-full bg-white/20 px-8 py-3.5 text-sm font-medium text-white backdrop-blur-sm hover:bg-white/30 btn-glass-outline"
+              >
+                Retake
+              </button>
+              <button
+                onClick={submitForVerification}
+                className="rounded-full bg-prove-600 px-8 py-3.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
+              >
+                Use
+              </button>
             </div>
           </div>
         )}
