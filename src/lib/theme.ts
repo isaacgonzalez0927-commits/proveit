@@ -15,19 +15,20 @@ export const ACCENT_THEME_OPTIONS: Array<{
   id: AccentTheme;
   label: string;
   swatchClassName: string;
+  swatchColor: string;
   paidOnly: boolean;
   premiumOnly: boolean;
 }> = [
-  { id: "green", label: "Green", swatchClassName: "bg-emerald-500", paidOnly: false, premiumOnly: false },
-  { id: "pink", label: "Pink", swatchClassName: "bg-pink-500", paidOnly: true, premiumOnly: false },
-  { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", paidOnly: true, premiumOnly: false },
-  { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", paidOnly: true, premiumOnly: false },
-  { id: "teal", label: "Teal", swatchClassName: "bg-teal-500", paidOnly: true, premiumOnly: false },
-  { id: "orange", label: "Orange", swatchClassName: "bg-orange-500", paidOnly: true, premiumOnly: true },
-  { id: "amber", label: "Amber", swatchClassName: "bg-amber-500", paidOnly: true, premiumOnly: true },
-  { id: "red", label: "Red", swatchClassName: "bg-red-500", paidOnly: true, premiumOnly: true },
-  { id: "purple", label: "Purple", swatchClassName: "bg-purple-500", paidOnly: true, premiumOnly: true },
-  { id: "indigo", label: "Indigo", swatchClassName: "bg-indigo-500", paidOnly: true, premiumOnly: true },
+  { id: "green", label: "Green", swatchClassName: "bg-emerald-500", swatchColor: "#10b981", paidOnly: false, premiumOnly: false },
+  { id: "pink", label: "Pink", swatchClassName: "bg-pink-500", swatchColor: "#ec4899", paidOnly: true, premiumOnly: false },
+  { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", swatchColor: "#8b5cf6", paidOnly: true, premiumOnly: false },
+  { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", swatchColor: "#0ea5e9", paidOnly: true, premiumOnly: false },
+  { id: "teal", label: "Teal", swatchClassName: "bg-teal-500", swatchColor: "#14b8a6", paidOnly: true, premiumOnly: false },
+  { id: "orange", label: "Orange", swatchClassName: "bg-orange-500", swatchColor: "#f97316", paidOnly: true, premiumOnly: true },
+  { id: "amber", label: "Amber", swatchClassName: "bg-amber-500", swatchColor: "#f59e0b", paidOnly: true, premiumOnly: true },
+  { id: "red", label: "Red", swatchClassName: "bg-red-500", swatchColor: "#ef4444", paidOnly: true, premiumOnly: true },
+  { id: "purple", label: "Purple", swatchClassName: "bg-purple-500", swatchColor: "#a855f7", paidOnly: true, premiumOnly: true },
+  { id: "indigo", label: "Indigo", swatchClassName: "bg-indigo-500", swatchColor: "#6366f1", paidOnly: true, premiumOnly: true },
 ];
 
 function isThemeMode(value: string | null): value is ThemeMode {
