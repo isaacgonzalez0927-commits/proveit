@@ -333,18 +333,18 @@
 
 /* Liquid glass: frosted blur + thin light border + top-left glossy highlight */
 :root {
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-border-subtle: rgba(255, 255, 255, 0.3);
-  --glass-bg: rgba(255, 255, 255, 0.18);
-  --glass-bg-strong: rgba(255, 255, 255, 0.28);
-  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.08) 35%, transparent 60%);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-border-subtle: rgba(255, 255, 255, 0.25);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-bg-strong: rgba(255, 255, 255, 0.18);
+  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 35%, transparent 60%);
 }
 .dark {
-  --glass-border: rgba(255, 255, 255, 0.18);
-  --glass-border-subtle: rgba(255, 255, 255, 0.1);
-  --glass-bg: rgba(15, 23, 42, 0.45);
-  --glass-bg-strong: rgba(30, 41, 59, 0.55);
-  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 65%);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(15, 23, 42, 0.25);
+  --glass-bg-strong: rgba(30, 41, 59, 0.35);
+  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 65%);
 }
 
 /* Header/loading mark: tint to match accent theme (icon is green by default) */
@@ -466,18 +466,18 @@ html:not(.dark) body {
 
   /* Bottom toolbar: less transparent + strong top-left shine */
   .glass-nav {
-    --nav-glass-bg: rgba(255, 255, 255, 0.2);
-    --nav-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.08) 25%, transparent 55%);
+    --nav-glass-bg: rgba(255, 255, 255, 0.12);
+    --nav-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 25%, transparent 55%);
     background: var(--nav-glass-highlight), var(--nav-glass-bg);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   }
   .dark .glass-nav {
-    --nav-glass-bg: rgba(15, 23, 42, 0.35);
-    --nav-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 60%);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    --nav-glass-bg: rgba(15, 23, 42, 0.2);
+    --nav-glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 30%, transparent 60%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   }
 
   /* Cards: real glass – very low opacity so blur distorts background */
