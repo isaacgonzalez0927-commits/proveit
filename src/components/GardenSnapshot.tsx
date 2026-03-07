@@ -32,7 +32,7 @@ export function GardenSnapshot({
           <p className="max-w-[22ch] text-xs text-slate-600 dark:text-slate-400">{emptyLabel}</p>
         </div>
       ) : (
-        <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-4">
+        <div className="flex flex-wrap items-end justify-center gap-0.5 sm:gap-1">
           {visiblePlants.map((plant) => (
             <div
               key={plant.id}
