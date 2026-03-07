@@ -98,7 +98,7 @@ export function DashboardTour() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-sm rounded-2xl p-4 text-sm shadow-xl glass-surface">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-black">
           Step {step + 1} of {stepCount}
         </p>
         {activeStep.emoji && (
@@ -106,17 +106,17 @@ export function DashboardTour() {
             {activeStep.emoji}
           </p>
         )}
-        <h2 className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">
+        <h2 className="mt-2 font-display text-lg font-bold text-black">
           {activeStep.title}
         </h2>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">{activeStep.body}</p>
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{activeStep.note}</p>
+        <p className="mt-2 text-black">{activeStep.body}</p>
+        <p className="mt-3 text-xs text-black">{activeStep.note}</p>
 
         <div className="mt-4 flex items-center justify-between">
           <button
             type="button"
             onClick={skip}
-            className="text-xs text-slate-500 underline-offset-2 hover:underline dark:text-slate-400"
+            className="text-xs text-black underline-offset-2 hover:underline opacity-80"
           >
             Skip
           </button>
@@ -127,7 +127,7 @@ export function DashboardTour() {
                 type="button"
                 onClick={() => setStep(i)}
                 className={`h-1.5 rounded-full ${
-                  step === i ? "w-4 bg-slate-900 dark:bg-white" : "w-2 bg-slate-300 dark:bg-slate-700"
+                  step === i ? "w-4 bg-black" : "w-2 bg-black/30"
                 }`}
                 aria-label={`Go to tour step ${i + 1}`}
               />
@@ -146,7 +146,7 @@ export function DashboardTour() {
             <button
               type="button"
               onClick={handleNextOrFinish}
-              className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 dark:bg-white dark:text-black dark:hover:bg-slate-200"
+                className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-black/90"
             >
               {step < TOUR_STEPS.length - 1 ? "Next" : "Finish"}
             </button>
