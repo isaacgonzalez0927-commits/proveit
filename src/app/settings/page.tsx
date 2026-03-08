@@ -369,7 +369,7 @@ export default function SettingsPage() {
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Confirming your email secures your account and lets you reset your password if you forget it. Resend the confirmation link below — it’s sent via Resend (same as password reset).
             </p>
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="mt-4">
               <button
                 type="button"
                 onClick={async () => {
@@ -401,16 +401,18 @@ export default function SettingsPage() {
                   }
                 }}
                 disabled={confirmEmailLoading}
-                className="w-full rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary sm:w-auto"
+                className="rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
               >
                 {confirmEmailLoading ? "Sending…" : "Resend confirmation email"}
               </button>
-              <Link
-                href="/support?topic=confirm-email"
-                className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-              >
-                Email not sent? Change email
-              </Link>
+              <p className="mt-1.5">
+                <Link
+                  href="/support?topic=confirm-email"
+                  className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  Email not sent? Change email
+                </Link>
+              </p>
             </div>
             {confirmEmailMessage && (
               <p className={`mt-3 text-sm ${confirmEmailMessage.startsWith("Check") ? "text-prove-700 dark:text-prove-300" : "text-amber-700 dark:text-amber-300"}`} role="status">
