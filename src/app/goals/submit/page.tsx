@@ -535,7 +535,7 @@ function SubmitProofContent() {
             >
               <X className="h-6 w-6" />
             </button>
-            <div className="absolute bottom-0 left-0 right-0 glass-overlay-bar flex justify-center gap-6 px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={() => {
                   setImageDataUrl(null);

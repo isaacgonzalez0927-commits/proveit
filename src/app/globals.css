@@ -480,25 +480,18 @@ html:not(.dark) body {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   }
 
-  /* Prove-it overlay: liquid glass bar at bottom (stretches to edges, blur) */
-  .glass-overlay-bar {
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.15) 20%, rgba(255, 255, 255, 0.08) 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  }
+  /* Prove-it overlay: only the buttons are glass (transparent + light blur), not the bar */
   .glass-overlay-bar-btn {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   }
   .glass-overlay-bar-btn-primary {
-    background: rgba(22, 163, 74, 0.35);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(22, 163, 74, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
   }
