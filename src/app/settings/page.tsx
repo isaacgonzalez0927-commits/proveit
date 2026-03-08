@@ -420,17 +420,24 @@ export default function SettingsPage() {
                   setConfirmEmailMessage(null);
                   setConfirmEmailLoading(true);
                   try {
+                    const origin = typeof window !== "undefined" ? window.location.origin : "";
                     const { error } = await supabase.auth.resend({
                       type: "signup",
                       email: user.email,
+                      options: origin ? { emailRedirectTo: `${origin}/api/auth/callback` } : undefined,
                     });
                     if (error) {
-                      setConfirmEmailMessage(error.message);
+                      const msg = error.message.toLowerCase();
+                      if (msg.includes("already") || msg.includes("confirmed")) {
+                        setConfirmEmailMessage("This email is already confirmed. You're all set.");
+                      } else {
+                        setConfirmEmailMessage(error.message);
+                      }
                     } else {
-                      setConfirmEmailMessage("Check your inbox — we sent a new confirmation link.");
+                      setConfirmEmailMessage("Check your inbox and spam folder.");
                     }
-                  } catch {
-                    setConfirmEmailMessage("Something went wrong. Try again later.");
+                  } catch (e) {
+                    setConfirmEmailMessage(e instanceof Error ? e.message : "Something went wrong. Try again later.");
                   } finally {
                     setConfirmEmailLoading(false);
                   }
