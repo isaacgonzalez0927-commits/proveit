@@ -16,6 +16,7 @@ export default function ChangeEmailPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
 
   useEffect(() => {
     if (!authReady) return;
@@ -23,6 +24,13 @@ export default function ChangeEmailPage() {
       router.replace("/dashboard");
       return;
     }
+    try {
+      const stored = typeof window !== "undefined" ? window.sessionStorage.getItem("proveit_change_email_sent") : null;
+      if (stored) {
+        setSubmittedEmail(stored);
+        setSuccess(true);
+      }
+    } catch { /* ignore */ }
   }, [authReady, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +64,9 @@ export default function ChangeEmailPage() {
         setError(err.message);
         return;
       }
+      setSubmittedEmail(trimmed);
       setSuccess(true);
+      if (typeof window !== "undefined") try { window.sessionStorage.setItem("proveit_change_email_sent", trimmed); } catch { /* ignore */ }
     } finally {
       setLoading(false);
     }
@@ -70,11 +80,14 @@ export default function ChangeEmailPage() {
     );
   }
 
+  const displayEmail = submittedEmail || "your new email address";
+
   if (success) {
     return (
       <main className="mx-auto max-w-md px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
         <Link
           href="/settings"
+          onClick={() => { try { window.sessionStorage.removeItem("proveit_change_email_sent"); } catch { /* ignore */ } }}
           className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -83,10 +96,11 @@ export default function ChangeEmailPage() {
         <div className="rounded-2xl border border-prove-200 bg-prove-50 p-6 dark:border-prove-800 dark:bg-prove-950/30">
           <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Check your new email</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            We sent a confirmation link to <strong>{newEmail.trim()}</strong>. Click that link to confirm the change. Your email will update after you confirm.
+            We sent a confirmation link to <strong>{displayEmail}</strong>. Click that link to confirm the change. Your email will update after you confirm.
           </p>
           <Link
             href="/settings"
+            onClick={() => { try { window.sessionStorage.removeItem("proveit_change_email_sent"); } catch { /* ignore */ } }}
             className="mt-6 inline-block rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
           >
             Back to settings

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (linkError) {
-    return NextResponse.json({ error: linkError.message }, { status: 400 });
+    return NextResponse.json({ message: "Check your email for the reset link." }, { status: 200 });
   }
 
   const props = linkData && typeof linkData === "object" && "properties" in linkData ? (linkData as { properties?: { action_link?: string } }).properties : undefined;
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     props?.action_link ?? (linkData as { action_link?: string } | null)?.action_link;
 
   if (!actionLink || typeof actionLink !== "string") {
-    return NextResponse.json({ error: "Could not generate reset link." }, { status: 500 });
+    return NextResponse.json({ message: "Check your email for the reset link." }, { status: 200 });
   }
 
   if (actionLink.startsWith("/")) {

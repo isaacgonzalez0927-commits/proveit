@@ -236,7 +236,7 @@ function LandingContent() {
         setResetSent(true);
         return;
       }
-      setLoginError(data.error ?? "Something went wrong. Try again.");
+      setLoginError("Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }

@@ -54,14 +54,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (linkError) {
-    const msg = linkError.message.toLowerCase();
-    if (msg.includes("already") || msg.includes("confirmed")) {
-      return NextResponse.json(
-        { message: "This email is already confirmed. You're all set." },
-        { status: 200 }
-      );
-    }
-    return NextResponse.json({ error: linkError.message }, { status: 400 });
+    return NextResponse.json(
+      { message: "Check your inbox and spam folder." },
+      { status: 200 }
+    );
   }
 
   const props = linkData && typeof linkData === "object" && "properties" in linkData ? (linkData as { properties?: { action_link?: string } }).properties : undefined;

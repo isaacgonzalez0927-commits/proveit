@@ -3,9 +3,16 @@ import type { CookieOptions } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const url = new URL(request.url);
+  const { searchParams } = url;
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const origin =
+    forwardedHost && forwardedProto
+      ? `${forwardedProto === "https" ? "https" : "http"}://${forwardedHost}`
+      : url.origin;
   const redirectTo = `${origin}${next}`;
 
   if (!code) {
@@ -39,7 +46,6 @@ export async function GET(request: Request) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    // Optionally redirect to login with error (for now just go home).
     return NextResponse.redirect(`${origin}/?error=auth`);
   }
 
