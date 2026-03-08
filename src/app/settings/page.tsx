@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { SlidersHorizontal, Trash2, Palette, Lock } from "lucide-react";
+import { SlidersHorizontal, Trash2, Lock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { PlantIllustration } from "@/components/PlantIllustration";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
   getStoredDeveloperModeSettings,
@@ -29,11 +28,6 @@ import {
   saveHiddenHistoryGoalIds,
   showGoalInHistory,
 } from "@/lib/historyVisibility";
-import {
-  getMaxPlantVariantForPlan,
-  getPlantVariantsForPlan,
-  type GoalPlantVariant,
-} from "@/lib/goalPlants";
 import {
   ACCENT_THEME_OPTIONS,
   canUseAccentTheme,
@@ -150,10 +144,6 @@ export default function SettingsPage() {
     setSettingsMessage("Goal creation defaults saved.");
   };
 
-  const updateDefaultPlantStyle = (variant: GoalPlantVariant) => {
-    updateAppSetting("defaultGoalPlantVariant", variant);
-  };
-
   const updateAccentTheme = (nextAccent: AccentTheme) => {
     if (!canUseAccentTheme(user?.plan, nextAccent)) {
       const option = ACCENT_THEME_OPTIONS.find((o) => o.id === nextAccent);
@@ -251,32 +241,31 @@ export default function SettingsPage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <div className="mb-8">
-          <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-slate-900 dark:text-white">
-            <SlidersHorizontal className="h-6 w-6 text-prove-600 dark:text-prove-400" />
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+        <header className="mb-8">
+          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Settings
           </h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Configure goal creation defaults, choose what appears in your gallery, and manage saved gallery visibility.
+          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+            Goal defaults, gallery display, and account.
           </p>
-        </div>
+        </header>
 
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/45 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-          <h2 className="font-semibold text-emerald-900 dark:text-emerald-200">Goal creation defaults</h2>
-          <p className="mt-1 text-xs text-emerald-800/90 dark:text-emerald-300/90">
-            These apply when you create a new goal in Goal Garden.
+        <section className="rounded-2xl p-5 glass-card">
+          <h2 className="font-semibold text-slate-900 dark:text-white">Goal creation defaults</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Applied when you create a new goal in Goal Garden.
           </p>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-xs text-emerald-900 dark:text-emerald-200">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Default frequency
               <select
                 value={appSettings.defaultGoalFrequency}
                 onChange={(event) =>
                   updateAppSetting("defaultGoalFrequency", event.target.value as GoalFrequency)
                 }
-                className="mt-1 w-full rounded-md border border-emerald-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-emerald-700 dark:bg-emerald-950/35 dark:text-white"
+                className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
               >
                 {GOAL_FREQUENCY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -286,14 +275,14 @@ export default function SettingsPage() {
               </select>
             </label>
 
-            <label className="text-xs text-emerald-900 dark:text-emerald-200">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Default grace period
               <select
                 value={appSettings.defaultGoalGracePeriod}
                 onChange={(event) =>
                   updateAppSetting("defaultGoalGracePeriod", event.target.value as GracePeriod)
                 }
-                className="mt-1 w-full rounded-md border border-emerald-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-emerald-700 dark:bg-emerald-950/35 dark:text-white"
+                className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
               >
                 {GRACE_PERIOD_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -303,42 +292,10 @@ export default function SettingsPage() {
               </select>
             </label>
           </div>
-
-          <div className="mt-4">
-            <p className="text-xs text-emerald-900 dark:text-emerald-200">Default plant style</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {getPlantVariantsForPlan(user?.plan ?? "free").map((variant) => (
-                <button
-                  key={variant}
-                  type="button"
-                  onClick={() => updateDefaultPlantStyle(variant)}
-                  className={`rounded-md border p-1 ${
-                    (Math.min(appSettings.defaultGoalPlantVariant, getMaxPlantVariantForPlan(user?.plan ?? "free")) as GoalPlantVariant) === variant
-                      ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
-                      : "border-emerald-200 bg-white dark:border-emerald-700 dark:bg-emerald-950/35"
-                  }`}
-                  aria-label={`Set default plant style ${variant}`}
-                >
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
-                    <PlantIllustration
-                      stage="flowering"
-                      wateringLevel={1}
-                      wateredGoals={1}
-                      size="small"
-                      variant={variant}
-                    />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
         </section>
 
         <section className="mt-6 rounded-2xl p-5 glass-card">
-          <h2 className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
-            <Palette className="h-4 w-4 text-prove-600 dark:text-prove-400" />
-            Theme colors
-          </h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Theme colors</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Green is free. Pro: 4 extra themes. Premium: all 10 theme colors.
           </p>
@@ -385,11 +342,11 @@ export default function SettingsPage() {
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             These options control what is shown on the Goal Gallery page.
           </p>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-2">
             {HISTORY_SETTING_ITEMS.map((item) => (
               <label
                 key={item.key}
-                className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50"
+                className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50"
               >
                 <div>
                   <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
@@ -412,7 +369,7 @@ export default function SettingsPage() {
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Confirming your email secures your account and lets you reset your password if you forget it. Resend the confirmation link below — it’s sent via Resend (same as password reset).
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-4 flex flex-col gap-3">
               <button
                 type="button"
                 onClick={async () => {
@@ -444,13 +401,19 @@ export default function SettingsPage() {
                   }
                 }}
                 disabled={confirmEmailLoading}
-                className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
+                className="w-full rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary sm:w-auto"
               >
                 {confirmEmailLoading ? "Sending…" : "Resend confirmation email"}
               </button>
+              <Link
+                href="/support?topic=confirm-email"
+                className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Email not sent? Change email
+              </Link>
             </div>
             {confirmEmailMessage && (
-              <p className={`mt-2 text-sm ${confirmEmailMessage.startsWith("Check") ? "text-prove-700 dark:text-prove-300" : "text-amber-700 dark:text-amber-300"}`} role="status">
+              <p className={`mt-3 text-sm ${confirmEmailMessage.startsWith("Check") ? "text-prove-700 dark:text-prove-300" : "text-amber-700 dark:text-amber-300"}`} role="status">
                 {confirmEmailMessage}
               </p>
             )}
