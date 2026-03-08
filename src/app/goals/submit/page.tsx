@@ -535,19 +535,19 @@ function SubmitProofContent() {
             >
               <X className="h-6 w-6" />
             </button>
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
+            <div className="absolute bottom-0 left-0 right-0 glass-overlay-bar flex justify-center gap-6 px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
               <button
                 onClick={() => {
                   setImageDataUrl(null);
                   handleStartCamera(facingMode);
                 }}
-                className="rounded-full bg-white/20 px-8 py-3.5 text-sm font-medium text-white backdrop-blur-sm hover:bg-white/30 btn-glass-outline"
+                className="glass-overlay-bar-btn rounded-full px-8 py-3.5 text-sm font-medium text-white hover:bg-white/20 active:scale-[0.98]"
               >
                 Retake
               </button>
               <button
                 onClick={submitForVerification}
-                className="rounded-full bg-prove-600 px-8 py-3.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
+                className="glass-overlay-bar-btn-primary rounded-full px-8 py-3.5 text-sm font-medium text-white hover:bg-prove-500/45 active:scale-[0.98]"
               >
                 Use
               </button>
