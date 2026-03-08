@@ -206,13 +206,15 @@ function SubmitProofContent() {
   }, [user, goal, inWindow, step, cameraStarted, imageDataUrl, handleStartCamera]);
 
   // If camera is "opening" for too long, show upload/camera choice so user can still submit
+  const isStartingCamera =
+    step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && !!goal && inWindow;
   useEffect(() => {
-    if (!showStartingCamera) return;
+    if (!isStartingCamera) return;
     const t = setTimeout(() => {
       setCameraError("Camera didn’t open. Use camera again or upload a photo.");
     }, 8000);
     return () => clearTimeout(t);
-  }, [showStartingCamera]);
+  }, [isStartingCamera]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
