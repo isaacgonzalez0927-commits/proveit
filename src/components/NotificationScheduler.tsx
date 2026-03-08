@@ -46,7 +46,7 @@ export function NotificationScheduler() {
       if (doneToday) return;
 
       const n = new Notification(`Due now: ${goal.title}`, {
-        body: "Time to prove it — snap a photo to keep your streak.",
+        body: "Snap a photo to keep your streak.",
         icon: "/icon.png",
         tag: key,
       });

@@ -82,6 +82,27 @@ export async function POST(request: NextRequest) {
   }
 
   const from = process.env.RESEND_FROM_EMAIL ?? "ProveIt <onboarding@resend.dev>";
+  const escapedLink = actionLink.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);overflow:hidden;">
+        <tr><td style="padding:32px 24px;">
+          <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">Confirm your email</h1>
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#475569;">Click the button below to confirm your email for ProveIt. You’ll be signed in and taken to your dashboard.</p>
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#16a34a;"><a href="${escapedLink}" target="_blank" rel="noopener" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Confirm email</a></td></tr></table>
+          <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;">If you didn’t request this, you can ignore this email.</p>
+        </td></tr>
+        <tr><td style="padding:16px 24px;background:#f8fafc;font-size:12px;color:#64748b;">ProveIt – Set goals. Take a photo. Prove it.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -93,11 +114,7 @@ export async function POST(request: NextRequest) {
       from,
       to: [user.email],
       subject: "Confirm your ProveIt email",
-      html: `
-        <p>Click the link below to confirm your email for ProveIt:</p>
-        <p><a href="${actionLink}">Confirm email</a></p>
-        <p>If you didn't request this, you can ignore this email.</p>
-      `,
+      html,
     }),
   });
 
