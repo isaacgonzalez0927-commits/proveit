@@ -410,7 +410,7 @@ export default function SettingsPage() {
           <section className="mt-6 rounded-2xl p-5 glass-card">
             <h2 className="font-semibold text-slate-900 dark:text-white">Confirm email</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Confirming your email secures your account and lets you reset your password if you forget it. If you didn&apos;t receive the confirmation link when you signed up, you can resend it below.
+              Confirming your email secures your account and lets you reset your password if you forget it. If you didn&apos;t receive the confirmation link when you signed up, you can resend it below. If nothing arrives, the sender address in Supabase SMTP must use a domain you&apos;ve verified in Resend (Resend → Domains).
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
