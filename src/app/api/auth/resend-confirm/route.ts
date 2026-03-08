@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const origin = body.origin ?? request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
-    emailRedirectTo = origin ? `${origin.startsWith("http") ? origin : `https://${origin}`}/api/auth/callback` : "";
+    const base = origin ? (origin.startsWith("http") ? origin : `https://${origin}`) : "";
+    emailRedirectTo = base ? `${base}/api/auth/callback?next=/dashboard` : "";
   } catch {
     emailRedirectTo = "";
   }
