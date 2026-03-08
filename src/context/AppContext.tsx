@@ -297,6 +297,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const clearPlanSelectionForNewUser = useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("proveit_dev_guest_mode", "1");
+      window.localStorage.removeItem("proveit_intro_seen");
     }
     if (user?.id) {
       clearStoredPlanSelection(user.id);
