@@ -7,7 +7,7 @@ export default function SupportPage() {
         Support
       </h1>
       <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Get help with ProveIt.
+        Get help with Proveit.
       </p>
 
       <div className="mt-8 space-y-6 text-sm text-slate-700 dark:text-slate-300">

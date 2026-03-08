@@ -1,4 +1,4 @@
--- ProveIt: Storage bucket for submission images
+-- Proveit: Storage bucket for submission images
 -- Run in Supabase Dashboard -> SQL Editor
 
 -- Create bucket for submission proof images (public read for display)

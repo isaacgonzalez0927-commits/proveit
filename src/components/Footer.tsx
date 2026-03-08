@@ -12,7 +12,7 @@ export function Footer() {
             href="/"
             className="font-display text-lg font-bold tracking-tight text-prove-700 dark:text-prove-400"
           >
-            ProveIt
+            Proveit
           </Link>
           <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link
@@ -60,7 +60,7 @@ export function Footer() {
           </nav>
         </div>
         <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          Set goals. Take a photo. Prove it. © {new Date().getFullYear()} ProveIt.
+          Set goals. Take a photo. Prove it. © {new Date().getFullYear()} Proveit.
         </p>
       </div>
     </footer>

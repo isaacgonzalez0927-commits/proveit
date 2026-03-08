@@ -1,4 +1,4 @@
--- ProveIt: initial schema
+-- Proveit: initial schema
 -- Run this in Supabase SQL Editor: https://supabase.com/dashboard → SQL Editor
 
 -- Enable UUID extension

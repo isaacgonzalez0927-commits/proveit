@@ -1,8 +1,8 @@
-# ProveIt
+# Proveit
 
 **Set a goal. Take a photo. Prove it.**
 
-ProveIt sends you reminders for daily and weekly goals. You take a photo of yourself doing the goal, and AI verifies you actually did it.
+Proveit sends you reminders for daily and weekly goals. You take a photo of yourself doing the goal, and AI verifies you actually did it.
 
 ## Features
 

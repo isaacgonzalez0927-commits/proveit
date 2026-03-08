@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>ProveIt</string>
+        <string>Proveit</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,8 +48,8 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>ProveIt needs camera access to take photos as proof when you complete a goal.</string>
+	<string>Proveit needs camera access to take photos as proof when you complete a goal.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ProveIt can use a photo from your library as proof when you complete a goal.</string>
+	<string>Proveit can use a photo from your library as proof when you complete a goal.</string>
 </dict>
 </plist>

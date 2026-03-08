@@ -14,8 +14,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Service purpose</h2>
           <p className="mt-2">
-            ProveIt helps users track habits and goals through reminders and photo-based verification.
-            ProveIt is provided as-is and may change over time.
+            Proveit helps users track habits and goals through reminders and photo-based verification.
+            Proveit is provided as-is and may change over time.
           </p>
         </section>
 
@@ -38,7 +38,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Account termination</h2>
           <p className="mt-2">
-            You can stop using ProveIt at any time and delete your account from the app settings.
+            You can stop using Proveit at any time and delete your account from the app settings.
           </p>
         </section>
 

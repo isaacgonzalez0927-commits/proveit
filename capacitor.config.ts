@@ -6,7 +6,7 @@ const usesInsecureHttp = /^http:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|10\.|192\
 
 const config: CapacitorConfig = {
   appId: 'com.proveit.app',
-  appName: 'ProveIt',
+  appName: 'Proveit',
   webDir: 'public',
   ...(serverUrl
     ? {

@@ -12,9 +12,9 @@ export default function PrivacyPage() {
 
       <div className="mt-8 space-y-6 text-sm leading-6 text-slate-700 dark:text-slate-300">
         <section>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">What ProveIt stores</h2>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">What Proveit stores</h2>
           <p className="mt-2">
-            ProveIt stores account details (email), goals, reminders, proof submissions, and verification
+            Proveit stores account details (email), goals, reminders, proof submissions, and verification
             results so the app can track your progress.
           </p>
         </section>
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Notifications</h2>
           <p className="mt-2">
-            ProveIt can schedule local reminder notifications. You can turn notification permissions on or
+            Proveit can schedule local reminder notifications. You can turn notification permissions on or
             off in your device settings at any time.
           </p>
         </section>

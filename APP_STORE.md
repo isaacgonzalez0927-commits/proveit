@@ -1,6 +1,6 @@
-# App Store submission checklist (ProveIt)
+# App Store submission checklist (Proveit)
 
-Use this when submitting ProveIt to the Apple App Store. The app already includes the in-app requirements below; use App Store Connect for metadata and build upload.
+Use this when submitting Proveit to the Apple App Store. The app already includes the in-app requirements below; use App Store Connect for metadata and build upload.
 
 ## In-app (already done)
 
@@ -35,7 +35,7 @@ Use this when submitting ProveIt to the Apple App Store. The app already include
    - In Xcode: Product → Archive. Then Distribute App → App Store Connect → Upload.
    - In App Store Connect: go to your app → TestFlight. Wait for the build to process.
    - Add internal testers (your Apple ID or team) or external testers (up to 10,000).
-   - Install the TestFlight app on your iPhone; accept the invite and install ProveIt.
+   - Install the TestFlight app on your iPhone; accept the invite and install Proveit.
    - Test signup, goals, proof photo, and notifications on a real device. Fix any crashes or broken flows.
    - When stable, submit the build from App Store Connect for App Review (same build can be promoted to production).
 

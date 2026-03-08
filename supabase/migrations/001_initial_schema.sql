@@ -1,4 +1,4 @@
--- ProveIt: Initial schema
+-- Proveit: Initial schema
 -- Run in Supabase Dashboard -> SQL Editor (paste ALL of this)
 
 -- 1. Profiles table

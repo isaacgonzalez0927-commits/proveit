@@ -15,7 +15,7 @@ interface TourStep {
 
 const TOUR_STEPS: TourStep[] = [
   {
-    title: "Welcome to ProveIt",
+    title: "Welcome to Proveit",
     emoji: "🌱",
     body:
       "You just picked your plan. Next you will set goals, choose each goal's plant style, and start building your garden.",

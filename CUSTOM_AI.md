@@ -1,6 +1,6 @@
 # Using a custom AI for proof verification
 
-ProveIt can use **your friend's AI** to verify proof photos. When configured, it is used first (before OpenAI or demo mode).
+Proveit can use **your friend's AI** to verify proof photos. When configured, it is used first (before OpenAI or demo mode).
 
 ## 1. What your friend’s API must do
 

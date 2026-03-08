@@ -351,7 +351,7 @@
   --glass-shadow-inset: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 0 rgba(0, 0, 0, 0.15);
 }
 
-/* Header/loading mark: same shade as "ProveIt" text (theme prove-600 / prove-300) */
+/* Header/loading mark: same shade as "Proveit" text (theme prove-600 / prove-300) */
 .proveit-mark {
   display: inline-block;
   background-color: rgb(var(--prove-600-rgb));

@@ -1,6 +1,6 @@
 # Capacitor / iOS Setup
 
-ProveIt is configured for iOS via Capacitor. The app loads your web app from a URL (server mode).
+Proveit is configured for iOS via Capacitor. The app loads your web app from a URL (server mode).
 
 ## Quick start
 

@@ -1,6 +1,6 @@
 # macOS 10.15 (Catalina) Setup Guide
 
-This guide helps you keep building ProveIt after moving to a Mac on **macOS 10.15**.
+This guide helps you keep building Proveit after moving to a Mac on **macOS 10.15**.
 
 ## What works on Catalina
 

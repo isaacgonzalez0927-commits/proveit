@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.proveit.app',
-  appName: 'ProveIt',
+  appName: 'Proveit',
   webDir: 'public',
   server: {
     // Load from your deployed URL. Set this when you deploy (e.g. Vercel).

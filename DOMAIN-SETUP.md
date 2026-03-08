@@ -1,10 +1,10 @@
 # Using proveit-goals.com
 
-ProveIt’s production domain is **https://proveit-goals.com**. Do these once so auth and links work.
+Proveit’s production domain is **https://proveit-goals.com**. Do these once so auth and links work.
 
 ## 1. Vercel (where the app is hosted)
 
-1. Go to [vercel.com](https://vercel.com) → your ProveIt project → **Settings** → **Domains**.
+1. Go to [vercel.com](https://vercel.com) → your Proveit project → **Settings** → **Domains**.
 2. Click **Add** and enter **only**: `proveit-goals.com`  
    - No `http://` or `https://`  
    - No trailing slash  

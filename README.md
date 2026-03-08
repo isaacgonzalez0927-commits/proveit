@@ -1,8 +1,8 @@
-# ProveIt
+# Proveit
 
 **Set a goal. Take a photo. Prove it.**
 
-ProveIt sends you reminders for daily and weekly goals. You take a photo of yourself doing the goal, and AI verifies you actually did it.
+Proveit sends you reminders for daily and weekly goals. You take a photo of yourself doing the goal, and AI verifies you actually did it.
 
 ## Features
 
@@ -31,7 +31,7 @@ Open [http://localhost:3000](http://localhost:3000). Sign in with any email (dem
 After a fresh clone or new machine, run these once so `npm run pf` works when the AI runs it:
 
 ```bash
-# Link this folder to your Vercel project (pick the ProveIt project when prompted)
+# Link this folder to your Vercel project (pick the Proveit project when prompted)
 npx vercel link --scope isaacs-projects-94fcf528
 
 # Optional: if git push ever hangs, run once:
