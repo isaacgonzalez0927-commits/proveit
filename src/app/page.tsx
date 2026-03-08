@@ -214,14 +214,29 @@ function LandingContent() {
     setLoading(true);
     setLoginError("");
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
-        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback?next=/reset-password` : undefined,
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch("/api/auth/send-reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail, origin }),
       });
-      if (error) {
-        setLoginError(error.message);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setResetSent(true);
         return;
       }
-      setResetSent(true);
+      if (res.status === 501) {
+        const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+          redirectTo: origin ? `${origin}/api/auth/callback?next=/reset-password` : undefined,
+        });
+        if (error) {
+          setLoginError(error.message);
+          return;
+        }
+        setResetSent(true);
+        return;
+      }
+      setLoginError(data.error ?? "Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }

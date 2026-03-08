@@ -405,14 +405,16 @@ export default function SettingsPage() {
               >
                 {confirmEmailLoading ? "Sending…" : "Resend confirmation email"}
               </button>
-              <p className="mt-1.5">
-                <Link
-                  href="/support?topic=confirm-email"
-                  className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                >
-                  Email not sent? Change email
-                </Link>
-              </p>
+              {confirmEmailMessage != null && (
+                <p className="mt-1.5">
+                  <Link
+                    href="/settings/change-email"
+                    className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  >
+                    Email not sent? Change email
+                  </Link>
+                </p>
+              )}
             </div>
             {confirmEmailMessage && (
               <p className={`mt-3 text-sm ${confirmEmailMessage.startsWith("Check") ? "text-prove-700 dark:text-prove-300" : "text-amber-700 dark:text-amber-300"}`} role="status">
