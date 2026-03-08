@@ -410,32 +410,33 @@ export default function SettingsPage() {
           <section className="mt-6 rounded-2xl p-5 glass-card">
             <h2 className="font-semibold text-slate-900 dark:text-white">Confirm email</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Confirming your email secures your account and lets you reset your password if you forget it. If you didn&apos;t receive the confirmation link when you signed up, you can resend it below. If nothing arrives, the sender address in Supabase SMTP must use a domain you&apos;ve verified in Resend (Resend → Domains).
+              Confirming your email secures your account and lets you reset your password if you forget it. Resend the confirmation link below — it’s sent via Resend (same as password reset).
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={async () => {
-                  if (!supabase || !user?.email) return;
+                  if (!user?.email) return;
                   setConfirmEmailMessage(null);
                   setConfirmEmailLoading(true);
                   try {
                     const origin = typeof window !== "undefined" ? window.location.origin : "";
-                    const { error } = await supabase.auth.resend({
-                      type: "signup",
-                      email: user.email,
-                      options: origin ? { emailRedirectTo: `${origin}/api/auth/callback` } : undefined,
+                    const res = await fetch("/api/auth/resend-confirm", {
+                      method: "POST",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ origin }),
                     });
-                    if (error) {
-                      const msg = error.message.toLowerCase();
-                      if (msg.includes("already") || msg.includes("confirmed")) {
-                        setConfirmEmailMessage("This email is already confirmed. You're all set.");
-                      } else {
-                        setConfirmEmailMessage(error.message);
-                      }
-                    } else {
-                      setConfirmEmailMessage("Check your inbox and spam folder.");
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) {
+                      setConfirmEmailMessage(data.message ?? "Check your inbox and spam folder.");
+                      return;
                     }
+                    if (res.status === 501) {
+                      setConfirmEmailMessage("One-time setup: Supabase Dashboard → your project → Settings → API → copy the service_role key (click Reveal). In this project add to .env.local: SUPABASE_SERVICE_ROLE_KEY=paste_key_here then restart the app (Ctrl+C, npm run dev). On Vercel add the same variable in Project → Settings → Environment Variables.");
+                      return;
+                    }
+                    setConfirmEmailMessage(data.error ?? (res.status === 401 ? "Please sign in again." : "Something went wrong. Try again later."));
                   } catch (e) {
                     setConfirmEmailMessage(e instanceof Error ? e.message : "Something went wrong. Try again later.");
                   } finally {
