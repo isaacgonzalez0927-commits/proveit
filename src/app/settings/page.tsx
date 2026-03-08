@@ -317,7 +317,8 @@ export default function SettingsPage() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <span
-                      className={`h-4 w-4 shrink-0 rounded-full border border-slate-300 dark:border-slate-600 ${option.swatchClassName}`}
+                      className="h-4 w-4 shrink-0 rounded-full border border-slate-300 dark:border-slate-600"
+                      style={{ backgroundColor: option.swatchColor }}
                     />
                     {option.label}
                   </span>
