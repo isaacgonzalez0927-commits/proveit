@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Camera, Upload, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
+import { Camera, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
 import { LoadingView } from "@/components/LoadingView";
@@ -63,7 +63,6 @@ function SubmitProofContent() {
   const [streamReady, setStreamReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [showFirstProofCelebration, setShowFirstProofCelebration] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartCameraAttemptedRef = useRef(false);
@@ -86,7 +85,7 @@ function SubmitProofContent() {
     }
   }, [verified]);
 
-  // Once we've shown the submit UI (camera/upload), never redirect - avoids auth blips
+  // Once we've shown the submit UI (camera), never redirect - avoids auth blips
   useEffect(() => {
     if (user && goal) hasShownContent.current = true;
   }, [user, goal]);
@@ -143,7 +142,7 @@ function SubmitProofContent() {
 
     if (!isSecure && !isLocalhost) {
       setCameraError(
-        "Camera access is blocked because this page is not running on HTTPS. Use Upload photo instead."
+        "Camera access requires HTTPS. Open this app over a secure connection to use the camera."
       );
       return;
     }
@@ -176,7 +175,7 @@ function SubmitProofContent() {
       setCameraStarted(true);
     } catch (e) {
       console.error(e);
-      setCameraError("Could not access camera. You can upload a photo instead.");
+      setCameraError("Could not access camera. Check permissions and try again.");
     }
   }, [facingMode]);
 
@@ -205,13 +204,13 @@ function SubmitProofContent() {
     void handleStartCamera();
   }, [user, goal, inWindow, step, cameraStarted, imageDataUrl, handleStartCamera]);
 
-  // If camera is "opening" for too long, show upload/camera choice so user can still submit
+  // If camera is "opening" for too long, show retry option
   const isStartingCamera =
     step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && !!goal && inWindow;
   useEffect(() => {
     if (!isStartingCamera) return;
     const t = setTimeout(() => {
-      setCameraError("Camera didn’t open. Use camera again or upload a photo.");
+      setCameraError("Camera didn’t open. Tap to try again.");
     }, 8000);
     return () => clearTimeout(t);
   }, [isStartingCamera]);
@@ -237,19 +236,6 @@ function SubmitProofContent() {
     setImageDataUrl(dataUrl);
     stopCamera();
   }, [facingMode, stopCamera]);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageDataUrl(reader.result as string);
-      setCameraError(null);
-      stopCamera();
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
 
   const submitForVerification = useCallback(async () => {
     if (!imageDataUrl || !goal || !user) return;
@@ -388,7 +374,7 @@ function SubmitProofContent() {
   const showFullScreenPreview = step === "capture" && !!imageDataUrl;
   const showStartingCamera =
     step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && inWindow;
-  const showCameraOrUploadChoice =
+  const showCameraRetry =
     step === "capture" && !showFullScreenCamera && !cameraStarted && !!cameraError;
 
   return (
@@ -410,7 +396,7 @@ function SubmitProofContent() {
               Prove it: {goal.title}
             </h1>
             <p className="mt-1 text-slate-600 dark:text-slate-400">
-              Take a photo or upload one showing you doing this goal. AI will verify it. You can submit any time before the due deadline.
+              Take a photo showing you doing this goal. AI will verify it. You can submit any time before the due deadline.
             </p>
           </>
         )}
@@ -422,7 +408,7 @@ function SubmitProofContent() {
           </div>
         )}
 
-        {showCameraOrUploadChoice && (
+        {showCameraRetry && (
           <div className="mt-8 animate-fade-in">
             <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
               {cameraError}
@@ -430,32 +416,18 @@ function SubmitProofContent() {
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
               <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
                 <p className="text-center text-sm text-slate-300">
-                  Tap to start camera or upload a photo
+                  Tap to start camera
                 </p>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      setCameraError(null);
-                      handleStartCamera();
-                    }}
-                    className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
-                  >
-                    <Camera className="h-6 w-6" />
-                    Use camera
-                  </button>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-500 bg-slate-800 px-5 py-3 text-white hover:bg-slate-700">
-                    <Upload className="h-6 w-6" />
-                    Upload photo
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                <button
+                  onClick={() => {
+                    setCameraError(null);
+                    handleStartCamera();
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
+                >
+                  <Camera className="h-6 w-6" />
+                  Use camera
+                </button>
               </div>
             </div>
           </div>
@@ -503,17 +475,6 @@ function SubmitProofContent() {
               >
                 <Camera className="h-8 w-8" />
               </button>
-              <label className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30">
-                <Upload className="h-7 w-7" />
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </label>
             </div>
           </div>
         )}
