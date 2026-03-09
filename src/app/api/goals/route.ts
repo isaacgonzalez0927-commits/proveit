@@ -127,7 +127,11 @@ export async function POST(request: NextRequest) {
     // Daily: try minimal first (no grace_period, no reminder columns)
     let result = await insertGoal(minimalInsert);
     if (result.error) {
-      if (/grace_period|grace period|reminder|does not exist/i.test(result.error.message ?? "")) {
+      const msg = result.error.message ?? "";
+      if (/times_per_week|times per week/i.test(msg)) {
+        const { times_per_week: _tw, ...withoutTimes } = minimalInsert;
+        result = await insertGoal(withoutTimes);
+      } else if (/grace_period|grace period|reminder|does not exist/i.test(msg)) {
         result = await insertGoal({ ...minimalInsert, grace_period: gracePeriod ?? "eod" });
       }
       if (result.error) {
@@ -144,12 +148,18 @@ export async function POST(request: NextRequest) {
     let result = await insertGoal(fullInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
-      if (/grace_period|grace period|does not exist/i.test(msg)) {
+      if (/times_per_week|times per week/i.test(msg)) {
+        const { times_per_week: _tw, ...withoutTimes } = fullInsert;
+        result = await insertGoal(withoutTimes);
+      } else if (/grace_period|grace period|does not exist/i.test(msg)) {
         result = await insertGoal(weeklyInsert);
       }
       if (result.error) {
         const retryMsg = result.error.message ?? "";
-        if (/reminder_day|reminder_days|does not exist/i.test(retryMsg)) {
+        if (/times_per_week|times per week/i.test(retryMsg)) {
+          const { times_per_week: _tw, ...withoutTimesWeekly } = weeklyInsert;
+          result = await insertGoal(withoutTimesWeekly);
+        } else if (/reminder_day|reminder_days|does not exist/i.test(retryMsg)) {
           result = await insertGoal(minimalInsert);
         }
         if (result.error) {
