@@ -280,7 +280,7 @@ function DashboardContent() {
             </div>
           </div>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4">
             <div className="rounded-2xl p-5 glass-card">
               <button
                 type="button"
@@ -327,32 +327,22 @@ function DashboardContent() {
                 </div>
               )}
             </div>
-
-            <div className="rounded-2xl p-5 glass-card">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-prove-600 dark:text-prove-400" />
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  Goals
-                </span>
-              </div>
-              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-                {goals.length}
-              </p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {goals.length} goal{goals.length !== 1 ? "s" : ""}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                {plan?.maxGoals === -1 ? "Unlimited" : plan?.maxGoals} goal{(plan?.maxGoals ?? 0) !== 1 ? "s" : ""} on your plan.
-              </p>
-            </div>
           </div>
         )}
 
         <section className="mt-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-              Today&apos;s goals
-            </h2>
+            <div>
+              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
+                Today&apos;s goals
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {goals.length} goal{goals.length !== 1 ? "s" : ""} ·{" "}
+                {plan?.maxGoals === -1
+                  ? "Unlimited on your plan"
+                  : `${plan?.maxGoals ?? 0} max on your plan`}
+              </p>
+            </div>
             <Link
               href="/buddy"
               className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 btn-glass-outline"
