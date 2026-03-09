@@ -152,7 +152,7 @@ function LandingContent() {
             return;
           }
         } else {
-          const { error } = await supabase.auth.signUp({
+          const { data, error } = await supabase.auth.signUp({
             email: trimmedEmail,
             password,
             options: { emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined },
@@ -161,16 +161,26 @@ function LandingContent() {
             setLoginError(error.message);
             return;
           }
+
+          // Auto-confirm new users via admin API so they can sign in immediately.
+          try {
+            if (data?.user?.id) {
+              await fetch("/api/auth/auto-confirm-signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: data.user.id }),
+              });
+            }
+          } catch {
+            // If this fails, we still attempt sign-in; Supabase settings will decide.
+          }
+
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email: trimmedEmail,
             password,
           });
           if (signInError) {
-            setLoginError(
-              /confirm/i.test(signInError.message)
-                ? "Check your email to confirm your account, then sign in."
-                : signInError.message
-            );
+            setLoginError(signInError.message);
             return;
           }
           setLoginError("");
