@@ -11,8 +11,8 @@ export interface Plan {
   name: string;
   priceMonthly: number;
   priceYearly: number;
-  dailyGoals: number;
-  weeklyGoals: number;
+  /** Max total goals (any frequency). -1 = unlimited. */
+  maxGoals: number;
   features: string[];
   stripePriceId?: string;
 }
@@ -26,6 +26,9 @@ export interface User {
 
 export type GoalFrequency = "daily" | "weekly";
 
+/** Times per week user must submit proof (1–7). 7 = every day, 1 = once per week. */
+export type TimesPerWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
 /** How long after the due time you can still submit proof */
 export type GracePeriod = "1h" | "3h" | "6h" | "12h" | "eod";
 
@@ -35,6 +38,8 @@ export interface Goal {
   title: string;
   description?: string;
   frequency: GoalFrequency;
+  /** How many times per week proof must be submitted (1–7). 7 = every day. */
+  timesPerWeek?: TimesPerWeek;
   reminderTime?: string; // HH:mm
   /** @deprecated use reminderDays; 0-6 for weekly (0 = Sunday) */
   reminderDay?: number;
@@ -68,10 +73,9 @@ export const PLANS: Plan[] = [
     name: "Free",
     priceMonthly: 0,
     priceYearly: 0,
-    dailyGoals: 2,
-    weeklyGoals: 1,
+    maxGoals: 1,
     features: [
-      "2 daily goals, 1 weekly goal",
+      "1 goal (any frequency: 1–7× per week)",
       "Full garden (Seedling → Flowering)",
       "3 plant styles to choose from",
       "Full AI verification (GPT-4 Vision)",
@@ -85,12 +89,11 @@ export const PLANS: Plan[] = [
     name: "Pro",
     priceMonthly: 5.99,
     priceYearly: 54,
-    dailyGoals: 4,
-    weeklyGoals: 3,
+    maxGoals: 2,
     features: [
-      "4 daily goals, 3 weekly goals",
+      "2 goals (any frequency: 1–7× per week)",
       "6 plant styles (including strawberry)",
-      "4 accent themes (Pink, Violet, Ocean, Teal)",
+      "6 accent themes (Pink, Violet, Ocean, Teal, Orange, Amber + more)",
       "AI verification with feedback",
       "Goal Break (freeze streak up to 3 days)",
       "Goal Gallery (history, proof photos, streaks)",
@@ -103,10 +106,9 @@ export const PLANS: Plan[] = [
     name: "Premium",
     priceMonthly: 12.99,
     priceYearly: 99,
-    dailyGoals: -1,
-    weeklyGoals: -1,
+    maxGoals: -1,
     features: [
-      "Unlimited daily & weekly goals",
+      "Unlimited goals (any frequency: 1–7× per week)",
       "All 8 plant styles (including cactus)",
       "All 10 accent themes",
       "Goal Break for any duration",

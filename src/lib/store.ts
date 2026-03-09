@@ -2,7 +2,6 @@
 
 import {
   type Goal,
-  type GoalFrequency,
   type PlanId,
   type ProofSubmission,
   PLANS,
@@ -87,15 +86,13 @@ export function getPlan(planId: PlanId) {
   return PLANS.find((p) => p.id === planId) ?? PLANS[0];
 }
 
-export function getGoalsLimit(planId: PlanId, frequency: GoalFrequency) {
+export function getGoalsLimit(planId: PlanId): number {
   const plan = getPlan(planId);
-  const limit = frequency === "daily" ? plan.dailyGoals : plan.weeklyGoals;
-  return limit === -1 ? 999 : limit;
+  return plan.maxGoals === -1 ? 999 : plan.maxGoals;
 }
 
-export function canAddGoal(planId: PlanId, frequency: GoalFrequency, currentCount: number) {
-  const limit = getGoalsLimit(planId, frequency);
-  return currentCount < limit;
+export function canAddGoal(planId: PlanId, currentTotalCount: number): boolean {
+  return currentTotalCount < getGoalsLimit(planId);
 }
 
 export function generateId() {

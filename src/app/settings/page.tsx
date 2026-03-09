@@ -297,7 +297,7 @@ export default function SettingsPage() {
         <section className="mt-6 rounded-2xl p-5 glass-card">
           <h2 className="font-semibold text-slate-900 dark:text-white">Theme colors</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Green is free. Pro: 4 extra themes. Premium: all 10 theme colors.
+            Green is free. Pro: 6 theme colors. Premium: all 10 theme colors.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {ACCENT_THEME_OPTIONS.map((option) => {
@@ -333,7 +333,7 @@ export default function SettingsPage() {
           </div>
           {user?.plan === "free" && (
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              Upgrade to Pro for 4 themes, or Premium for all 10.
+              Upgrade to Pro for 6 themes, or Premium for all 10.
             </p>
           )}
         </section>

@@ -21,7 +21,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Proveit – Set goals. Take a photo. Prove it.",
   description:
-    "Get notified for daily and weekly goals, snap a photo of yourself doing it, and let AI verify you actually did it. Free and paid plans.",
+    "Set goal frequency (1–7× per week), get reminded, snap a photo as proof, and let AI verify you did it. Free and paid plans.",
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",

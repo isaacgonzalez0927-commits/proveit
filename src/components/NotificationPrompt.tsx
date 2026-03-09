@@ -46,7 +46,7 @@ export function NotificationPrompt() {
             Enable notifications
           </p>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Get reminded to do your daily and weekly goals so you never miss a beat.
+            Get reminded when your goals are due so you never miss a beat.
           </p>
           <div className="mt-3 flex gap-2">
             <button

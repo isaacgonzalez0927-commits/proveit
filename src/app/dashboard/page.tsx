@@ -342,11 +342,10 @@ function DashboardContent() {
                 {goals.length}
               </p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {dailyGoals.length} daily, {weeklyGoals.length} weekly
+                {goals.length} goal{goals.length !== 1 ? "s" : ""}
               </p>
               <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                {plan?.dailyGoals === -1 ? "Unlimited" : plan?.dailyGoals} daily,{" "}
-                {plan?.weeklyGoals === -1 ? "Unlimited" : plan?.weeklyGoals} weekly on your plan.
+                {plan?.maxGoals === -1 ? "Unlimited" : plan?.maxGoals} goal{(plan?.maxGoals ?? 0) !== 1 ? "s" : ""} on your plan.
               </p>
             </div>
           </div>

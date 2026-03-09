@@ -8,8 +8,8 @@ export const ACCENT_THEME_STORAGE_KEY = "proveit-accent-theme";
 export const DEFAULT_THEME_MODE: ThemeMode = "system";
 export const DEFAULT_ACCENT_THEME: AccentTheme = "green";
 
-/** Themes included in Pro (4). Premium gets all. */
-export const PRO_ACCENT_THEMES: AccentTheme[] = ["pink", "violet", "ocean", "teal"];
+/** Themes included in Pro (6). Premium gets all 10. */
+export const PRO_ACCENT_THEMES: AccentTheme[] = ["pink", "violet", "ocean", "teal", "orange", "amber"];
 
 export const ACCENT_THEME_OPTIONS: Array<{
   id: AccentTheme;

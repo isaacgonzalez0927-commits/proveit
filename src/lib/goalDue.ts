@@ -2,9 +2,10 @@ import type { Goal, GracePeriod } from "@/types";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-/** Effective reminder days (0–6). Daily = all 7; weekly = reminderDays or [reminderDay]. */
+/** Effective reminder days (0–6). 7×/week = all 7; 1–6× = reminderDays or [reminderDay]. */
 export function getReminderDays(goal: Goal): number[] {
-  if (goal.frequency === "daily") return [0, 1, 2, 3, 4, 5, 6];
+  const timesPerWeek = goal.timesPerWeek ?? (goal.frequency === "daily" ? 7 : 1);
+  if (timesPerWeek === 7) return [0, 1, 2, 3, 4, 5, 6];
   if (goal.reminderDays && goal.reminderDays.length > 0) return goal.reminderDays;
   const d = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
   return [d];

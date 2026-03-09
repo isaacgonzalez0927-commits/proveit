@@ -24,7 +24,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Create a goal + choose plant style",
     body:
-      "Open the Garden tab, tap Add goal, set daily or weekly timing, and choose the plant style for that goal.",
+      "Open the Garden tab, tap Add goal, set goal frequency (1–7× per week), reminder days and time, and choose the plant style.",
     note: "Plant style only affects the final stage (fully grown); growth stages before that look the same for all styles.",
   },
   {
@@ -37,7 +37,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Grow your Garden",
     body:
       "The Garden tab shows every goal as its own plant card with streak, stage, and watering status.",
-    note: "Daily goals track day streaks, weekly goals track week streaks.",
+    note: "Submit proof the required times per week (e.g. 3×) to keep your streak.",
   },
   {
     title: "Track progress from Home",

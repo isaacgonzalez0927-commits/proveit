@@ -19,13 +19,21 @@ function normalizeReminderDays(value: unknown): number[] | undefined {
 function mapGoalRow(row: Record<string, unknown>) {
   const reminderDay = row.reminder_day != null ? (row.reminder_day as number) : undefined;
   const reminderDays = normalizeReminderDays(row.reminder_days) ?? (typeof reminderDay === "number" ? [reminderDay] : undefined);
-  const frequency = row.frequency as string;
+  const frequency = (row.frequency as string) ?? "daily";
+  const rawTimes = row.times_per_week;
+  const timesPerWeek =
+    typeof rawTimes === "number" && rawTimes >= 1 && rawTimes <= 7
+      ? (rawTimes as 1 | 2 | 3 | 4 | 5 | 6 | 7)
+      : frequency === "daily"
+        ? 7
+        : 1;
   return {
     id: row.id as string,
     userId: row.user_id as string,
     title: row.title as string,
     description: (row.description as string | null) ?? undefined,
-    frequency: frequency ?? "daily",
+    frequency: frequency as "daily" | "weekly",
+    timesPerWeek,
     reminderTime: (row.reminder_time as string | null) ?? undefined,
     reminderDay,
     reminderDays: frequency === "daily" ? undefined : reminderDays,
@@ -67,7 +75,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, title, description, frequency, reminderTime, reminderDay, reminderDays, gracePeriod } = body;
+  const { id, title, description, frequency, timesPerWeek, reminderTime, reminderDay, reminderDays, gracePeriod } = body;
 
   // Ensure profile row exists (e.g. if trigger missed it). Do not overwrite plan.
   try {
@@ -85,6 +93,8 @@ export async function POST(request: NextRequest) {
   const isDaily = frequency === "daily";
   const reminderDayVal = reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null);
   const reminderDaysVal = Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null;
+  const timesPerWeekVal =
+    typeof timesPerWeek === "number" && timesPerWeek >= 1 && timesPerWeek <= 7 ? timesPerWeek : isDaily ? 7 : 1;
 
   // Minimal columns that exist in the base goals table (no reminder_day, reminder_days, grace_period).
   const minimalInsert: Record<string, unknown> = {
@@ -95,6 +105,7 @@ export async function POST(request: NextRequest) {
     frequency,
     reminder_time: reminderTime ?? null,
   };
+  if (timesPerWeekVal !== (isDaily ? 7 : 1)) minimalInsert.times_per_week = timesPerWeekVal;
 
   // Daily: only use minimal columns so we never touch reminder_day/reminder_days (avoids "could not find reminder day" on strict or older DBs).
   // Weekly: add reminder columns if present in schema.
@@ -184,6 +195,10 @@ export async function PATCH(request: NextRequest) {
     dbUpdates.reminder_days = Array.isArray(rd) && rd.length > 0 ? rd : null;
   }
   if ("gracePeriod" in updates) dbUpdates.grace_period = updates.gracePeriod ?? null;
+  if ("timesPerWeek" in updates) {
+    const tw = updates.timesPerWeek;
+    if (typeof tw === "number" && tw >= 1 && tw <= 7) dbUpdates.times_per_week = tw;
+  }
   if ("completedDates" in updates) dbUpdates.completed_dates = updates.completedDates ?? [];
   if ("isOnBreak" in updates) dbUpdates.is_on_break = updates.isOnBreak === true;
   if ("breakStartedAt" in updates) dbUpdates.break_started_at = updates.breakStartedAt ?? null;

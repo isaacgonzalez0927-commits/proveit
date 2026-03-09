@@ -31,7 +31,7 @@ import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
-import type { Goal, GoalFrequency, GracePeriod } from "@/types";
+import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
 
@@ -68,15 +68,13 @@ export default function BuddyPage() {
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newFrequency, setNewFrequency] = useState<GoalFrequency>(
-    () => getStoredAppSettings().defaultGoalFrequency
-  );
+  const [newTimesPerWeek, setNewTimesPerWeek] = useState<TimesPerWeek>(7);
   const [newDailyTime, setNewDailyTime] = useState("09:00");
   const [newWeeklyTime, setNewWeeklyTime] = useState("10:00");
   const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
     () => getStoredAppSettings().defaultGoalGracePeriod
   );
-  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([]); // user selects which days
+  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]); // which days to remind; for 7× all 7
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
@@ -210,16 +208,15 @@ export default function BuddyPage() {
   };
 
   const plan = getPlan(user.plan);
-  const canCreateDaily = canAddGoal("daily");
-  const canCreateWeekly = canAddGoal("weekly");
+  const canAddMoreGoals = canAddGoal();
   const resetCreateGoalForm = () => {
     const appSettings = getStoredAppSettings();
     setNewTitle("");
     setNewDescription("");
-    setNewFrequency(appSettings.defaultGoalFrequency);
+    setNewTimesPerWeek(appSettings.defaultGoalFrequency === "daily" ? 7 : 1);
     setNewDailyTime("09:00");
-    setNewWeeklyDays([1, 2, 3, 4, 5, 6]);
     setNewWeeklyTime("10:00");
+    setNewWeeklyDays(appSettings.defaultGoalFrequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : [1]);
     setNewGracePeriod(appSettings.defaultGoalGracePeriod);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
   };
@@ -231,17 +228,14 @@ export default function BuddyPage() {
       setGoalManagerMessage("Goal title is required.");
       return;
     }
-    if (newFrequency === "daily" && !canCreateDaily) {
-      setGoalManagerMessage("Daily goal limit reached for your current plan.");
+    if (!canAddMoreGoals) {
+      setGoalManagerMessage("Goal limit reached for your current plan. Upgrade to add more.");
       return;
     }
-    if (newFrequency === "weekly" && !canCreateWeekly) {
-      setGoalManagerMessage("Weekly goal limit reached for your current plan.");
-      return;
-    }
-    const weeklyDays = newFrequency === "weekly" ? newWeeklyDays : undefined;
-    if (weeklyDays && weeklyDays.length === 0) {
-      setGoalManagerMessage("Select at least one day for your reminder.");
+    const reminderDays =
+      newTimesPerWeek === 7 ? [0, 1, 2, 3, 4, 5, 6] : newWeeklyDays;
+    if (newTimesPerWeek < 7 && reminderDays.length < newTimesPerWeek) {
+      setGoalManagerMessage(`Pick at least ${newTimesPerWeek} day(s) for reminders.`);
       return;
     }
 
@@ -251,10 +245,11 @@ export default function BuddyPage() {
       const result = await addGoal({
         title: newTitle.trim(),
         description: newDescription.trim() || undefined,
-        frequency: newFrequency,
-        reminderTime: newFrequency === "daily" ? newDailyTime : newWeeklyTime,
-        reminderDay: weeklyDays && weeklyDays.length > 0 ? weeklyDays[0] : undefined,
-        reminderDays: weeklyDays,
+        frequency: newTimesPerWeek === 7 ? "daily" : "weekly",
+        timesPerWeek: newTimesPerWeek,
+        reminderTime: newTimesPerWeek === 7 ? newDailyTime : newWeeklyTime,
+        reminderDay: reminderDays.length > 0 ? reminderDays[0] : undefined,
+        reminderDays: newTimesPerWeek === 7 ? undefined : reminderDays,
         gracePeriod: newGracePeriod,
       });
       if (!result.created) {
@@ -277,9 +272,10 @@ export default function BuddyPage() {
   const startEditingGoal = (goal: Goal) => {
     setEditingGoalId(goal.id);
     const days = getReminderDays(goal);
+    const timesPerWeek = goal.timesPerWeek ?? (goal.frequency === "daily" ? 7 : 1);
     setEditDraft({
-      reminderTime: goal.reminderTime ?? (goal.frequency === "daily" ? "09:00" : "10:00"),
-      weeklyDays: goal.frequency === "weekly" ? days : [],
+      reminderTime: goal.reminderTime ?? (timesPerWeek === 7 ? "09:00" : "10:00"),
+      weeklyDays: timesPerWeek === 7 ? [0, 1, 2, 3, 4, 5, 6] : days,
       gracePeriod: goal.gracePeriod ?? "eod",
     });
     setGoalManagerMessage(null);
@@ -442,15 +438,14 @@ export default function BuddyPage() {
             One goal = one plant. You currently have {goals.length} plant{goals.length === 1 ? "" : "s"}.
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {plan.name} plan · {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily ·{" "}
-            {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly
+            {plan.name} plan · {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{plan.maxGoals !== 1 ? "s" : ""}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => {
                 setGoalManagerMessage(null);
-                if (!canCreateDaily && !canCreateWeekly) {
+                if (!canAddMoreGoals) {
                   setShowUpgradePrompt(true);
                   return;
                 }
@@ -500,14 +495,9 @@ export default function BuddyPage() {
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               You can now create goals without leaving this page.
             </p>
-            {(!canCreateDaily || !canCreateWeekly) && (
+            {!canAddMoreGoals && (
               <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-                {!canCreateDaily && !canCreateWeekly
-                  ? "You've reached your goal limit. Upgrade to add more."
-                  : !canCreateDaily
-                    ? "Daily goal limit reached. Upgrade or add a weekly goal."
-                    : "Weekly goal limit reached. Upgrade or add a daily goal."}
-                {" "}
+                You&apos;ve reached your goal limit. Upgrade to add more.{" "}
                 <Link href="/pricing" className="font-medium underline">View plans</Link>
               </p>
             )}
@@ -528,38 +518,41 @@ export default function BuddyPage() {
               className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
 
-            <div className="mt-3 flex flex-wrap gap-3">
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                <input
-                  type="radio"
-                  checked={newFrequency === "daily"}
-                  onChange={() => setNewFrequency("daily")}
-                  disabled={!canCreateDaily}
-                  className="text-prove-600"
-                />
-                Daily {!canCreateDaily && "(limit reached)"}
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                <input
-                  type="radio"
-                  checked={newFrequency === "weekly"}
-                  onChange={() => setNewFrequency("weekly")}
-                  disabled={!canCreateWeekly}
-                  className="text-prove-600"
-                />
-                Weekly {!canCreateWeekly && "(limit reached)"}
-              </label>
+            <div className="mt-3">
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Goal frequency</p>
+              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                How many times per week you need to submit proof. 7× = every day.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => {
+                      setNewTimesPerWeek(n);
+                      if (n === 7) setNewWeeklyDays([0, 1, 2, 3, 4, 5, 6]);
+                    }}
+                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                      newTimesPerWeek === n
+                        ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
+                        : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    }`}
+                  >
+                    {n}×{n === 7 ? " (every day)" : ""}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {newFrequency === "weekly" && (
+            {newTimesPerWeek < 7 && (
               <div className="mt-3">
                 <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Reminder on these days</p>
                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  Select at least one day. You can complete the goal on each selected day.
+                  Pick at least {newTimesPerWeek} day{newTimesPerWeek !== 1 ? "s" : ""}. You must submit proof {newTimesPerWeek}× that week (any days).
                 </p>
-                {newWeeklyDays.length === 0 && (
+                {newWeeklyDays.length < newTimesPerWeek && (
                   <p className="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                    Pick one or more days above.
+                    Pick at least {newTimesPerWeek} day{newTimesPerWeek !== 1 ? "s" : ""}.
                   </p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -593,9 +586,9 @@ export default function BuddyPage() {
                 Reminder time
                 <input
                   type="time"
-                  value={newFrequency === "daily" ? newDailyTime : newWeeklyTime}
+                  value={newTimesPerWeek === 7 ? newDailyTime : newWeeklyTime}
                   onChange={(e) =>
-                    newFrequency === "daily"
+                    newTimesPerWeek === 7
                       ? setNewDailyTime(e.target.value)
                       : setNewWeeklyTime(e.target.value)
                   }
@@ -750,7 +743,7 @@ export default function BuddyPage() {
             <button
               type="button"
               onClick={() => {
-                if (!canCreateDaily && !canCreateWeekly) {
+                if (!canAddMoreGoals) {
                   setShowUpgradePrompt(true);
                 } else {
                   setShowCreateForm(true);

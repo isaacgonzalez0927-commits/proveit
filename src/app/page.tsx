@@ -324,7 +324,7 @@ function LandingContent() {
                 <ol className="space-y-[clamp(0.5rem,2vh,1rem)] text-left text-[clamp(1rem,3.5vmin,1.5rem)] leading-snug text-slate-600 dark:text-slate-400">
                   <li className="flex gap-4">
                     <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
-                    Set a daily or weekly goal, reminder time, and plant style.
+                    Set a goal (how many times per week to prove it), reminder time, and plant style.
                   </li>
                   <li className="flex gap-4">
                     <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>
@@ -487,7 +487,7 @@ function LandingContent() {
                           )}
                           <p className="text-[17px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
                           <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
-                            {plan.dailyGoals === -1 ? "Unlimited" : plan.dailyGoals} daily · {plan.weeklyGoals === -1 ? "Unlimited" : plan.weeklyGoals} weekly goals
+                            {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{(plan.maxGoals ?? 0) !== 1 ? "s" : ""}
                           </p>
                         </div>
                         <span className={`text-[16px] font-bold shrink-0 ${plan.id === "free" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>

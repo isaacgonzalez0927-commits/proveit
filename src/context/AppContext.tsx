@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { normalizePlanId, type Goal, type GoalFrequency, type PlanId, type ProofSubmission } from "@/types";
+import { normalizePlanId, type Goal, type PlanId, type ProofSubmission } from "@/types";
 import {
   getStoredUser,
   getStoredGoals,
@@ -61,7 +61,7 @@ interface AppContextValue {
   addSubmission: (sub: Omit<ProofSubmission, "id" | "createdAt">) => ProofSubmission | Promise<ProofSubmission>;
   updateSubmission: (id: string, updates: Partial<ProofSubmission>) => void | Promise<void>;
   deleteGoalHistory: (goalId: string) => void | Promise<void>;
-  canAddGoal: (frequency: GoalFrequency) => boolean;
+  canAddGoal: () => boolean;
   getSubmissionsForGoal: (goalId: string) => ProofSubmission[];
   markGoalDone: (goalId: string) => Promise<void>;
   earnedItems: string[];
@@ -322,11 +322,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addGoal = useCallback(
     async (input: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">): Promise<{ created: Goal | null; error?: string }> => {
       const uid = user?.id ?? "anonymous";
-      const dailyCount = goals.filter((g) => g.frequency === "daily").length;
-      const weeklyCount = goals.filter((g) => g.frequency === "weekly").length;
-      const count = input.frequency === "daily" ? dailyCount : weeklyCount;
-      if (!canAddGoal(user?.plan ?? "free", input.frequency, count)) {
-        return { created: null, error: input.frequency === "daily" ? "Daily goal limit reached." : "Weekly goal limit reached." };
+      if (!canAddGoal(user?.plan ?? "free", goals.length)) {
+        return { created: null, error: "Goal limit reached for your plan. Upgrade to add more goals." };
       }
       const id = generateId();
       const goal: Goal = {
@@ -346,6 +343,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               title: goal.title,
               description: goal.description,
               frequency: goal.frequency,
+              timesPerWeek: goal.timesPerWeek ?? (goal.frequency === "daily" ? 7 : 1),
               reminderTime: goal.reminderTime,
               reminderDay: goal.reminderDay,
               reminderDays: goal.reminderDays,
@@ -529,13 +527,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const canAddGoalCheck = useCallback(
-    (frequency: GoalFrequency) => {
-      const planId = user?.plan ?? "free";
-      const dailyCount = goals.filter((g) => g.frequency === "daily").length;
-      const weeklyCount = goals.filter((g) => g.frequency === "weekly").length;
-      const count = frequency === "daily" ? dailyCount : weeklyCount;
-      return canAddGoal(planId, frequency, count);
-    },
+    () => canAddGoal(user?.plan ?? "free", goals.length),
     [user, goals]
   );
 
