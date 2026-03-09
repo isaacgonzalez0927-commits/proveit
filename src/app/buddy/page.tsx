@@ -76,7 +76,7 @@ export default function BuddyPage() {
   const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
     () => getStoredAppSettings().defaultGoalGracePeriod
   );
-  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]); // which days to remind; for 7× all 7
+  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([]); // which days to remind; starts unselected
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );

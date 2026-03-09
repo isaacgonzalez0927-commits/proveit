@@ -73,9 +73,9 @@ export const PLANS: Plan[] = [
     name: "Free",
     priceMonthly: 0,
     priceYearly: 0,
-    maxGoals: 1,
+    maxGoals: 2,
     features: [
-      "1 goal (any frequency: 1–7× per week)",
+      "2 goals",
       "Full garden (Seedling → Flowering)",
       "3 plant styles to choose from",
       "Full AI verification (GPT-4 Vision)",
@@ -89,9 +89,9 @@ export const PLANS: Plan[] = [
     name: "Pro",
     priceMonthly: 5.99,
     priceYearly: 54,
-    maxGoals: 2,
+    maxGoals: 5,
     features: [
-      "2 goals (any frequency: 1–7× per week)",
+      "5 goals",
       "6 plant styles (including strawberry)",
       "6 accent themes (Pink, Violet, Ocean, Teal, Orange, Amber + more)",
       "AI verification with feedback",
@@ -108,7 +108,7 @@ export const PLANS: Plan[] = [
     priceYearly: 99,
     maxGoals: -1,
     features: [
-      "Unlimited goals (any frequency: 1–7× per week)",
+      "Unlimited goals",
       "All 8 plant styles (including cactus)",
       "All 10 accent themes",
       "Goal Break for any duration",

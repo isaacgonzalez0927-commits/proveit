@@ -119,9 +119,9 @@ export function DashboardTour() {
   const stepCount = TOUR_STEPS.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-sm rounded-2xl p-4 text-sm shadow-xl glass-surface">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-black">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 px-4 dark:bg-black/60">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-slate-900 p-4 text-sm shadow-xl dark:border-slate-700">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-300">
           Step {step + 1} of {stepCount}
         </p>
         {activeStep.emoji && (
@@ -129,17 +129,17 @@ export function DashboardTour() {
             {activeStep.emoji}
           </p>
         )}
-        <h2 className="mt-2 font-display text-lg font-bold text-black">
+        <h2 className="mt-2 font-display text-lg font-bold text-white">
           {activeStep.title}
         </h2>
-        <p className="mt-2 text-black">{activeStep.body}</p>
-        <p className="mt-3 text-xs text-black">{activeStep.note}</p>
+        <p className="mt-2 text-slate-200">{activeStep.body}</p>
+        <p className="mt-3 text-xs text-slate-400">{activeStep.note}</p>
 
         <div className="mt-4 flex items-center justify-between">
           <button
             type="button"
             onClick={skip}
-            className="text-xs text-black underline-offset-2 hover:underline opacity-80"
+            className="text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
           >
             Skip
           </button>
@@ -150,7 +150,7 @@ export function DashboardTour() {
                 type="button"
                 onClick={() => setStep(i)}
                 className={`h-1.5 rounded-full ${
-                  step === i ? "w-4 bg-black" : "w-2 bg-black/30"
+                  step === i ? "w-4 bg-white" : "w-2 bg-white/30"
                 }`}
                 aria-label={`Go to tour step ${i + 1}`}
               />
@@ -161,7 +161,7 @@ export function DashboardTour() {
               <button
                 type="button"
                 onClick={prev}
-                className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-200 hover:bg-slate-700"
               >
                 Back
               </button>
@@ -169,7 +169,7 @@ export function DashboardTour() {
             <button
               type="button"
               onClick={handleNextOrFinish}
-                className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white hover:bg-black/90"
+              className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-100"
             >
               {step < TOUR_STEPS.length - 1 ? "Next" : "Finish"}
             </button>
