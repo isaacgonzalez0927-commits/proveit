@@ -152,13 +152,25 @@ function LandingContent() {
             return;
           }
         } else {
-          const { data, error } = await supabase.auth.signUp({
+          const { error } = await supabase.auth.signUp({
             email: trimmedEmail,
             password,
             options: { emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined },
           });
           if (error) {
             setLoginError(error.message);
+            return;
+          }
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password,
+          });
+          if (signInError) {
+            setLoginError(
+              /confirm/i.test(signInError.message)
+                ? "Check your email to confirm your account, then sign in."
+                : signInError.message
+            );
             return;
           }
           setLoginError("");
