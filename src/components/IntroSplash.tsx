@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 
 const INTRO_SEEN_KEY = "proveit_intro_seen";
 const INTRO_DURATION_MS = 2200;
@@ -10,8 +11,13 @@ const INTRO_OUT_MS = 450;
 export function IntroSplash() {
   const pathname = usePathname();
   const [phase, setPhase] = useState<"init" | "show" | "exiting" | "done">("init");
+  const [mounted, setMounted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const outRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (pathname !== "/") {
@@ -45,13 +51,22 @@ export function IntroSplash() {
     };
   }, [pathname]);
 
-  if (phase === "done" || phase === "init") return null;
+  if (phase === "done" || phase === "init" || !mounted) return null;
 
-  return (
+  const splash = (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30 ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30 ${
         phase === "exiting" ? "animate-intro-out" : ""
       }`}
+      style={{
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100%",
+        minHeight: "100dvh",
+        height: "100dvh",
+      }}
       aria-hidden
     >
       {/* Soft pulsing glow behind logo */}
@@ -79,4 +94,6 @@ export function IntroSplash() {
       </div>
     </div>
   );
+
+  return createPortal(splash, document.body);
 }
