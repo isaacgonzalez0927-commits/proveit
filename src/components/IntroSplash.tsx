@@ -69,16 +69,6 @@ export function IntroSplash() {
       }}
       aria-hidden
     >
-      {/* Soft pulsing glow behind logo */}
-      <div
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        aria-hidden
-      >
-        <div
-          className="h-48 w-48 rounded-full bg-prove-400/30 dark:bg-prove-500/20 blur-3xl animate-intro-glow"
-          aria-hidden
-        />
-      </div>
       <div className="relative z-10 flex flex-col items-center gap-4">
         <span
           className="proveit-mark h-20 w-20 shrink-0 animate-intro-logo"
