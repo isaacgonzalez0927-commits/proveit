@@ -161,10 +161,6 @@ function LandingContent() {
             setLoginError(error.message);
             return;
           }
-          if (data?.user && !data?.session) {
-            setLoginError("Check your email to confirm your account, then sign in.");
-            return;
-          }
           setLoginError("");
           if (typeof window !== "undefined") {
             window.localStorage.setItem("proveit_display_name", trimmedName);
