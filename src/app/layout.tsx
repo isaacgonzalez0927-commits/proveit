@@ -51,7 +51,11 @@ const themeScript = `
       storedAccent === 'red' ||
       storedAccent === 'purple' ||
       storedAccent === 'indigo' ||
-      storedAccent === 'teal'
+      storedAccent === 'teal' ||
+      storedAccent === 'rose' ||
+      storedAccent === 'mint' ||
+      storedAccent === 'slate' ||
+      storedAccent === 'gold'
         ? storedAccent
         : 'green';
     var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

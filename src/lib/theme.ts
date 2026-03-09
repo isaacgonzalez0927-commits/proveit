@@ -1,14 +1,28 @@
 import type { PlanId } from "@/types";
 
 export type ThemeMode = "light" | "dark" | "system";
-export type AccentTheme = "green" | "pink" | "violet" | "ocean" | "orange" | "amber" | "red" | "purple" | "indigo" | "teal";
+export type AccentTheme =
+  | "green"
+  | "pink"
+  | "violet"
+  | "ocean"
+  | "orange"
+  | "amber"
+  | "red"
+  | "purple"
+  | "indigo"
+  | "teal"
+  | "rose"
+  | "mint"
+  | "slate"
+  | "gold";
 
 export const THEME_STORAGE_KEY = "proveit-theme";
 export const ACCENT_THEME_STORAGE_KEY = "proveit-accent-theme";
 export const DEFAULT_THEME_MODE: ThemeMode = "system";
 export const DEFAULT_ACCENT_THEME: AccentTheme = "green";
 
-/** Themes included in Pro (6). Premium gets all 10. */
+/** Themes included in Pro (6). Premium gets all colors. */
 export const PRO_ACCENT_THEMES: AccentTheme[] = ["pink", "violet", "ocean", "teal", "orange", "amber"];
 
 export const ACCENT_THEME_OPTIONS: Array<{
@@ -29,6 +43,10 @@ export const ACCENT_THEME_OPTIONS: Array<{
   { id: "red", label: "Red", swatchClassName: "bg-red-500", swatchColor: "#ef4444", paidOnly: true, premiumOnly: true },
   { id: "purple", label: "Purple", swatchClassName: "bg-purple-500", swatchColor: "#a855f7", paidOnly: true, premiumOnly: true },
   { id: "indigo", label: "Indigo", swatchClassName: "bg-indigo-500", swatchColor: "#6366f1", paidOnly: true, premiumOnly: true },
+  { id: "rose", label: "Rose", swatchClassName: "bg-rose-500", swatchColor: "#f43f5e", paidOnly: true, premiumOnly: true },
+  { id: "mint", label: "Mint", swatchClassName: "bg-emerald-400", swatchColor: "#34d399", paidOnly: true, premiumOnly: true },
+  { id: "slate", label: "Slate", swatchClassName: "bg-slate-500", swatchColor: "#64748b", paidOnly: true, premiumOnly: true },
+  { id: "gold", label: "Gold", swatchClassName: "bg-yellow-500", swatchColor: "#eab308", paidOnly: true, premiumOnly: true },
 ];
 
 function isThemeMode(value: string | null): value is ThemeMode {
@@ -36,9 +54,22 @@ function isThemeMode(value: string | null): value is ThemeMode {
 }
 
 function isAccentTheme(value: string | null): value is AccentTheme {
-  return value === "green" || value === "pink" || value === "violet" || value === "ocean" || 
-         value === "orange" || value === "amber" || value === "red" || value === "purple" || 
-         value === "indigo" || value === "teal";
+  return (
+    value === "green" ||
+    value === "pink" ||
+    value === "violet" ||
+    value === "ocean" ||
+    value === "orange" ||
+    value === "amber" ||
+    value === "red" ||
+    value === "purple" ||
+    value === "indigo" ||
+    value === "teal" ||
+    value === "rose" ||
+    value === "mint" ||
+    value === "slate" ||
+    value === "gold"
+  );
 }
 
 export function getStoredThemeMode(): ThemeMode {
