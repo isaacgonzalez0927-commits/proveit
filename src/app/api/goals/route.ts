@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     let result = await insertGoal(minimalInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
-      if (/times_per_week|times per week/i.test(msg)) {
+      if (/times.?per.?week/i.test(msg)) {
         const { times_per_week: _tw, ...withoutTimes } = minimalInsert;
         result = await insertGoal(withoutTimes);
       } else if (/grace_period|grace period|reminder|does not exist/i.test(msg)) {
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     let result = await insertGoal(fullInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
-      if (/times_per_week|times per week/i.test(msg)) {
+      if (/times.?per.?week/i.test(msg)) {
         const { times_per_week: _tw, ...withoutTimes } = fullInsert;
         result = await insertGoal(withoutTimes);
       } else if (/grace_period|grace period|does not exist/i.test(msg)) {
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       }
       if (result.error) {
         const retryMsg = result.error.message ?? "";
-        if (/times_per_week|times per week/i.test(retryMsg)) {
+        if (/times.?per.?week/i.test(retryMsg)) {
           const { times_per_week: _tw, ...withoutTimesWeekly } = weeklyInsert;
           result = await insertGoal(withoutTimesWeekly);
         } else if (/reminder_day|reminder_days|does not exist/i.test(retryMsg)) {
