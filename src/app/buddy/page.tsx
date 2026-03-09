@@ -35,6 +35,8 @@ import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
 const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
+const START_KEY = "proveit_start_tour";
+const RESUME_KEY = "proveit_tour_resume_step";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
@@ -283,6 +285,8 @@ export default function BuddyPage() {
       setGoalManagerMessage("Goal added to your garden.");
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(GARDEN_HINT_KEY);
+        window.localStorage.setItem(START_KEY, "1");
+        window.localStorage.setItem(RESUME_KEY, "2");
       }
       setShowGardenTourHint(false);
       if (hadNoGoals) setShowFirstGoalCongrats(true);
@@ -468,8 +472,8 @@ export default function BuddyPage() {
                 Step 2: Create your first goal
               </p>
               <p className="mt-1">
-                Give your goal a name, choose how many times per week you&apos;ll prove it, pick reminder
-                days and a time, then tap <span className="font-semibold">Add goal</span> to plant it in your garden.
+                Give your goal a name, pick the days you&apos;ll be reminded and a time, then tap{" "}
+                <span className="font-semibold">Add goal</span> to plant it in your garden.
               </p>
             </div>
           )}

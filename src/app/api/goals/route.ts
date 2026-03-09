@@ -93,8 +93,6 @@ export async function POST(request: NextRequest) {
   const isDaily = frequency === "daily";
   const reminderDayVal = reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null);
   const reminderDaysVal = Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null;
-  const timesPerWeekVal =
-    typeof timesPerWeek === "number" && timesPerWeek >= 1 && timesPerWeek <= 7 ? timesPerWeek : isDaily ? 7 : 1;
 
   // Minimal columns that exist in the base goals table (no reminder_day, reminder_days, grace_period).
   const minimalInsert: Record<string, unknown> = {
@@ -105,7 +103,6 @@ export async function POST(request: NextRequest) {
     frequency,
     reminder_time: reminderTime ?? null,
   };
-  if (timesPerWeekVal !== (isDaily ? 7 : 1)) minimalInsert.times_per_week = timesPerWeekVal;
 
   // Daily: only use minimal columns so we never touch reminder_day/reminder_days (avoids "could not find reminder day" on strict or older DBs).
   // Weekly: add reminder columns if present in schema.

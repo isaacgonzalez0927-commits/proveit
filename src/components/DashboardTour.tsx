@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const START_KEY = "proveit_start_tour";
 const DONE_KEY = "proveit_tour_done";
 const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
+const RESUME_KEY = "proveit_tour_resume_step";
 const TOUR_VERSION = "2";
 
 interface TourStep {
@@ -26,7 +27,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Create a goal + choose plant style",
     body:
-      "Open the Garden tab, tap Add goal, set goal frequency (1–7× per week), reminder days and time, and choose the plant style.",
+      "Open the Garden tab, tap Add goal, pick the days of the week for reminders and a time, then choose the plant style.",
     note: "Plant style only affects the final stage (fully grown); growth stages before that look the same for all styles.",
   },
   {
@@ -39,7 +40,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Grow your Garden",
     body:
       "The Garden tab shows every goal as its own plant card with streak, stage, and watering status.",
-    note: "Submit proof the required times per week (e.g. 3×) to keep your streak.",
+    note: "Submit proof on your chosen days to keep your streak.",
   },
   {
     title: "Track progress from Home",
@@ -64,7 +65,14 @@ export function DashboardTour() {
     if (typeof window === "undefined") return;
     const shouldStart = window.localStorage.getItem(START_KEY);
     const done = window.localStorage.getItem(DONE_KEY);
-    if (shouldStart && done !== TOUR_VERSION) {
+    const resume = window.localStorage.getItem(RESUME_KEY);
+    if (done === TOUR_VERSION) return;
+    if (resume) {
+      const idx = Number.parseInt(resume, 10);
+      setStep(Number.isFinite(idx) && idx >= 0 && idx < TOUR_STEPS.length ? idx : 0);
+      setOpen(true);
+    } else if (shouldStart) {
+      setStep(0);
       setOpen(true);
     }
   }, []);
@@ -74,6 +82,7 @@ export function DashboardTour() {
       window.localStorage.setItem(DONE_KEY, TOUR_VERSION);
       window.localStorage.removeItem(START_KEY);
       window.localStorage.removeItem(GARDEN_HINT_KEY);
+      window.localStorage.removeItem(RESUME_KEY);
     }
     setOpen(false);
   };
@@ -87,8 +96,7 @@ export function DashboardTour() {
     if (step === 1) {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(GARDEN_HINT_KEY, TOUR_VERSION);
-        window.localStorage.setItem(DONE_KEY, TOUR_VERSION);
-        window.localStorage.removeItem(START_KEY);
+        window.localStorage.setItem(RESUME_KEY, "2");
       }
       setOpen(false);
       router.push("/buddy");
