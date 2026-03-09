@@ -113,9 +113,6 @@ function DashboardContent() {
       router.replace("/");
       return;
     }
-    if (!hasSelectedPlan) {
-      router.replace("/?step=plan");
-    }
   }, [authReady, user, hasSelectedPlan, router]);
 
   if (!authReady || !user || !hasSelectedPlan) {
