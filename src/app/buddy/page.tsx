@@ -69,7 +69,6 @@ export default function BuddyPage() {
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newTimesPerWeek, setNewTimesPerWeek] = useState<TimesPerWeek>(7);
   const [newDailyTime, setNewDailyTime] = useState("09:00");
   const [newWeeklyTime, setNewWeeklyTime] = useState("10:00");
   const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
@@ -231,7 +230,6 @@ export default function BuddyPage() {
     const appSettings = getStoredAppSettings();
     setNewTitle("");
     setNewDescription("");
-    setNewTimesPerWeek(appSettings.defaultGoalFrequency === "daily" ? 7 : 1);
     setNewDailyTime("09:00");
     setNewWeeklyTime("10:00");
     setNewWeeklyDays(appSettings.defaultGoalFrequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : [1]);
@@ -251,11 +249,13 @@ export default function BuddyPage() {
       return;
     }
     const reminderDays =
-      newTimesPerWeek === 7 ? [0, 1, 2, 3, 4, 5, 6] : newWeeklyDays;
-    if (newTimesPerWeek < 7 && reminderDays.length < newTimesPerWeek) {
-      setGoalManagerMessage(`Pick at least ${newTimesPerWeek} day(s) for reminders.`);
+      newWeeklyDays.length === 0 ? [] : [...newWeeklyDays].sort((a, b) => a - b);
+    if (reminderDays.length === 0) {
+      setGoalManagerMessage("Pick at least one reminder day.");
       return;
     }
+    const timesPerWeek = Math.min(Math.max(reminderDays.length, 1), 7) as TimesPerWeek;
+    const isDaily = reminderDays.length === 7;
 
     const hadNoGoals = goals.length === 0;
     setIsAddingGoal(true);
@@ -263,11 +263,11 @@ export default function BuddyPage() {
       const result = await addGoal({
         title: newTitle.trim(),
         description: newDescription.trim() || undefined,
-        frequency: newTimesPerWeek === 7 ? "daily" : "weekly",
-        timesPerWeek: newTimesPerWeek,
-        reminderTime: newTimesPerWeek === 7 ? newDailyTime : newWeeklyTime,
-        reminderDay: reminderDays.length > 0 ? reminderDays[0] : undefined,
-        reminderDays: newTimesPerWeek === 7 ? undefined : reminderDays,
+        frequency: isDaily ? "daily" : "weekly",
+        timesPerWeek,
+        reminderTime: isDaily ? newDailyTime : newWeeklyTime,
+        reminderDay: reminderDays[0],
+        reminderDays: isDaily ? undefined : reminderDays,
         gracePeriod: newGracePeriod,
       });
       if (!result.created) {
@@ -552,76 +552,48 @@ export default function BuddyPage() {
             />
 
             <div className="mt-3">
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Goal frequency</p>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Reminder days</p>
               <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                How many times per week you need to submit proof. 7× = every day.
+                Pick the days of the week this goal can be due. You can submit proof on any selected day.
               </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => {
-                      setNewTimesPerWeek(n);
-                      if (n === 7) setNewWeeklyDays([0, 1, 2, 3, 4, 5, 6]);
-                    }}
-                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
-                      newTimesPerWeek === n
+              {newWeeklyDays.length === 0 && (
+                <p className="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  Pick at least one day.
+                </p>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {DAY_NAMES.map((day, index) => (
+                  <label
+                    key={day}
+                    className={`inline-flex cursor-pointer items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+                      newWeeklyDays.includes(index)
                         ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
                         : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
                     }`}
                   >
-                    {n}×{n === 7 ? " (every day)" : ""}
-                  </button>
+                    <input
+                      type="checkbox"
+                      checked={newWeeklyDays.includes(index)}
+                      onChange={(e) => {
+                        if (e.target.checked) setNewWeeklyDays((d) => [...d, index].sort((a, b) => a - b));
+                        else setNewWeeklyDays((d) => d.filter((x) => x !== index));
+                      }}
+                      className="sr-only"
+                    />
+                    {day.slice(0, 3)}
+                  </label>
                 ))}
               </div>
             </div>
-
-            {newTimesPerWeek < 7 && (
-              <div className="mt-3">
-                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Reminder on these days</p>
-                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  Pick at least {newTimesPerWeek} day{newTimesPerWeek !== 1 ? "s" : ""}. You must submit proof {newTimesPerWeek}× that week (any days).
-                </p>
-                {newWeeklyDays.length < newTimesPerWeek && (
-                  <p className="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                    Pick at least {newTimesPerWeek} day{newTimesPerWeek !== 1 ? "s" : ""}.
-                  </p>
-                )}
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {DAY_NAMES.map((day, index) => (
-                    <label
-                      key={day}
-                      className={`inline-flex cursor-pointer items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
-                        newWeeklyDays.includes(index)
-                          ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
-                          : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={newWeeklyDays.includes(index)}
-                        onChange={(e) => {
-                          if (e.target.checked) setNewWeeklyDays((d) => [...d, index].sort((a, b) => a - b));
-                          else setNewWeeklyDays((d) => d.filter((x) => x !== index));
-                        }}
-                        className="sr-only"
-                      />
-                      {day.slice(0, 3)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="text-xs text-slate-700 dark:text-slate-300">
                 Reminder time
                 <input
                   type="time"
-                  value={newTimesPerWeek === 7 ? newDailyTime : newWeeklyTime}
+                  value={newWeeklyDays.length === 7 ? newDailyTime : newWeeklyTime}
                   onChange={(e) =>
-                    newTimesPerWeek === 7
+                    newWeeklyDays.length === 7
                       ? setNewDailyTime(e.target.value)
                       : setNewWeeklyTime(e.target.value)
                   }
