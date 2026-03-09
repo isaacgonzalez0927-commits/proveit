@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
   });
 
   const { error } = await admin.auth.admin.updateUserById(userId, {
-    email_confirmed_at: new Date().toISOString(),
+    // Mark email as confirmed so the user can sign in immediately.
+    email_confirm: true,
   });
 
   if (error) {
