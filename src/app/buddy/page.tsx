@@ -34,6 +34,7 @@ import { CongratulationsModal } from "@/components/CongratulationsModal";
 import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
+const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
@@ -93,10 +94,27 @@ export default function BuddyPage() {
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasPlayedFinalAnimationForGoal = useRef<Set<string>>(new Set());
   const [, setFinalAnimationTick] = useState(0);
+  const [showGardenTourHint, setShowGardenTourHint] = useState(false);
 
   useEffect(() => {
     setDeveloperSettings(getStoredDeveloperModeSettings());
   }, []);
+
+  // When the dashboard tour sends the user to the Garden, auto-open the create form and show a hint.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!user) return;
+    if (goals.length > 0) {
+      window.localStorage.removeItem(GARDEN_HINT_KEY);
+      setShowGardenTourHint(false);
+      return;
+    }
+    const hint = window.localStorage.getItem(GARDEN_HINT_KEY);
+    if (hint) {
+      setShowGardenTourHint(true);
+      setShowCreateForm(true);
+    }
+  }, [user, goals.length]);
 
   // Mark goals at final stage so we only play the full-grown animation once (use goals + streak/variant, no garden ref)
   const finalStageDeps = goals.map((g) => `${g.id}:${getGoalStreak(g, getSubmissionsForGoal)}:${getGoalPlantVariant(g.id)}`).join("|");
@@ -263,6 +281,10 @@ export default function BuddyPage() {
       setShowCreateForm(false);
       resetCreateGoalForm();
       setGoalManagerMessage("Goal added to your garden.");
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(GARDEN_HINT_KEY);
+      }
+      setShowGardenTourHint(false);
       if (hadNoGoals) setShowFirstGoalCongrats(true);
     } finally {
       setIsAddingGoal(false);
@@ -440,6 +462,17 @@ export default function BuddyPage() {
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {plan.name} plan · {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{plan.maxGoals !== 1 ? "s" : ""}
           </p>
+          {showGardenTourHint && (
+            <div className="mt-3 rounded-2xl border border-prove-200 bg-prove-50 px-3 py-3 text-xs text-slate-700 dark:border-prove-800 dark:bg-prove-950/40 dark:text-slate-200">
+              <p className="font-semibold text-prove-700 dark:text-prove-300">
+                Step 2: Create your first goal
+              </p>
+              <p className="mt-1">
+                Give your goal a name, choose how many times per week you&apos;ll prove it, pick reminder
+                days and a time, then tap <span className="font-semibold">Add goal</span> to plant it in your garden.
+              </p>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
