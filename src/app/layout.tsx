@@ -52,7 +52,6 @@ const themeScript = `
       storedAccent === 'purple' ||
       storedAccent === 'indigo' ||
       storedAccent === 'teal' ||
-      storedAccent === 'rose' ||
       storedAccent === 'mint' ||
       storedAccent === 'slate' ||
       storedAccent === 'gold'

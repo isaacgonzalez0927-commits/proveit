@@ -331,38 +331,6 @@
   --gradient-2: rgba(13, 148, 136, 0.08);
 }
 
-/* Rose theme - Light mode */
-:root[data-accent-theme="rose"] {
-  --prove-50-rgb: 255 241 242;
-  --prove-100-rgb: 255 228 230;
-  --prove-200-rgb: 254 205 211;
-  --prove-300-rgb: 253 164 175;
-  --prove-400-rgb: 251 113 133;
-  --prove-500-rgb: 244 63 94;
-  --prove-600-rgb: 225 29 72;
-  --prove-700-rgb: 190 18 60;
-  --prove-800-rgb: 159 18 57;
-  --prove-900-rgb: 136 19 55;
-  --prove-950-rgb: 76 5 25;
-  --bg-app: #fff1f2;
-  --bg-card: #ffffff;
-  --text-primary: #1f0f12;
-  --text-muted: #9f1239;
-  --border: #ffe4e6;
-  --gradient-1: rgba(244, 63, 94, 0.2);
-  --gradient-2: rgba(225, 29, 72, 0.14);
-}
-
-:root[data-accent-theme="rose"].dark {
-  --bg-app: #1f0f12;
-  --bg-card: rgba(76, 5, 25, 0.9);
-  --text-primary: #fff1f2;
-  --text-muted: #fda4af;
-  --border: rgba(190, 18, 60, 0.5);
-  --gradient-1: rgba(244, 63, 94, 0.12);
-  --gradient-2: rgba(225, 29, 72, 0.08);
-}
-
 /* Mint theme - Light mode */
 :root[data-accent-theme="mint"] {
   --prove-50-rgb: 236 253 245;

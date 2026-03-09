@@ -12,7 +12,6 @@ export type AccentTheme =
   | "purple"
   | "indigo"
   | "teal"
-  | "rose"
   | "mint"
   | "slate"
   | "gold";
@@ -43,7 +42,6 @@ export const ACCENT_THEME_OPTIONS: Array<{
   { id: "red", label: "Red", swatchClassName: "bg-red-500", swatchColor: "#ef4444", paidOnly: true, premiumOnly: true },
   { id: "purple", label: "Purple", swatchClassName: "bg-purple-500", swatchColor: "#a855f7", paidOnly: true, premiumOnly: true },
   { id: "indigo", label: "Indigo", swatchClassName: "bg-indigo-500", swatchColor: "#6366f1", paidOnly: true, premiumOnly: true },
-  { id: "rose", label: "Rose", swatchClassName: "bg-rose-500", swatchColor: "#f43f5e", paidOnly: true, premiumOnly: true },
   { id: "mint", label: "Mint", swatchClassName: "bg-emerald-400", swatchColor: "#34d399", paidOnly: true, premiumOnly: true },
   { id: "slate", label: "Slate", swatchClassName: "bg-slate-500", swatchColor: "#64748b", paidOnly: true, premiumOnly: true },
   { id: "gold", label: "Gold", swatchClassName: "bg-yellow-500", swatchColor: "#eab308", paidOnly: true, premiumOnly: true },
@@ -65,7 +63,6 @@ function isAccentTheme(value: string | null): value is AccentTheme {
     value === "purple" ||
     value === "indigo" ||
     value === "teal" ||
-    value === "rose" ||
     value === "mint" ||
     value === "slate" ||
     value === "gold"
