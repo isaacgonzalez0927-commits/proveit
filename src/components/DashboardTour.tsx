@@ -7,7 +7,7 @@ const START_KEY = "proveit_start_tour";
 const DONE_KEY = "proveit_tour_done";
 const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
 const RESUME_KEY = "proveit_tour_resume_step";
-const TOUR_VERSION = "2";
+const TOUR_VERSION = "3";
 
 interface TourStep {
   title: string;
@@ -25,10 +25,16 @@ const TOUR_STEPS: TourStep[] = [
     note: "Quick tip: use the bottom tabs to move between Home, Garden, Gallery, and Plan.",
   },
   {
-    title: "Create a goal + choose plant style",
+    title: "Open Goal Garden",
     body:
-      "Open the Garden tab, tap Add goal, pick the days of the week for reminders and a time, then choose the plant style.",
-    note: "Plant style only affects the final stage (fully grown); growth stages before that look the same for all styles.",
+      "This is where you can manage all of your goals, reminders, and plant styles.",
+    note: "Tap Next and we will take you there.",
+  },
+  {
+    title: "Create your first goal",
+    body:
+      "First, give your goal a name that can be proven with a picture. Then choose reminder days and a time.",
+    note: "Plant style changes the final full-grown look.",
   },
   {
     title: "Complete goals with proof photos",
@@ -92,11 +98,11 @@ export function DashboardTour() {
   };
 
   const handleNextOrFinish = () => {
-    // Step 2: actually guide them into the Garden to create a goal.
+    // Step 2: guide them into Goal Garden.
     if (step === 1) {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(GARDEN_HINT_KEY, TOUR_VERSION);
-        window.localStorage.setItem(RESUME_KEY, "2");
+        window.localStorage.setItem(RESUME_KEY, "3");
       }
       setOpen(false);
       router.push("/buddy");
@@ -119,7 +125,7 @@ export function DashboardTour() {
   const stepCount = TOUR_STEPS.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 px-4 dark:bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 px-4 backdrop-blur-md dark:bg-black/30">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-slate-900 p-4 text-sm shadow-xl dark:border-slate-700">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-300">
           Step {step + 1} of {stepCount}

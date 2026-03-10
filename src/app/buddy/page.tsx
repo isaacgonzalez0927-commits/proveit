@@ -96,24 +96,27 @@ export default function BuddyPage() {
   const hasPlayedFinalAnimationForGoal = useRef<Set<string>>(new Set());
   const [, setFinalAnimationTick] = useState(0);
   const [showGardenTourHint, setShowGardenTourHint] = useState(false);
+  const [gardenTourHintStep, setGardenTourHintStep] = useState<"manage" | "create">("manage");
 
   useEffect(() => {
     setDeveloperSettings(getStoredDeveloperModeSettings());
   }, []);
 
-  // When the dashboard tour sends the user to the Garden, auto-open the create form and show a hint.
+  // When the dashboard tour sends the user to the Garden, show a guided hint in-place.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!user) return;
     if (goals.length > 0) {
       window.localStorage.removeItem(GARDEN_HINT_KEY);
       setShowGardenTourHint(false);
+      setGardenTourHintStep("manage");
       return;
     }
     const hint = window.localStorage.getItem(GARDEN_HINT_KEY);
     if (hint) {
       setShowGardenTourHint(true);
-      setShowCreateForm(true);
+      setGardenTourHintStep("manage");
+      setShowCreateForm(false);
     }
   }, [user, goals.length]);
 
@@ -234,7 +237,7 @@ export default function BuddyPage() {
     setNewDescription("");
     setNewDailyTime("09:00");
     setNewWeeklyTime("10:00");
-    setNewWeeklyDays(appSettings.defaultGoalFrequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : [1]);
+    setNewWeeklyDays([]);
     setNewGracePeriod(appSettings.defaultGoalGracePeriod);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
   };
@@ -286,9 +289,10 @@ export default function BuddyPage() {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(GARDEN_HINT_KEY);
         window.localStorage.setItem(START_KEY, "1");
-        window.localStorage.setItem(RESUME_KEY, "2");
+        window.localStorage.setItem(RESUME_KEY, "3");
       }
       setShowGardenTourHint(false);
+      setGardenTourHintStep("manage");
       if (hadNoGoals) setShowFirstGoalCongrats(true);
     } finally {
       setIsAddingGoal(false);
@@ -468,13 +472,36 @@ export default function BuddyPage() {
           </p>
           {showGardenTourHint && (
             <div className="mt-3 rounded-2xl border border-prove-200 bg-prove-50 px-3 py-3 text-xs text-slate-700 dark:border-prove-800 dark:bg-prove-950/40 dark:text-slate-200">
-              <p className="font-semibold text-prove-700 dark:text-prove-300">
-                Step 2: Create your first goal
-              </p>
-              <p className="mt-1">
-                Give your goal a name, pick the days you&apos;ll be reminded and a time, then tap{" "}
-                <span className="font-semibold">Add goal</span> to plant it in your garden.
-              </p>
+              {gardenTourHintStep === "manage" ? (
+                <>
+                  <p className="font-semibold text-prove-700 dark:text-prove-300">
+                    Step 2: Goal Garden
+                  </p>
+                  <p className="mt-1">
+                    This is where you can manage your goals, schedules, and plant styles.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGardenTourHintStep("create");
+                      setShowCreateForm(true);
+                    }}
+                    className="mt-2 inline-flex items-center rounded-lg border border-prove-300 px-2.5 py-1 text-[11px] font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-700 dark:text-prove-300 dark:hover:bg-prove-900/40"
+                  >
+                    Show me how to create one
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-prove-700 dark:text-prove-300">
+                    Step 3: Create your first goal
+                  </p>
+                  <p className="mt-1">
+                    First, give the goal a name that can be proven with a picture. Then pick reminder days/time and tap{" "}
+                    <span className="font-semibold">Add goal</span>.
+                  </p>
+                </>
+              )}
             </div>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">

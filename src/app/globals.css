@@ -824,3 +824,21 @@ input[type="file"] {
 .animate-intro-out {
   animation: intro-out 0.45s ease-out forwards;
 }
+
+@keyframes tab-slide-left {
+  0% { opacity: 0.75; transform: translateX(20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes tab-slide-right {
+  0% { opacity: 0.75; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.animate-tab-slide-left {
+  animation: tab-slide-left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-tab-slide-right {
+  animation: tab-slide-right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}

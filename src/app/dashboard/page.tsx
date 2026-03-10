@@ -401,6 +401,18 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
+                    ) : verified && todayProof?.imageDataUrl ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
+                        aria-label="View today's proof"
+                      >
+                        <img
+                          src={todayProof.imageDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </Link>
                     ) : verified ? (
                       <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
                         <CheckCircle2 className="h-4 w-4" />
@@ -444,6 +456,10 @@ function DashboardContent() {
                   const d = safeParseISO(s.date);
                   return !!d && isThisWeek(d) && s.imageDataUrl;
                 });
+                const thisWeekVerifiedSub = subs.find((s) => {
+                  const d = safeParseISO(s.date);
+                  return !!d && isThisWeek(d) && s.status === "verified" && !!s.imageDataUrl;
+                });
                 const due = isGoalDue(goal);
                 const dueLabel = getNextDueLabel(goal);
                 const canSubmitNow = isWithinSubmissionWindow(goal);
@@ -476,6 +492,18 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
+                    ) : thisWeekProof && thisWeekVerifiedSub?.imageDataUrl ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
+                        aria-label="View this week's proof"
+                      >
+                        <img
+                          src={thisWeekVerifiedSub.imageDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </Link>
                     ) : thisWeekProof ? (
                       <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
                         <CheckCircle2 className="h-4 w-4" />

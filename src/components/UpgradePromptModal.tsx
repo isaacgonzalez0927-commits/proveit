@@ -6,6 +6,7 @@ import { X, ChevronRight } from "lucide-react";
 interface UpgradePromptModalProps {
   open: boolean;
   onClose: () => void;
+  requiredPlan?: "pro" | "premium";
   title?: string;
   message?: string;
 }
@@ -13,10 +14,18 @@ interface UpgradePromptModalProps {
 export function UpgradePromptModal({
   open,
   onClose,
-  title = "Pro or Premium feature",
-  message = "Upgrade to Pro or Premium to use this feature.",
+  requiredPlan = "pro",
+  title,
+  message,
 }: UpgradePromptModalProps) {
   if (!open) return null;
+  const effectiveTitle =
+    title ?? (requiredPlan === "premium" ? "Premium feature" : "Pro feature");
+  const effectiveMessage =
+    message ??
+    (requiredPlan === "premium"
+      ? "Upgrade to Premium to unlock this feature."
+      : "Upgrade to Pro or Premium to unlock this feature.");
 
   return (
     <div
@@ -26,11 +35,11 @@ export function UpgradePromptModal({
       aria-labelledby="upgrade-prompt-title"
     >
       <div
-        className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/70"
+        className="absolute inset-0 bg-slate-900/20 backdrop-blur-md dark:bg-slate-950/35"
         aria-hidden
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl p-5 shadow-xl glass-card">
+      <div className="relative w-full max-w-sm rounded-2xl border p-5 shadow-xl glass-card">
         <button
           type="button"
           onClick={onClose}
@@ -40,16 +49,16 @@ export function UpgradePromptModal({
           <X className="h-5 w-5" />
         </button>
         <h2 id="upgrade-prompt-title" className="pr-8 font-display text-lg font-semibold text-slate-900 dark:text-white">
-          {title}
+          {effectiveTitle}
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{message}</p>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{effectiveMessage}</p>
         <div className="mt-5 flex flex-col gap-2">
           <Link
             href="/pricing"
             onClick={onClose}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
           >
-            View Pro & Premium plans
+            {requiredPlan === "premium" ? "View Premium plan" : "View Pro & Premium plans"}
             <ChevronRight className="h-4 w-4" />
           </Link>
           <button

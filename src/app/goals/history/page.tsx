@@ -8,15 +8,17 @@ import {
   Calendar,
   Sun,
   ChevronRight,
+  ChevronLeft,
   Lock,
   Flame,
   Trash2,
   SlidersHorizontal,
+  Grid3X3,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { getPlan } from "@/lib/store";
 import { safeParseISO } from "@/lib/dateUtils";
-import { format, isThisWeek } from "date-fns";
+import { addMonths, format, getDay, getDaysInMonth, isSameMonth, isThisWeek, startOfMonth } from "date-fns";
 import { getGoalStreak } from "@/lib/goalProgress";
 import {
   DEFAULT_HISTORY_DISPLAY_SETTINGS,
@@ -38,6 +40,8 @@ function GalleryContent() {
   const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
   const [selectedGoalId, setSelectedGoalId] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => startOfMonth(new Date()));
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
@@ -94,6 +98,20 @@ function GalleryContent() {
 
   const filteredGoals =
     selectedGoalId === "all" ? byGoal : byGoal.filter((entry) => entry.goal.id === selectedGoalId);
+  const calendarProofByDate = useMemo(() => {
+    const entries =
+      selectedGoalId === "all"
+        ? verifiedSubs
+        : verifiedSubs.filter((submission) => submission.goalId === selectedGoalId);
+    const map = new Map<string, (typeof entries)[number]>();
+    for (const submission of entries) {
+      const existing = map.get(submission.date);
+      if (!existing || new Date(submission.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+        map.set(submission.date, submission);
+      }
+    }
+    return map;
+  }, [selectedGoalId, verifiedSubs]);
 
   const enabledSettingCount = [
     historySettings.showProofPhotos,
@@ -101,6 +119,18 @@ function GalleryContent() {
     historySettings.showVerifiedCount,
     historySettings.showThisWeekBadge,
   ].filter(Boolean).length;
+  const calendarGridDays = useMemo(() => {
+    const first = startOfMonth(calendarMonth);
+    const firstWeekDay = getDay(first);
+    const daysInMonth = getDaysInMonth(first);
+    return {
+      monthStart: first,
+      firstWeekDay,
+      daysInMonth,
+      leadingDays: Array.from({ length: firstWeekDay }, (_, i) => i),
+      monthDays: Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    };
+  }, [calendarMonth]);
 
   const handleHideGoalFromHistory = async (goalId: string, goalTitle: string) => {
     setHistoryActionMessage(null);
@@ -143,8 +173,8 @@ function GalleryContent() {
         </div>
 
         {!isPro ? (
-          <div className="rounded-2xl border-2 border-dashed border-prove-200 bg-prove-50/50 p-8 text-center dark:border-prove-800 dark:bg-prove-950/30">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-prove-100 dark:bg-prove-900/50">
+          <div className="rounded-2xl p-8 text-center glass-card">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-prove-300/70 bg-prove-100/80 dark:border-prove-700/70 dark:bg-prove-900/50">
               <Lock className="h-7 w-7 text-prove-600 dark:text-prove-400" />
             </div>
             <h2 className="mt-4 font-display text-lg font-semibold text-slate-900 dark:text-white">
@@ -194,6 +224,31 @@ function GalleryContent() {
                       </option>
                     ))}
                   </select>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                        viewMode === "list"
+                          ? "bg-prove-600 text-white"
+                          : "border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      List
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("calendar")}
+                      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                        viewMode === "calendar"
+                          ? "bg-prove-600 text-white"
+                          : "border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <Grid3X3 className="h-3.5 w-3.5" />
+                      Calendar
+                    </button>
+                  </div>
                 </div>
 
                 {historyActionMessage && (
@@ -202,108 +257,173 @@ function GalleryContent() {
                   </p>
                 )}
 
-                {filteredGoals.map(({ goal, completedDates, subsByDate, streak }) => (
-                  <section
-                    key={goal.id}
-                    className="rounded-2xl p-5 glass-card"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        {goal.frequency === "daily" ? (
-                          <Sun className="h-5 w-5 shrink-0 text-amber-500" />
-                        ) : (
-                          <Calendar className="h-5 w-5 shrink-0 text-prove-500" />
-                        )}
-                        <div>
-                          <h3 className="truncate font-semibold text-slate-900 dark:text-white">
-                            {goal.title}
-                          </h3>
-                          <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                            {historySettings.showStreak && (
-                              <Flame className="h-3.5 w-3.5 text-amber-500" />
-                            )}
-                            {[
-                              historySettings.showStreak
-                                ? `${streak} ${goal.frequency === "daily" ? "day" : "week"} streak`
-                                : null,
-                              historySettings.showVerifiedCount ? `${completedDates.length} verified` : null,
-                            ]
-                              .filter((part): part is string => !!part)
-                              .join(" · ") || (goal.frequency === "daily" ? "Daily goal" : "Weekly goal")}
-                          </p>
+                {viewMode === "list" ? (
+                  filteredGoals.map(({ goal, completedDates, subsByDate, streak }) => (
+                    <section
+                      key={goal.id}
+                      className="rounded-2xl p-5 glass-card"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {goal.frequency === "daily" ? (
+                            <Sun className="h-5 w-5 shrink-0 text-amber-500" />
+                          ) : (
+                            <Calendar className="h-5 w-5 shrink-0 text-prove-500" />
+                          )}
+                          <div>
+                            <h3 className="truncate font-semibold text-slate-900 dark:text-white">
+                              {goal.title}
+                            </h3>
+                            <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                              {historySettings.showStreak && (
+                                <Flame className="h-3.5 w-3.5 text-amber-500" />
+                              )}
+                              {[
+                                historySettings.showStreak
+                                  ? `${streak} ${goal.frequency === "daily" ? "day" : "week"} streak`
+                                  : null,
+                                historySettings.showVerifiedCount ? `${completedDates.length} verified` : null,
+                              ]
+                                .filter((part): part is string => !!part)
+                                .join(" · ") || (goal.frequency === "daily" ? "Daily goal" : "Weekly goal")}
+                            </p>
+                          </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleHideGoalFromHistory(goal.id, goal.title)}
+                          disabled={hidingGoalId === goal.id}
+                          title="Hide from gallery"
+                          aria-label={`Hide ${goal.title} from gallery`}
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
+
+                      {historySettings.showProofPhotos ? (
+                        <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                          {completedDates.slice(0, 24).map((dateStr) => {
+                            const d = safeParseISO(dateStr);
+                            const label = d ? format(d, "MMM d, yyyy") : dateStr;
+                            const isThisWeekDate = d ? isThisWeek(d) : false;
+                            const sub = subsByDate.get(dateStr);
+                            const hasImage = !!(sub?.imageDataUrl && sub.imageDataUrl.length > 10);
+
+                            return (
+                              <li
+                                key={dateStr}
+                                className="rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/50"
+                              >
+                                <div className="aspect-square overflow-hidden rounded-md bg-slate-200 dark:bg-slate-700">
+                                  {hasImage ? (
+                                    <img src={sub!.imageDataUrl} alt="" className="h-full w-full object-cover" />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                      <CheckCircle2 className="h-6 w-6 text-prove-500" />
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+                                  {label}
+                                  {historySettings.showThisWeekBadge && isThisWeekDate && (
+                                    <span className="ml-1 rounded bg-prove-100 px-1 py-0.5 text-[10px] font-medium text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
+                                      This week
+                                    </span>
+                                  )}
+                                </p>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <ul className="mt-4 flex flex-wrap gap-2">
+                          {completedDates.slice(0, 24).map((dateStr) => {
+                            const d = safeParseISO(dateStr);
+                            const label = d ? format(d, "MMM d") : dateStr;
+                            return (
+                              <li
+                                key={dateStr}
+                                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              >
+                                {label}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+
+                      {completedDates.length > 24 && (
+                        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                          + {completedDates.length - 24} more completed
+                        </p>
+                      )}
+                    </section>
+                  ))
+                ) : (
+                  <section className="rounded-2xl p-5 glass-card">
+                    <div className="flex items-center justify-between gap-2">
                       <button
                         type="button"
-                        onClick={() => handleHideGoalFromHistory(goal.id, goal.title)}
-                        disabled={hidingGoalId === goal.id}
-                        title="Hide from gallery"
-                        aria-label={`Hide ${goal.title} from gallery`}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-70 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"
+                        onClick={() => setCalendarMonth((m) => startOfMonth(addMonths(m, -1)))}
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Previous month"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {format(calendarGridDays.monthStart, "MMMM yyyy")}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setCalendarMonth((m) => startOfMonth(addMonths(m, 1)))}
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Next month"
+                      >
+                        <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
-
-                    {historySettings.showProofPhotos ? (
-                      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {completedDates.slice(0, 24).map((dateStr) => {
-                          const d = safeParseISO(dateStr);
-                          const label = d ? format(d, "MMM d, yyyy") : dateStr;
-                          const isThisWeekDate = d ? isThisWeek(d) : false;
-                          const sub = subsByDate.get(dateStr);
-                          const hasImage = !!(sub?.imageDataUrl && sub.imageDataUrl.length > 10);
-
-                          return (
-                            <li
-                              key={dateStr}
-                              className="rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/50"
+                    <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                        <span key={day}>{day}</span>
+                      ))}
+                    </div>
+                    <div className="mt-1 grid grid-cols-7 gap-1.5">
+                      {calendarGridDays.leadingDays.map((pad) => (
+                        <div key={`pad-${pad}`} className="aspect-square rounded-lg bg-transparent" />
+                      ))}
+                      {calendarGridDays.monthDays.map((day) => {
+                        const cellDate = new Date(
+                          calendarGridDays.monthStart.getFullYear(),
+                          calendarGridDays.monthStart.getMonth(),
+                          day
+                        );
+                        const key = format(cellDate, "yyyy-MM-dd");
+                        const proof = calendarProofByDate.get(key);
+                        const isCurrentMonth = isSameMonth(cellDate, calendarGridDays.monthStart);
+                        return (
+                          <div
+                            key={key}
+                            className="relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60"
+                          >
+                            {proof?.imageDataUrl ? (
+                              <img src={proof.imageDataUrl} alt="" className="h-full w-full object-cover" />
+                            ) : null}
+                            <span
+                              className={`absolute left-1.5 top-1 rounded px-1 text-[10px] font-semibold ${
+                                proof?.imageDataUrl
+                                  ? "bg-black/50 text-white"
+                                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                              }`}
                             >
-                              <div className="aspect-square overflow-hidden rounded-md bg-slate-200 dark:bg-slate-700">
-                                {hasImage ? (
-                                  <img src={sub!.imageDataUrl} alt="" className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center">
-                                    <CheckCircle2 className="h-6 w-6 text-prove-500" />
-                                  </div>
-                                )}
-                              </div>
-                              <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300">
-                                {label}
-                                {historySettings.showThisWeekBadge && isThisWeekDate && (
-                                  <span className="ml-1 rounded bg-prove-100 px-1 py-0.5 text-[10px] font-medium text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">
-                                    This week
-                                  </span>
-                                )}
-                              </p>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <ul className="mt-4 flex flex-wrap gap-2">
-                        {completedDates.slice(0, 24).map((dateStr) => {
-                          const d = safeParseISO(dateStr);
-                          const label = d ? format(d, "MMM d") : dateStr;
-                          return (
-                            <li
-                              key={dateStr}
-                              className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                            >
-                              {label}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-
-                    {completedDates.length > 24 && (
-                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        + {completedDates.length - 24} more completed
-                      </p>
-                    )}
+                              {isCurrentMonth ? day : ""}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </section>
-                ))}
+                )}
               </div>
             )}
 

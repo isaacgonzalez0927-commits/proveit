@@ -17,12 +17,6 @@ import {
   type HistoryDisplaySettings,
 } from "@/lib/historySettings";
 import {
-  DEFAULT_APP_SETTINGS,
-  getStoredAppSettings,
-  saveAppSettings,
-  type AppSettings,
-} from "@/lib/appSettings";
-import {
   getStoredHiddenHistoryGoalIds,
   hideGoalFromHistory,
   saveHiddenHistoryGoalIds,
@@ -36,7 +30,7 @@ import {
   sanitizeAccentThemeForPlan,
   type AccentTheme,
 } from "@/lib/theme";
-import type { GoalFrequency, GracePeriod } from "@/types";
+import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 
 const HISTORY_SETTING_ITEMS: Array<{
   key: keyof HistoryDisplaySettings;
@@ -65,31 +59,19 @@ const HISTORY_SETTING_ITEMS: Array<{
   },
 ];
 
-const GOAL_FREQUENCY_OPTIONS: Array<{ value: GoalFrequency; label: string }> = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-];
-
-const GRACE_PERIOD_OPTIONS: Array<{ value: GracePeriod; label: string }> = [
-  { value: "1h", label: "1 hour after due" },
-  { value: "3h", label: "3 hours after due" },
-  { value: "6h", label: "6 hours after due" },
-  { value: "12h", label: "12 hours after due" },
-  { value: "eod", label: "Until end of day" },
-];
-
 export default function SettingsPage() {
   const router = useRouter();
   const { user, goals, submissions, signOut, useSupabase, supabase, clearPlanSelectionForNewUser, restoreActualAccount } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
-  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
   const [developerEnabled, setDeveloperEnabled] = useState(false);
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("green");
+  const [upgradePromptOpen, setUpgradePromptOpen] = useState(false);
+  const [upgradePromptPlan, setUpgradePromptPlan] = useState<"pro" | "premium">("pro");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [confirmEmailLoading, setConfirmEmailLoading] = useState(false);
   const [confirmEmailMessage, setConfirmEmailMessage] = useState<string | null>(null);
@@ -97,7 +79,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
-    setAppSettings(getStoredAppSettings());
     setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
     setDeveloperEnabled(getStoredDeveloperModeSettings().enabled);
     setAccentTheme(getStoredAccentTheme());
@@ -137,17 +118,11 @@ export default function SettingsPage() {
     setSettingsMessage("Gallery settings saved.");
   };
 
-  const updateAppSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    const next: AppSettings = { ...appSettings, [key]: value };
-    setAppSettings(next);
-    saveAppSettings(next);
-    setSettingsMessage("Goal creation defaults saved.");
-  };
-
   const updateAccentTheme = (nextAccent: AccentTheme) => {
     if (!canUseAccentTheme(user?.plan, nextAccent)) {
       const option = ACCENT_THEME_OPTIONS.find((o) => o.id === nextAccent);
-      setSettingsMessage(option?.premiumOnly ? "Upgrade to Premium to unlock all 10 theme colors." : "Upgrade to Pro or Premium to unlock more themes.");
+      setUpgradePromptPlan(option?.premiumOnly ? "premium" : "pro");
+      setUpgradePromptOpen(true);
       return;
     }
     const label = ACCENT_THEME_OPTIONS.find((option) => option.id === nextAccent)?.label ?? "Theme";
@@ -247,54 +222,10 @@ export default function SettingsPage() {
             Settings
           </h1>
           <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-            Goal defaults, gallery display, and account.
+            Themes, gallery display, and account.
           </p>
         </header>
-
         <section className="rounded-2xl p-5 glass-card">
-          <h2 className="font-semibold text-slate-900 dark:text-white">Goal creation defaults</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Applied when you create a new goal in Goal Garden.
-          </p>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Default frequency
-              <select
-                value={appSettings.defaultGoalFrequency}
-                onChange={(event) =>
-                  updateAppSetting("defaultGoalFrequency", event.target.value as GoalFrequency)
-                }
-                className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-              >
-                {GOAL_FREQUENCY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Default grace period
-              <select
-                value={appSettings.defaultGoalGracePeriod}
-                onChange={(event) =>
-                  updateAppSetting("defaultGoalGracePeriod", event.target.value as GracePeriod)
-                }
-                className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-              >
-                {GRACE_PERIOD_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-2xl p-5 glass-card">
           <h2 className="font-semibold text-slate-900 dark:text-white">Theme colors</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Green is free. Pro: 6 theme colors. Premium: all 10 theme colors.
@@ -585,6 +516,11 @@ export default function SettingsPage() {
           ← Back to dashboard
         </Link>
       </main>
+      <UpgradePromptModal
+        open={upgradePromptOpen}
+        onClose={() => setUpgradePromptOpen(false)}
+        requiredPlan={upgradePromptPlan}
+      />
     </>
   );
 }

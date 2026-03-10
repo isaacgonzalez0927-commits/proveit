@@ -423,7 +423,7 @@ function SubmitProofContent() {
                     setCameraError(null);
                     handleStartCamera();
                   }}
-                  className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-slate-900 shadow-lg hover:bg-slate-100"
+                  className="glass-overlay-bar-btn-primary flex items-center gap-2 rounded-xl px-5 py-3 text-white hover:bg-prove-500/45"
                 >
                   <Camera className="h-6 w-6" />
                   Use camera
@@ -470,7 +470,7 @@ function SubmitProofContent() {
               </button>
               <button
                 onClick={capturePhoto}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg hover:bg-slate-100"
+                className="glass-overlay-bar-btn-primary flex h-16 w-16 items-center justify-center rounded-full text-white hover:bg-prove-500/45"
                 aria-label="Take photo"
               >
                 <Camera className="h-8 w-8" />
