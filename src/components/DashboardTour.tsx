@@ -25,10 +25,10 @@ const TOUR_STEPS: TourStep[] = [
     note: "Quick tip: use the bottom tabs to move between Home, Garden, Gallery, and Plan.",
   },
   {
-    title: "Open Goal Garden",
+    title: "Goal Garden",
     body:
-      "This is where you can manage all of your goals, reminders, and plant styles.",
-    note: "Tap Next and we will take you there.",
+      "Look at the bottom bar — the Goal Garden tab is where you manage your goals, reminders, and plant styles.",
+    note: "Tap Next to see how to create your first goal.",
   },
   {
     title: "Create your first goal",
@@ -98,11 +98,15 @@ export function DashboardTour() {
   };
 
   const handleNextOrFinish = () => {
-    // Step 2: guide them into Goal Garden.
+    // Step 1: just point to Goal Garden (stay on dashboard); step 2: then take them there.
     if (step === 1) {
+      setStep(2);
+      return;
+    }
+    if (step === 2) {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(GARDEN_HINT_KEY, TOUR_VERSION);
-        window.localStorage.setItem(RESUME_KEY, "3");
+        window.localStorage.setItem(RESUME_KEY, "4");
       }
       setOpen(false);
       router.push("/buddy");
