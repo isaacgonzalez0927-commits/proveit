@@ -361,36 +361,36 @@ function GalleryContent() {
                     </section>
                   ))
                 ) : (
-                  <section className="rounded-2xl p-5 glass-card min-h-[min(120vh,1200px)]">
-                    <div className="flex items-center justify-between gap-2">
+                  <section className="rounded-2xl p-5 glass-card">
+                    <div className="flex items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={() => setCalendarMonth((m) => startOfMonth(addMonths(m, -1)))}
-                        className="rounded-lg border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                         aria-label="Previous month"
                       >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-5 w-5" />
                       </button>
-                      <p className="text-base font-semibold text-slate-900 dark:text-white">
+                      <p className="text-lg font-semibold text-slate-900 dark:text-white">
                         {format(calendarGridDays.monthStart, "MMMM yyyy")}
                       </p>
                       <button
                         type="button"
                         onClick={() => setCalendarMonth((m) => startOfMonth(addMonths(m, 1)))}
-                        className="rounded-lg border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                         aria-label="Next month"
                       >
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-5 w-5" />
                       </button>
                     </div>
-                    <div className="mt-4 grid grid-cols-7 gap-2 text-center text-xs font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                    <div className="mt-4 grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:gap-2 sm:text-xs">
                       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                         <span key={day}>{day}</span>
                       ))}
                     </div>
-                    <div className="mt-2 grid grid-cols-7 gap-2">
+                    <div className="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
                       {calendarGridDays.leadingDays.map((pad) => (
-                        <div key={`pad-${pad}`} className="min-h-[min(18vw,110px)] rounded-xl bg-transparent" />
+                        <div key={`pad-${pad}`} className="aspect-square min-h-[88px] rounded-xl bg-slate-100/50 dark:bg-slate-800/30 sm:min-h-[110px]" />
                       ))}
                       {calendarGridDays.monthDays.map((day) => {
                         const cellDate = new Date(
@@ -404,15 +404,20 @@ function GalleryContent() {
                         return (
                           <div
                             key={key}
-                            className="relative min-h-[min(18vw,110px)] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60"
+                            className="relative aspect-square min-h-[88px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 sm:min-h-[110px]"
                           >
                             {proof?.imageDataUrl ? (
-                              <img src={proof.imageDataUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                              <img
+                                src={proof.imageDataUrl}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover"
+                                loading="lazy"
+                              />
                             ) : null}
                             <span
-                              className={`absolute left-1.5 top-1 rounded px-1.5 py-0.5 text-xs font-semibold ${
+                              className={`absolute bottom-1 right-1 rounded-md px-1.5 py-0.5 text-xs font-bold shadow-sm ${
                                 proof?.imageDataUrl
-                                  ? "bg-black/50 text-white"
+                                  ? "bg-black/60 text-white"
                                   : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
                               }`}
                             >
