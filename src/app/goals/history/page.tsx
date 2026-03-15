@@ -388,9 +388,13 @@ function GalleryContent() {
                         <span key={day}>{day}</span>
                       ))}
                     </div>
-                    <div className="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
+                    <div className="mt-2 grid grid-cols-7 grid-rows-[auto] gap-1.5 sm:gap-2">
                       {calendarGridDays.leadingDays.map((pad) => (
-                        <div key={`pad-${pad}`} className="aspect-square min-h-[88px] rounded-xl bg-slate-100/50 dark:bg-slate-800/30 sm:min-h-[110px]" />
+                        <div
+                          key={`pad-${pad}`}
+                          className="w-full rounded-xl bg-slate-100/50 dark:bg-slate-800/30"
+                          style={{ aspectRatio: "1" }}
+                        />
                       ))}
                       {calendarGridDays.monthDays.map((day) => {
                         const cellDate = new Date(
@@ -404,13 +408,14 @@ function GalleryContent() {
                         return (
                           <div
                             key={key}
-                            className="relative aspect-square min-h-[88px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50 sm:min-h-[110px]"
+                            className="relative w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/50"
+                            style={{ aspectRatio: "1" }}
                           >
                             {proof?.imageDataUrl ? (
                               <img
                                 src={proof.imageDataUrl}
                                 alt=""
-                                className="absolute inset-0 h-full w-full object-cover"
+                                className="block h-full w-full object-cover"
                                 loading="lazy"
                               />
                             ) : null}
