@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
+import { verifyWithLocalClip } from "@/lib/localClipVerify";
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
@@ -271,24 +272,39 @@ function SubmitProofContent() {
         imageToStore = compressed;
       }
 
-      const res = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: base64,
-          goalTitle: goal.title,
-          goalDescription: goal.description ?? "",
-        }),
-      });
-      const data = await res.json();
-      const aiPassed = data.verified === true;
+      let aiPassed = false;
+      let aiFeedback = "Verification completed.";
+
+      const provider = (process.env.NEXT_PUBLIC_VERIFY_PROVIDER ?? "clip").toLowerCase();
+      if (provider === "clip") {
+        const clip = await verifyWithLocalClip({
+          imageDataUrl: compressed,
+          goalText: goal.title,
+          threshold: 0.55,
+        });
+        aiPassed = clip.verified;
+        aiFeedback = clip.verified
+          ? `Verified (confidence ${Math.round(clip.confidence * 100)}%).`
+          : `Not verified (confidence ${Math.round(clip.confidence * 100)}%).`;
+      } else {
+        const res = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageBase64: base64,
+            goalTitle: goal.title,
+            goalDescription: goal.description ?? "",
+          }),
+        });
+        const data = await res.json();
+        aiPassed = data.verified === true;
+        aiFeedback = data.feedback ?? aiFeedback;
+      }
       const now = new Date();
       const withinWindow = isWithinSubmissionWindow(goal, now);
 
       const passed = aiPassed && withinWindow;
-      const msg = withinWindow
-        ? data.feedback ?? "Verification completed."
-        : "Submissions are closed right now.";
+      const msg = withinWindow ? aiFeedback : "Submissions are closed right now.";
 
       const sub = await addSubmission({
         goalId: goal.id,
