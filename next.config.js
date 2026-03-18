@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // transformers.js is ESM-heavy and includes `import.meta`; transpile it so Next/webpack
+  // can parse it correctly during production builds (Vercel deploys).
+  transpilePackages: ["@huggingface/transformers"],
   images: {
     remotePatterns: [{ hostname: '**' }],
   },

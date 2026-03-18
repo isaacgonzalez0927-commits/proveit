@@ -26,7 +26,8 @@ async function getPipeline(modelId: string) {
   }
   if (!pipelinePromise) {
     pipelinePromise = (async () => {
-      const mod = await import("@huggingface/transformers");
+      // Use Xenova's transformers package for better compatibility with Next/Vercel builds.
+      const mod = await import("@xenova/transformers");
       // Default behavior: download model from Hugging Face and cache it in browser.
       mod.env.allowLocalModels = false;
       const pipe = await mod.pipeline("zero-shot-image-classification", modelId);

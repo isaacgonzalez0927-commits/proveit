@@ -14,7 +14,6 @@ import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
-import { verifyWithLocalClip } from "@/lib/localClipVerify";
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
@@ -277,7 +276,9 @@ function SubmitProofContent() {
 
       const provider = (process.env.NEXT_PUBLIC_VERIFY_PROVIDER ?? "clip").toLowerCase();
       if (provider === "clip") {
-        const clip = await verifyWithLocalClip({
+      // Lazy-load CLIP verifier so Next doesn't bundle the heavy transformers runtime on every page render.
+      const { verifyWithLocalClip } = await import("@/lib/localClipVerify");
+      const clip = await verifyWithLocalClip({
           imageDataUrl: compressed,
           goalText: goal.title,
           threshold: 0.55,
