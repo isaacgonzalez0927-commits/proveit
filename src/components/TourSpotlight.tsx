@@ -31,6 +31,9 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
 };
 
+/** Extra space around target so the cutout is a square centered on the element (reads as a circle with rounded-full ring). */
+const HOLE_PADDING = 14;
+
 function clearSpotlightAndGardenHint() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
@@ -46,13 +49,28 @@ function skipEntireTour() {
   dispatchTourChanged();
 }
 
+/** Square hole centered on the target; ring is a true circle (rounded-full). Clamps to viewport. */
+function holeFromEl(el: HTMLElement): { top: number; left: number; right: number; bottom: number } {
+  const r = el.getBoundingClientRect();
+  const cx = (r.left + r.right) / 2;
+  const cy = (r.top + r.bottom) / 2;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let side = Math.max(r.width, r.height) + HOLE_PADDING * 2;
+  side = Math.min(side, vw, vh);
+  let left = cx - side / 2;
+  let top = cy - side / 2;
+  left = Math.max(0, Math.min(left, vw - side));
+  top = Math.max(0, Math.min(top, vh - side));
+  return { top, left, right: left + side, bottom: top + side };
+}
+
 export function TourSpotlight() {
   const pathname = usePathname();
   const [phase, setPhase] = useState<string | null>(null);
   const [rect, setRect] = useState<{ top: number; left: number; right: number; bottom: number } | null>(
     null
   );
-  const [vh, setVh] = useState(0);
 
   const readPhase = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -65,14 +83,6 @@ export function TourSpotlight() {
     return () => window.removeEventListener(TOUR_CHANGED_EVENT, readPhase);
   }, [readPhase]);
 
-  useEffect(() => {
-    const u = () => setVh(window.innerHeight);
-    u();
-    window.addEventListener("resize", u);
-    return () => window.removeEventListener("resize", u);
-  }, []);
-
-  // Landed on Garden: move spotlight from tab → Add goal button
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!pathname.startsWith("/buddy")) return;
@@ -100,20 +110,18 @@ export function TourSpotlight() {
       setRect(null);
       return;
     }
-    const update = () => {
-      const r = el.getBoundingClientRect();
-      const pad = 10;
-      setRect({
-        top: Math.max(0, r.top - pad),
-        left: Math.max(0, r.left - pad),
-        right: r.right + pad,
-        bottom: r.bottom + pad,
-      });
-    };
+    const update = () => setRect(holeFromEl(el));
+
     if (activePhase === "add-goal-button") {
       el.scrollIntoView({ block: "center", behavior: "smooth" });
+      requestAnimationFrame(() => {
+        update();
+        window.setTimeout(update, 280);
+      });
+    } else {
+      update();
     }
-    update();
+
     const ro = new ResizeObserver(update);
     ro.observe(el);
     window.addEventListener("scroll", update, true);
@@ -129,27 +137,25 @@ export function TourSpotlight() {
 
   const { top, left, right, bottom } = rect;
   const panelClass =
-    "fixed z-[95] bg-slate-950/70 backdrop-blur-md dark:bg-black/75 pointer-events-auto";
+    "fixed z-[95] bg-slate-900/40 pointer-events-auto dark:bg-slate-950/45";
 
   const text = COPY[activePhase];
 
+  const side = right - left;
+  const ringSize = Math.max(side, 0);
+
   return (
     <div className="pointer-events-none fixed inset-0 z-[94]" aria-hidden={false}>
-      {/* Top */}
       <div className={panelClass} style={{ top: 0, left: 0, right: 0, height: top }} />
-      {/* Bottom */}
       <div className={panelClass} style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
-      {/* Left */}
       <div className={panelClass} style={{ top, left: 0, width: left, height: bottom - top }} />
-      {/* Right */}
       <div className={panelClass} style={{ top, left: right, right: 0, height: bottom - top }} />
 
+      {/* Instructions: fixed under header so they never sit inside the bottom-tab or mid-page hole */}
       <div
-        className="pointer-events-auto fixed z-[96] max-w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/20 bg-white/95 p-4 shadow-2xl dark:border-slate-600/50 dark:bg-slate-900/95"
+        className="pointer-events-auto fixed left-1/2 z-[96] w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-slate-200/90 bg-white/98 p-4 shadow-xl dark:border-slate-600/60 dark:bg-slate-900/98"
         style={{
-          left: "50%",
-          transform: "translateX(-50%)",
-          bottom: vh > 0 ? Math.max(100, vh - top + 16) : "6rem",
+          top: "max(5.5rem, calc(env(safe-area-inset-top, 0px) + 4.5rem))",
         }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-prove-600 dark:text-prove-400">
@@ -166,13 +172,15 @@ export function TourSpotlight() {
         </button>
       </div>
 
+      {/* Circular ring centered on the same square hole */}
       <div
-        className="pointer-events-none fixed z-[97] rounded-xl ring-4 ring-prove-500 ring-offset-2 ring-offset-slate-950/0 dark:ring-prove-400"
+        className="pointer-events-none fixed z-[97] rounded-full border-[3px] border-prove-500 shadow-[0_0_0_4px_rgba(255,255,255,0.35)] dark:border-prove-400 dark:shadow-[0_0_0_4px_rgba(0,0,0,0.35)]"
         style={{
-          top,
-          left,
-          width: right - left,
-          height: bottom - top,
+          top: top,
+          left: left,
+          width: ringSize,
+          height: ringSize,
+          boxSizing: "border-box",
         }}
         aria-hidden
       />
