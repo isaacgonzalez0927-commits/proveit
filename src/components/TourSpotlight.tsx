@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
 import {
   TOUR_CHANGED_EVENT,
   TOUR_SPOTLIGHT_KEY,
@@ -31,8 +31,8 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
 };
 
-/** Extra space around target so the cutout is a square centered on the element (reads as a circle with rounded-full ring). */
-const HOLE_PADDING = 14;
+/** Breathing room around the real control — keeps a normal rounded-rect spotlight. */
+const HOLE_PAD = 8;
 
 function clearSpotlightAndGardenHint() {
   if (typeof window === "undefined") return;
@@ -49,20 +49,16 @@ function skipEntireTour() {
   dispatchTourChanged();
 }
 
-/** Square hole centered on the target; ring is a true circle (rounded-full). Clamps to viewport. */
 function holeFromEl(el: HTMLElement): { top: number; left: number; right: number; bottom: number } {
   const r = el.getBoundingClientRect();
-  const cx = (r.left + r.right) / 2;
-  const cy = (r.top + r.bottom) / 2;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  let side = Math.max(r.width, r.height) + HOLE_PADDING * 2;
-  side = Math.min(side, vw, vh);
-  let left = cx - side / 2;
-  let top = cy - side / 2;
-  left = Math.max(0, Math.min(left, vw - side));
-  top = Math.max(0, Math.min(top, vh - side));
-  return { top, left, right: left + side, bottom: top + side };
+  return {
+    top: Math.max(0, r.top - HOLE_PAD),
+    left: Math.max(0, r.left - HOLE_PAD),
+    right: Math.min(vw, r.right + HOLE_PAD),
+    bottom: Math.min(vh, r.bottom + HOLE_PAD),
+  };
 }
 
 export function TourSpotlight() {
@@ -70,6 +66,9 @@ export function TourSpotlight() {
   const [phase, setPhase] = useState<string | null>(null);
   const [rect, setRect] = useState<{ top: number; left: number; right: number; bottom: number } | null>(
     null
+  );
+  const [vh, setVh] = useState(() =>
+    typeof window !== "undefined" ? window.innerHeight : 640
   );
 
   const readPhase = useCallback(() => {
@@ -82,6 +81,13 @@ export function TourSpotlight() {
     window.addEventListener(TOUR_CHANGED_EVENT, readPhase);
     return () => window.removeEventListener(TOUR_CHANGED_EVENT, readPhase);
   }, [readPhase]);
+
+  useEffect(() => {
+    const u = () => setVh(window.innerHeight);
+    u();
+    window.addEventListener("resize", u);
+    return () => window.removeEventListener("resize", u);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -116,7 +122,7 @@ export function TourSpotlight() {
       el.scrollIntoView({ block: "center", behavior: "smooth" });
       requestAnimationFrame(() => {
         update();
-        window.setTimeout(update, 280);
+        window.setTimeout(update, 320);
       });
     } else {
       update();
@@ -137,12 +143,24 @@ export function TourSpotlight() {
 
   const { top, left, right, bottom } = rect;
   const panelClass =
-    "fixed z-[95] bg-slate-900/40 pointer-events-auto dark:bg-slate-950/45";
+    "fixed z-[95] bg-black/35 pointer-events-auto dark:bg-black/45";
 
   const text = COPY[activePhase];
+  const midY = (top + bottom) / 2;
+  /** Tab bar targets sit low — put the coach mark above them. Mid-page targets — put card below. */
+  const cardAboveTarget = midY > vh * 0.38;
 
-  const side = right - left;
-  const ringSize = Math.max(side, 0);
+  const cardPositionStyle: CSSProperties = cardAboveTarget
+    ? {
+        left: "50%",
+        transform: "translateX(-50%)",
+        bottom: Math.max(12, vh - top + 14),
+      }
+    : {
+        left: "50%",
+        transform: "translateX(-50%)",
+        top: Math.min(vh - 120, bottom + 14),
+      };
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[94]" aria-hidden={false}>
@@ -151,35 +169,34 @@ export function TourSpotlight() {
       <div className={panelClass} style={{ top, left: 0, width: left, height: bottom - top }} />
       <div className={panelClass} style={{ top, left: right, right: 0, height: bottom - top }} />
 
-      {/* Instructions: fixed under header so they never sit inside the bottom-tab or mid-page hole */}
       <div
-        className="pointer-events-auto fixed left-1/2 z-[96] w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-slate-200/90 bg-white/98 p-4 shadow-xl dark:border-slate-600/60 dark:bg-slate-900/98"
+        className="pointer-events-auto fixed z-[96] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-600 dark:bg-slate-900"
         style={{
-          top: "max(5.5rem, calc(env(safe-area-inset-top, 0px) + 4.5rem))",
+          ...cardPositionStyle,
+          maxHeight: "min(40vh, 14rem)",
         }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-prove-600 dark:text-prove-400">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-prove-600 dark:text-prove-400">
           Guided step
         </p>
-        <p className="mt-2 font-display text-lg font-bold text-slate-900 dark:text-white">{text.title}</p>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{text.body}</p>
+        <p className="mt-1.5 font-display text-base font-bold text-slate-900 dark:text-white">{text.title}</p>
+        <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300">{text.body}</p>
         <button
           type="button"
           onClick={skipEntireTour}
-          className="mt-4 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+          className="mt-3 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
         >
           Skip tour
         </button>
       </div>
 
-      {/* Circular ring centered on the same square hole */}
       <div
-        className="pointer-events-none fixed z-[97] rounded-full border-[3px] border-prove-500 shadow-[0_0_0_4px_rgba(255,255,255,0.35)] dark:border-prove-400 dark:shadow-[0_0_0_4px_rgba(0,0,0,0.35)]"
+        className="pointer-events-none fixed z-[97] rounded-2xl ring-2 ring-prove-500 ring-offset-2 ring-offset-transparent dark:ring-prove-400"
         style={{
-          top: top,
-          left: left,
-          width: ringSize,
-          height: ringSize,
+          top,
+          left,
+          width: right - left,
+          height: bottom - top,
           boxSizing: "border-box",
         }}
         aria-hidden
