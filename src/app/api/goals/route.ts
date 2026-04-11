@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   isProofRequirementAllowed,
-  PROOF_SUGGESTIONS_MAX,
-  PROOF_SUGGESTIONS_MIN,
+  parseProofSuggestionsPayload,
 } from "@/lib/proofSuggestions";
 
 function normalizeCompletedDates(value: unknown): string[] {
@@ -42,16 +41,6 @@ function normalizeProofSuggestionsFromRow(value: unknown): string[] | undefined 
     return s.length > 0 ? s : undefined;
   }
   return undefined;
-}
-
-function parseIncomingProofSuggestions(raw: unknown): string[] | null {
-  if (!Array.isArray(raw)) return null;
-  const arr = raw
-    .filter((x): x is string => typeof x === "string")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  if (arr.length < PROOF_SUGGESTIONS_MIN || arr.length > PROOF_SUGGESTIONS_MAX) return null;
-  return arr;
 }
 
 function mapGoalRow(row: Record<string, unknown>) {
@@ -133,7 +122,7 @@ export async function POST(request: NextRequest) {
     proofRequirement: proofRequirementBody,
   } = body;
 
-  const proofSuggestionsParsed = parseIncomingProofSuggestions(proofSuggestionsBody);
+  const proofSuggestionsParsed = parseProofSuggestionsPayload(proofSuggestionsBody);
   const proofRequirementParsed =
     typeof proofRequirementBody === "string" ? proofRequirementBody.trim() : "";
   if (
@@ -217,10 +206,8 @@ export async function POST(request: NextRequest) {
   let data: Record<string, unknown> | null = null;
   let error: { message: string } | null = null;
 
-  const stripProofCols = (p: Record<string, unknown>) => {
-    const { proof_suggestions: _ps, proof_requirement: _pr, ...rest } = p;
-    return rest;
-  };
+  const proofMigrationMessage =
+    "This app requires photo ideas for every goal. Apply Supabase migration 009_proof_suggestions.sql (proof_suggestions + proof_requirement columns), then try again.";
 
   if (isDaily) {
     // Daily: try minimal first (no grace_period, no reminder columns)
@@ -228,7 +215,7 @@ export async function POST(request: NextRequest) {
     if (result.error) {
       const msg = result.error.message ?? "";
       if (/proof_suggestions|proof_requirement/i.test(msg)) {
-        result = await insertGoal(stripProofCols(minimalInsert));
+        return NextResponse.json({ error: proofMigrationMessage }, { status: 503 });
       } else if (/times.?per.?week/i.test(msg)) {
         const { times_per_week: _tw, ...withoutTimes } = minimalInsert;
         result = await insertGoal(withoutTimes);
@@ -250,7 +237,7 @@ export async function POST(request: NextRequest) {
     if (result.error) {
       const msg = result.error.message ?? "";
       if (/proof_suggestions|proof_requirement/i.test(msg)) {
-        result = await insertGoal(stripProofCols(fullInsert));
+        return NextResponse.json({ error: proofMigrationMessage }, { status: 503 });
       } else if (/times.?per.?week/i.test(msg)) {
         const { times_per_week: _tw, ...withoutTimes } = fullInsert;
         result = await insertGoal(withoutTimes);
@@ -331,7 +318,7 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-    const suggList = parseIncomingProofSuggestions(updates.proofSuggestions);
+    const suggList = parseProofSuggestionsPayload(updates.proofSuggestions);
     const reqStr = typeof updates.proofRequirement === "string" ? updates.proofRequirement.trim() : "";
     if (!suggList || !isProofRequirementAllowed(reqStr, suggList)) {
       return NextResponse.json({ error: "Pick one of the suggested photo prompts." }, { status: 400 });

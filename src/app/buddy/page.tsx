@@ -38,7 +38,11 @@ import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
-import { isProofRequirementAllowed } from "@/lib/proofSuggestions";
+import {
+  isProofRequirementAllowed,
+  PROOF_SUGGESTIONS_MAX,
+  PROOF_SUGGESTIONS_MIN,
+} from "@/lib/proofSuggestions";
 import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
@@ -115,6 +119,10 @@ export default function BuddyPage() {
   const [, setFinalAnimationTick] = useState(0);
   const [showGardenTourHint, setShowGardenTourHint] = useState(false);
   const [gardenTourHintStep, setGardenTourHintStep] = useState<"manage" | "create">("manage");
+  const proofFetchGen = useRef(0);
+  const proofEditFetchGen = useRef(0);
+  const newTitleRef = useRef(newTitle);
+  newTitleRef.current = newTitle;
 
   useEffect(() => {
     setDeveloperSettings(getStoredDeveloperModeSettings());
@@ -134,7 +142,7 @@ export default function BuddyPage() {
     if (hint) {
       setShowGardenTourHint(true);
       setGardenTourHintStep("manage");
-      setShowCreateForm(false);
+      // Do not close the add-goal form here — it fought users who opened "Add goal" while the tour hint was active.
     }
   }, [user, goals.length]);
 
@@ -249,6 +257,14 @@ export default function BuddyPage() {
 
   const plan = getPlan(user.plan);
   const canAddMoreGoals = canAddGoal();
+  const proofIdeasReadyForCreate =
+    suggestionsTitleKey === newTitle.trim() &&
+    newTitle.trim().length >= 2 &&
+    newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN &&
+    selectedProofRequirement !== null &&
+    isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions);
+  const canSubmitCreateGoalForm = canAddMoreGoals && newWeeklyDays.length > 0 && proofIdeasReadyForCreate;
+
   const resetCreateGoalForm = () => {
     const appSettings = getStoredAppSettings();
     setNewTitle("");
@@ -272,14 +288,34 @@ export default function BuddyPage() {
       setProofSuggestionsError("Enter a goal title first (at least 2 characters).");
       return;
     }
+    const gen = ++proofFetchGen.current;
     setProofSuggestionsLoading(true);
     try {
       const res = await fetch("/api/goals/proof-suggestions", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-      const data = (await res.json()) as { suggestions?: unknown; error?: string };
+      let data: { suggestions?: unknown; error?: string };
+      try {
+        data = (await res.json()) as { suggestions?: unknown; error?: string };
+      } catch {
+        if (gen !== proofFetchGen.current) return;
+        setProofSuggestionsError("Bad response from server. Try again.");
+        setNewProofSuggestions([]);
+        setSelectedProofRequirement(null);
+        setSuggestionsTitleKey(null);
+        return;
+      }
+      if (gen !== proofFetchGen.current) return;
+      if (newTitleRef.current.trim() !== trimmed) {
+        setProofSuggestionsError("Title changed while loading — tap Get photo ideas again.");
+        setNewProofSuggestions([]);
+        setSelectedProofRequirement(null);
+        setSuggestionsTitleKey(null);
+        return;
+      }
       if (!res.ok) {
         setProofSuggestionsError(data.error ?? "Could not load photo ideas.");
         setNewProofSuggestions([]);
@@ -290,38 +326,53 @@ export default function BuddyPage() {
       const list = Array.isArray(data.suggestions)
         ? data.suggestions.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
         : [];
-      if (list.length < 2) {
+      if (list.length < PROOF_SUGGESTIONS_MIN) {
         setProofSuggestionsError("Didn’t get enough suggestions. Try again.");
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
         return;
       }
-      setNewProofSuggestions(list.slice(0, 3));
-      setSelectedProofRequirement(null);
+      const slice = list.slice(0, PROOF_SUGGESTIONS_MAX);
+      setProofSuggestionsError(null);
+      setNewProofSuggestions(slice);
+      setSelectedProofRequirement(slice[0] ?? null);
       setSuggestionsTitleKey(trimmed);
     } catch {
+      if (gen !== proofFetchGen.current) return;
       setProofSuggestionsError("Network error loading photo ideas.");
       setNewProofSuggestions([]);
       setSelectedProofRequirement(null);
       setSuggestionsTitleKey(null);
     } finally {
-      setProofSuggestionsLoading(false);
+      if (gen === proofFetchGen.current) {
+        setProofSuggestionsLoading(false);
+      }
     }
   };
 
   const fetchProofIdeasForEdit = async (title: string) => {
     const trimmed = title.trim();
     if (trimmed.length < 2) return;
+    const gen = ++proofEditFetchGen.current;
     setProofIdeasEditLoading(true);
     setGoalManagerMessage(null);
     try {
       const res = await fetch("/api/goals/proof-suggestions", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-      const data = (await res.json()) as { suggestions?: unknown; error?: string };
+      let data: { suggestions?: unknown; error?: string };
+      try {
+        data = (await res.json()) as { suggestions?: unknown; error?: string };
+      } catch {
+        if (gen !== proofEditFetchGen.current) return;
+        setGoalManagerMessage("Bad response from server. Try again.");
+        return;
+      }
+      if (gen !== proofEditFetchGen.current) return;
       if (!res.ok) {
         setGoalManagerMessage(data.error ?? "Could not refresh photo ideas.");
         return;
@@ -341,15 +392,29 @@ export default function BuddyPage() {
       }));
       setGoalManagerMessage("Photo ideas updated — pick the one you want to use.");
     } catch {
+      if (gen !== proofEditFetchGen.current) return;
       setGoalManagerMessage("Could not refresh photo ideas.");
     } finally {
-      setProofIdeasEditLoading(false);
+      if (gen === proofEditFetchGen.current) {
+        setProofIdeasEditLoading(false);
+      }
     }
   };
 
   const handleCreateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAddingGoal) return;
     setGoalManagerMessage(null);
+    if (!canSubmitCreateGoalForm) {
+      if (!proofIdeasReadyForCreate) {
+        setGoalManagerMessage("Tap Get photo ideas, then pick how you’ll prove this goal (or fix the title if it changed).");
+      } else if (newWeeklyDays.length === 0) {
+        setGoalManagerMessage("Pick at least one reminder day.");
+      } else if (!canAddMoreGoals) {
+        setGoalManagerMessage("Goal limit reached for your current plan. Upgrade to add more.");
+      }
+      return;
+    }
     if (!newTitle.trim()) {
       setGoalManagerMessage("Goal title is required.");
       return;
@@ -734,8 +799,8 @@ export default function BuddyPage() {
                 How will you prove it?
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-                AI suggests a few photo ideas for your title. You must pick one before adding the goal. You can switch
-                between suggestions later in goal settings — not free-form text.
+                Tap Get photo ideas for this title. We pre-select the first suggestion — tap another to change. You can
+                switch between suggestions later in goal settings (no free-form text).
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
@@ -769,8 +834,8 @@ export default function BuddyPage() {
               )}
               {newProofSuggestions.length > 0 && (
                 <ul className="mt-3 space-y-2">
-                  {newProofSuggestions.map((s) => (
-                    <li key={s}>
+                  {newProofSuggestions.map((s, idx) => (
+                    <li key={`proof-opt-${idx}`}>
                       <label className="flex cursor-pointer gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
                         <input
                           type="radio"
@@ -907,7 +972,14 @@ export default function BuddyPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="submit"
-                disabled={isAddingGoal}
+                disabled={isAddingGoal || !canSubmitCreateGoalForm}
+                title={
+                  !proofIdeasReadyForCreate
+                    ? "Get photo ideas and choose one option first"
+                    : newWeeklyDays.length === 0
+                      ? "Pick at least one reminder day"
+                      : undefined
+                }
                 className="rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
               >
                 {isAddingGoal ? "Adding..." : "Add goal"}

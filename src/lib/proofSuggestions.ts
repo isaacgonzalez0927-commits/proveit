@@ -74,3 +74,21 @@ export function isProofRequirementAllowed(
   const r = requirement.trim();
   return suggestions.some((s) => s.trim() === r);
 }
+
+/** At least 2 non-empty strings; trimmed to max 3 for API and client validation. */
+export function parseProofSuggestionsPayload(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  const arr = raw
+    .filter((x): x is string => typeof x === "string")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  if (arr.length < PROOF_SUGGESTIONS_MIN) return null;
+  return arr.slice(0, PROOF_SUGGESTIONS_MAX);
+}
+
+export function isValidProofBundle(proofSuggestions: unknown, proofRequirement: unknown): boolean {
+  const list = parseProofSuggestionsPayload(proofSuggestions);
+  if (!list) return false;
+  const req = typeof proofRequirement === "string" ? proofRequirement.trim() : "";
+  return isProofRequirementAllowed(req, list);
+}

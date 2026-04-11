@@ -362,6 +362,37 @@ function SubmitProofContent() {
     );
   }
 
+  const missingPhotoIdea = !goal.proofRequirement?.trim();
+  if (missingPhotoIdea) {
+    return (
+      <main className="mx-auto max-w-lg px-4 py-8">
+        <Link
+          href="/buddy"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to garden
+        </Link>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-8 text-center dark:border-amber-800/60 dark:bg-amber-950/25">
+          <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
+            Choose a photo idea first
+          </h1>
+          <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
+            This goal doesn&apos;t have a photo prompt yet. Open{" "}
+            <strong>Goal Garden</strong>, tap <strong>Edit</strong> on this goal, tap{" "}
+            <strong>Refresh photo ideas</strong>, pick one option, then <strong>Save changes</strong>.
+          </p>
+          <Link
+            href="/buddy"
+            className="mt-6 inline-block rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
+          >
+            Go to Goal Garden
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   if (!inWindow) {
     const msg = getSubmissionWindowMessage(goal);
     return (

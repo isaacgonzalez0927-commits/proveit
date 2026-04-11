@@ -27,6 +27,7 @@ import { PLANS } from "@/types";
 import { useSupabaseAuth } from "@/lib/supabase/hooks";
 import { format } from "date-fns";
 import { isWithinSubmissionWindow, normalizeReminderTimeInput } from "@/lib/goalDue";
+import { isValidProofBundle } from "@/lib/proofSuggestions";
 import {
   getStoredEarnedItems,
   getStoredEquippedItems,
@@ -357,10 +358,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
         completedDates: [],
       };
+      if (!isValidProofBundle(goal.proofSuggestions, goal.proofRequirement)) {
+        return {
+          created: null,
+          error: "Tap Get photo ideas, pick one option, then add the goal.",
+        };
+      }
       if (useSupabase) {
         try {
           const res = await fetch("/api/goals", {
             method: "POST",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               id,
@@ -385,16 +393,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return { created: null, error: msg };
           }
           if (!res.ok) {
+            const serverErr =
+              typeof data?.error === "string" && data.error.trim()
+                ? data.error.trim()
+                : typeof data?.message === "string" && data.message.trim()
+                  ? data.message.trim()
+                  : null;
             const msg =
-              typeof data?.error === "string"
-                ? data.error
-                : typeof data?.message === "string"
-                  ? data.message
-                  : res.status === 401
-                    ? "Please sign in again"
-                    : res.status === 503
-                      ? "Server is not configured. Try again later."
-                      : res.statusText || `Error ${res.status}`;
+              serverErr ??
+              (res.status === 401
+                ? "Please sign in again."
+                : res.status === 503
+                  ? "Server is not configured or the database needs an update. Try again later."
+                  : res.statusText || `Error ${res.status}`);
             console.error("Failed to create goal:", msg);
             return { created: null, error: msg };
           }
@@ -426,6 +437,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         try {
           await fetch("/api/goals", {
             method: "PATCH",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               id,
@@ -451,7 +463,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (id: string) => {
       if (useSupabase) {
         try {
-          await fetch(`/api/goals?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+          await fetch(`/api/goals?id=${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            credentials: "same-origin",
+          });
         } catch {
           // fallback to local
         }
@@ -538,6 +553,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         try {
           await fetch("/api/goals", {
             method: "PATCH",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: goalId, completedDates: [] }),
           });
