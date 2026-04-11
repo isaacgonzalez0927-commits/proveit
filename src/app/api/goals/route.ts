@@ -31,6 +31,19 @@ function normalizeReminderTime(value: unknown): string | undefined {
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
+const GOALS_SCHEMA_CATCHUP =
+  "Your Supabase `goals` table is missing columns the app expects. Fix: Supabase Dashboard → SQL → New query → paste and run the file `supabase/migrations/011_goals_schema_catchup.sql` from this project, then try again.";
+
+function isGoalsSchemaColumnError(message: string): boolean {
+  const m = message.toLowerCase();
+  const soundsLikeMissing =
+    m.includes("does not exist") || m.includes("could not find") || m.includes("not find");
+  if (!soundsLikeMissing) return false;
+  return /proof_suggestions|proof_require|times_per_week|reminder_day|reminder_days|grace_period|is_on_break|break_|streak_carryover/i.test(
+    m
+  );
+}
+
 function normalizeProofSuggestionsFromRow(value: unknown): string[] | undefined {
   if (value == null) return undefined;
   if (Array.isArray(value)) {
@@ -206,8 +219,7 @@ export async function POST(request: NextRequest) {
   let data: Record<string, unknown> | null = null;
   let error: { message: string } | null = null;
 
-  const proofMigrationMessage =
-    "This app requires photo ideas for every goal. Apply Supabase migration 009_proof_suggestions.sql (proof_suggestions + proof_requirement columns), then try again.";
+  const proofMigrationMessage = GOALS_SCHEMA_CATCHUP;
 
   if (isDaily) {
     // Daily: try minimal first (no grace_period, no reminder columns)
@@ -265,7 +277,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const msg = error.message ?? "";
+    if (isGoalsSchemaColumnError(msg)) {
+      return NextResponse.json({ error: GOALS_SCHEMA_CATCHUP }, { status: 503 });
+    }
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   if (!data) return NextResponse.json({ error: "Insert failed" }, { status: 500 });
 
   const mapped = mapGoalRow(data);
@@ -337,7 +355,13 @@ export async function PATCH(request: NextRequest) {
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    const msg = error.message ?? "";
+    if (isGoalsSchemaColumnError(msg)) {
+      return NextResponse.json({ error: GOALS_SCHEMA_CATCHUP }, { status: 503 });
+    }
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 

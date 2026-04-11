@@ -167,6 +167,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               planBilling: p.planBilling,
               createdAt: p.createdAt ?? new Date().toISOString(),
               name: p.name ?? storedName,
+              username: typeof p.username === "string" ? p.username : undefined,
+              contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
             }
           : {
               id: supabaseUser.id,
@@ -175,6 +177,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               planBilling: undefined as undefined,
               createdAt: supabaseUser.created_at,
               name: storedName,
+              username: undefined as string | undefined,
+              contactEmail: undefined as string | undefined,
             };
         setUserState(profileUser);
 

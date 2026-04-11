@@ -20,6 +20,7 @@ import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { getPlan } from "@/lib/store";
 import { hasCreatorAccess } from "@/lib/accountAccess";
+import { accountDisplayLabel } from "@/lib/usernameAuth";
 import {
   applyDeveloperModeNumbers,
   applyGoalStreakOverride,
@@ -74,7 +75,7 @@ function DashboardContent() {
   const dailyGoals = goals.filter((g) => g.frequency === "daily");
   const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const isCreatorAccount = hasCreatorAccess(user?.email);
+  const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
   const effectiveDeveloperSettings = isCreatorAccount
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;
@@ -173,7 +174,7 @@ function DashboardContent() {
             Dashboard
           </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
-            {(user?.name || user?.email) ?? ""} · {plan?.name} plan
+            {accountDisplayLabel(user)} · {plan?.name} plan
           </p>
         </div>
 

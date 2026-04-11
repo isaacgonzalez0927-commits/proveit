@@ -22,6 +22,10 @@ export interface StoredUser {
   planBilling?: "monthly" | "yearly";
   createdAt: string;
   name?: string;
+  /** Lowercase sign-in handle when using username auth. */
+  username?: string;
+  /** Optional real email for password reset and notices (profiles.contact_email). */
+  contactEmail?: string;
 }
 
 function getStoredUser(): StoredUser | null {

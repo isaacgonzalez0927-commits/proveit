@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { isInternalAuthEmail, normalizeUsername } from "@/lib/usernameAuth";
 
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
 
 /**
  * Sends password reset email via Resend (same styled template as confirmation).
- * No auth required — call with { email, origin }.
+ * No auth required — call with { email, origin } or { username, origin }.
  */
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,29 +20,73 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let email: string;
-  let origin: string;
+  let email = "";
+  let origin = "";
+  let username: string | null = null;
   try {
     const body = await request.json().catch(() => ({}));
-    email = typeof body.email === "string" ? body.email.trim() : "";
     const rawOrigin = body.origin ?? request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
     origin = rawOrigin ? (rawOrigin.startsWith("http") ? rawOrigin : `https://${rawOrigin}`) : "";
+    if (typeof body.username === "string" && body.username.trim()) {
+      username = normalizeUsername(body.username);
+      if (!username) {
+        return NextResponse.json({ error: "Invalid username." }, { status: 400 });
+      }
+    } else if (typeof body.email === "string") {
+      email = body.email.trim().toLowerCase();
+    }
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  if (!email || !EMAIL_FORMAT.test(email)) {
-    return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
-  }
-
-  const redirectTo = origin ? `${origin}/api/auth/callback?next=/reset-password` : "";
   const admin = createSupabaseClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  let authEmailForLink = "";
+
+  if (username) {
+    const { data: profile, error: profErr } = await admin
+      .from("profiles")
+      .select("id, contact_email")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (profErr || !profile?.id) {
+      return NextResponse.json({ message: "If an account exists, you’ll get an email shortly." }, { status: 200 });
+    }
+
+    const { data: userData, error: userErr } = await admin.auth.admin.getUserById(profile.id);
+    if (userErr || !userData?.user?.email) {
+      return NextResponse.json({ message: "If an account exists, you’ll get an email shortly." }, { status: 200 });
+    }
+
+    authEmailForLink = userData.user.email;
+    const contact = typeof profile.contact_email === "string" ? profile.contact_email.trim() : "";
+
+    if (isInternalAuthEmail(authEmailForLink) && !contact) {
+      return NextResponse.json(
+        {
+          error:
+            "Add an email in Settings first so we can send a reset link. (Sign-in is still your username.)",
+        },
+        { status: 400 }
+      );
+    }
+
+    email = contact || authEmailForLink;
+  } else {
+    if (!email || !EMAIL_FORMAT.test(email)) {
+      return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
+    }
+    authEmailForLink = email;
+  }
+
+  const redirectTo = origin ? `${origin}/api/auth/callback?next=/reset-password` : "";
+
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "recovery",
-    email,
+    email: authEmailForLink,
     options: redirectTo ? { redirectTo } : undefined,
   });
 

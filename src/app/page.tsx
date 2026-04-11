@@ -5,11 +5,16 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { PLANS, type PlanId } from "@/types";
+import {
+  loginIdentifierToAuthEmail,
+  normalizeUsername,
+  usernameToAuthEmail,
+} from "@/lib/usernameAuth";
 
 type Slide = 0 | 1 | 2; // 0 = welcome, 1 = login, 2 = plan
 type AuthMode = "signin" | "signup";
 
-// Format-only check for real-looking email (no verification)
+// Format-only check for real-looking email (password reset by email)
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
 
 function LandingContent() {
@@ -19,7 +24,7 @@ function LandingContent() {
 
   const [slide, setSlide] = useState<Slide>(0);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [authMode, setAuthMode] = useState<AuthMode>("signup");
@@ -119,19 +124,35 @@ function LandingContent() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
+    const trimmedLogin = loginId.trim();
     if (authMode === "signup" && !trimmedName) {
       setLoginError("Please enter your name or nickname.");
       return;
     }
-    if (!trimmedEmail) {
-      setLoginError("Please enter your email.");
+    if (!trimmedLogin) {
+      setLoginError(authMode === "signup" ? "Please choose a username." : "Please enter your username or email.");
       return;
     }
-    if (!EMAIL_FORMAT.test(trimmedEmail)) {
-      setLoginError("Please enter a valid email address.");
-      return;
+
+    let authEmail: string;
+    let signupUsername: string | null = null;
+    if (authMode === "signup") {
+      const u = normalizeUsername(trimmedLogin);
+      if (!u) {
+        setLoginError("Username must be 3–20 characters: letters, numbers, or underscore.");
+        return;
+      }
+      signupUsername = u;
+      authEmail = usernameToAuthEmail(u);
+    } else {
+      const resolved = loginIdentifierToAuthEmail(trimmedLogin);
+      if (!resolved) {
+        setLoginError("Enter a valid username or email address.");
+        return;
+      }
+      authEmail = resolved;
     }
+
     if (password.length < 6) {
       setLoginError("Password must be at least 6 characters.");
       return;
@@ -144,21 +165,32 @@ function LandingContent() {
       try {
         if (authMode === "signin") {
           const { error } = await supabase.auth.signInWithPassword({
-            email: trimmedEmail,
+            email: authEmail,
             password,
           });
           if (error) {
-            setLoginError(error.message === "Invalid login credentials" ? "Invalid email or password." : error.message);
+            setLoginError(
+              error.message === "Invalid login credentials"
+                ? "Invalid username or password."
+                : error.message
+            );
             return;
           }
         } else {
           const { data, error } = await supabase.auth.signUp({
-            email: trimmedEmail,
+            email: authEmail,
             password,
-            options: { emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined },
+            options: {
+              emailRedirectTo:
+                typeof window !== "undefined" ? `${window.location.origin}/api/auth/callback` : undefined,
+            },
           });
           if (error) {
-            setLoginError(error.message);
+            setLoginError(
+              /already registered|already been registered/i.test(error.message)
+                ? "That username is already taken."
+                : error.message
+            );
             return;
           }
 
@@ -176,7 +208,7 @@ function LandingContent() {
           }
 
           const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: trimmedEmail,
+            email: authEmail,
             password,
           });
           if (signInError) {
@@ -186,6 +218,18 @@ function LandingContent() {
           setLoginError("");
           if (typeof window !== "undefined") {
             window.localStorage.setItem("proveit_display_name", trimmedName);
+          }
+          if (signupUsername) {
+            try {
+              await fetch("/api/profile", {
+                method: "PATCH",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: signupUsername, name: trimmedName || undefined }),
+              });
+            } catch {
+              // Profile row still usable; user can retry from settings if needed.
+            }
           }
           setSlide(2);
           return;
@@ -202,10 +246,16 @@ function LandingContent() {
         setLoginError("Sign-in requires server configuration. Use “Create account” or set up Supabase.");
         return;
       }
+      const u = signupUsername ?? normalizeUsername(trimmedLogin);
+      if (!u) {
+        setLoginError("Username must be 3–20 characters: letters, numbers, or underscore.");
+        return;
+      }
       const now = new Date().toISOString();
       setUser({
         id: user?.id ?? `user-${Date.now()}`,
-        email: trimmedEmail,
+        email: usernameToAuthEmail(u),
+        username: u,
         plan: user?.plan ?? "free",
         createdAt: user?.createdAt ?? now,
         name: trimmedName || user?.name,
@@ -219,13 +269,9 @@ function LandingContent() {
   };
 
   const handleForgotPassword = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      setLoginError("Enter your email first.");
-      return;
-    }
-    if (!EMAIL_FORMAT.test(trimmedEmail)) {
-      setLoginError("Please enter a valid email address.");
+    const raw = loginId.trim();
+    if (!raw) {
+      setLoginError("Enter your username or email first.");
       return;
     }
     if (!useSupabase || !supabase) return;
@@ -233,18 +279,59 @@ function LandingContent() {
     setLoginError("");
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const isEmail = raw.includes("@");
+      if (isEmail) {
+        const lower = raw.toLowerCase();
+        if (!EMAIL_FORMAT.test(lower)) {
+          setLoginError("Please enter a valid email address.");
+          return;
+        }
+        const res = await fetch("/api/auth/send-reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: lower, origin }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setResetSent(true);
+          return;
+        }
+        if (res.status === 501) {
+          const { error } = await supabase.auth.resetPasswordForEmail(lower, {
+            redirectTo: origin ? `${origin}/api/auth/callback?next=/reset-password` : undefined,
+          });
+          if (error) {
+            setLoginError(error.message);
+            return;
+          }
+          setResetSent(true);
+          return;
+        }
+        setLoginError(typeof data.error === "string" ? data.error : "Something went wrong. Try again.");
+        return;
+      }
+
+      const u = normalizeUsername(raw);
+      if (!u) {
+        setLoginError("Enter a valid username.");
+        return;
+      }
       const res = await fetch("/api/auth/send-reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail, origin }),
+        body: JSON.stringify({ username: u, origin }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setResetSent(true);
         return;
       }
+      if (res.status === 400 && typeof data.error === "string") {
+        setLoginError(data.error);
+        return;
+      }
       if (res.status === 501) {
-        const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        const { error } = await supabase.auth.resetPasswordForEmail(usernameToAuthEmail(u), {
           redirectTo: origin ? `${origin}/api/auth/callback?next=/reset-password` : undefined,
         });
         if (error) {
@@ -412,13 +499,17 @@ function LandingContent() {
                       </label>
                     )}
                     <label className="block">
-                      <span className="sr-only">Email</span>
+                      <span className="sr-only">
+                        {authMode === "signup" ? "Username" : "Username or email"}
+                      </span>
                       <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        type="text"
+                        name={authMode === "signup" ? "username" : "username"}
+                        autoComplete={authMode === "signup" ? "username" : "username"}
+                        value={loginId}
+                        onChange={(e) => setLoginId(e.target.value)}
                         className="w-full bg-transparent px-3 py-2.5 text-[16px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-                        placeholder="Email"
+                        placeholder={authMode === "signup" ? "Username" : "Username or email"}
                         required
                       />
                     </label>

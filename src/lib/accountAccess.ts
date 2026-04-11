@@ -3,7 +3,11 @@ const CREATOR_EMAILS = new Set([
   "ranchdressing971@gmail.com",
 ]);
 
-export function hasCreatorAccess(email?: string | null): boolean {
-  if (!email) return false;
-  return CREATOR_EMAILS.has(email.trim().toLowerCase());
+export function hasCreatorAccess(
+  email?: string | null,
+  contactEmail?: string | null
+): boolean {
+  if (email && CREATOR_EMAILS.has(email.trim().toLowerCase())) return true;
+  if (contactEmail && CREATOR_EMAILS.has(contactEmail.trim().toLowerCase())) return true;
+  return false;
 }

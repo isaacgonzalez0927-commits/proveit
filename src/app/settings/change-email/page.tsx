@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { isInternalAuthEmail } from "@/lib/usernameAuth";
 
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
 
@@ -49,8 +50,9 @@ export default function ChangeEmailPage() {
       setError("The two email addresses don't match.");
       return;
     }
-    if (trimmed === user?.email) {
-      setError("New email is the same as your current email.");
+    const currentLoginEmail = user?.email ?? "";
+    if (trimmed === currentLoginEmail) {
+      setError("New email is the same as your current login email.");
       return;
     }
     if (!useSupabase || !supabase) {
@@ -119,13 +121,25 @@ export default function ChangeEmailPage() {
         <ArrowLeft className="h-4 w-4" />
         Back to settings
       </Link>
-      <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Change email</h1>
+      <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Change login email</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Enter your new email. We’ll send a confirmation link there to complete the change.
+        {isInternalAuthEmail(user?.email) ? (
+          <>
+            Your account uses a username to sign in. You can switch your Supabase login email here (optional). For password reset messages, use{" "}
+            <Link href="/settings" className="text-prove-600 hover:underline dark:text-prove-400">
+              Contact email
+            </Link>{" "}
+            in Settings instead.
+          </>
+        ) : (
+          <>Enter your new email. We’ll send a confirmation link there to complete the change.</>
+        )}
       </p>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Current email</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            {isInternalAuthEmail(user?.email) ? "Current login email (internal)" : "Current email"}
+          </label>
           <input
             type="email"
             value={user?.email ?? ""}

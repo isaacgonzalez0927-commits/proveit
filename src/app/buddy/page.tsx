@@ -162,7 +162,7 @@ export default function BuddyPage() {
     if (added) setFinalAnimationTick((t) => t + 1);
   }, [finalStageDeps, goals]);
 
-  const isCreatorAccount = hasCreatorAccess(user?.email);
+  const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
   const effectiveDeveloperSettings = isCreatorAccount
     ? developerSettings
     : DEFAULT_DEVELOPER_MODE_SETTINGS;

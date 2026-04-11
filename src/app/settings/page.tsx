@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, Trash2, Lock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { normalizePlanId } from "@/types";
+import { isInternalAuthEmail } from "@/lib/usernameAuth";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
   getStoredDeveloperModeSettings,
@@ -61,7 +63,7 @@ const HISTORY_SETTING_ITEMS: Array<{
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, goals, submissions, signOut, useSupabase, supabase, clearPlanSelectionForNewUser, restoreActualAccount } = useApp();
+  const { user, goals, submissions, signOut, useSupabase, supabase, clearPlanSelectionForNewUser, restoreActualAccount, setUser } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -75,7 +77,9 @@ export default function SettingsPage() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [confirmEmailLoading, setConfirmEmailLoading] = useState(false);
   const [confirmEmailMessage, setConfirmEmailMessage] = useState<string | null>(null);
-  const isCreatorAccount = hasCreatorAccess(user?.email);
+  const [contactDraft, setContactDraft] = useState("");
+  const [contactSaving, setContactSaving] = useState(false);
+  const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
 
   useEffect(() => {
     setHistorySettings(getStoredHistoryDisplaySettings());
@@ -83,6 +87,10 @@ export default function SettingsPage() {
     setDeveloperEnabled(getStoredDeveloperModeSettings().enabled);
     setAccentTheme(getStoredAccentTheme());
   }, []);
+
+  useEffect(() => {
+    setContactDraft(user?.contactEmail ?? "");
+  }, [user?.contactEmail]);
 
   useEffect(() => {
     const sanitized = sanitizeAccentThemeForPlan(getStoredAccentTheme(), user?.plan);
@@ -159,6 +167,44 @@ export default function SettingsPage() {
     setHiddenGoalIds(nextHiddenGoalIds);
     saveHiddenHistoryGoalIds(nextHiddenGoalIds);
     setSettingsMessage(`Restored "${goalTitle}" in gallery.`);
+  };
+
+  const handleSaveContactEmail = async () => {
+    if (contactSaving || !useSupabase) return;
+    setContactSaving(true);
+    setSettingsMessage(null);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contact_email: contactDraft.trim() === "" ? null : contactDraft.trim().toLowerCase(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSettingsMessage(typeof data.error === "string" ? data.error : "Could not save email.");
+        return;
+      }
+      const pr = await fetch("/api/profile", { credentials: "include" }).then((r) => r.json());
+      const p = pr.profile;
+      if (p && user) {
+        setUser({
+          ...user,
+          email: p.email ?? user.email,
+          username: p.username ?? user.username,
+          contactEmail: p.contactEmail,
+          name: p.name ?? user.name,
+          plan: normalizePlanId(p.plan),
+          planBilling: p.planBilling ?? user.planBilling,
+          createdAt: typeof p.createdAt === "string" ? p.createdAt : user.createdAt,
+        });
+      }
+      setSettingsMessage("Contact email saved.");
+    } finally {
+      setContactSaving(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -295,7 +341,34 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {useSupabase && user?.email && (
+        {useSupabase && (
+          <section className="mt-6 rounded-2xl p-5 glass-card">
+            <h2 className="font-semibold text-slate-900 dark:text-white">Contact email (optional)</h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Add a real address if you want password reset links in your inbox. You still sign in with your username and password.
+            </p>
+            <div className="mt-4 space-y-2">
+              <input
+                type="email"
+                value={contactDraft}
+                onChange={(e) => setContactDraft(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={handleSaveContactEmail}
+                disabled={contactSaving}
+                className="rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
+              >
+                {contactSaving ? "Saving…" : "Save email"}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {useSupabase && user?.email && !isInternalAuthEmail(user.email) && (
           <section className="mt-6 rounded-2xl p-5 glass-card">
             <h2 className="font-semibold text-slate-900 dark:text-white">Confirm email</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
