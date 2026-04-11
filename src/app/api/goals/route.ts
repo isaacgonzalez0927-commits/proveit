@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  isProofRequirementAllowed,
+  PROOF_SUGGESTIONS_MAX,
+  PROOF_SUGGESTIONS_MIN,
+} from "@/lib/proofSuggestions";
 
 function normalizeCompletedDates(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -16,10 +21,44 @@ function normalizeReminderDays(value: unknown): number[] | undefined {
   return undefined;
 }
 
+/** Store and return HH:mm for clients (handles TEXT, TIME with seconds, etc.). */
+function normalizeReminderTime(value: unknown): string | undefined {
+  if (value == null || value === "") return undefined;
+  const s = String(value).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return undefined;
+  const h = Math.min(23, Math.max(0, Number.parseInt(m[1]!, 10)));
+  const min = Math.min(59, Math.max(0, Number.parseInt(m[2]!, 10)));
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function normalizeProofSuggestionsFromRow(value: unknown): string[] | undefined {
+  if (value == null) return undefined;
+  if (Array.isArray(value)) {
+    const s = value
+      .filter((x): x is string => typeof x === "string")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    return s.length > 0 ? s : undefined;
+  }
+  return undefined;
+}
+
+function parseIncomingProofSuggestions(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  const arr = raw
+    .filter((x): x is string => typeof x === "string")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  if (arr.length < PROOF_SUGGESTIONS_MIN || arr.length > PROOF_SUGGESTIONS_MAX) return null;
+  return arr;
+}
+
 function mapGoalRow(row: Record<string, unknown>) {
   const reminderDay = row.reminder_day != null ? (row.reminder_day as number) : undefined;
   const reminderDays = normalizeReminderDays(row.reminder_days) ?? (typeof reminderDay === "number" ? [reminderDay] : undefined);
-  const frequency = (row.frequency as string) ?? "daily";
+  const frequencyRaw = (row.frequency as string) ?? "daily";
+  const frequency = frequencyRaw === "weekly" ? "weekly" : "daily";
   const rawTimes = row.times_per_week;
   const timesPerWeek =
     typeof rawTimes === "number" && rawTimes >= 1 && rawTimes <= 7
@@ -34,7 +73,7 @@ function mapGoalRow(row: Record<string, unknown>) {
     description: (row.description as string | null) ?? undefined,
     frequency: frequency as "daily" | "weekly",
     timesPerWeek,
-    reminderTime: (row.reminder_time as string | null) ?? undefined,
+    reminderTime: normalizeReminderTime(row.reminder_time),
     reminderDay,
     reminderDays: frequency === "daily" ? undefined : reminderDays,
     gracePeriod: (row.grace_period as string | null) ?? undefined,
@@ -44,6 +83,11 @@ function mapGoalRow(row: Record<string, unknown>) {
     streakCarryover: (row.streak_carryover as number | null) ?? undefined,
     createdAt: row.created_at as string,
     completedDates: normalizeCompletedDates(row.completed_dates),
+    proofSuggestions: normalizeProofSuggestionsFromRow(row.proof_suggestions),
+    proofRequirement:
+      typeof row.proof_requirement === "string" && row.proof_requirement.trim()
+        ? row.proof_requirement.trim()
+        : undefined,
   };
 }
 
@@ -75,7 +119,35 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, title, description, frequency, timesPerWeek, reminderTime, reminderDay, reminderDays, gracePeriod } = body;
+  const {
+    id,
+    title,
+    description,
+    frequency,
+    timesPerWeek,
+    reminderTime,
+    reminderDay,
+    reminderDays,
+    gracePeriod,
+    proofSuggestions: proofSuggestionsBody,
+    proofRequirement: proofRequirementBody,
+  } = body;
+
+  const proofSuggestionsParsed = parseIncomingProofSuggestions(proofSuggestionsBody);
+  const proofRequirementParsed =
+    typeof proofRequirementBody === "string" ? proofRequirementBody.trim() : "";
+  if (
+    !proofSuggestionsParsed ||
+    !isProofRequirementAllowed(proofRequirementParsed, proofSuggestionsParsed)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Choose one of the suggested photo prompts for this goal (tap Get photo ideas, then pick an option).",
+      },
+      { status: 400 }
+    );
+  }
 
   // Ensure profile row exists (e.g. if trigger missed it). Do not overwrite plan.
   try {
@@ -90,9 +162,31 @@ export async function POST(request: NextRequest) {
     // ignore
   }
 
-  const isDaily = frequency === "daily";
+  const frequencyNorm: "daily" | "weekly" =
+    frequency === "weekly"
+      ? "weekly"
+      : frequency === "daily" ||
+          (Array.isArray(reminderDays) && reminderDays.length === 7) ||
+          timesPerWeek === 7
+        ? "daily"
+        : Array.isArray(reminderDays) && reminderDays.length > 0
+          ? "weekly"
+          : "daily";
+
+  const isDaily = frequencyNorm === "daily";
   const reminderDayVal = reminderDay ?? (Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays[0] : null);
   const reminderDaysVal = Array.isArray(reminderDays) && reminderDays.length > 0 ? reminderDays : null;
+
+  const resolvedTimesPerWeek =
+    typeof timesPerWeek === "number" && timesPerWeek >= 1 && timesPerWeek <= 7
+      ? timesPerWeek
+      : isDaily
+        ? 7
+        : Array.isArray(reminderDays) && reminderDays.length > 0
+          ? Math.min(7, reminderDays.length)
+          : 1;
+
+  const reminderTimeNorm = normalizeReminderTime(reminderTime) ?? null;
 
   // Minimal columns that exist in the base goals table (no reminder_day, reminder_days, grace_period).
   const minimalInsert: Record<string, unknown> = {
@@ -100,8 +194,11 @@ export async function POST(request: NextRequest) {
     user_id: user.id,
     title,
     description: description ?? null,
-    frequency,
-    reminder_time: reminderTime ?? null,
+    frequency: frequencyNorm,
+    reminder_time: reminderTimeNorm,
+    times_per_week: resolvedTimesPerWeek,
+    proof_suggestions: proofSuggestionsParsed,
+    proof_requirement: proofRequirementParsed,
   };
 
   // Daily: only use minimal columns so we never touch reminder_day/reminder_days (avoids "could not find reminder day" on strict or older DBs).
@@ -120,12 +217,19 @@ export async function POST(request: NextRequest) {
   let data: Record<string, unknown> | null = null;
   let error: { message: string } | null = null;
 
+  const stripProofCols = (p: Record<string, unknown>) => {
+    const { proof_suggestions: _ps, proof_requirement: _pr, ...rest } = p;
+    return rest;
+  };
+
   if (isDaily) {
     // Daily: try minimal first (no grace_period, no reminder columns)
     let result = await insertGoal(minimalInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
-      if (/times.?per.?week/i.test(msg)) {
+      if (/proof_suggestions|proof_requirement/i.test(msg)) {
+        result = await insertGoal(stripProofCols(minimalInsert));
+      } else if (/times.?per.?week/i.test(msg)) {
         const { times_per_week: _tw, ...withoutTimes } = minimalInsert;
         result = await insertGoal(withoutTimes);
       } else if (/grace_period|grace period|reminder|does not exist/i.test(msg)) {
@@ -145,7 +249,9 @@ export async function POST(request: NextRequest) {
     let result = await insertGoal(fullInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
-      if (/times.?per.?week/i.test(msg)) {
+      if (/proof_suggestions|proof_requirement/i.test(msg)) {
+        result = await insertGoal(stripProofCols(fullInsert));
+      } else if (/times.?per.?week/i.test(msg)) {
         const { times_per_week: _tw, ...withoutTimes } = fullInsert;
         result = await insertGoal(withoutTimes);
       } else if (/grace_period|grace period|does not exist/i.test(msg)) {
@@ -194,8 +300,12 @@ export async function PATCH(request: NextRequest) {
   const dbUpdates: Record<string, unknown> = {};
   if ("title" in updates) dbUpdates.title = updates.title;
   if ("description" in updates) dbUpdates.description = updates.description ?? null;
-  if ("frequency" in updates) dbUpdates.frequency = updates.frequency;
-  if ("reminderTime" in updates) dbUpdates.reminder_time = updates.reminderTime ?? null;
+  if ("frequency" in updates) {
+    dbUpdates.frequency = updates.frequency === "weekly" ? "weekly" : "daily";
+  }
+  if ("reminderTime" in updates) {
+    dbUpdates.reminder_time = normalizeReminderTime(updates.reminderTime) ?? null;
+  }
   if ("reminderDay" in updates) dbUpdates.reminder_day = updates.reminderDay ?? null;
   if ("reminderDays" in updates) {
     const rd = updates.reminderDays;
@@ -213,6 +323,22 @@ export async function PATCH(request: NextRequest) {
     dbUpdates.break_streak_snapshot = updates.breakStreakSnapshot ?? null;
   }
   if ("streakCarryover" in updates) dbUpdates.streak_carryover = updates.streakCarryover ?? null;
+
+  if ("proofRequirement" in updates || "proofSuggestions" in updates) {
+    if (!("proofRequirement" in updates && "proofSuggestions" in updates)) {
+      return NextResponse.json(
+        { error: "Send proofSuggestions and proofRequirement together when updating proof prompts." },
+        { status: 400 }
+      );
+    }
+    const suggList = parseIncomingProofSuggestions(updates.proofSuggestions);
+    const reqStr = typeof updates.proofRequirement === "string" ? updates.proofRequirement.trim() : "";
+    if (!suggList || !isProofRequirementAllowed(reqStr, suggList)) {
+      return NextResponse.json({ error: "Pick one of the suggested photo prompts." }, { status: 400 });
+    }
+    dbUpdates.proof_suggestions = suggList;
+    dbUpdates.proof_requirement = reqStr;
+  }
 
   if (Object.keys(dbUpdates).length === 0) {
     return NextResponse.json({ ok: true });

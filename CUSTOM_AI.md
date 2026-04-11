@@ -48,3 +48,33 @@ The app sends the same JSON body above to that URL and expects the `{ verified, 
 3. Else → demo mode (random pass/fail, no real AI).
 
 So once their API is live, set `CUSTOM_AI_VERIFY_URL` (and `CUSTOM_AI_API_KEY` if they use it) and the app will use it automatically.
+
+---
+
+## Proof suggestions (before the user creates a goal)
+
+When someone adds a goal, they must **pick one of 2–3 AI-generated photo ideas** (e.g. “selfie at the gym” vs “photo of you doing an exercise”). They can **only** choose from that list at creation time and in goal settings (refresh loads a new list for the **same goal title**).
+
+### Endpoint your AI can expose
+
+- **Method:** `POST`
+- **Request body (JSON):** `{ "title": "Go to gym" }` (goal title only)
+- **Response (JSON):** `{ "suggestions": ["...", "...", "..."] }` — **2–3** short, actionable strings (what to photograph)
+
+### Env vars (optional)
+
+```bash
+CUSTOM_AI_SUGGESTIONS_URL=https://your-api.com/goal-proof-suggestions
+# Optional Bearer token:
+CUSTOM_AI_SUGGESTIONS_API_KEY=your-secret
+```
+
+If `CUSTOM_AI_SUGGESTIONS_URL` is **not** set, the app uses **placeholder** suggestions so you can ship the UI and DB first, then swap in the real model later.
+
+### Verification API (reminder)
+
+The verify endpoint can also receive **`proofRequirement`** (the string the user chose). Your custom verify API should accept:
+
+`{ "imageBase64", "goalTitle", "goalDescription", "proofRequirement" }`
+
+and judge whether the photo matches that **specific** instruction, not only the title.

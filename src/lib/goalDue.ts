@@ -2,13 +2,27 @@ import type { Goal, GracePeriod } from "@/types";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+/** HH:mm for <input type="time" /> (strips seconds / odd DB formats). */
+export function normalizeReminderTimeInput(value: string | undefined | null): string {
+  if (value == null || typeof value !== "string") return "";
+  const m = value.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return "";
+  const h = Math.min(23, Math.max(0, Number.parseInt(m[1]!, 10)));
+  const min = Math.min(59, Math.max(0, Number.parseInt(m[2]!, 10)));
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
 /** Effective reminder days (0–6). 7×/week = all 7; 1–6× = reminderDays or [reminderDay]. */
 export function getReminderDays(goal: Goal): number[] {
-  const timesPerWeek = goal.timesPerWeek ?? (goal.frequency === "daily" ? 7 : 1);
-  if (timesPerWeek === 7) return [0, 1, 2, 3, 4, 5, 6];
-  if (goal.reminderDays && goal.reminderDays.length > 0) return goal.reminderDays;
-  const d = typeof goal.reminderDay === "number" ? goal.reminderDay : 0;
-  return [d];
+  if (goal.frequency === "daily") return [0, 1, 2, 3, 4, 5, 6];
+  if (goal.timesPerWeek === 7) return [0, 1, 2, 3, 4, 5, 6];
+  if (goal.reminderDays && goal.reminderDays.length > 0) {
+    return [...goal.reminderDays].sort((a, b) => a - b);
+  }
+  if (typeof goal.reminderDay === "number") return [goal.reminderDay];
+  if (goal.frequency === "weekly") return [0];
+  // Legacy rows missing frequency used to fall through to Sunday-only; default to every day.
+  return [0, 1, 2, 3, 4, 5, 6];
 }
 
 const GRACE_HOURS: Record<Exclude<GracePeriod, "eod">, number> = {
@@ -19,8 +33,8 @@ const GRACE_HOURS: Record<Exclude<GracePeriod, "eod">, number> = {
 };
 
 function parseTime(hhmm: string | undefined, defaultH = 9, defaultM = 0): { hour: number; minute: number } {
-  if (!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return { hour: defaultH, minute: defaultM };
-  const [h, m] = hhmm.split(":").map(Number);
+  if (!hhmm || !/^\d{1,2}:\d{2}/.test(hhmm.trim())) return { hour: defaultH, minute: defaultM };
+  const [h, m] = hhmm.trim().split(":").map(Number);
   return { hour: h ?? defaultH, minute: m ?? defaultM };
 }
 

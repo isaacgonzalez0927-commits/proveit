@@ -1,7 +1,13 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { normalizePlanId, type Goal, type PlanId, type ProofSubmission } from "@/types";
+import {
+  normalizePlanId,
+  type Goal,
+  type PlanId,
+  type ProofSubmission,
+  type TimesPerWeek,
+} from "@/types";
 import {
   getStoredUser,
   getStoredGoals,
@@ -20,7 +26,7 @@ import {
 import { PLANS } from "@/types";
 import { useSupabaseAuth } from "@/lib/supabase/hooks";
 import { format } from "date-fns";
-import { isWithinSubmissionWindow } from "@/lib/goalDue";
+import { isWithinSubmissionWindow, normalizeReminderTimeInput } from "@/lib/goalDue";
 import {
   getStoredEarnedItems,
   getStoredEquippedItems,
@@ -90,6 +96,41 @@ function useSupabaseConfigured() {
   return SUPABASE_CONFIGURED;
 }
 
+function mapGoalFromApi(g: Record<string, unknown>): Goal {
+  const freq: Goal["frequency"] = g.frequency === "weekly" ? "weekly" : "daily";
+  let tw = g.timesPerWeek;
+  if (typeof tw !== "number" || tw < 1 || tw > 7) {
+    tw = freq === "daily" ? 7 : 1;
+  }
+  const rt = normalizeReminderTimeInput(typeof g.reminderTime === "string" ? g.reminderTime : null);
+  return {
+    id: g.id as string,
+    userId: g.userId as string,
+    title: g.title as string,
+    description: typeof g.description === "string" ? g.description : undefined,
+    frequency: freq,
+    timesPerWeek: tw as TimesPerWeek,
+    reminderTime: rt || undefined,
+    reminderDay: typeof g.reminderDay === "number" ? g.reminderDay : undefined,
+    reminderDays: Array.isArray(g.reminderDays) ? (g.reminderDays as number[]) : undefined,
+    gracePeriod: g.gracePeriod as Goal["gracePeriod"] | undefined,
+    isOnBreak: g.isOnBreak === true,
+    breakStartedAt: typeof g.breakStartedAt === "string" ? g.breakStartedAt : undefined,
+    breakStreakSnapshot:
+      typeof g.breakStreakSnapshot === "number" ? g.breakStreakSnapshot : undefined,
+    streakCarryover: typeof g.streakCarryover === "number" ? g.streakCarryover : undefined,
+    createdAt: g.createdAt as string,
+    completedDates: Array.isArray(g.completedDates) ? (g.completedDates as string[]) : [],
+    proofSuggestions: Array.isArray(g.proofSuggestions)
+      ? (g.proofSuggestions as unknown[]).filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      : undefined,
+    proofRequirement:
+      typeof g.proofRequirement === "string" && g.proofRequirement.trim()
+        ? (g.proofRequirement as string).trim()
+        : undefined,
+  };
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const useSupabase = useSupabaseConfigured();
   const { user: supabaseUser, loading: authLoading, supabase } = useSupabaseAuth();
@@ -138,24 +179,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         const goalsRes = goalsResult.status === "fulfilled" ? goalsResult.value : null;
         const gs = goalsRes?.goals ?? [];
-        const mappedGoals = gs.map((g: Record<string, unknown>) => ({
-          id: g.id,
-          userId: g.userId,
-          title: g.title,
-          description: g.description,
-          frequency: g.frequency,
-          reminderTime: g.reminderTime,
-          reminderDay: g.reminderDay,
-          reminderDays: Array.isArray(g.reminderDays) ? g.reminderDays : undefined,
-          gracePeriod: g.gracePeriod,
-          isOnBreak: g.isOnBreak === true,
-          breakStartedAt: typeof g.breakStartedAt === "string" ? g.breakStartedAt : undefined,
-          breakStreakSnapshot:
-            typeof g.breakStreakSnapshot === "number" ? g.breakStreakSnapshot : undefined,
-          streakCarryover: typeof g.streakCarryover === "number" ? g.streakCarryover : undefined,
-          createdAt: g.createdAt,
-          completedDates: g.completedDates ?? [],
-        }));
+        const mappedGoals = gs.map((g: Record<string, unknown>) => mapGoalFromApi(g));
         setGoalsState(mappedGoals);
 
         const subsRes = subsResult.status === "fulfilled" ? subsResult.value : null;
@@ -348,6 +372,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               reminderDay: goal.reminderDay,
               reminderDays: goal.reminderDays,
               gracePeriod: goal.gracePeriod ?? "eod",
+              proofSuggestions: goal.proofSuggestions,
+              proofRequirement: goal.proofRequirement,
             }),
           });
           let data: { goal?: Goal; error?: string; message?: string } = {};
@@ -372,10 +398,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to create goal:", msg);
             return { created: null, error: msg };
           }
-          const created = data?.goal as Goal | undefined;
-          if (!created?.id) {
+          const rawGoal = data?.goal as Record<string, unknown> | undefined;
+          if (!rawGoal || typeof rawGoal.id !== "string") {
             return { created: null, error: "Server did not return the new goal. Try again." };
           }
+          const created = mapGoalFromApi(rawGoal);
           setGoalsState((prev) => [...prev, created]);
           return { created, error: undefined };
         } catch (error) {

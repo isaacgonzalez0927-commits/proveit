@@ -274,13 +274,16 @@ function SubmitProofContent() {
       let aiPassed = false;
       let aiFeedback = "Verification completed.";
 
+      // Match the chosen photo idea first; old goals without a prompt still use the title.
+      const verifyGoalText = goal.proofRequirement?.trim() || goal.title;
+
       const provider = (process.env.NEXT_PUBLIC_VERIFY_PROVIDER ?? "clip").toLowerCase();
       if (provider === "clip") {
       // Lazy-load CLIP verifier so Next doesn't bundle the heavy transformers runtime on every page render.
       const { verifyWithLocalClip } = await import("@/lib/localClipVerify");
       const clip = await verifyWithLocalClip({
           imageDataUrl: compressed,
-          goalText: goal.title,
+          goalText: verifyGoalText,
           threshold: 0.55,
         });
         aiPassed = clip.verified;
@@ -295,6 +298,7 @@ function SubmitProofContent() {
             imageBase64: base64,
             goalTitle: goal.title,
             goalDescription: goal.description ?? "",
+            proofRequirement: goal.proofRequirement ?? "",
           }),
         });
         const data = await res.json();
@@ -412,8 +416,18 @@ function SubmitProofContent() {
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
             </h1>
-            <p className="mt-1 text-slate-600 dark:text-slate-400">
-              Take a photo showing you doing this goal. AI will verify it. You can submit any time before the due deadline.
+            {goal.proofRequirement ? (
+              <div className="mt-3 rounded-xl border border-prove-200 bg-prove-50/80 px-3 py-2 dark:border-prove-900/50 dark:bg-prove-950/30">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-prove-800 dark:text-prove-200">
+                  Your photo should show
+                </p>
+                <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{goal.proofRequirement}</p>
+              </div>
+            ) : null}
+            <p className="mt-2 text-slate-600 dark:text-slate-400">
+              {goal.proofRequirement
+                ? "Take a photo that matches the instruction above. AI will verify it. You can submit any time before the due deadline."
+                : "Take a photo showing you doing this goal. AI will verify it. You can submit any time before the due deadline."}
             </p>
           </>
         )}
