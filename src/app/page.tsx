@@ -600,7 +600,7 @@ function LandingContent() {
                           </p>
                         </div>
                         <span className={`text-[16px] font-bold shrink-0 ${plan.id === "free" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>
-                          {plan.priceMonthly === 0 ? "Free" : `£${plan.priceMonthly}/mo`}
+                          {plan.priceMonthly === 0 ? "Free" : `$${plan.priceMonthly}/mo`}
                         </span>
                       </div>
                       <ul className="mt-3 flex flex-col gap-1.5 text-[12px] text-slate-600 dark:text-slate-400">

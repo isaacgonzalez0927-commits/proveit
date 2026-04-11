@@ -17,6 +17,7 @@ import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
+import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
 const APP_TABS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -55,7 +56,15 @@ export function Header() {
   const { user, signOut } = useApp();
   const [hideHeader] = useHideHeader();
   const [accountOpen, setAccountOpen] = useState(false);
+  const [tourSpotlight, setTourSpotlight] = useState<string | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sync = () => setTourSpotlight(window.localStorage.getItem(TOUR_SPOTLIGHT_KEY));
+    sync();
+    window.addEventListener(TOUR_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(TOUR_CHANGED_EVENT, sync);
+  }, []);
 
   useEffect(() => {
     if (!accountOpen) return;
@@ -187,15 +196,19 @@ export function Header() {
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);
+                const isGardenTab = tab.href === "/buddy";
+                const spotlightGarden = tourSpotlight === "garden-tab";
                 return (
                   <Link
                     key={tab.href}
                     href={tab.href}
+                    data-tour={isGardenTab ? "garden-tab" : undefined}
                     className={clsx(
                       "flex min-h-[56px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-[11px] font-semibold transition-colors",
                       active
                         ? "bg-prove-100/90 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300 rounded-xl glass-outline-subtle"
-                        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                      isGardenTab && spotlightGarden && "relative z-[100]"
                     )}
                     aria-current={active ? "page" : undefined}
                   >

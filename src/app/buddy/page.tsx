@@ -44,6 +44,7 @@ import {
   PROOF_SUGGESTIONS_MIN,
 } from "@/lib/proofSuggestions";
 import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
+import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY, dispatchTourChanged } from "@/lib/tourStorage";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
 const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
@@ -119,6 +120,7 @@ export default function BuddyPage() {
   const [, setFinalAnimationTick] = useState(0);
   const [showGardenTourHint, setShowGardenTourHint] = useState(false);
   const [gardenTourHintStep, setGardenTourHintStep] = useState<"manage" | "create">("manage");
+  const [tourSpotlight, setTourSpotlight] = useState<string | null>(null);
   const proofFetchGen = useRef(0);
   const proofEditFetchGen = useRef(0);
   const newTitleRef = useRef(newTitle);
@@ -126,6 +128,13 @@ export default function BuddyPage() {
 
   useEffect(() => {
     setDeveloperSettings(getStoredDeveloperModeSettings());
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setTourSpotlight(window.localStorage.getItem(TOUR_SPOTLIGHT_KEY));
+    sync();
+    window.addEventListener(TOUR_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(TOUR_CHANGED_EVENT, sync);
   }, []);
 
   // When the dashboard tour sends the user to the Garden, show a guided hint in-place.
@@ -682,7 +691,7 @@ export default function BuddyPage() {
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {plan.name} plan · {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{plan.maxGoals !== 1 ? "s" : ""}
           </p>
-          {showGardenTourHint && (
+          {showGardenTourHint && !tourSpotlight && (
             <div className="mt-3 rounded-2xl border border-prove-200 bg-prove-50 px-3 py-3 text-xs text-slate-700 dark:border-prove-800 dark:bg-prove-950/40 dark:text-slate-200">
               {gardenTourHintStep === "manage" ? (
                 <>
@@ -719,15 +728,24 @@ export default function BuddyPage() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
+              data-tour="add-goal-button"
               onClick={() => {
                 setGoalManagerMessage(null);
                 if (!canAddMoreGoals) {
                   setShowUpgradePrompt(true);
                   return;
                 }
+                if (typeof window !== "undefined" && window.localStorage.getItem(TOUR_SPOTLIGHT_KEY) === "add-goal-button") {
+                  window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
+                  window.localStorage.removeItem(GARDEN_HINT_KEY);
+                  window.localStorage.setItem(RESUME_KEY, "3");
+                  dispatchTourChanged();
+                }
                 setShowCreateForm((prev) => !prev);
               }}
-              className="inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 btn-glass-primary"
+              className={`inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 btn-glass-primary ${
+                tourSpotlight === "add-goal-button" ? "relative z-[100]" : ""
+              }`}
             >
               <Plus className="h-3.5 w-3.5" />
               {showCreateForm ? "Close add goal" : "Add goal in garden"}
@@ -1075,10 +1093,18 @@ export default function BuddyPage() {
                 if (!canAddMoreGoals) {
                   setShowUpgradePrompt(true);
                 } else {
+                  if (typeof window !== "undefined" && window.localStorage.getItem(TOUR_SPOTLIGHT_KEY) === "add-goal-button") {
+                    window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
+                    window.localStorage.removeItem(GARDEN_HINT_KEY);
+                    window.localStorage.setItem(RESUME_KEY, "3");
+                    dispatchTourChanged();
+                  }
                   setShowCreateForm(true);
                 }
               }}
-              className="mt-5 inline-flex rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
+              className={`mt-5 inline-flex rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 ${
+                tourSpotlight === "add-goal-button" ? "relative z-[100]" : ""
+              }`}
             >
               <Plus className="h-4 w-4 mr-1.5" />
               Add your first goal

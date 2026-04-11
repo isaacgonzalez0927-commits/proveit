@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { dispatchTourChanged, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
 const START_KEY = "proveit_start_tour";
 const DONE_KEY = "proveit_tour_done";
@@ -28,13 +28,13 @@ const TOUR_STEPS: TourStep[] = [
     title: "Goal Garden",
     body:
       "The Goal Garden tab is your hub: create goals, set reminder days and times, and pick how each plant looks when it’s fully grown.",
-    note: "Tap Next, then we’ll open the Garden for your first goal.",
+    note: "Tap Next for instructions to open the Garden from the tab bar.",
   },
   {
     title: "Create your first goal",
     body:
-      "Name something you can prove with a picture. Tap Get photo ideas, pick one of the AI suggestions, then set days (or Every day) and reminder time before adding the goal.",
-    note: "Plant style only changes the final full-grown look — growth path stays the same.",
+      "You’ll blur the screen except the Goal Garden tab — tap it to go there. Then we highlight Add goal in garden so you open the form yourself.",
+    note: "After that: Get photo ideas, pick a suggestion, set days and time, then Add goal.",
   },
   {
     title: "Prove it with a photo",
@@ -63,7 +63,6 @@ const TOUR_STEPS: TourStep[] = [
 ] as const;
 
 export function DashboardTour() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -89,6 +88,8 @@ export function DashboardTour() {
       window.localStorage.removeItem(START_KEY);
       window.localStorage.removeItem(GARDEN_HINT_KEY);
       window.localStorage.removeItem(RESUME_KEY);
+      window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
+      dispatchTourChanged();
     }
     setOpen(false);
   };
@@ -105,10 +106,10 @@ export function DashboardTour() {
     if (step === 2) {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(GARDEN_HINT_KEY, TOUR_VERSION);
-        window.localStorage.setItem(RESUME_KEY, "4");
+        window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "garden-tab");
+        dispatchTourChanged();
       }
       setOpen(false);
-      router.push("/buddy");
       return;
     }
     if (step < TOUR_STEPS.length - 1) {
