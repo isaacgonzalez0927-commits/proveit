@@ -2,22 +2,23 @@
 
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
+import { useApp } from "@/context/AppContext";
 import {
   TOUR_CHANGED_EVENT,
   TOUR_SPOTLIGHT_KEY,
+  completeDashboardTour,
   dispatchTourChanged,
   type TourSpotlightPhase,
 } from "@/lib/tourStorage";
 
-const DONE_KEY = "proveit_tour_done";
-const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
-const RESUME_KEY = "proveit_tour_resume_step";
-const START_KEY = "proveit_start_tour";
-const TOUR_VERSION = "3";
-
 const SELECTORS: Record<TourSpotlightPhase, string> = {
   "garden-tab": '[data-tour="garden-tab"]',
   "add-goal-button": '[data-tour="add-goal-button"]',
+  "goal-title": '[data-tour="goal-title"]',
+  "goal-proof-fetch": '[data-tour="goal-proof-fetch"]',
+  "goal-proof-pick": '[data-tour="goal-proof-pick"]',
+  "goal-schedule": '[data-tour="goal-schedule"]',
+  "goal-submit": '[data-tour="goal-submit"]',
 };
 
 const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
@@ -27,27 +28,31 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
   "add-goal-button": {
     title: "Add your first goal",
-    body: "Tap Add goal in garden, then fill in the form (photo ideas, days, time).",
+    body: "Tap Add goal in garden to open the form.",
+  },
+  "goal-title": {
+    title: "Name your goal",
+    body: "Type something you can prove with a photo (at least 2 characters). Optional description is below.",
+  },
+  "goal-proof-fetch": {
+    title: "Get photo ideas",
+    body: "Tap Get photo ideas. We’ll suggest a few prompts; you’ll pick one next.",
+  },
+  "goal-proof-pick": {
+    title: "Choose how you’ll prove it",
+    body: "Select one of the suggested photo prompts (tap a different option if you prefer).",
+  },
+  "goal-schedule": {
+    title: "When to remind you",
+    body: "Pick at least one day (or Every day), set reminder time, and adjust “Prove it within” if you like.",
+  },
+  "goal-submit": {
+    title: "Add it to your garden",
+    body: "Optionally pick a plant style, then tap Add goal to save.",
   },
 };
 
-/** Breathing room around the real control — keeps a normal rounded-rect spotlight. */
 const HOLE_PAD = 8;
-
-function clearSpotlightAndGardenHint() {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
-  window.localStorage.removeItem(GARDEN_HINT_KEY);
-}
-
-function skipEntireTour() {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(DONE_KEY, TOUR_VERSION);
-  window.localStorage.removeItem(START_KEY);
-  window.localStorage.removeItem(RESUME_KEY);
-  clearSpotlightAndGardenHint();
-  dispatchTourChanged();
-}
 
 function holeFromEl(el: HTMLElement): { top: number; left: number; right: number; bottom: number } {
   const r = el.getBoundingClientRect();
@@ -61,7 +66,32 @@ function holeFromEl(el: HTMLElement): { top: number; left: number; right: number
   };
 }
 
+function resolveActivePhase(phase: string | null, pathname: string): TourSpotlightPhase | null {
+  if (!phase) return null;
+  if (phase === "garden-tab" && pathname === "/dashboard") return "garden-tab";
+  if (!pathname.startsWith("/buddy")) return null;
+  const allowed: TourSpotlightPhase[] = [
+    "add-goal-button",
+    "goal-title",
+    "goal-proof-fetch",
+    "goal-proof-pick",
+    "goal-schedule",
+    "goal-submit",
+  ];
+  return allowed.includes(phase as TourSpotlightPhase) ? (phase as TourSpotlightPhase) : null;
+}
+
+const SCROLL_INTO_VIEW_PHASES: TourSpotlightPhase[] = [
+  "add-goal-button",
+  "goal-title",
+  "goal-proof-fetch",
+  "goal-proof-pick",
+  "goal-schedule",
+  "goal-submit",
+];
+
 export function TourSpotlight() {
+  const { user } = useApp();
   const pathname = usePathname();
   const [phase, setPhase] = useState<string | null>(null);
   const [rect, setRect] = useState<{ top: number; left: number; right: number; bottom: number } | null>(
@@ -99,12 +129,7 @@ export function TourSpotlight() {
     }
   }, [pathname]);
 
-  const activePhase: TourSpotlightPhase | null =
-    phase === "garden-tab" && pathname === "/dashboard"
-      ? "garden-tab"
-      : phase === "add-goal-button" && pathname.startsWith("/buddy")
-        ? "add-goal-button"
-        : null;
+  const activePhase = resolveActivePhase(phase, pathname);
 
   useLayoutEffect(() => {
     if (!activePhase) {
@@ -118,7 +143,7 @@ export function TourSpotlight() {
     }
     const update = () => setRect(holeFromEl(el));
 
-    if (activePhase === "add-goal-button") {
+    if (SCROLL_INTO_VIEW_PHASES.includes(activePhase)) {
       el.scrollIntoView({ block: "center", behavior: "smooth" });
       requestAnimationFrame(() => {
         update();
@@ -147,7 +172,6 @@ export function TourSpotlight() {
 
   const text = COPY[activePhase];
   const midY = (top + bottom) / 2;
-  /** Tab bar targets sit low — put the coach mark above them. Mid-page targets — put card below. */
   const cardAboveTarget = midY > vh * 0.38;
 
   const cardPositionStyle: CSSProperties = cardAboveTarget
@@ -173,7 +197,7 @@ export function TourSpotlight() {
         className="pointer-events-auto fixed z-[96] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-600 dark:bg-slate-900"
         style={{
           ...cardPositionStyle,
-          maxHeight: "min(40vh, 14rem)",
+          maxHeight: "min(44vh, 15rem)",
         }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-prove-600 dark:text-prove-400">
@@ -183,7 +207,7 @@ export function TourSpotlight() {
         <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300">{text.body}</p>
         <button
           type="button"
-          onClick={skipEntireTour}
+          onClick={() => completeDashboardTour(user?.id)}
           className="mt-3 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
         >
           Skip tour

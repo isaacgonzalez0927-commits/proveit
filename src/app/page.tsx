@@ -10,6 +10,12 @@ import {
   normalizeUsername,
   usernameToAuthEmail,
 } from "@/lib/usernameAuth";
+import {
+  PENDING_PLAN_AFTER_TOUR_KEY,
+  TOUR_DONE_KEY,
+  TOUR_DONE_VERSION,
+  TOUR_START_KEY,
+} from "@/lib/tourStorage";
 
 type Slide = 0 | 1 | 2; // 0 = welcome, 1 = login, 2 = plan
 type AuthMode = "signin" | "signup";
@@ -61,7 +67,22 @@ function LandingContent() {
         router.replace("/dashboard");
         return;
       }
-      setSlide(2);
+      if (requestedStep === "plan") {
+        setSlide(2);
+        return;
+      }
+      if (typeof window !== "undefined" && user.id) {
+        const pending = window.localStorage.getItem(PENDING_PLAN_AFTER_TOUR_KEY) === user.id;
+        const tourDone = window.localStorage.getItem(TOUR_DONE_KEY) === TOUR_DONE_VERSION;
+        if (pending && tourDone) {
+          router.replace("/?step=plan", { scroll: false });
+          return;
+        }
+        window.localStorage.setItem(PENDING_PLAN_AFTER_TOUR_KEY, user.id);
+        window.localStorage.setItem(TOUR_START_KEY, "1");
+        window.localStorage.removeItem(TOUR_DONE_KEY);
+      }
+      router.replace("/dashboard");
       return;
     }
 
@@ -231,10 +252,8 @@ function LandingContent() {
               // Profile row still usable; user can retry from settings if needed.
             }
           }
-          setSlide(2);
           return;
         }
-        setSlide(2);
       } catch (err) {
         setLoginError(err instanceof Error ? err.message : "Something went wrong.");
       } finally {
@@ -264,7 +283,6 @@ function LandingContent() {
         window.localStorage.setItem("proveit_display_name", trimmedName || user?.name || "");
       }
       setLoginError("");
-      setSlide(2);
     }
   };
 
@@ -350,10 +368,6 @@ function LandingContent() {
   const handleChoosePlan = useCallback(
     async (planId: PlanId) => {
       await setPlan(planId);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("proveit_start_tour", "1");
-        window.localStorage.removeItem("proveit_tour_done");
-      }
       router.push("/dashboard");
     },
     [router, setPlan]

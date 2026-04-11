@@ -48,6 +48,11 @@ import { LoadingView } from "@/components/LoadingView";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { ThemeSync } from "@/components/ThemeSync";
+import {
+  PENDING_PLAN_AFTER_TOUR_KEY,
+  TOUR_DONE_KEY,
+  TOUR_DONE_VERSION,
+} from "@/lib/tourStorage";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -284,7 +289,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const selectedOnThisDevice = hasStoredPlanSelection(user.id);
     const selectedByAccount = user.plan !== "free";
     const likelyExistingFreeUser = goals.length > 0 || submissions.length > 0;
-    setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
+    const pendingPlanAfterTour =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(PENDING_PLAN_AFTER_TOUR_KEY) === user.id;
+    const tourDone =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(TOUR_DONE_KEY) === TOUR_DONE_VERSION;
+    const allowPrePlanAccess = Boolean(pendingPlanAfterTour && !tourDone);
+    setHasSelectedPlan(
+      selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser || allowPrePlanAccess
+    );
   }, [user, goals.length, submissions.length]);
 
   const setUser = useCallback((u: StoredUser | null) => {
@@ -318,6 +332,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         planBilling: plan === "free" ? undefined : billing,
       });
       markStoredPlanSelection(user.id);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);
+      }
       setHasSelectedPlan(true);
     },
     [user, useSupabase]

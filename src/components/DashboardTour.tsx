@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { dispatchTourChanged, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
-
-const START_KEY = "proveit_start_tour";
-const DONE_KEY = "proveit_tour_done";
-const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
-const RESUME_KEY = "proveit_tour_resume_step";
-const TOUR_VERSION = "3";
+import { useApp } from "@/context/AppContext";
+import {
+  completeDashboardTour,
+  dispatchTourChanged,
+  TOUR_DONE_KEY,
+  TOUR_DONE_VERSION,
+  TOUR_GARDEN_HINT_KEY,
+  TOUR_RESUME_KEY,
+  TOUR_SPOTLIGHT_KEY,
+  TOUR_START_KEY,
+} from "@/lib/tourStorage";
 
 interface TourStep {
   title: string;
@@ -21,7 +25,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Welcome to Proveit",
     emoji: "🌱",
     body:
-      "You’ve picked your plan. Next you’ll add goals, choose a plant style for each one, and grow your garden with real proof photos.",
+      "Next you’ll add goals, choose a plant style for each one, and grow your garden with real proof photos. You’ll pick a plan right after this tour.",
     note: "Use the bottom tabs to move between Home, Garden, Gallery, and Plan.",
   },
   {
@@ -63,15 +67,16 @@ const TOUR_STEPS: TourStep[] = [
 ] as const;
 
 export function DashboardTour() {
+  const { user } = useApp();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const shouldStart = window.localStorage.getItem(START_KEY);
-    const done = window.localStorage.getItem(DONE_KEY);
-    const resume = window.localStorage.getItem(RESUME_KEY);
-    if (done === TOUR_VERSION) return;
+    const shouldStart = window.localStorage.getItem(TOUR_START_KEY);
+    const done = window.localStorage.getItem(TOUR_DONE_KEY);
+    const resume = window.localStorage.getItem(TOUR_RESUME_KEY);
+    if (done === TOUR_DONE_VERSION) return;
     if (resume) {
       const idx = Number.parseInt(resume, 10);
       setStep(Number.isFinite(idx) && idx >= 0 && idx < TOUR_STEPS.length ? idx : 0);
@@ -83,14 +88,7 @@ export function DashboardTour() {
   }, []);
 
   const finish = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(DONE_KEY, TOUR_VERSION);
-      window.localStorage.removeItem(START_KEY);
-      window.localStorage.removeItem(GARDEN_HINT_KEY);
-      window.localStorage.removeItem(RESUME_KEY);
-      window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
-      dispatchTourChanged();
-    }
+    completeDashboardTour(user?.id);
     setOpen(false);
   };
 
@@ -105,7 +103,7 @@ export function DashboardTour() {
     }
     if (step === 2) {
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(GARDEN_HINT_KEY, TOUR_VERSION);
+        window.localStorage.setItem(TOUR_GARDEN_HINT_KEY, TOUR_DONE_VERSION);
         window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "garden-tab");
         dispatchTourChanged();
       }

@@ -44,12 +44,17 @@ import {
   PROOF_SUGGESTIONS_MIN,
 } from "@/lib/proofSuggestions";
 import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
-import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY, dispatchTourChanged } from "@/lib/tourStorage";
+import {
+  TOUR_CHANGED_EVENT,
+  TOUR_GARDEN_HINT_KEY,
+  TOUR_RESUME_KEY,
+  TOUR_SPOTLIGHT_KEY,
+  TOUR_START_KEY,
+  dispatchTourChanged,
+  isGoalFormTourPhase,
+} from "@/lib/tourStorage";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
-const GARDEN_HINT_KEY = "proveit_tour_garden_hint";
-const START_KEY = "proveit_start_tour";
-const RESUME_KEY = "proveit_tour_resume_step";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
@@ -137,17 +142,65 @@ export default function BuddyPage() {
     return () => window.removeEventListener(TOUR_CHANGED_EVENT, sync);
   }, []);
 
+  useEffect(() => {
+    if (!showCreateForm || typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(TOUR_SPOTLIGHT_KEY);
+    if (!raw || !isGoalFormTourPhase(raw)) return;
+
+    if (raw === "goal-title" && newTitle.trim().length >= 2) {
+      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-proof-fetch");
+      dispatchTourChanged();
+      return;
+    }
+    if (raw === "goal-proof-fetch" && newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN) {
+      const picked =
+        selectedProofRequirement !== null &&
+        isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions);
+      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, picked ? "goal-schedule" : "goal-proof-pick");
+      dispatchTourChanged();
+      return;
+    }
+    if (
+      raw === "goal-proof-pick" &&
+      selectedProofRequirement !== null &&
+      isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions)
+    ) {
+      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-schedule");
+      dispatchTourChanged();
+      return;
+    }
+    if (raw === "goal-schedule" && newWeeklyDays.length > 0) {
+      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-submit");
+      dispatchTourChanged();
+    }
+  }, [
+    showCreateForm,
+    newTitle,
+    newProofSuggestions,
+    selectedProofRequirement,
+    newWeeklyDays,
+  ]);
+
+  useEffect(() => {
+    if (showCreateForm || typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(TOUR_SPOTLIGHT_KEY);
+    if (raw && isGoalFormTourPhase(raw)) {
+      window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
+      dispatchTourChanged();
+    }
+  }, [showCreateForm]);
+
   // When the dashboard tour sends the user to the Garden, show a guided hint in-place.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!user) return;
     if (goals.length > 0) {
-      window.localStorage.removeItem(GARDEN_HINT_KEY);
+      window.localStorage.removeItem(TOUR_GARDEN_HINT_KEY);
       setShowGardenTourHint(false);
       setGardenTourHintStep("manage");
       return;
     }
-    const hint = window.localStorage.getItem(GARDEN_HINT_KEY);
+    const hint = window.localStorage.getItem(TOUR_GARDEN_HINT_KEY);
     if (hint) {
       setShowGardenTourHint(true);
       setGardenTourHintStep("manage");
@@ -275,6 +328,13 @@ export default function BuddyPage() {
   const canSubmitCreateGoalForm = canAddMoreGoals && newWeeklyDays.length > 0 && proofIdeasReadyForCreate;
 
   const resetCreateGoalForm = () => {
+    if (typeof window !== "undefined") {
+      const p = window.localStorage.getItem(TOUR_SPOTLIGHT_KEY);
+      if (p && isGoalFormTourPhase(p)) {
+        window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
+        dispatchTourChanged();
+      }
+    }
     const appSettings = getStoredAppSettings();
     setNewTitle("");
     setNewDescription("");
@@ -480,9 +540,9 @@ export default function BuddyPage() {
       resetCreateGoalForm();
       setGoalManagerMessage("Goal added to your garden.");
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem(GARDEN_HINT_KEY);
-        window.localStorage.setItem(START_KEY, "1");
-        window.localStorage.setItem(RESUME_KEY, "3");
+        window.localStorage.removeItem(TOUR_GARDEN_HINT_KEY);
+        window.localStorage.setItem(TOUR_START_KEY, "1");
+        window.localStorage.setItem(TOUR_RESUME_KEY, "3");
       }
       setShowGardenTourHint(false);
       setGardenTourHintStep("manage");
@@ -737,8 +797,8 @@ export default function BuddyPage() {
                 }
                 if (typeof window !== "undefined" && window.localStorage.getItem(TOUR_SPOTLIGHT_KEY) === "add-goal-button") {
                   window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
-                  window.localStorage.removeItem(GARDEN_HINT_KEY);
-                  window.localStorage.setItem(RESUME_KEY, "3");
+                  window.localStorage.removeItem(TOUR_GARDEN_HINT_KEY);
+                  window.localStorage.setItem(TOUR_RESUME_KEY, "3");
                   dispatchTourChanged();
                 }
                 setShowCreateForm((prev) => !prev);
@@ -1095,8 +1155,8 @@ export default function BuddyPage() {
                 } else {
                   if (typeof window !== "undefined" && window.localStorage.getItem(TOUR_SPOTLIGHT_KEY) === "add-goal-button") {
                     window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
-                    window.localStorage.removeItem(GARDEN_HINT_KEY);
-                    window.localStorage.setItem(RESUME_KEY, "3");
+                    window.localStorage.removeItem(TOUR_GARDEN_HINT_KEY);
+                    window.localStorage.setItem(TOUR_RESUME_KEY, "3");
                     dispatchTourChanged();
                   }
                   setShowCreateForm(true);
