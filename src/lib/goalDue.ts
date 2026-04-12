@@ -1,6 +1,7 @@
 import type { Goal, ProofSubmission } from "@/types";
+import { extractCalendarDateKey, parseCalendarDateLocal } from "@/lib/dateUtils";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
-import { format, isSameWeek, parseISO } from "date-fns";
+import { format, isSameWeek } from "date-fns";
 
 /** HH:mm for <input type="time" /> (strips seconds / odd DB formats). */
 export function normalizeReminderTimeInput(value: string | undefined | null): string {
@@ -13,12 +14,7 @@ export function normalizeReminderTimeInput(value: string | undefined | null): st
 }
 
 function parseSubmissionDate(date: string): Date | null {
-  try {
-    const d = parseISO(date);
-    return Number.isNaN(d.getTime()) ? null : d;
-  } catch {
-    return null;
-  }
+  return parseCalendarDateLocal(date);
 }
 
 /** Verified submissions whose `date` falls in the same calendar week as `weekReference` (week starts Sunday). */
@@ -33,11 +29,28 @@ export function countVerifiedInCalendarWeek(
   }).length;
 }
 
+/** Short progress line for weekly targets (null for daily / on break). */
+export function weeklyCheckInProgressLine(
+  goal: Goal,
+  submissions: Pick<ProofSubmission, "date" | "status">[],
+  now: Date = new Date()
+): string | null {
+  if (goal.isOnBreak) return null;
+  const tw = effectiveTimesPerWeek(goal);
+  if (tw >= 7) return null;
+  const n = countVerifiedInCalendarWeek(submissions, now);
+  return `This week: ${n}/${tw} verified check-ins (Sun–Sat — any day, once per day)`;
+}
+
 export function hasVerifiedSubmissionOnDate(
   submissions: Pick<ProofSubmission, "date" | "status">[],
   dateStr: string
 ): boolean {
-  return submissions.some((s) => s.status === "verified" && s.date === dateStr);
+  return submissions.some((s) => {
+    if (s.status !== "verified") return false;
+    const key = extractCalendarDateKey(s.date);
+    return key === dateStr;
+  });
 }
 
 /**

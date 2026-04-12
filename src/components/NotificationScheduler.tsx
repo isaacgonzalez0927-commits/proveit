@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
-import { isWithinSubmissionWindow } from "@/lib/goalDue";
+import { extractCalendarDateKey } from "@/lib/dateUtils";
+import { countVerifiedInCalendarWeek, isWithinSubmissionWindow } from "@/lib/goalDue";
+import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format } from "date-fns";
 import type { Goal } from "@/types";
 
@@ -38,12 +40,21 @@ export function NotificationScheduler() {
       if (localStorage.getItem(key)) return;
 
       const subs = getSubmissionsForGoal(goal.id);
-      const doneToday = subs.some((s) => s.status === "verified" && s.date === today);
+      const doneToday = subs.some(
+        (s) => s.status === "verified" && extractCalendarDateKey(s.date) === today
+      );
       if (doneToday) return;
       if (!isWithinSubmissionWindow(goal, now, subs)) return;
 
+      const tw = effectiveTimesPerWeek(goal);
+      const weekCount = countVerifiedInCalendarWeek(subs, now);
+      const body =
+        tw >= 7
+          ? "Daily check-in — snap a photo if you haven’t verified yet today."
+          : `You’re at ${weekCount}/${tw} verified check-ins this week (Sun–Sat). Prove it today if you still have a slot.`;
+
       const n = new Notification(`Reminder: ${goal.title}`, {
-        body: "Daily check-in — snap a photo if you still have a check-in left today.",
+        body,
         icon: "/icon.png",
         tag: key,
       });

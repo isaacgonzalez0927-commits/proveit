@@ -28,7 +28,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Free: 2 goals, 3 plant styles. Pro: 5 goals, 6 plant styles, 6 theme colors, Goal Gallery, Goal Break. Premium: unlimited goals, all 8 plant styles, all 10 theme colors.
+            Free: 2 goals, 3 plant styles. Pro: 5 goals, 6 plant styles, 6 theme colors, Goal Gallery, Goal Break (7 break-days per goal per month). Premium: unlimited goals, all 8 plant styles, all 10 theme colors.
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <button
@@ -75,7 +75,7 @@ function PricingContent() {
         </div>
 
         <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-          <strong>Free:</strong> 2 goals, full plant growth, streak tracking, dashboard. &bull; <strong>Pro:</strong> 5 goals, 6 accent themes, Goal Gallery, Goal Break (up to 3 days). &bull; <strong>Premium:</strong> Unlimited goals, all 10 accent themes, 8 plant styles, weekly photo collages, Goal Break any duration.
+          <strong>Free:</strong> 2 goals, full plant growth, streak tracking, dashboard. &bull; <strong>Pro:</strong> 5 goals, 6 accent themes, Goal Gallery, Goal Break (7 break-days per goal per calendar month). &bull; <strong>Premium:</strong> Unlimited goals, all 10 accent themes, 8 plant styles, weekly photo collages, Goal Break any duration.
         </p>
       </main>
     </>

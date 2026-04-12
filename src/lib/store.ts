@@ -125,12 +125,42 @@ export function clearStoredPlanSelection(userId: string) {
 /** Last known goals/submissions for the signed-in Supabase user (survives app kill / offline). */
 const SB_SESSION_SNAPSHOT_KEY = "proveit_sb_session_snapshot_v1";
 
-type SbSessionSnapshotV1 = {
+export type SbSessionSnapshotV1 = {
   v: 1;
   userId: string;
   goals: Goal[];
   submissions: ProofSubmission[];
 };
+
+/**
+ * After a cold start, /api/goals may briefly return [] or fail (cookies, WebView) while localStorage
+ * still has the last good snapshot. Keep goals that exist only in the snapshot so they are not wiped.
+ */
+export function mergeServerGoalsWithSessionSnapshot(
+  serverGoals: Goal[],
+  snap: SbSessionSnapshotV1 | null,
+  userId: string
+): Goal[] {
+  if (!snap || snap.userId !== userId) return serverGoals;
+  const serverIds = new Set(serverGoals.map((g) => g.id));
+  const extras = snap.goals.filter(
+    (g) => g && typeof g.id === "string" && g.id.length > 0 && !serverIds.has(g.id)
+  );
+  return extras.length === 0 ? serverGoals : [...serverGoals, ...extras];
+}
+
+export function mergeServerSubmissionsWithSessionSnapshot(
+  serverSubs: ProofSubmission[],
+  snap: SbSessionSnapshotV1 | null,
+  userId: string
+): ProofSubmission[] {
+  if (!snap || snap.userId !== userId) return serverSubs;
+  const ids = new Set(serverSubs.map((s) => s.id));
+  const extras = snap.submissions.filter(
+    (s) => s && typeof s.id === "string" && s.id.length > 0 && !ids.has(s.id)
+  );
+  return extras.length === 0 ? serverSubs : [...serverSubs, ...extras];
+}
 
 export function readSbSessionSnapshot(): SbSessionSnapshotV1 | null {
   if (typeof window === "undefined") return null;

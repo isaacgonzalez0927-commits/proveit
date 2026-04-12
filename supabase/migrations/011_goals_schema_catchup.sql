@@ -16,3 +16,5 @@ ALTER TABLE public.goals ADD COLUMN IF NOT EXISTS times_per_week INTEGER DEFAULT
 
 ALTER TABLE public.goals ADD COLUMN IF NOT EXISTS proof_suggestions JSONB DEFAULT NULL;
 ALTER TABLE public.goals ADD COLUMN IF NOT EXISTS proof_requirement TEXT DEFAULT NULL;
+
+ALTER TABLE public.goals ADD COLUMN IF NOT EXISTS pro_break_usage_by_month JSONB NOT NULL DEFAULT '{}'::jsonb;

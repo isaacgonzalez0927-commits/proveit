@@ -23,13 +23,17 @@ import {
   readSbSessionSnapshot,
   writeSbSessionSnapshot,
   clearSbSessionSnapshot,
+  mergeServerGoalsWithSessionSnapshot,
+  mergeServerSubmissionsWithSessionSnapshot,
   type StoredUser,
   STORAGE_KEYS,
 } from "@/lib/store";
 import { PLANS } from "@/types";
 import { useSupabaseAuth } from "@/lib/supabase/hooks";
 import { format } from "date-fns";
+import { extractCalendarDateKey } from "@/lib/dateUtils";
 import { isWithinSubmissionWindow, normalizeReminderTimeInput } from "@/lib/goalDue";
+import { normalizeProBreakUsageByMonth } from "@/lib/goalBreak";
 import { isValidProofBundle } from "@/lib/proofSuggestions";
 import {
   getStoredEarnedItems,
@@ -128,6 +132,7 @@ function mapGoalFromApi(g: Record<string, unknown>): Goal {
     breakStreakSnapshot:
       typeof g.breakStreakSnapshot === "number" ? g.breakStreakSnapshot : undefined,
     streakCarryover: typeof g.streakCarryover === "number" ? g.streakCarryover : undefined,
+    proBreakUsageByMonth: normalizeProBreakUsageByMonth(g.proBreakUsageByMonth),
     createdAt: g.createdAt as string,
     completedDates: Array.isArray(g.completedDates) ? (g.completedDates as string[]) : [],
     proofSuggestions: Array.isArray(g.proofSuggestions)
@@ -163,11 +168,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setDataLoaded(false);
       Promise.allSettled([
-        fetch("/api/profile").then((r) => r.json()),
-        fetch("/api/goals").then((r) => r.json()),
-        fetch("/api/submissions").then((r) => r.json()),
+        fetch("/api/profile").then(async (r) => ({
+          ok: r.ok,
+          body: await r.json().catch(() => ({})),
+        })),
+        fetch("/api/goals").then(async (r) => ({
+          ok: r.ok,
+          body: await r.json().catch(() => ({})),
+        })),
+        fetch("/api/submissions").then(async (r) => ({
+          ok: r.ok,
+          body: await r.json().catch(() => ({})),
+        })),
       ]).then(([profileResult, goalsResult, subsResult]) => {
-        const p = profileResult.status === "fulfilled" ? profileResult.value?.profile : null;
+        const profileWrap = profileResult.status === "fulfilled" ? profileResult.value : null;
+        type ApiProfile = {
+          id: string;
+          email?: string;
+          plan?: unknown;
+          planBilling?: "monthly" | "yearly";
+          createdAt?: string;
+          name?: string;
+          username?: unknown;
+          contactEmail?: unknown;
+        };
+        const profileRaw =
+          profileWrap?.ok && profileWrap.body && typeof profileWrap.body === "object"
+            ? (profileWrap.body as { profile?: unknown }).profile
+            : null;
+        const p: ApiProfile | null =
+          profileRaw &&
+          typeof profileRaw === "object" &&
+          profileRaw !== null &&
+          typeof (profileRaw as { id?: unknown }).id === "string"
+            ? (profileRaw as ApiProfile)
+            : null;
         const storedName =
           typeof window !== "undefined"
             ? window.localStorage.getItem("proveit_display_name") ?? undefined
@@ -175,7 +210,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const profileUser = p
           ? {
               id: p.id,
-              email: p.email,
+              email: p.email ?? "",
               plan: normalizePlanId(p.plan),
               planBilling: p.planBilling,
               createdAt: p.createdAt ?? new Date().toISOString(),
@@ -195,23 +230,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             };
         setUserState(profileUser);
 
-        const goalsRes = goalsResult.status === "fulfilled" ? goalsResult.value : null;
-        const gs = goalsRes?.goals ?? [];
-        const mappedGoals = gs.map((g: Record<string, unknown>) => mapGoalFromApi(g));
-        setGoalsState(mappedGoals);
+        const goalsWrap = goalsResult.status === "fulfilled" ? goalsResult.value : null;
+        const goalsBody =
+          goalsWrap?.ok === true && goalsWrap.body && typeof goalsWrap.body === "object"
+            ? (goalsWrap.body as { goals?: unknown })
+            : {};
+        const gs = Array.isArray(goalsBody.goals) ? goalsBody.goals : [];
+        const mappedServerGoals = gs.map((g: Record<string, unknown>) => mapGoalFromApi(g));
+        const mergedGoals = mergeServerGoalsWithSessionSnapshot(
+          mappedServerGoals,
+          snap,
+          supabaseUser.id
+        );
+        setGoalsState(mergedGoals);
 
-        const subsRes = subsResult.status === "fulfilled" ? subsResult.value : null;
-        const subs = subsRes?.submissions ?? [];
-        setSubmissionsState(subs.map((s: Record<string, unknown>) => ({
-          id: s.id,
-          goalId: s.goalId,
-          date: s.date,
-          imageDataUrl: s.imageDataUrl,
-          status: s.status,
-          aiFeedback: s.aiFeedback,
-          verifiedAt: s.verifiedAt,
-          createdAt: s.createdAt,
-        })));
+        const subsWrap = subsResult.status === "fulfilled" ? subsResult.value : null;
+        const subsBody =
+          subsWrap?.ok === true && subsWrap.body && typeof subsWrap.body === "object"
+            ? (subsWrap.body as { submissions?: unknown })
+            : {};
+        const subsRaw = Array.isArray(subsBody.submissions) ? subsBody.submissions : [];
+        const mappedSubs = subsRaw.map((s: Record<string, unknown>) => ({
+          id: s.id as string,
+          goalId: s.goalId as string,
+          date: s.date as string,
+          imageDataUrl: s.imageDataUrl as string,
+          status: s.status as ProofSubmission["status"],
+          aiFeedback: s.aiFeedback as string | undefined,
+          verifiedAt: s.verifiedAt as string | undefined,
+          createdAt: s.createdAt as string,
+        }));
+        const mergedSubs = mergeServerSubmissionsWithSessionSnapshot(
+          mappedSubs,
+          snap,
+          supabaseUser.id
+        );
+        setSubmissionsState(mergedSubs);
 
         // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
         setGoalPlantSelections(getStoredGoalPlantSelections());
@@ -226,7 +280,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setIsDevGuestMode(false);
           const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
           const selectedByAccount = profileUser.plan !== "free";
-          const likelyExistingFreeUser = gs.length > 0 || subs.length > 0;
+          const likelyExistingFreeUser = mergedGoals.length > 0 || mergedSubs.length > 0;
           setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
         }
       }).finally(() => setDataLoaded(true));
@@ -621,7 +675,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const subsForGoal = getSubmissionsForGoal(goalId);
       if (!isWithinSubmissionWindow(g, new Date(), subsForGoal)) return;
       const dateStr = format(new Date(), "yyyy-MM-dd");
-      const existing = submissions.find((s) => s.goalId === goalId && s.date === dateStr);
+      const existing = submissions.find(
+        (s) => s.goalId === goalId && extractCalendarDateKey(s.date) === dateStr
+      );
       if (existing?.status === "verified") return;
       await addSubmission({
         goalId,

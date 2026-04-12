@@ -75,7 +75,7 @@ function DashboardContent() {
   const thisWeekVerified = submissions.filter((s) => {
     if (s.status !== "verified") return false;
     const d = safeParseISO(s.date);
-    return d ? isThisWeek(d) : false;
+    return d ? isThisWeek(d, { weekStartsOn: 0 }) : false;
   });
   const weeklyByDay = (() => {
     const dayCount: Record<string, number> = {};
@@ -532,11 +532,11 @@ function DashboardContent() {
                 const thisWeekProof = weekMet;
                 const thisWeekSub = subs.find((s) => {
                   const d = safeParseISO(s.date);
-                  return !!d && isThisWeek(d) && s.imageDataUrl;
+                  return !!d && isThisWeek(d, { weekStartsOn: 0 }) && s.imageDataUrl;
                 });
                 const thisWeekVerifiedSub = subs.find((s) => {
                   const d = safeParseISO(s.date);
-                  return !!d && isThisWeek(d) && s.status === "verified" && !!s.imageDataUrl;
+                  return !!d && isThisWeek(d, { weekStartsOn: 0 }) && s.status === "verified" && !!s.imageDataUrl;
                 });
                 const due = isGoalDue(goal, new Date(), subs);
                 const dueLabel = getNextDueLabel(goal);
@@ -609,7 +609,7 @@ function DashboardContent() {
                       </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
-                        {windowMessage ?? dueLabel ?? "Not due yet"}
+                        {windowMessage ?? dueLabel ?? "No open check-in slot today"}
                       </span>
                     )}
                   </li>

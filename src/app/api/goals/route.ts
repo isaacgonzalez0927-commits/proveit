@@ -4,6 +4,7 @@ import {
   isProofRequirementAllowed,
   parseProofSuggestionsPayload,
 } from "@/lib/proofSuggestions";
+import { normalizeProBreakUsageByMonth } from "@/lib/goalBreak";
 
 function normalizeCompletedDates(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -39,7 +40,7 @@ function isGoalsSchemaColumnError(message: string): boolean {
   const soundsLikeMissing =
     m.includes("does not exist") || m.includes("could not find") || m.includes("not find");
   if (!soundsLikeMissing) return false;
-  return /proof_suggestions|proof_require|times_per_week|reminder_day|reminder_days|grace_period|is_on_break|break_|streak_carryover/i.test(
+  return /proof_suggestions|proof_require|times_per_week|reminder_day|reminder_days|grace_period|is_on_break|break_|streak_carryover|pro_break_usage/i.test(
     m
   );
 }
@@ -83,6 +84,7 @@ function mapGoalRow(row: Record<string, unknown>) {
     breakStartedAt: (row.break_started_at as string | null) ?? undefined,
     breakStreakSnapshot: (row.break_streak_snapshot as number | null) ?? undefined,
     streakCarryover: (row.streak_carryover as number | null) ?? undefined,
+    proBreakUsageByMonth: normalizeProBreakUsageByMonth(row.pro_break_usage_by_month),
     createdAt: row.created_at as string,
     completedDates: normalizeCompletedDates(row.completed_dates),
     proofSuggestions: normalizeProofSuggestionsFromRow(row.proof_suggestions),
@@ -321,10 +323,16 @@ export async function PATCH(request: NextRequest) {
   if ("completedDates" in updates) dbUpdates.completed_dates = updates.completedDates ?? [];
   if ("isOnBreak" in updates) dbUpdates.is_on_break = updates.isOnBreak === true;
   if ("breakStartedAt" in updates) dbUpdates.break_started_at = updates.breakStartedAt ?? null;
+  if ("isOnBreak" in updates && updates.isOnBreak === false && !("breakStartedAt" in updates)) {
+    dbUpdates.break_started_at = null;
+  }
   if ("breakStreakSnapshot" in updates) {
     dbUpdates.break_streak_snapshot = updates.breakStreakSnapshot ?? null;
   }
   if ("streakCarryover" in updates) dbUpdates.streak_carryover = updates.streakCarryover ?? null;
+  if ("proBreakUsageByMonth" in updates) {
+    dbUpdates.pro_break_usage_by_month = normalizeProBreakUsageByMonth(updates.proBreakUsageByMonth);
+  }
 
   if ("proofRequirement" in updates || "proofSuggestions" in updates) {
     if (!("proofRequirement" in updates && "proofSuggestions" in updates)) {

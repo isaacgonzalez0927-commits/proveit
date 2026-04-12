@@ -43,8 +43,8 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Prove it with a photo",
     body:
-      "When a goal is due, tap Prove it and take a photo. Verification keeps things honest and waters that goal’s plant.",
-    note: "Submit inside the due window to protect your streak.",
+      "When you still owe a check-in for the week, tap Prove it and take a photo. Verification keeps things honest and waters that goal’s plant.",
+    note: "You choose which days — up to your weekly target, once per day (Sun–Sat week).",
   },
   {
     title: "Watch the garden grow",
@@ -55,7 +55,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Home dashboard",
     body:
-      "Home shows momentum at a glance: what’s due, what’s done, and quick actions so nothing slips.",
+      "Home shows momentum at a glance: what needs a check-in today, what’s done, and quick actions so nothing slips.",
     note: "Check Home in the morning to see what needs attention today.",
   },
   {

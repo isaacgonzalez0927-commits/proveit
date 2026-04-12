@@ -481,8 +481,8 @@ function SubmitProofContent() {
             ) : null}
             <p className="mt-2 text-slate-600 dark:text-slate-400">
               {goal.proofRequirement
-                ? "Take a photo that matches the instruction above. AI will verify it. You can submit any time before the due deadline."
-                : "Take a photo showing you doing this goal. AI will verify it. You can submit any time before the due deadline."}
+                ? "Take a photo that matches the instruction above. AI will verify it. You can submit any day you still have a check-in left this week (Sun–Sat), once per calendar day."
+                : "Take a photo showing you doing this goal. AI will verify it. You can submit any day you still have a check-in left this week (Sun–Sat), once per calendar day."}
             </p>
           </>
         )}

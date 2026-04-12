@@ -13,6 +13,7 @@ import {
   isGoalDue,
   isWithinSubmissionWindow,
   normalizeReminderTimeInput,
+  weeklyCheckInProgressLine,
 } from "@/lib/goalDue";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
@@ -29,7 +30,14 @@ import {
   type GoalPlantVariant,
 } from "@/lib/goalPlants";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
-import { getBreakDurationDays, isProBreakExpired, PRO_GOAL_BREAK_MAX_DAYS } from "@/lib/goalBreak";
+import {
+  addBreakSessionToProUsage,
+  canProStartGoalBreak,
+  getProBreakDaysUsedInCalendarMonth,
+  isProBreakExpired,
+  proBreakMonthKey,
+  PRO_BREAK_DAYS_PER_MONTH,
+} from "@/lib/goalBreak";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
@@ -233,16 +241,25 @@ export default function BuddyPage() {
     setGoalStreakDrafts(nextDrafts);
   }, [goals, developerSettings.goalStreakOverrides, isCreatorAccount]);
 
-  // Pro: auto-resume goals that have been on break for 3+ days
+  // Pro: auto-resume when this goal exceeds 7 calendar break-days in the current month
   useEffect(() => {
     if (user?.plan !== "pro" || !goals.length) return;
+    const now = new Date();
     for (const goal of goals) {
-      if (isProBreakExpired(goal, user.plan)) {
-        const snapshot = goal.breakStreakSnapshot ?? 0;
-        updateGoal(goal.id, { isOnBreak: false, streakCarryover: snapshot });
-      }
+      if (!isProBreakExpired(goal, user.plan, now)) continue;
+      const snapshot = goal.breakStreakSnapshot ?? 0;
+      const breakStart = goal.breakStartedAt;
+      const nextUsage =
+        breakStart != null
+          ? addBreakSessionToProUsage(goal.proBreakUsageByMonth ?? {}, breakStart, now.toISOString())
+          : goal.proBreakUsageByMonth ?? {};
+      void updateGoal(goal.id, {
+        isOnBreak: false,
+        streakCarryover: snapshot,
+        proBreakUsageByMonth: nextUsage,
+      });
     }
-  }, [goals, user?.plan]);
+  }, [goals, user?.plan, updateGoal]);
 
   if (!user) {
     return <BuddySkeleton />;
@@ -613,13 +630,31 @@ export default function BuddyPage() {
     }
 
     if (goal.isOnBreak) {
+      const nowIso = new Date().toISOString();
+      const nextUsage =
+        user?.plan === "pro" && goal.breakStartedAt
+          ? addBreakSessionToProUsage(goal.proBreakUsageByMonth ?? {}, goal.breakStartedAt, nowIso)
+          : (goal.proBreakUsageByMonth ?? {});
       await updateGoal(goal.id, {
         isOnBreak: false,
         streakCarryover: displayedStreak,
+        ...(user?.plan === "pro" ? { proBreakUsageByMonth: nextUsage } : {}),
       });
       setGoalManagerMessage(`"${goal.title}" is active again. Streak continuity is preserved.`);
       return;
     }
+
+    if (user?.plan === "pro" && !canProStartGoalBreak(goal, new Date())) {
+      setGoalManagerMessage(
+        `"${goal.title}": you've used all ${PRO_BREAK_DAYS_PER_MONTH} Pro break-days this calendar month on this goal. More on the 1st of next month.`
+      );
+      return;
+    }
+
+    const breakLimitMsg =
+      user?.plan === "pro"
+        ? ` (${PRO_BREAK_DAYS_PER_MONTH} break-days per calendar month on this goal)`
+        : "";
 
     await updateGoal(goal.id, {
       isOnBreak: true,
@@ -627,7 +662,6 @@ export default function BuddyPage() {
       breakStreakSnapshot: displayedStreak,
       streakCarryover: displayedStreak,
     });
-    const breakLimitMsg = user?.plan === "pro" ? " (up to 3 days)" : "";
     setGoalManagerMessage(`"${goal.title}" is now on break${breakLimitMsg}. Streak and growth are frozen.`);
   };
 
@@ -638,6 +672,7 @@ export default function BuddyPage() {
     const stage = getPlantStageForStreak(streak);
     const isOnBreak = goal.isOnBreak === true;
     const goalSubs = getSubmissionsForGoal(goal.id);
+    const weekProgressLine = weeklyCheckInProgressLine(goal, goalSubs, new Date());
     const due = isGoalDue(goal, new Date(), goalSubs);
     const doneInCurrentWindow = isOnBreak
       ? false
@@ -648,13 +683,16 @@ export default function BuddyPage() {
         ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
         : null;
     const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
-    const breakDays = getBreakDurationDays(goal);
     const isProPlan = user?.plan === "pro";
+    const monthKey = proBreakMonthKey(new Date());
+    const proBreakDaysThisMonth = isProPlan
+      ? getProBreakDaysUsedInCalendarMonth(goal, monthKey, new Date())
+      : 0;
     return {
       goal,
       isOnBreak,
-      breakDays,
       isProPlan,
+      proBreakDaysThisMonth,
       actualStreak,
       streak,
       stage,
@@ -662,6 +700,7 @@ export default function BuddyPage() {
       canSubmitNow,
       doneInCurrentWindow,
       submissionWindowMessage,
+      weekProgressLine,
       wateringLevel,
       plantVariant: getGoalPlantVariant(goal.id),
       hasStreakOverride:
@@ -1099,6 +1138,11 @@ export default function BuddyPage() {
                     <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
                       {getDueDayName(entry.goal)}
                     </p>
+                    {!entry.isOnBreak && entry.weekProgressLine && (
+                      <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-500">
+                        {entry.weekProgressLine}
+                      </p>
+                    )}
                     {entry.goal.proofRequirement ? (
                       <p className="mt-1 line-clamp-2 text-[11px] text-slate-500 dark:text-slate-400">
                         <span className="font-medium text-slate-600 dark:text-slate-300">Prove: </span>
@@ -1113,7 +1157,9 @@ export default function BuddyPage() {
                   <div className="flex shrink-0 items-center gap-1.5">
                     {entry.isOnBreak && (
                       <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-                        {entry.isProPlan ? `Break (${Math.min(entry.breakDays, PRO_GOAL_BREAK_MAX_DAYS)}/${PRO_GOAL_BREAK_MAX_DAYS} days)` : "On break"}
+                        {entry.isProPlan
+                          ? `Break · ${entry.proBreakDaysThisMonth}/${PRO_BREAK_DAYS_PER_MONTH} this month`
+                          : "On break"}
                       </span>
                     )}
                     <span className="rounded-full border border-emerald-200 bg-white/80 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">

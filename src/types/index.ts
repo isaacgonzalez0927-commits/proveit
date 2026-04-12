@@ -59,6 +59,8 @@ export interface Goal {
   breakStartedAt?: string;
   breakStreakSnapshot?: number;
   streakCarryover?: number;
+  /** Pro: completed break sessions — calendar days on break per month key `yyyy-MM` (resets conceptually each month). */
+  proBreakUsageByMonth?: Record<string, number>;
   createdAt: string;
   completedDates: string[]; // ISO date strings when verified
 }
@@ -102,7 +104,7 @@ export const PLANS: Plan[] = [
       "6 plant styles (including strawberry)",
       "6 accent themes (Pink, Violet, Ocean, Teal, Orange, Amber + more)",
       "AI verification with feedback",
-      "Goal Break (freeze streak up to 3 days)",
+      "Goal Break (7 break-days per calendar month, per goal)",
       "Goal Gallery (history, proof photos, streaks)",
       "Priority support",
     ],
