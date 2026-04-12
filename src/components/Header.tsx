@@ -19,11 +19,12 @@ import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
 import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
+/** `label` = accessibility & tooltips; `tabLabel` = short text for the bottom bar on small screens. */
 const APP_TABS = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/buddy", label: "Goal Garden", icon: Sprout },
-  { href: "/goals/history", label: "Gallery", icon: Images },
-  { href: "/pricing", label: "Plan", icon: CreditCard },
+  { href: "/dashboard", label: "Home", tabLabel: "Home", icon: LayoutDashboard },
+  { href: "/buddy", label: "Goal Garden", tabLabel: "Garden", icon: Sprout },
+  { href: "/goals/history", label: "Gallery", tabLabel: "Gallery", icon: Images },
+  { href: "/pricing", label: "Plan", tabLabel: "Plan", icon: CreditCard },
 ] as const;
 
 function getPageTitle(pathname: string): string {
@@ -192,7 +193,7 @@ export function Header() {
       {showBottomTabs && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <nav className="pointer-events-auto grid grid-cols-4 rounded-2xl p-1 shadow-[0_10px_40px_rgba(15,23,42,0.15)] glass-nav">
+            <nav className="pointer-events-auto grid grid-cols-4 gap-0.5 rounded-2xl p-1 shadow-[0_10px_40px_rgba(15,23,42,0.15)] glass-nav">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);
@@ -203,17 +204,19 @@ export function Header() {
                     key={tab.href}
                     href={tab.href}
                     data-tour={isGardenTab ? "garden-tab" : undefined}
+                    title={tab.label}
+                    aria-label={tab.tabLabel === tab.label ? undefined : tab.label}
                     className={clsx(
-                      "flex min-h-[56px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-[11px] font-semibold transition-colors",
+                      "flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium leading-none tracking-tight transition-colors sm:min-h-[56px] sm:px-1 sm:text-[11px]",
                       active
-                        ? "bg-prove-100/90 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300 rounded-xl glass-outline-subtle"
+                        ? "bg-prove-100/90 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300 glass-outline-subtle"
                         : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
                       isGardenTab && spotlightGarden && "relative z-[100]"
                     )}
                     aria-current={active ? "page" : undefined}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span className="mt-1 leading-none">{tab.label}</span>
+                    <Icon className="h-[18px] w-[18px] shrink-0 sm:h-4 sm:w-4" strokeWidth={active ? 2.25 : 2} />
+                    <span className="max-w-full truncate text-center">{tab.tabLabel}</span>
                   </Link>
                 );
               })}
