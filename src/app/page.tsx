@@ -10,6 +10,7 @@ import {
   normalizeUsername,
   usernameToAuthEmail,
 } from "@/lib/usernameAuth";
+import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import {
   PENDING_PLAN_AFTER_TOUR_KEY,
   TOUR_DONE_KEY,
@@ -368,6 +369,7 @@ function LandingContent() {
   const handleChoosePlan = useCallback(
     async (planId: PlanId) => {
       await setPlan(planId);
+      setPostPlanWelcomeFlag(planId);
       router.push("/dashboard");
     },
     [router, setPlan]

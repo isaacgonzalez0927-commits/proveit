@@ -375,12 +375,12 @@ function SubmitProofContent() {
         </Link>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-8 text-center dark:border-amber-800/60 dark:bg-amber-950/25">
           <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
-            Choose a photo idea first
+            Choose an AI photo prompt first
           </h1>
           <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
-            This goal doesn&apos;t have a photo prompt yet. Open{" "}
+            This goal doesn&apos;t have a saved prompt yet. Open{" "}
             <strong>Goal Garden</strong>, tap <strong>Edit</strong> on this goal, tap{" "}
-            <strong>Refresh photo ideas</strong>, pick one option, then <strong>Save changes</strong>.
+            <strong>Refresh AI ideas</strong>, pick one option, then <strong>Save changes</strong>.
           </p>
           <Link
             href="/buddy"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Zap, Crown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { PLANS, type PlanId } from "@/types";
 
 function PricingContent() {
@@ -15,6 +16,7 @@ function PricingContent() {
   const handleSelectPlan = async (planId: PlanId) => {
     if (!user) return;
     await setPlan(planId, billing);
+    setPostPlanWelcomeFlag(planId);
     router.push("/dashboard");
   };
 

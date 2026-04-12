@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import {
+  PENDING_PLAN_AFTER_TOUR_KEY,
+  TOUR_DONE_KEY,
+  TOUR_DONE_VERSION,
+} from "@/lib/tourStorage";
 
 export function NotificationPrompt() {
   const { requestNotificationPermission } = useApp();
@@ -14,6 +19,11 @@ export function NotificationPrompt() {
     const key = "proveit_notification_prompt_dismissed";
     const wasDismissed = localStorage.getItem(key);
     if (wasDismissed) setDismissed(true);
+    const pendingTourPlan = Boolean(localStorage.getItem(PENDING_PLAN_AFTER_TOUR_KEY));
+    const tourFinished = localStorage.getItem(TOUR_DONE_KEY) === TOUR_DONE_VERSION;
+    if (pendingTourPlan && !tourFinished) {
+      return;
+    }
     if ("Notification" in window && Notification.permission === "default" && !wasDismissed) {
       const t = setTimeout(() => setShow(true), 2000);
       return () => clearTimeout(t);

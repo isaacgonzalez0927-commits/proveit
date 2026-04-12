@@ -38,7 +38,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Create your first goal",
     body:
       "You’ll blur the screen except the Goal Garden tab — tap it to go there. Then we highlight Add goal in garden so you open the form yourself.",
-    note: "After that: Get photo ideas, pick a suggestion, set days and time, then Add goal.",
+    note: "After that: get AI photo ideas, pick a prompt, set days and time, then Add goal.",
   },
   {
     title: "Prove it with a photo",

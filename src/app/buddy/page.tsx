@@ -38,6 +38,7 @@ import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
+import { messageFromApiPayload } from "@/lib/apiErrors";
 import {
   isProofRequirementAllowed,
   PROOF_SUGGESTIONS_MAX,
@@ -379,14 +380,14 @@ export default function BuddyPage() {
       }
       if (gen !== proofFetchGen.current) return;
       if (newTitleRef.current.trim() !== trimmed) {
-        setProofSuggestionsError("Title changed while loading — tap Get photo ideas again.");
+        setProofSuggestionsError("Title changed while loading — tap Get AI photo ideas again.");
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
         return;
       }
       if (!res.ok) {
-        setProofSuggestionsError(data.error ?? "Could not load photo ideas.");
+        setProofSuggestionsError(messageFromApiPayload(data, "Could not load AI photo ideas."));
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
@@ -396,7 +397,7 @@ export default function BuddyPage() {
         ? data.suggestions.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
         : [];
       if (list.length < PROOF_SUGGESTIONS_MIN) {
-        setProofSuggestionsError("Didn’t get enough suggestions. Try again.");
+        setProofSuggestionsError("AI didn’t return enough prompts. Try again.");
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
@@ -409,7 +410,7 @@ export default function BuddyPage() {
       setSuggestionsTitleKey(trimmed);
     } catch {
       if (gen !== proofFetchGen.current) return;
-      setProofSuggestionsError("Network error loading photo ideas.");
+      setProofSuggestionsError("Network error loading AI photo ideas.");
       setNewProofSuggestions([]);
       setSelectedProofRequirement(null);
       setSuggestionsTitleKey(null);
@@ -443,7 +444,7 @@ export default function BuddyPage() {
       }
       if (gen !== proofEditFetchGen.current) return;
       if (!res.ok) {
-        setGoalManagerMessage(data.error ?? "Could not refresh photo ideas.");
+        setGoalManagerMessage(messageFromApiPayload(data, "Could not refresh AI photo ideas."));
         return;
       }
       const list = Array.isArray(data.suggestions)
@@ -459,10 +460,10 @@ export default function BuddyPage() {
         proofSuggestions: next,
         proofRequirement: next[0] ?? "",
       }));
-      setGoalManagerMessage("Photo ideas updated — pick the one you want to use.");
+      setGoalManagerMessage("AI prompts updated — pick the one you want to use.");
     } catch {
       if (gen !== proofEditFetchGen.current) return;
-      setGoalManagerMessage("Could not refresh photo ideas.");
+      setGoalManagerMessage("Could not refresh AI photo ideas.");
     } finally {
       if (gen === proofEditFetchGen.current) {
         setProofIdeasEditLoading(false);
@@ -476,7 +477,7 @@ export default function BuddyPage() {
     setGoalManagerMessage(null);
     if (!canSubmitCreateGoalForm) {
       if (!proofIdeasReadyForCreate) {
-        setGoalManagerMessage("Tap Get photo ideas, then pick how you’ll prove this goal (or fix the title if it changed).");
+        setGoalManagerMessage("Tap Get AI photo ideas, then pick how you’ll prove this goal (or fix the title if it changed).");
       } else if (newWeeklyDays.length === 0) {
         setGoalManagerMessage("Pick at least one reminder day.");
       } else if (!canAddMoreGoals) {
@@ -505,11 +506,11 @@ export default function BuddyPage() {
       !selectedProofRequirement ||
       !isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions)
     ) {
-      setGoalManagerMessage("Tap Get photo ideas, then choose how you’ll prove this goal.");
+      setGoalManagerMessage("Tap Get AI photo ideas, then choose how you’ll prove this goal.");
       return;
     }
     if (suggestionsTitleKey !== newTitle.trim()) {
-      setGoalManagerMessage("Your title changed after loading photo ideas. Tap Get photo ideas again.");
+      setGoalManagerMessage("Your title changed after loading AI prompts. Tap Get AI photo ideas again.");
       return;
     }
 
@@ -877,8 +878,9 @@ export default function BuddyPage() {
                 How will you prove it?
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-                Tap Get photo ideas for this title. We pre-select the first suggestion — tap another to change. You can
-                switch between suggestions later in goal settings (no free-form text).
+                Tap <span className="font-medium text-slate-700 dark:text-slate-300">Get AI photo ideas</span> — we ask AI
+                for prompts from your title. We pre-select the first; tap another to change. You can switch among those
+                prompts later in goal settings (no free-form text).
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
@@ -890,10 +892,10 @@ export default function BuddyPage() {
                   {proofSuggestionsLoading ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Loading ideas…
+                      Asking AI…
                     </>
                   ) : (
-                    "Get photo ideas"
+                    "Get AI photo ideas"
                   )}
                 </button>
                 {newProofSuggestions.length > 0 && (
@@ -903,7 +905,7 @@ export default function BuddyPage() {
                     disabled={proofSuggestionsLoading}
                     className="text-xs font-medium text-prove-700 underline-offset-2 hover:underline disabled:opacity-50 dark:text-prove-300"
                   >
-                    Refresh ideas
+                    Refresh AI ideas
                   </button>
                 )}
               </div>
@@ -1053,7 +1055,7 @@ export default function BuddyPage() {
                 disabled={isAddingGoal || !canSubmitCreateGoalForm}
                 title={
                   !proofIdeasReadyForCreate
-                    ? "Get photo ideas and choose one option first"
+                    ? "Get AI photo ideas and choose one prompt first"
                     : newWeeklyDays.length === 0
                       ? "Pick at least one reminder day"
                       : undefined
@@ -1190,7 +1192,7 @@ export default function BuddyPage() {
                       </p>
                     ) : (
                       <p className="mt-1 text-[10px] text-amber-700/90 dark:text-amber-300/90">
-                        No photo prompt saved — edit this goal and load photo ideas.
+                        No photo prompt saved — edit this goal and load AI photo ideas.
                       </p>
                     )}
                   </div>
@@ -1446,7 +1448,7 @@ export default function BuddyPage() {
                             Loading…
                           </>
                         ) : (
-                          "Refresh photo ideas"
+                          "Refresh AI ideas"
                         )}
                       </button>
                     </div>

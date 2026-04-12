@@ -382,7 +382,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!isValidProofBundle(goal.proofSuggestions, goal.proofRequirement)) {
         return {
           created: null,
-          error: "Tap Get photo ideas, pick one option, then add the goal.",
+          error: "Tap Get AI photo ideas, pick one prompt, then add the goal.",
         };
       }
       if (useSupabase) {

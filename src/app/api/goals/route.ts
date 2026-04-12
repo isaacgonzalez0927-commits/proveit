@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Choose one of the suggested photo prompts for this goal (tap Get photo ideas, then pick an option).",
+          "Choose one of the AI-generated photo prompts for this goal (tap Get AI photo ideas, then pick an option).",
       },
       { status: 400 }
     );

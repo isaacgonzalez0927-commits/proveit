@@ -35,12 +35,12 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
     body: "Type something you can prove with a photo (at least 2 characters). Optional description is below.",
   },
   "goal-proof-fetch": {
-    title: "Get photo ideas",
-    body: "Tap Get photo ideas. We’ll suggest a few prompts; you’ll pick one next.",
+    title: "Get AI photo ideas",
+    body: "Tap the button — AI suggests a few photo prompts from your title. You’ll pick one next.",
   },
   "goal-proof-pick": {
     title: "Choose how you’ll prove it",
-    body: "Select one of the suggested photo prompts (tap a different option if you prefer).",
+    body: "Pick one of the AI-generated prompts (tap another option if you prefer).",
   },
   "goal-schedule": {
     title: "When to remind you",
