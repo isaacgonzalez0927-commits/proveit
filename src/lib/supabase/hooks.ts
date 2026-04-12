@@ -20,21 +20,32 @@ export function useSupabaseAuth(): {
 
     createClient().then((client) => {
       if (!mounted || !client) {
-        setLoading(false);
+        if (mounted) setLoading(false);
         return;
       }
       setSupabase(client);
 
-      client.auth.getUser().then(({ data: { user } }) => {
-        if (mounted) setUser(user);
-      });
-
-      const result = client.auth.onAuthStateChange((_event, session) => {
+      const {
+        data: { subscription: sub },
+      } = client.auth.onAuthStateChange((_event, session) => {
         if (mounted) setUser(session?.user ?? null);
       });
-      subscription = result.data.subscription;
+      subscription = sub;
 
-      setLoading(false);
+      // Never set loading=false before we know the persisted session — otherwise AppContext
+      // briefly sees !user while !loading and wipes goals (mobile / cold start).
+      void client.auth
+        .getSession()
+        .then(({ data: { session } }) => {
+          if (!mounted) return;
+          setUser(session?.user ?? null);
+        })
+        .catch(() => {
+          if (mounted) setUser(null);
+        })
+        .finally(() => {
+          if (mounted) setLoading(false);
+        });
     });
 
     return () => {

@@ -20,6 +20,9 @@ import {
   saveSubmissions,
   canAddGoal,
   generateId,
+  readSbSessionSnapshot,
+  writeSbSessionSnapshot,
+  clearSbSessionSnapshot,
   type StoredUser,
   STORAGE_KEYS,
 } from "@/lib/store";
@@ -153,6 +156,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
+      const snap = readSbSessionSnapshot();
+      if (snap?.userId === supabaseUser.id) {
+        setGoalsState(snap.goals);
+        setSubmissionsState(snap.submissions);
+      }
       setDataLoaded(false);
       Promise.allSettled([
         fetch("/api/profile").then((r) => r.json()),
@@ -225,7 +233,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setHydrated(true);
       return;
     }
-    if (useSupabase && !authLoading && !supabaseUser) {
+    // Only treat as signed-out once the client exists and auth finished resolving — avoids
+    // clearing goals during the brief window before getSession() completes.
+    if (useSupabase && supabase && !authLoading && !supabaseUser) {
+      clearSbSessionSnapshot();
       setUserState(null);
       setGoalsState([]);
       setSubmissionsState([]);
@@ -258,6 +269,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setHydrated(true);
     }
   }, [useSupabase, supabaseUser, authLoading, supabase]);
+
+  useEffect(() => {
+    if (!useSupabase || !user?.id || !dataLoaded) return;
+    writeSbSessionSnapshot(user.id, goals, submissions);
+  }, [useSupabase, user?.id, goals, submissions, dataLoaded]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -684,6 +700,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoalPlantSelections({});
     if (typeof window !== "undefined") {
       try {
+        clearSbSessionSnapshot();
         localStorage.removeItem(STORAGE_KEYS.user);
         localStorage.removeItem(STORAGE_KEYS.goals);
         localStorage.removeItem(STORAGE_KEYS.submissions);
@@ -710,6 +727,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoalPlantSelections({});
     if (typeof window !== "undefined") {
       try {
+        clearSbSessionSnapshot();
         localStorage.removeItem(STORAGE_KEYS.user);
         localStorage.removeItem(STORAGE_KEYS.goals);
         localStorage.removeItem(STORAGE_KEYS.submissions);

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "./goalSchedule";
+import {
+  effectiveTimesPerWeek,
+  spreadReminderDaysForTimesPerWeek,
+  timesPerWeekSummary,
+} from "./goalSchedule";
 describe("spreadReminderDaysForTimesPerWeek", () => {
   it("returns all days for 7+", () => {
     expect(spreadReminderDaysForTimesPerWeek(7)).toEqual([0, 1, 2, 3, 4, 5, 6]);
@@ -24,5 +28,14 @@ describe("effectiveTimesPerWeek", () => {
   it("uses reminderDays length when times missing", () => {
     const g = { frequency: "weekly" as const, timesPerWeek: undefined, reminderDays: [1, 3, 5] };
     expect(effectiveTimesPerWeek(g)).toBe(3);
+  });
+});
+
+describe("timesPerWeekSummary", () => {
+  it("describes once and daily", () => {
+    expect(timesPerWeekSummary(1).headline).toBe("Once a week");
+    expect(timesPerWeekSummary(1).dueLine).toContain("Wed");
+    expect(timesPerWeekSummary(7).headline).toBe("Daily check-ins");
+    expect(timesPerWeekSummary(7).dueLine.toLowerCase()).toContain("every day");
   });
 });

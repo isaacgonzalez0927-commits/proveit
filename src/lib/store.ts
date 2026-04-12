@@ -122,6 +122,57 @@ export function clearStoredPlanSelection(userId: string) {
   localStorage.removeItem(getPlanSelectionKey(userId));
 }
 
+/** Last known goals/submissions for the signed-in Supabase user (survives app kill / offline). */
+const SB_SESSION_SNAPSHOT_KEY = "proveit_sb_session_snapshot_v1";
+
+type SbSessionSnapshotV1 = {
+  v: 1;
+  userId: string;
+  goals: Goal[];
+  submissions: ProofSubmission[];
+};
+
+export function readSbSessionSnapshot(): SbSessionSnapshotV1 | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(SB_SESSION_SNAPSHOT_KEY);
+  if (!raw) return null;
+  try {
+    const x = JSON.parse(raw) as Partial<SbSessionSnapshotV1>;
+    if (x.v !== 1 || typeof x.userId !== "string" || !Array.isArray(x.goals)) return null;
+    return {
+      v: 1,
+      userId: x.userId,
+      goals: x.goals as Goal[],
+      submissions: Array.isArray(x.submissions) ? (x.submissions as ProofSubmission[]) : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeSbSessionSnapshot(
+  userId: string,
+  goals: Goal[],
+  submissions: ProofSubmission[]
+) {
+  if (typeof window === "undefined") return;
+  try {
+    const payload: SbSessionSnapshotV1 = { v: 1, userId, goals, submissions };
+    localStorage.setItem(SB_SESSION_SNAPSHOT_KEY, JSON.stringify(payload));
+  } catch {
+    // quota / private mode
+  }
+}
+
+export function clearSbSessionSnapshot() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(SB_SESSION_SNAPSHOT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export {
   getStoredUser,
   getStoredGoals,

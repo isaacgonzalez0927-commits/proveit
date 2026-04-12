@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useId, useLayoutEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
 import { useApp } from "@/context/AppContext";
 import {
   TOUR_CHANGED_EVENT,
@@ -44,7 +44,7 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
   "goal-schedule": {
     title: "Rhythm & reminders",
-    body: "Choose how many times per week you want to check in (1–7). We space due days for you. Set your daily reminder time — you’ll get a nudge every day.",
+    body: "Set how often you want to prove it each week with the slider or + / −. We space due days for you. Set your daily reminder time — you’ll get a nudge every day.",
   },
   "goal-submit": {
     title: "Add it to your garden",
@@ -133,7 +133,6 @@ const SCROLL_INTO_VIEW_PHASES: TourSpotlightPhase[] = [
 export function TourSpotlight() {
   const { user } = useApp();
   const pathname = usePathname();
-  const maskUid = useId().replace(/\W/g, "");
   const [phase, setPhase] = useState<string | null>(null);
   const [hole, setHole] = useState<HoleMetrics | null>(null);
   const [viewport, setViewport] = useState(() =>
@@ -213,9 +212,7 @@ export function TourSpotlight() {
 
   const { top, left, right, bottom, radius: holeRadius } = hole;
   const { w: vw, h: vh } = viewport;
-  const maskId = `proveit-tour-spot-${maskUid}`;
-  const holeW = right - left;
-  const holeH = bottom - top;
+  const dimmerPath = dimmerPathWithRoundedHole(vw, vh, left, top, right, bottom, holeRadius);
 
   const text = COPY[activePhase];
   const midY = (top + bottom) / 2;
@@ -225,7 +222,10 @@ export function TourSpotlight() {
     ? {
         left: "50%",
         transform: "translateX(-50%)",
-        bottom: Math.max(12, vh - top + 14),
+        bottom:
+          activePhase === "garden-tab"
+            ? `max(6.75rem, calc(env(safe-area-inset-bottom, 0px) + 6rem), ${Math.max(12, vh - top + 14)}px)`
+            : Math.max(12, vh - top + 14),
       }
     : {
         left: "50%",
@@ -236,38 +236,20 @@ export function TourSpotlight() {
   return (
     <div className="pointer-events-none fixed inset-0 z-[94]" aria-hidden={false}>
       <svg
-        className="fixed inset-0 z-[95] h-full w-full touch-none"
+        className="pointer-events-none fixed inset-0 z-[95] h-full w-full"
         width={vw}
         height={vh}
         viewBox={`0 0 ${vw} ${vh}`}
         preserveAspectRatio="none"
         aria-hidden
       >
-        <defs>
-          <mask
-            id={maskId}
-            maskUnits="userSpaceOnUse"
-            x={0}
-            y={0}
-            width={vw}
-            height={vh}
-          >
-            <rect width={vw} height={vh} fill="white" />
-            <rect
-              x={left}
-              y={top}
-              width={holeW}
-              height={holeH}
-              rx={holeRadius}
-              ry={holeRadius}
-              fill="black"
-            />
-          </mask>
-        </defs>
-        <rect
-          width={vw}
-          height={vh}
-          mask={`url(#${maskId})`}
+        {/*
+          Even-odd path = real geometry with a hole so hit-testing skips the cutout.
+          A full-screen rect + mask still captured taps over the “hole” (blocked Garden tab).
+        */}
+        <path
+          d={dimmerPath}
+          fillRule="evenodd"
           className="pointer-events-auto fill-black/35 dark:fill-black/45"
         />
       </svg>
