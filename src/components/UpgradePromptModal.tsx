@@ -35,15 +35,15 @@ export function UpgradePromptModal({
       aria-labelledby="upgrade-prompt-title"
     >
       <div
-        className="absolute inset-0 bg-slate-900/20 backdrop-blur-md dark:bg-slate-950/35"
+        className="absolute inset-0 bg-slate-900/25 backdrop-blur-md dark:bg-slate-950/50"
         aria-hidden
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border p-5 shadow-xl glass-card">
+      <div className="relative w-full max-w-sm rounded-2xl border border-slate-200/90 p-6 shadow-soft-lg dark:border-slate-600/50 glass-card">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
           aria-label="Close"
         >
           <X className="h-5 w-5" />
@@ -52,11 +52,11 @@ export function UpgradePromptModal({
           {effectiveTitle}
         </h2>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{effectiveMessage}</p>
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-6 flex flex-col gap-2.5">
           <Link
             href="/pricing"
             onClick={onClose}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-prove-700 btn-glass-primary"
           >
             {requiredPlan === "premium" ? "View Premium plan" : "View Pro & Premium plans"}
             <ChevronRight className="h-4 w-4" />
@@ -64,7 +64,7 @@ export function UpgradePromptModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Maybe later
           </button>

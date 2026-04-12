@@ -71,7 +71,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${outfit.variable} ${dmSans.variable}`} suppressHydrationWarning>
-      <body className="antialiased min-h-screen flex flex-col">
+      <body className="font-body min-h-screen flex flex-col antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <a
           href="#main-content"

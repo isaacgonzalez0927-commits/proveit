@@ -50,7 +50,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Watch the garden grow",
     body:
       "Each goal is its own plant card: streak, growth stage, and whether it’s watered this cycle — all in one place.",
-    note: "Hit your due days consistently to keep streaks and stages moving.",
+    note: "Hit your weekly targets and prove it consistently to keep streaks and stages moving.",
   },
   {
     title: "Home dashboard",

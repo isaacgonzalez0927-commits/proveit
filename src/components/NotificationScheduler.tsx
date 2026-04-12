@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
+import { isWithinSubmissionWindow } from "@/lib/goalDue";
 import { format } from "date-fns";
 import type { Goal } from "@/types";
 
@@ -36,12 +37,13 @@ export function NotificationScheduler() {
       const key = `${STORAGE_KEY_PREFIX}${goal.id}_${today}`;
       if (localStorage.getItem(key)) return;
 
-      const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
-      const doneToday = subs.some((s) => s.date === today);
+      const subs = getSubmissionsForGoal(goal.id);
+      const doneToday = subs.some((s) => s.status === "verified" && s.date === today);
       if (doneToday) return;
+      if (!isWithinSubmissionWindow(goal, now, subs)) return;
 
-      const n = new Notification(`Due now: ${goal.title}`, {
-        body: "Snap a photo to keep your streak.",
+      const n = new Notification(`Reminder: ${goal.title}`, {
+        body: "Daily check-in — snap a photo if you still have a check-in left today.",
         icon: "/icon.png",
         tag: key,
       });

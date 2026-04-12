@@ -46,28 +46,28 @@ export function NotificationPrompt() {
   if (!show || dismissed) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-slide-up rounded-xl border border-prove-200 bg-white p-4 shadow-lg dark:border-prove-800 dark:bg-slate-900">
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 z-50 mx-auto max-w-md animate-slide-up rounded-2xl border border-prove-200/90 bg-white/95 p-4 shadow-soft-lg backdrop-blur-md dark:border-prove-800/60 dark:bg-slate-900/95">
       <div className="flex items-start gap-3">
-        <div className="rounded-full bg-prove-100 p-2 dark:bg-prove-900/50">
+        <div className="rounded-xl bg-prove-100 p-2.5 dark:bg-prove-900/50">
           <Bell className="h-5 w-5 text-prove-600 dark:text-prove-400" />
         </div>
-        <div className="flex-1">
-          <p className="font-medium text-slate-900 dark:text-slate-100">
+        <div className="min-w-0 flex-1">
+          <p className="font-display font-semibold text-slate-900 dark:text-slate-100">
             Enable notifications
           </p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Get reminded when your goals are due so you never miss a beat.
+          <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-400">
+            Get a daily nudge for your goals so you don&apos;t miss a check-in.
           </p>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={handleAllow}
-              className="rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
+              className="rounded-xl bg-prove-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-prove-700 btn-glass-primary"
             >
               Allow
             </button>
             <button
               onClick={handleDismiss}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Not now
             </button>

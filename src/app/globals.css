@@ -473,6 +473,29 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(var(--prove-200-rgb), 0.55);
+  color: rgb(var(--prove-950-rgb));
+}
+
+.dark ::selection {
+  background-color: rgba(var(--prove-700-rgb), 0.4);
+  color: rgb(var(--prove-50-rgb));
+}
+
+@layer base {
+  :where(a, button, [role="button"], input, textarea, select):focus-visible {
+    outline: 2px solid rgb(var(--prove-500-rgb) / 0.75);
+    outline-offset: 2px;
+  }
+
+  .dark :where(a, button, [role="button"], input, textarea, select):focus-visible {
+    outline-color: rgb(var(--prove-400-rgb) / 0.9);
+  }
 }
 
 body {

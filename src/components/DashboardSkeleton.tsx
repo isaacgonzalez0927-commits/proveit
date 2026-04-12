@@ -8,7 +8,7 @@ export function DashboardSkeleton() {
         <div className="mt-2 h-4 w-64 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+      <section className="rounded-2xl border border-slate-200/80 p-4 shadow-soft dark:border-slate-700/80 glass-card">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="h-5 w-36 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />

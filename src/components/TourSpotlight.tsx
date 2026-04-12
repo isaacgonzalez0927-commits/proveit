@@ -44,7 +44,7 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
   "goal-schedule": {
     title: "Rhythm & reminders",
-    body: "Set how often you want to prove it each week with the slider or + / −. We space due days for you. Set your daily reminder time — you’ll get a nudge every day.",
+    body: "Set how many check-ins you want each week with the slider or + / −. You’ll get a daily reminder; you can prove it on any day (once per day, up to your weekly target). Pick your reminder time below.",
   },
   "goal-submit": {
     title: "Add it to your garden",
@@ -255,21 +255,21 @@ export function TourSpotlight() {
       </svg>
 
       <div
-        className="pointer-events-auto fixed z-[96] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-600 dark:bg-slate-900"
+        className="pointer-events-auto fixed z-[96] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-200/90 bg-white/95 p-4 shadow-soft-lg backdrop-blur-md dark:border-slate-600/60 dark:bg-slate-900/95"
         style={{
           ...cardPositionStyle,
           maxHeight: "min(44vh, 15rem)",
         }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-prove-600 dark:text-prove-400">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-prove-600 dark:text-prove-400">
           Guided step
         </p>
-        <p className="mt-1.5 font-display text-base font-bold text-slate-900 dark:text-white">{text.title}</p>
-        <p className="mt-1 text-sm leading-snug text-slate-600 dark:text-slate-300">{text.body}</p>
+        <p className="mt-2 font-display text-base font-bold leading-tight text-slate-900 dark:text-white">{text.title}</p>
+        <p className="mt-1.5 text-sm leading-snug text-slate-600 dark:text-slate-300">{text.body}</p>
         <button
           type="button"
           onClick={() => completeDashboardTour(user?.id)}
-          className="mt-3 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+          className="mt-4 text-xs font-medium text-slate-500 underline-offset-2 transition hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
         >
           Skip tour
         </button>

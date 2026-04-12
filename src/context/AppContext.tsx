@@ -618,7 +618,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (goalId: string) => {
       const g = goals.find((x) => x.id === goalId);
       if (!g) return;
-      if (!isWithinSubmissionWindow(g)) return; // Only allow while submissions are open
+      const subsForGoal = getSubmissionsForGoal(goalId);
+      if (!isWithinSubmissionWindow(g, new Date(), subsForGoal)) return;
       const dateStr = format(new Date(), "yyyy-MM-dd");
       const existing = submissions.find((s) => s.goalId === goalId && s.date === dateStr);
       if (existing?.status === "verified") return;
@@ -634,7 +635,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await updateGoal(goalId, { completedDates: [...g.completedDates, dateStr] });
       }
     },
-    [goals, submissions, addSubmission, updateGoal]
+    [goals, submissions, addSubmission, updateGoal, getSubmissionsForGoal]
   );
 
   const setEquipped = useCallback((slot: keyof EquippedItems, itemId: string | null) => {
@@ -782,7 +783,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={value}>
       <ThemeSync />
       {showLoading ? (
-        <main className="flex min-h-screen items-center justify-center bg-white dark:bg-black">
+        <main className="flex min-h-screen items-center justify-center bg-transparent">
           <LoadingView />
         </main>
       ) : (

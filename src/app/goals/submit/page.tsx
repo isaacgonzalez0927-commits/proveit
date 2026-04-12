@@ -19,7 +19,17 @@ function SubmitProofContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const goalId = searchParams.get("goalId");
-  const { user: contextUser, goals: contextGoals, addSubmission, updateSubmission, updateGoal, useSupabase, supabase, authReady } = useApp();
+  const {
+    user: contextUser,
+    goals: contextGoals,
+    addSubmission,
+    updateSubmission,
+    updateGoal,
+    useSupabase,
+    supabase,
+    authReady,
+    getSubmissionsForGoal,
+  } = useApp();
   // Fallback: fetch directly when context doesn't have data (handles direct nav / context race)
   const [localUser, setLocalUser] = useState<StoredUser | null>(null);
   const [localGoal, setLocalGoal] = useState<Goal | null>(null);
@@ -90,7 +100,8 @@ function SubmitProofContent() {
     if (user && goal) hasShownContent.current = true;
   }, [user, goal]);
 
-  const inWindow = !!goal && isWithinSubmissionWindow(goal);
+  const goalSubs = goal ? getSubmissionsForGoal(goal.id) : [];
+  const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
   const [, setHideHeader] = useHideHeader();
   const hideHeaderForCamera =
     step === "capture" &&
@@ -306,7 +317,8 @@ function SubmitProofContent() {
         aiFeedback = data.feedback ?? aiFeedback;
       }
       const now = new Date();
-      const withinWindow = isWithinSubmissionWindow(goal, now);
+      const subsNow = getSubmissionsForGoal(goal.id);
+      const withinWindow = isWithinSubmissionWindow(goal, now, subsNow);
 
       const passed = aiPassed && withinWindow;
       const msg = withinWindow ? aiFeedback : "Submissions are closed right now.";
@@ -352,7 +364,19 @@ function SubmitProofContent() {
       }
     }
     setStep("result");
-  }, [imageDataUrl, goal, todayStr, user, addSubmission, updateSubmission, updateGoal, goals, useSupabase, supabase]);
+  }, [
+    imageDataUrl,
+    goal,
+    todayStr,
+    user,
+    addSubmission,
+    updateSubmission,
+    updateGoal,
+    goals,
+    useSupabase,
+    supabase,
+    getSubmissionsForGoal,
+  ]);
 
   if (!authReady || pageLoading || !user || !goal) {
     return (
@@ -394,7 +418,7 @@ function SubmitProofContent() {
   }
 
   if (!inWindow) {
-    const msg = getSubmissionWindowMessage(goal);
+    const msg = getSubmissionWindowMessage(goal, new Date(), goalSubs);
     return (
       <main className="mx-auto max-w-lg px-4 py-8">
           <Link

@@ -23,7 +23,7 @@ type Props = {
 export function TimesPerWeekControl({ value, onChange, size = "default" }: Props) {
   const rangeId = useId();
   const v = clampTw(value);
-  const { headline, dueLine } = timesPerWeekSummary(v);
+  const { headline, detailLine } = timesPerWeekSummary(v);
   const compact = size === "compact";
 
   const bump = (delta: number) => onChange(clampTw(v + delta));
@@ -41,7 +41,7 @@ export function TimesPerWeekControl({ value, onChange, size = "default" }: Props
             {headline}
           </p>
           <p className={clsx("mt-1 text-slate-600 dark:text-slate-400", compact ? "text-[10px] leading-snug" : "text-xs leading-snug")}>
-            {dueLine}
+            {detailLine}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-950">

@@ -47,11 +47,11 @@ export function CongratulationsModal({
       aria-labelledby="congrats-title"
     >
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
         aria-hidden
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-white/20 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900 animate-success-pop">
+      <div className="relative w-full max-w-sm animate-success-pop rounded-2xl border border-slate-200/90 p-7 shadow-soft-lg dark:border-slate-600/50 glass-card">
         <div className="text-center">
           <span className="text-5xl" role="img" aria-hidden>
             {emoji}
@@ -68,7 +68,7 @@ export function CongratulationsModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-6 w-full rounded-xl bg-prove-600 py-3 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
+            className="mt-6 w-full rounded-xl bg-prove-600 py-3 text-sm font-semibold text-white transition hover:bg-prove-700 btn-glass-primary"
           >
             {buttonLabel}
           </button>

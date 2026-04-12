@@ -1,7 +1,6 @@
-import type { Goal } from "@/types";
+import type { Goal, ProofSubmission } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
-
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+import { format, isSameWeek, parseISO } from "date-fns";
 
 /** HH:mm for <input type="time" /> (strips seconds / odd DB formats). */
 export function normalizeReminderTimeInput(value: string | undefined | null): string {
@@ -13,7 +12,37 @@ export function normalizeReminderTimeInput(value: string | undefined | null): st
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
-/** Effective reminder days (0–6) from `timesPerWeek` (auto-spread); daily = all seven. */
+function parseSubmissionDate(date: string): Date | null {
+  try {
+    const d = parseISO(date);
+    return Number.isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
+
+/** Verified submissions whose `date` falls in the same calendar week as `weekReference` (week starts Sunday). */
+export function countVerifiedInCalendarWeek(
+  submissions: Pick<ProofSubmission, "date" | "status">[],
+  weekReference: Date
+): number {
+  return submissions.filter((s) => {
+    if (s.status !== "verified") return false;
+    const d = parseSubmissionDate(s.date);
+    return d ? isSameWeek(d, weekReference, { weekStartsOn: 0 }) : false;
+  }).length;
+}
+
+export function hasVerifiedSubmissionOnDate(
+  submissions: Pick<ProofSubmission, "date" | "status">[],
+  dateStr: string
+): boolean {
+  return submissions.some((s) => s.status === "verified" && s.date === dateStr);
+}
+
+/**
+ * Legacy spaced weekdays (still on goals for older rows). Submission timing does not use this.
+ */
 export function getReminderDays(goal: Goal): number[] {
   if (goal.frequency === "daily") return [0, 1, 2, 3, 4, 5, 6];
   const tw = effectiveTimesPerWeek(goal);
@@ -21,43 +50,31 @@ export function getReminderDays(goal: Goal): number[] {
   return spreadReminderDaysForTimesPerWeek(tw);
 }
 
-function getDueDate(goal: Goal, now: Date): Date | null {
-  const days = getReminderDays(goal);
-  if (!days.includes(now.getDay())) return null;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function getCurrentCycleDueDate(goal: Goal, now: Date): Date {
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-/** Proof can be submitted any time until the end of the calendar day (local). */
-function getWindowEnd(dueDate: Date): Date {
-  const end = new Date(dueDate);
-  end.setHours(23, 59, 59, 999);
-  return end;
-}
-
 /**
- * True when the user should be asked to submit proof: daily = today, weekly = today is reminder day.
+ * True when the user may submit proof: any day of the week, at most one verified check-in per calendar day,
+ * and at most `timesPerWeek` verified check-ins per calendar week (Sunday–Saturday).
  */
-export function isGoalDue(goal: Goal, now: Date = new Date()): boolean {
+export function isWithinSubmissionWindow(
+  goal: Goal,
+  now: Date = new Date(),
+  submissions: Pick<ProofSubmission, "date" | "status">[] = []
+): boolean {
   if (goal.isOnBreak) return false;
-  return getDueDate(goal, now) !== null;
+  const todayStr = format(now, "yyyy-MM-dd");
+  if (hasVerifiedSubmissionOnDate(submissions, todayStr)) return false;
+  const tw = effectiveTimesPerWeek(goal);
+  const weekCount = countVerifiedInCalendarWeek(submissions, now);
+  return weekCount < tw;
 }
 
-/**
- * True when the user can submit proof: on a due day, from midnight through end of that calendar day.
- */
-export function isWithinSubmissionWindow(goal: Goal, now: Date = new Date()): boolean {
+/** True when a check-in is still available today (same rules as `isWithinSubmissionWindow`). */
+export function isGoalDue(
+  goal: Goal,
+  now: Date = new Date(),
+  submissions: Pick<ProofSubmission, "date" | "status">[] = []
+): boolean {
   if (goal.isOnBreak) return false;
-  const days = getReminderDays(goal);
-  if (!days.includes(now.getDay())) return false;
-  const dueDate = getCurrentCycleDueDate(goal, now);
-  const windowEnd = getWindowEnd(dueDate);
-  const dayStart = new Date(dueDate);
-  dayStart.setHours(0, 0, 0, 0);
-  return now >= dayStart && now <= windowEnd;
+  return isWithinSubmissionWindow(goal, now, submissions);
 }
 
 /**
@@ -66,23 +83,25 @@ export function isWithinSubmissionWindow(goal: Goal, now: Date = new Date()): bo
  */
 export function getSubmissionWindowMessage(
   goal: Goal,
-  now: Date = new Date()
+  now: Date = new Date(),
+  submissions: Pick<ProofSubmission, "date" | "status">[] = []
 ): string | null {
   if (goal.isOnBreak) return "This goal is on break.";
-  if (isWithinSubmissionWindow(goal, now)) return null;
-  const dueDate = getCurrentCycleDueDate(goal, now);
-  const windowEnd = getWindowEnd(dueDate);
-
-  if (now > windowEnd) {
-    const days = getReminderDays(goal);
-    if (days.length === 1) return `Closed for today (next: ${DAY_NAMES[days[0]!]})`;
-    return "Closed for today.";
+  if (isWithinSubmissionWindow(goal, now, submissions)) return null;
+  const todayStr = format(now, "yyyy-MM-dd");
+  if (hasVerifiedSubmissionOnDate(submissions, todayStr)) {
+    return "You already proved it today. One check-in per day.";
   }
-  return "Submissions are not available right now.";
+  const tw = effectiveTimesPerWeek(goal);
+  const weekCount = countVerifiedInCalendarWeek(submissions, now);
+  if (weekCount >= tw) {
+    return "You've finished this week's check-ins. Daily reminders continue — you can prove it again next week.";
+  }
+  return "Check-ins are not available right now.";
 }
 
 /**
- * Human-readable label for when goal is due (e.g. "Due Mon, Wed, Fri" or "Daily").
+ * Human-readable label for rhythm (not tied to specific weekdays).
  */
 export function getNextDueLabel(goal: Goal): string {
   const tw = effectiveTimesPerWeek(goal);

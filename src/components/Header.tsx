@@ -98,17 +98,17 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-transparent pt-[env(safe-area-inset-top)] glass-surface">
-        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-slate-200/60 pt-[env(safe-area-inset-top)] shadow-soft dark:border-slate-800/50 dark:shadow-none glass-surface">
+        <div className="mx-auto flex h-[3.5rem] max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="min-w-0">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 truncate font-display text-lg font-bold tracking-tight text-prove-600 dark:text-prove-300"
+              className="flex items-center gap-2.5 truncate rounded-md font-display text-lg font-bold tracking-tight text-prove-600 transition-opacity hover:opacity-90 dark:text-prove-300"
             >
               <span className="proveit-mark h-7 w-7 shrink-0" role="img" aria-hidden="true" />
               <span>Proveit</span>
             </Link>
-            <p className="truncate text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               {pageTitle}
             </p>
           </div>
@@ -119,7 +119,7 @@ export function Header() {
                 e.stopPropagation();
                 setAccountOpen((o) => !o);
               }}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-slate-600 shadow-sm hover:opacity-90 dark:text-slate-300 glass-surface"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200/80 px-3 text-sm text-slate-600 shadow-soft transition hover:border-slate-300/90 hover:opacity-95 dark:border-slate-600/60 dark:text-slate-300 dark:hover:border-slate-500/60 glass-surface"
               aria-expanded={accountOpen}
               aria-haspopup="true"
               aria-label="Account menu"
@@ -129,7 +129,7 @@ export function Header() {
             </button>
             {accountOpen && (
               <div
-                className="absolute right-0 top-full z-[100] mt-2 min-w-[190px] rounded-2xl py-2 shadow-xl glass-dropdown"
+                className="absolute right-0 top-full z-[100] mt-2 min-w-[200px] rounded-2xl py-2 shadow-soft-lg glass-dropdown"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -193,7 +193,7 @@ export function Header() {
       {showBottomTabs && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
           <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <nav className="pointer-events-auto grid grid-cols-4 gap-0.5 rounded-2xl p-1 shadow-[0_10px_40px_rgba(15,23,42,0.15)] glass-nav">
+            <nav className="pointer-events-auto grid grid-cols-4 gap-0.5 rounded-2xl p-1 shadow-nav ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06] glass-nav">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);

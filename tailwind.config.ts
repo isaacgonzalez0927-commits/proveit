@@ -35,6 +35,14 @@ const config: Config = {
         display: ["var(--font-outfit)", "system-ui", "sans-serif"],
         body: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
       },
+      boxShadow: {
+        soft: "0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px rgb(15 23 42 / 0.06)",
+        "soft-lg": "0 2px 4px rgb(15 23 42 / 0.04), 0 12px 40px rgb(15 23 42 / 0.08)",
+        nav: "0 8px 32px rgb(15 23 42 / 0.1), 0 2px 8px rgb(15 23 42 / 0.06)",
+      },
+      transitionTimingFunction: {
+        "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
       animation: {
         "fade-in": "fadeIn 0.4s ease-out",
         "slide-up": "slideUp 0.4s ease-out",

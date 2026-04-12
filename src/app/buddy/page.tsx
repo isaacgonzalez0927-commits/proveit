@@ -637,14 +637,15 @@ export default function BuddyPage() {
     // Stage is derived from streak only. Changing plant style (variant) must not affect stage.
     const stage = getPlantStageForStreak(streak);
     const isOnBreak = goal.isOnBreak === true;
-    const due = isGoalDue(goal);
+    const goalSubs = getSubmissionsForGoal(goal.id);
+    const due = isGoalDue(goal, new Date(), goalSubs);
     const doneInCurrentWindow = isOnBreak
       ? false
       : isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
-    const canSubmitNow = isWithinSubmissionWindow(goal);
+    const canSubmitNow = isWithinSubmissionWindow(goal, new Date(), goalSubs);
     const submissionWindowMessage =
       !doneInCurrentWindow && !canSubmitNow
-        ? (getSubmissionWindowMessage(goal) ?? "Submission window closed")
+        ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
         : null;
     const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
     const breakDays = getBreakDurationDays(goal);
@@ -715,7 +716,7 @@ export default function BuddyPage() {
             Goal Garden
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            Each goal is a plant. Stay on rhythm, submit proof when it&apos;s due, and watch it grow to the final stage.
+            Each goal is a plant. Prove it on your schedule (daily reminders, weekly targets), and watch it grow to the final stage.
           </p>
           <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-500">
             {goals.length} active · {plan.name} ({plan.maxGoals === -1 ? "unlimited" : plan.maxGoals} goal
@@ -910,7 +911,7 @@ export default function BuddyPage() {
               <div>
                 <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Times per week</p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Use the slider or + / −. We space proof due days for you; you still get a daily reminder at the time below.
+                  Use the slider or + / −. You get a daily reminder; check-ins are any day of the week (once per day, up to your target per Sun–Sat week).
                 </p>
                 <div className="mt-3">
                   <TimesPerWeekControl
@@ -1173,7 +1174,7 @@ export default function BuddyPage() {
 
                 <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
                   Streak: <span className="font-medium text-slate-900 dark:text-slate-200">{entry.streak}</span>{" "}
-                  {effectiveTimesPerWeek(entry.goal) >= 7 ? "days" : "times"}
+                  {effectiveTimesPerWeek(entry.goal) >= 7 ? "days" : "weeks"}
                   {entry.hasStreakOverride && (
                     <span className="ml-1 text-amber-700 dark:text-amber-300">
                       (real {entry.actualStreak})
@@ -1248,7 +1249,7 @@ export default function BuddyPage() {
                     <div className="mt-3">
                       <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">Times per week</p>
                       <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                        Daily reminders; due days spread automatically.
+                        Daily reminder; submit on any day (once per day, weekly target).
                       </p>
                       <div className="mt-2">
                         <TimesPerWeekControl

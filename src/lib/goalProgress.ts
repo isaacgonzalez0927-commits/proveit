@@ -1,41 +1,90 @@
-import { addDays, format, subDays } from "date-fns";
+import { addDays, format, subDays, startOfWeek, subWeeks } from "date-fns";
 import type { Goal, ProofSubmission } from "@/types";
 import { safeParseISO } from "@/lib/dateUtils";
-import { getReminderDays } from "@/lib/goalDue";
+import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
+import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 
 type GoalProgressGoal = Pick<
   Goal,
-  "id" | "frequency" | "reminderDay" | "reminderDays" | "isOnBreak" | "breakStreakSnapshot" | "streakCarryover" | "breakStartedAt"
+  | "id"
+  | "frequency"
+  | "timesPerWeek"
+  | "reminderDay"
+  | "reminderDays"
+  | "isOnBreak"
+  | "breakStreakSnapshot"
+  | "streakCarryover"
+  | "breakStartedAt"
 >;
 type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
+
+/** Consecutive calendar days (including today) with a verified submission. */
+function getDailyCalendarStreak(
+  goalId: string,
+  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
+  minDateInclusive?: string
+): number {
+  const subs = getSubmissionsForGoal(goalId).filter((s) => {
+    if (s.status !== "verified") return false;
+    if (!minDateInclusive) return true;
+    return s.date >= minDateInclusive;
+  });
+  const submittedDates = new Set(subs.map((s) => s.date));
+  let streak = 0;
+  let cursor = new Date();
+  while (true) {
+    const dateStr = format(cursor, "yyyy-MM-dd");
+    if (!submittedDates.has(dateStr)) break;
+    streak += 1;
+    cursor = subDays(cursor, 1);
+    if (cursor.getTime() < (minDateInclusive ? safeParseISO(minDateInclusive)?.getTime() ?? 0 : 0)) break;
+    if (streak > 2000) break;
+  }
+  return streak;
+}
+
+/** Consecutive calendar weeks (Sunday-start) where verified count >= times-per-week target. */
+function getWeeklyQuotaStreak(
+  goal: GoalProgressGoal,
+  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
+  minDateInclusive?: string
+): number {
+  const tw = effectiveTimesPerWeek(goal as Goal);
+  const subsAll = getSubmissionsForGoal(goal.id).filter((s) => {
+    if (s.status !== "verified") return false;
+    if (!minDateInclusive) return true;
+    return s.date >= minDateInclusive;
+  });
+
+  let streak = 0;
+  const now = new Date();
+  let weekCursor = startOfWeek(now, { weekStartsOn: 0 });
+
+  const countForWeek = (ref: Date) => countVerifiedInCalendarWeek(subsAll, ref);
+
+  if (countForWeek(weekCursor) >= tw) streak += 1;
+  weekCursor = subWeeks(weekCursor, 1);
+
+  while (true) {
+    if (countForWeek(weekCursor) < tw) break;
+    streak += 1;
+    weekCursor = subWeeks(weekCursor, 1);
+    if (streak > 520) break;
+  }
+
+  return streak;
+}
 
 function getBaseGoalStreak(
   goal: GoalProgressGoal,
   getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
   minDateInclusive?: string
 ): number {
-  const subs = getSubmissionsForGoal(goal.id).filter((s) => {
-    if (s.status !== "verified") return false;
-    if (!minDateInclusive) return true;
-    return s.date >= minDateInclusive;
-  });
-  const submittedDates = new Set(subs.map((s) => s.date));
-  const reminderDays = getReminderDays(goal as Goal);
-
-  // Consecutive reminder-days (going backwards from today) that have a submission.
-  let streak = 0;
-  let cursor = new Date();
-  while (true) {
-    const dateStr = format(cursor, "yyyy-MM-dd");
-    const dayOfWeek = cursor.getDay();
-    if (reminderDays.includes(dayOfWeek)) {
-      if (!submittedDates.has(dateStr)) break;
-      streak += 1;
-    }
-    cursor = subDays(cursor, 1);
-    if (cursor.getTime() < (minDateInclusive ? safeParseISO(minDateInclusive)?.getTime() ?? 0 : 0)) break;
+  const tw = effectiveTimesPerWeek(goal as Goal);
+  if (tw >= 7 || goal.frequency === "daily") {
+    return getDailyCalendarStreak(goal.id, getSubmissionsForGoal, minDateInclusive);
   }
-  return streak;
+  return getWeeklyQuotaStreak(goal, getSubmissionsForGoal, minDateInclusive);
 }
 
 function getPostBreakMinDate(goal: GoalProgressGoal): string | undefined {
@@ -61,7 +110,6 @@ export function getGoalStreak(
   }
 
   if (carryover > 0) {
-    // Keep the streak from resetting after a break; new verified proofs grow on top.
     const postBreakBase = getBaseGoalStreak(goal, getSubmissionsForGoal, getPostBreakMinDate(goal));
     return carryover + postBreakBase;
   }
@@ -69,7 +117,7 @@ export function getGoalStreak(
   return baseStreak;
 }
 
-/** True if there is a verified submission for today (current reminder day). */
+/** True if there is a verified submission for today (local calendar date). */
 export function isGoalDoneInCurrentWindow(
   goal: GoalProgressGoal,
   getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],

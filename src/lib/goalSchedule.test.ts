@@ -32,10 +32,10 @@ describe("effectiveTimesPerWeek", () => {
 });
 
 describe("timesPerWeekSummary", () => {
-  it("describes once and daily", () => {
+  it("describes once and daily without fixed weekday copy", () => {
     expect(timesPerWeekSummary(1).headline).toBe("Once a week");
-    expect(timesPerWeekSummary(1).dueLine).toContain("Wed");
+    expect(timesPerWeekSummary(1).detailLine.toLowerCase()).toContain("reminder");
     expect(timesPerWeekSummary(7).headline).toBe("Daily check-ins");
-    expect(timesPerWeekSummary(7).dueLine.toLowerCase()).toContain("every day");
+    expect(timesPerWeekSummary(7).detailLine.toLowerCase()).toContain("daily");
   });
 });

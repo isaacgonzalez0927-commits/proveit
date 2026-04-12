@@ -36,7 +36,14 @@ import {
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
 import { safeParseISO } from "@/lib/dateUtils";
-import { isGoalDue, getNextDueLabel, isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
+import {
+  countVerifiedInCalendarWeek,
+  getNextDueLabel,
+  getSubmissionWindowMessage,
+  isGoalDue,
+  isWithinSubmissionWindow,
+} from "@/lib/goalDue";
+import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
@@ -115,7 +122,7 @@ function DashboardContent() {
     checkAndAwardItems(realMaxStreak);
   }, [realMaxStreak, submissions, checkAndAwardItems]);
 
-  const goalsDueToday = goals.filter((g) => isGoalDue(g));
+  const goalsDueToday = goals.filter((g) => isGoalDue(g, new Date(), getSubmissionsForGoal(g.id)));
   const goalsDoneToday = goalsDueToday.filter(isGoalCompletedInCurrentWindow).length;
 
   useEffect(() => {
@@ -150,7 +157,7 @@ function DashboardContent() {
   const displayStreakByGoalId = new Map(goalStreaks.map((entry) => [entry.goal.id, entry.displayStreak]));
   const sortedGoalStreaks = [...goalStreaks].sort((a, b) => b.displayStreak - a.displayStreak);
   const gardenSnapshotPlants = sortedGoalStreaks.map((entry) => {
-    const due = isGoalDue(entry.goal);
+    const due = isGoalDue(entry.goal, new Date(), getSubmissionsForGoal(entry.goal.id));
     const watered = isGoalCompletedInCurrentWindow(entry.goal);
     return {
       id: entry.goal.id,
@@ -200,7 +207,7 @@ function DashboardContent() {
                 {welcomePlan.id === "free" && (
                   <>
                     Start in Goal Garden: add a goal, use <strong>Get AI photo ideas</strong> for prompts, then prove it
-                    on due days to grow your plants.
+                    when it fits your week to grow your plants.
                   </>
                 )}
                 {welcomePlan.id === "pro" && (
@@ -272,11 +279,10 @@ function DashboardContent() {
             {goals.length === 0 ? (
               "Add goals in the Garden to start tracking streaks and watering."
             ) : displayTotalDueToday === 0 ? (
-              "No goals due today — add more in the Garden or check back on due days."
+              "Nothing to prove right now — add goals in the Garden or check back after your daily reminder."
             ) : (
               <>
-                Watered today: {displayGoalsDoneToday}/{displayTotalDueToday} · Top streak:{" "}
-                {displayMaxStreak} day{displayMaxStreak === 1 ? "" : "s"}
+                Proved today: {displayGoalsDoneToday}/{displayTotalDueToday} · Top streak: {displayMaxStreak}
               </>
             )}
           </p>
@@ -490,7 +496,7 @@ function DashboardContent() {
                         <CheckCircle2 className="h-4 w-4" />
                         Done
                       </span>
-                    ) : isWithinSubmissionWindow(goal) && todayProof?.imageDataUrl ? (
+                    ) : isWithinSubmissionWindow(goal, new Date(), subs) && todayProof?.imageDataUrl ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
                         className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
@@ -502,7 +508,7 @@ function DashboardContent() {
                           className="h-full w-full object-cover"
                         />
                       </Link>
-                    ) : isWithinSubmissionWindow(goal) ? (
+                    ) : isWithinSubmissionWindow(goal, new Date(), subs) ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
                         className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
@@ -512,7 +518,7 @@ function DashboardContent() {
                       </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
-                        {getSubmissionWindowMessage(goal) ?? "Not due yet"}
+                        {getSubmissionWindowMessage(goal, new Date(), subs) ?? "Not available"}
                       </span>
                     )}
                   </li>
@@ -520,10 +526,10 @@ function DashboardContent() {
               })}
               {weeklyGoals.map((goal) => {
                 const subs = getSubmissionsForGoal(goal.id);
-                const thisWeekProof = subs.some((s) => {
-                  const d = safeParseISO(s.date);
-                  return !!d && isThisWeek(d) && s.status === "verified";
-                });
+                const tw = effectiveTimesPerWeek(goal);
+                const weekVerifiedCount = countVerifiedInCalendarWeek(subs, new Date());
+                const weekMet = weekVerifiedCount >= tw;
+                const thisWeekProof = weekMet;
                 const thisWeekSub = subs.find((s) => {
                   const d = safeParseISO(s.date);
                   return !!d && isThisWeek(d) && s.imageDataUrl;
@@ -532,10 +538,10 @@ function DashboardContent() {
                   const d = safeParseISO(s.date);
                   return !!d && isThisWeek(d) && s.status === "verified" && !!s.imageDataUrl;
                 });
-                const due = isGoalDue(goal);
+                const due = isGoalDue(goal, new Date(), subs);
                 const dueLabel = getNextDueLabel(goal);
-                const canSubmitNow = isWithinSubmissionWindow(goal);
-                const windowMessage = getSubmissionWindowMessage(goal);
+                const canSubmitNow = isWithinSubmissionWindow(goal, new Date(), subs);
+                const windowMessage = getSubmissionWindowMessage(goal, new Date(), subs);
                 return (
                   <li
                     key={goal.id}
