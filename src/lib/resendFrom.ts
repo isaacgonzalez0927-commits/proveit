@@ -1,7 +1,6 @@
 /**
- * Resend `onboarding@resend.dev` is a sandbox: you can only send to your own Resend account email.
- * To email real users (password reset, confirmations), set RESEND_FROM_EMAIL to an address on your
- * verified domain in the Resend dashboard (e.g. Proveit <noreply@yourdomain.com>).
+ * Resend’s default `onboarding@resend.dev` is a sandbox: mail only reaches the address on your Resend account.
+ * For real users, set RESEND_FROM_EMAIL to a sender on a domain you verified in Resend (e.g. Proveit <noreply@yoursite.com>).
  */
 export function getResendFromOrProductionError():
   | { ok: true; from: string }
@@ -14,7 +13,7 @@ export function getResendFromOrProductionError():
       ok: false,
       status: 503,
       error:
-        "Email sender is not configured. In Vercel (or your host), set RESEND_FROM_EMAIL to an address on your verified Resend domain — for example: Proveit <noreply@yourdomain.com>. Without this, Resend only allows the test inbox (your own email).",
+        "Production email needs a real sender address. In Vercel: Project, then Settings, then Environment Variables. Add RESEND_FROM_EMAIL (copy this name exactly) with a value like: Proveit <noreply@yourdomain.com> using a domain you verified in Resend. Until then, Resend only delivers to your own test inbox, not your users.",
     };
   }
 

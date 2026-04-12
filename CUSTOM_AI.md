@@ -58,18 +58,29 @@ When someone adds a goal, they must **pick one of 2–3 AI-generated photo ideas
 ### Endpoint your AI can expose
 
 - **Method:** `POST`
-- **Request body (JSON):** `{ "title": "Go to gym" }` (goal title only)
-- **Response (JSON):** `{ "suggestions": ["...", "...", "..."] }` — **2–3** short, actionable strings (what to photograph)
+- **Request body (JSON):** `{ "title": "Go to gym", "goalTitle": "Go to gym" }` (same string; some backends read one or the other)
+- **Response:** any JSON the parser can read **2–3** short, actionable strings from, including:
+  - `{ "suggestions": ["...", "...", "..."] }`
+  - `{ "prompts": [...] }`, `{ "ideas": [...] }`, `{ "photoIdeas": [...] }`, or similar keys matching `suggestions|prompts|ideas|photo|proof|options|hints`
+  - `{ "data": { "suggestions": [...] } }` (nested `data`, `result`, `payload`, `output`, `body`, `response`)
+  - A **top-level JSON array** of strings
+  - An array of objects like `{ "text": "..." }` or `{ "prompt": "..." }`
+  - OpenAI-style `{ "choices": [{ "message": { "content": "<JSON string of one of the above>" } }] }`
 
 ### Env vars (optional)
 
 ```bash
 CUSTOM_AI_SUGGESTIONS_URL=https://your-api.com/goal-proof-suggestions
+# Same purpose if you prefer another name (first non-empty wins):
+# CUSTOM_AI_GOAL_SUGGESTIONS_URL=...
+# AI_PROOF_SUGGESTIONS_URL=...
 # Optional Bearer token:
 CUSTOM_AI_SUGGESTIONS_API_KEY=your-secret
 ```
 
-If `CUSTOM_AI_SUGGESTIONS_URL` is **not** set, the app uses **placeholder** suggestions so you can ship the UI and DB first, then swap in the real model later.
+**`CUSTOM_AI_VERIFY_URL` does not supply goal photo ideas.** You still need one of the suggestion URLs above (or the app keeps the built-in fallback lines).
+
+If no suggestion URL is set (or the HTTP call / JSON shape fails), the app uses **short fallback** prompts so the UI still works; check server logs for `[proofSuggestions]` if your API returns 200 but prompts stay generic.
 
 ### Verification API (reminder)
 

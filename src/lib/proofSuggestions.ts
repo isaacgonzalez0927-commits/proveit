@@ -1,22 +1,27 @@
 /**
  * Proof photo prompts for a goal title.
- * Replace mock with your AI by setting CUSTOM_AI_SUGGESTIONS_URL (server-side POST JSON { title }, expect { suggestions: string[] }).
+ * Wire your model with CUSTOM_AI_SUGGESTIONS_URL (server POST JSON { title }, JSON response — see extractSuggestionStringsFromJson).
  */
 
 export const PROOF_SUGGESTIONS_MIN = 2;
 export const PROOF_SUGGESTIONS_MAX = 3;
 
-/** Deterministic placeholder until your model is wired in. */
+const NEST_KEYS = ["data", "result", "payload", "output", "body", "response"] as const;
+
+/** Keys whose values are likely a string[] of prompts from common AI gateways. */
+const ARRAY_KEY_HINT = /suggestions|prompts|ideas|photo|proof|options|hints/i;
+
+/** Deterministic fallback when no custom URL is set or the upstream call fails. */
 export function mockProofSuggestionsForTitle(title: string): string[] {
   const t = title.trim() || "this goal";
   return [
-    `Take a selfie or photo that clearly shows you doing: ${t}`,
-    `Take a picture of your environment, tools, or setup related to: ${t}`,
-    `Take a photo of you in the middle of the activity for: ${t}`,
+    `Show yourself actively doing: ${t}`,
+    `Photo of your space, tools, or setup for: ${t}`,
+    `Capture a mid-action moment for: ${t}`,
   ];
 }
 
-function normalizeSuggestionList(raw: unknown): string[] | null {
+export function normalizeSuggestionList(raw: unknown): string[] | null {
   if (!Array.isArray(raw)) return null;
   const out = raw
     .filter((x): x is string => typeof x === "string")
@@ -27,15 +32,88 @@ function normalizeSuggestionList(raw: unknown): string[] | null {
 }
 
 /**
+ * Pull 2–3 proof strings from flexible JSON (OpenAI wrappers, nested `data`, alternate keys).
+ * Export for unit tests.
+ */
+export function extractSuggestionStringsFromJson(data: unknown): string[] | null {
+  if (data == null) return null;
+
+  if (Array.isArray(data)) {
+    if (data.every((x): x is string => typeof x === "string")) {
+      return normalizeSuggestionList(data);
+    }
+    const fromObjects = data
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+          const o = item as Record<string, unknown>;
+          for (const k of ["text", "prompt", "label", "title", "suggestion", "content", "message"]) {
+            const v = o[k];
+            if (typeof v === "string" && v.trim()) return v.trim();
+          }
+        }
+        return "";
+      })
+      .filter(Boolean);
+    return normalizeSuggestionList(fromObjects);
+  }
+
+  if (typeof data !== "object") return null;
+  const o = data as Record<string, unknown>;
+
+  for (const [k, v] of Object.entries(o)) {
+    if (!ARRAY_KEY_HINT.test(k)) continue;
+    const list = normalizeSuggestionList(v);
+    if (list) return list;
+  }
+
+  for (const nest of NEST_KEYS) {
+    const inner = o[nest];
+    if (inner && typeof inner === "object") {
+      const list = extractSuggestionStringsFromJson(inner);
+      if (list) return list;
+    }
+  }
+
+  const choices = o.choices;
+  if (Array.isArray(choices) && choices[0] && typeof choices[0] === "object") {
+    const content = (choices[0] as { message?: { content?: unknown } }).message?.content;
+    if (typeof content === "string") {
+      try {
+        return extractSuggestionStringsFromJson(JSON.parse(content) as unknown);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveCustomSuggestionsUrl(): string | undefined {
+  const candidates = [
+    process.env.CUSTOM_AI_SUGGESTIONS_URL,
+    process.env.CUSTOM_AI_GOAL_SUGGESTIONS_URL,
+    process.env.AI_PROOF_SUGGESTIONS_URL,
+  ];
+  for (const c of candidates) {
+    const t = c?.trim();
+    if (t) return t;
+  }
+  return undefined;
+}
+
+/**
  * Server-only: call external AI or fall back to mock.
- * Env: CUSTOM_AI_SUGGESTIONS_URL — POST { "title": string }, JSON { "suggestions": string[] } (2–3 items).
+ * Env (first set wins): CUSTOM_AI_SUGGESTIONS_URL | CUSTOM_AI_GOAL_SUGGESTIONS_URL | AI_PROOF_SUGGESTIONS_URL
+ * POST JSON { title, goalTitle } (same string) for compatibility with different backends.
  * Optional: CUSTOM_AI_SUGGESTIONS_API_KEY as Bearer token.
  */
 export async function getProofSuggestionsForTitle(title: string): Promise<string[]> {
   const trimmed = title.trim();
   if (!trimmed) return mockProofSuggestionsForTitle("your goal");
 
-  const url = process.env.CUSTOM_AI_SUGGESTIONS_URL?.trim();
+  const url = resolveCustomSuggestionsUrl();
   if (!url) {
     return mockProofSuggestionsForTitle(trimmed);
   }
@@ -48,7 +126,7 @@ export async function getProofSuggestionsForTitle(title: string): Promise<string
     const res = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({ title: trimmed }),
+      body: JSON.stringify({ title: trimmed, goalTitle: trimmed }),
     });
 
     if (!res.ok) {
@@ -56,9 +134,14 @@ export async function getProofSuggestionsForTitle(title: string): Promise<string
       return mockProofSuggestionsForTitle(trimmed);
     }
 
-    const data = (await res.json()) as { suggestions?: unknown };
-    const list = normalizeSuggestionList(data.suggestions);
+    const data: unknown = await res.json().catch(() => null);
+    const list = extractSuggestionStringsFromJson(data);
     if (list) return list;
+
+    console.warn(
+      "[proofSuggestions] Custom AI JSON had no usable prompt list (expected suggestions[], prompts[], nested data.*, etc.). Keys:",
+      data && typeof data === "object" ? Object.keys(data as object).join(", ") : typeof data
+    );
   } catch (e) {
     console.warn("[proofSuggestions] Custom AI error, using mock:", e);
   }
