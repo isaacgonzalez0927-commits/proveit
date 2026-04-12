@@ -22,6 +22,9 @@ export interface User {
   email: string;
   plan: PlanId;
   createdAt: string;
+  /** Set while a one-time Premium trial is counting down (ISO). */
+  premiumTrialEndsAt?: string | null;
+  premiumTrialUsed?: boolean;
 }
 
 export type GoalFrequency = "daily" | "weekly";
@@ -117,6 +120,7 @@ export const PLANS: Plan[] = [
     priceYearly: 99,
     maxGoals: -1,
     features: [
+      "7-day free trial once per account (then monthly/yearly price)",
       "Unlimited goals",
       "All 8 plant styles (including cactus)",
       "All 10 accent themes",

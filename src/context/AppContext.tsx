@@ -60,6 +60,11 @@ import {
   TOUR_DONE_KEY,
   TOUR_DONE_VERSION,
 } from "@/lib/tourStorage";
+import {
+  canStartPremiumTrial,
+  expireLocalPremiumTrialIfNeeded,
+  trialEndsAtFromNow,
+} from "@/lib/premiumTrial";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -73,7 +78,11 @@ interface AppContextValue {
   submissions: ProofSubmission[];
   authReady: boolean;
   setUser: (user: StoredUser | null) => void;
-  setPlan: (plan: PlanId, billing?: "monthly" | "yearly") => void | Promise<void>;
+  setPlan: (
+    plan: PlanId,
+    billing?: "monthly" | "yearly",
+    options?: { startPremiumTrial?: boolean }
+  ) => void | Promise<void>;
   addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Promise<{ created: Goal | null; error?: string }>;
   updateGoal: (id: string, updates: Partial<Goal>) => void | Promise<void>;
   removeGoal: (id: string) => void | Promise<void>;
@@ -145,6 +154,19 @@ function mapGoalFromApi(g: Record<string, unknown>): Goal {
   };
 }
 
+type ApiProfileLike = {
+  id?: string;
+  email?: string;
+  plan?: unknown;
+  planBilling?: "monthly" | "yearly";
+  createdAt?: string;
+  name?: string;
+  username?: string;
+  contactEmail?: string;
+  premiumTrialEndsAt?: string | null;
+  premiumTrialUsed?: boolean;
+};
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const useSupabase = useSupabaseConfigured();
   const { user: supabaseUser, loading: authLoading, supabase } = useSupabaseAuth();
@@ -191,6 +213,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           name?: string;
           username?: unknown;
           contactEmail?: unknown;
+          premiumTrialEndsAt?: string | null;
+          premiumTrialUsed?: boolean;
         };
         const profileRaw =
           profileWrap?.ok && profileWrap.body && typeof profileWrap.body === "object"
@@ -217,6 +241,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               name: p.name ?? storedName,
               username: typeof p.username === "string" ? p.username : undefined,
               contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
+              premiumTrialEndsAt:
+                typeof p.premiumTrialEndsAt === "string"
+                  ? p.premiumTrialEndsAt
+                  : p.premiumTrialEndsAt === null
+                    ? null
+                    : undefined,
+              premiumTrialUsed: p.premiumTrialUsed === true,
             }
           : {
               id: supabaseUser.id,
@@ -227,6 +258,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               name: storedName,
               username: undefined as string | undefined,
               contactEmail: undefined as string | undefined,
+              premiumTrialEndsAt: undefined,
+              premiumTrialUsed: false,
             };
         setUserState(profileUser);
 
@@ -299,7 +332,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!useSupabase) {
-      setUserState(getStoredUser());
+      const raw = getStoredUser();
+      setUserState(raw ? expireLocalPremiumTrialIfNeeded(raw) : null);
       // Restore locally stored plant style selections for demo / no-Supabase mode
       setGoalPlantSelections(getStoredGoalPlantSelections());
       const devGuestMode =
@@ -383,24 +417,92 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setPlan = useCallback(
-    async (plan: PlanId, billing: "monthly" | "yearly" = "monthly") => {
+    async (
+      plan: PlanId,
+      billing: "monthly" | "yearly" = "monthly",
+      options?: { startPremiumTrial?: boolean }
+    ) => {
       if (!user) return;
+      const startTrial =
+        plan === "premium" &&
+        options?.startPremiumTrial === true &&
+        canStartPremiumTrial(user);
+
+      const buildLocalNext = (): StoredUser => {
+        if (startTrial) {
+          return {
+            ...user,
+            plan: "premium",
+            planBilling: billing,
+            premiumTrialEndsAt: trialEndsAtFromNow(),
+            premiumTrialUsed: true,
+            premiumTrialRevertPlan: user.plan === "pro" ? "pro" : "free",
+          };
+        }
+        const next: StoredUser = {
+          ...user,
+          plan,
+          planBilling: plan === "free" ? undefined : billing,
+        };
+        if (plan === "free" || plan === "pro") {
+          next.premiumTrialEndsAt = undefined;
+          next.premiumTrialRevertPlan = undefined;
+        } else if (plan === "premium" && user.plan !== "premium") {
+          next.premiumTrialEndsAt = undefined;
+          next.premiumTrialRevertPlan = undefined;
+        }
+        return next;
+      };
+
       if (useSupabase) {
         try {
-          await fetch("/api/profile", {
+          const res = await fetch("/api/profile", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ plan, planBilling: billing }),
+            body: JSON.stringify(
+              startTrial
+                ? { startPremiumTrial: true, planBilling: billing }
+                : { plan, planBilling: billing }
+            ),
           });
+          const data = (await res.json().catch(() => ({}))) as {
+            profile?: ApiProfileLike;
+            error?: string;
+          };
+          if (data.profile && typeof data.profile === "object") {
+            const pr = data.profile;
+            setUserState({
+              id: pr.id ?? user.id,
+              email: pr.email ?? user.email,
+              plan: normalizePlanId(pr.plan),
+              planBilling: pr.plan === "free" ? undefined : pr.planBilling ?? billing,
+              createdAt: pr.createdAt ?? user.createdAt,
+              name: pr.name ?? user.name,
+              username: typeof pr.username === "string" ? pr.username : user.username,
+              contactEmail:
+                typeof pr.contactEmail === "string" ? pr.contactEmail : user.contactEmail,
+              premiumTrialEndsAt:
+                typeof pr.premiumTrialEndsAt === "string"
+                  ? pr.premiumTrialEndsAt
+                  : pr.premiumTrialEndsAt === null
+                    ? null
+                    : undefined,
+              premiumTrialUsed: pr.premiumTrialUsed === true,
+            });
+            markStoredPlanSelection(user.id);
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);
+            }
+            setHasSelectedPlan(true);
+            return;
+          }
+          if (!res.ok) return;
         } catch {
-          // fallback to local
+          // network error — apply local next below
         }
       }
-      setUserState({
-        ...user,
-        plan,
-        planBilling: plan === "free" ? undefined : billing,
-      });
+
+      setUserState(buildLocalNext());
       markStoredPlanSelection(user.id);
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);

@@ -1,11 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeUsername } from "@/lib/usernameAuth";
+import { PREMIUM_TRIAL_DAYS } from "@/lib/premiumTrial";
 
 function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
   if (plan === "premium") return "premium";
   if (plan === "pro") return "pro";
   return "free";
+}
+
+type ProfileRow = Record<string, unknown>;
+
+function premiumTrialEndsAtISO(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + PREMIUM_TRIAL_DAYS);
+  return d.toISOString();
+}
+
+/** If Premium trial ended, persist revert and return the updated row shape. */
+async function expirePremiumTrialIfNeeded(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  data: ProfileRow
+): Promise<ProfileRow> {
+  if (data.plan !== "premium" || data.premium_trial_ends_at == null) return data;
+  const ends = new Date(String(data.premium_trial_ends_at)).getTime();
+  if (Number.isNaN(ends) || Date.now() <= ends) return data;
+  const revert = data.premium_trial_revert_plan === "pro" ? "pro" : "free";
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      plan: revert,
+      premium_trial_ends_at: null,
+      premium_trial_revert_plan: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+  if (error) return data;
+  return {
+    ...data,
+    plan: revert,
+    premium_trial_ends_at: null,
+    premium_trial_revert_plan: null,
+  };
+}
+
+function profileJsonFromRow(data: ProfileRow) {
+  return {
+    id: data.id as string,
+    email: data.email as string,
+    plan: normalizePlan(data.plan),
+    planBilling: (data.plan_billing as string) ?? "monthly",
+    createdAt: data.created_at as string,
+    username: typeof data.username === "string" ? data.username : undefined,
+    contactEmail: typeof data.contact_email === "string" ? data.contact_email : undefined,
+    name: typeof data.name === "string" ? data.name : undefined,
+    premiumTrialEndsAt:
+      data.premium_trial_ends_at != null ? String(data.premium_trial_ends_at) : null,
+    premiumTrialUsed: data.premium_trial_used === true,
+  };
 }
 
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
@@ -14,49 +67,41 @@ export async function GET() {
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ profile: null });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ profile: null });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
   if (error || !data) {
     return NextResponse.json({
       profile: {
         id: user.id,
         email: user.email ?? "",
-        plan: "free",
+        plan: "free" as const,
         planBilling: "monthly",
         createdAt: user.created_at,
         username: undefined as string | undefined,
         contactEmail: undefined as string | undefined,
         name: undefined as string | undefined,
+        premiumTrialEndsAt: null,
+        premiumTrialUsed: false,
       },
     });
   }
 
-  return NextResponse.json({
-    profile: {
-      id: data.id,
-      email: data.email,
-      plan: normalizePlan(data.plan),
-      planBilling: data.plan_billing ?? "monthly",
-      createdAt: data.created_at,
-      username: typeof data.username === "string" ? data.username : undefined,
-      contactEmail: typeof data.contact_email === "string" ? data.contact_email : undefined,
-      name: typeof data.name === "string" ? data.name : undefined,
-    },
-  });
+  const row = await expirePremiumTrialIfNeeded(supabase, user.id, data as ProfileRow);
+  return NextResponse.json({ profile: profileJsonFromRow(row) });
 }
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: Record<string, unknown>;
@@ -66,13 +111,106 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  if (body.startPremiumTrial === true) {
+    const { data: row, error: fetchErr } = await supabase
+      .from("profiles")
+      .select("plan, premium_trial_used, premium_trial_ends_at, premium_trial_revert_plan")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (fetchErr) {
+      return NextResponse.json({ error: fetchErr.message }, { status: 400 });
+    }
+
+    const used = row?.premium_trial_used === true;
+    if (used) {
+      return NextResponse.json(
+        { error: "You already used your Premium free trial." },
+        { status: 400 }
+      );
+    }
+
+    const currentPlan = normalizePlan(row?.plan);
+    if (currentPlan === "premium") {
+      return NextResponse.json({ error: "Already on Premium." }, { status: 400 });
+    }
+
+    const revert: "free" | "pro" = currentPlan === "pro" ? "pro" : "free";
+    const billing =
+      typeof body.planBilling === "string" && ["monthly", "yearly"].includes(body.planBilling)
+        ? body.planBilling
+        : "monthly";
+
+    const trialUpdates: Record<string, unknown> = {
+      plan: "premium",
+      plan_billing: billing,
+      premium_trial_ends_at: premiumTrialEndsAtISO(),
+      premium_trial_used: true,
+      premium_trial_revert_plan: revert,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: updatedRows, error: upError } = await supabase
+      .from("profiles")
+      .update(trialUpdates)
+      .eq("id", user.id)
+      .select("id");
+
+    if (upError) {
+      return NextResponse.json({ error: upError.message }, { status: 400 });
+    }
+
+    if (!updatedRows?.length) {
+      const { error: insError } = await supabase.from("profiles").insert({
+        id: user.id,
+        email: user.email ?? "",
+        ...trialUpdates,
+      });
+      if (insError) {
+        return NextResponse.json({ error: insError.message }, { status: 400 });
+      }
+    }
+
+    const { data: fresh } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    const finalRow = fresh
+      ? await expirePremiumTrialIfNeeded(supabase, user.id, fresh as ProfileRow)
+      : ({ ...row, ...trialUpdates, id: user.id } as ProfileRow);
+
+    return NextResponse.json({
+      ok: true,
+      profile: profileJsonFromRow(finalRow),
+    });
+  }
+
   const plan = body.plan;
   const planBilling = body.planBilling;
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
+  const needsCurrentRow =
+    typeof plan === "string" && ["free", "pro", "premium"].includes(plan);
+  let currentRow: ProfileRow | null = null;
+  if (needsCurrentRow) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("plan, premium_trial_ends_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    currentRow = (data as ProfileRow) ?? null;
+  }
+
+  const prevPlan = normalizePlan(currentRow?.plan);
+
   if (typeof plan === "string" && ["free", "pro", "premium"].includes(plan)) {
     updates.plan = plan;
+    if (plan === "free" || plan === "pro") {
+      updates.premium_trial_ends_at = null;
+      updates.premium_trial_revert_plan = null;
+    }
+    if (plan === "premium" && prevPlan !== "premium") {
+      updates.premium_trial_ends_at = null;
+      updates.premium_trial_revert_plan = null;
+    }
   }
   if (typeof planBilling === "string" && ["monthly", "yearly"].includes(planBilling)) {
     updates.plan_billing = planBilling;
@@ -154,5 +292,13 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true });
+  const { data: fresh } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  const finalRow = fresh
+    ? await expirePremiumTrialIfNeeded(supabase, user.id, fresh as ProfileRow)
+    : null;
+
+  return NextResponse.json({
+    ok: true,
+    ...(finalRow ? { profile: profileJsonFromRow(finalRow) } : {}),
+  });
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Zap, Crown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
+import { canStartPremiumTrial } from "@/lib/premiumTrial";
 import { PLANS, type PlanId } from "@/types";
 
 function PricingContent() {
@@ -15,7 +16,9 @@ function PricingContent() {
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (!user) return;
-    await setPlan(planId, billing);
+    await setPlan(planId, billing, {
+      startPremiumTrial: planId === "premium" && canStartPremiumTrial(user),
+    });
     setPostPlanWelcomeFlag(planId);
     router.push("/dashboard");
   };
@@ -28,7 +31,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Free: 2 goals, 3 plant styles. Pro: 5 goals, 6 plant styles, 6 theme colors, Goal Gallery, Goal Break (7 break-days per goal per month). Premium: unlimited goals, all 8 plant styles, all 10 theme colors.
+            Free: 2 goals, 3 plant styles. Pro: 5 goals, 6 plant styles, 6 theme colors, Goal Gallery, Goal Break (7 break-days per goal per month). Premium: unlimited goals, all 8 plant styles, all 10 theme colors. New to Premium? One 7-day free trial per account (then billed at the price you pick, or switch plans anytime).
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <button
@@ -69,6 +72,7 @@ function PricingContent() {
               currentPlanId={user?.plan ?? null}
               currentPlanBilling={user?.planBilling ?? "monthly"}
               hasUser={!!user}
+              canStartPremiumTrial={canStartPremiumTrial(user)}
               onSelect={() => handleSelectPlan(plan.id as PlanId)}
             />
           ))}
@@ -88,6 +92,7 @@ function PricingCard({
   currentPlanId,
   currentPlanBilling,
   hasUser,
+  canStartPremiumTrial,
   onSelect,
 }: {
   plan: (typeof PLANS)[0];
@@ -95,6 +100,7 @@ function PricingCard({
   currentPlanId: PlanId | null;
   currentPlanBilling: "monthly" | "yearly";
   hasUser: boolean;
+  canStartPremiumTrial: boolean;
   onSelect: () => void;
 }) {
   const price =
@@ -178,7 +184,11 @@ function PricingCard({
                     : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             }`}
           >
-            {isFree ? "Get started free" : "Upgrade"}
+            {isFree
+              ? "Get started free"
+              : isPremium && canStartPremiumTrial
+                ? "Start 7-day free trial"
+                : "Upgrade"}
           </Link>
         )}
       </div>

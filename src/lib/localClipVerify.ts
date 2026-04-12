@@ -57,9 +57,13 @@ export async function verifyWithLocalClip(opts: {
   const scores = await pipe(opts.imageDataUrl, labels);
   const sorted = [...scores].sort((a, b) => b.score - a.score);
   const top = sorted[0] ?? { label: "unknown", score: 0 };
+  // Same rule as AIVerificationWidget: sum of scores on goal-matching labels vs threshold.
+  const confidence = scores
+    .filter((s) => positiveLabels.includes(s.label))
+    .reduce((sum, s) => sum + s.score, 0);
   return {
-    verified: positiveLabels.includes(top.label) && top.score >= threshold,
-    confidence: top.score,
+    verified: confidence >= threshold,
+    confidence,
     topLabel: top.label,
     allScores: sorted,
   };

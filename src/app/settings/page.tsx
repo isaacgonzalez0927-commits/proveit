@@ -199,6 +199,13 @@ export default function SettingsPage() {
           plan: normalizePlanId(p.plan),
           planBilling: p.planBilling ?? user.planBilling,
           createdAt: typeof p.createdAt === "string" ? p.createdAt : user.createdAt,
+          premiumTrialEndsAt:
+            typeof p.premiumTrialEndsAt === "string"
+              ? p.premiumTrialEndsAt
+              : p.premiumTrialEndsAt === null
+                ? null
+                : undefined,
+          premiumTrialUsed: p.premiumTrialUsed === true,
         });
       }
       setSettingsMessage("Contact email saved.");

@@ -92,7 +92,24 @@ export async function POST(request: NextRequest) {
   });
 
   if (linkError) {
-    return NextResponse.json({ message: "Check your email for the reset link." }, { status: 200 });
+    const msg = typeof linkError.message === "string" ? linkError.message : String(linkError ?? "");
+    const likelyMissingUser = /user not found|not found|does not exist|no user|invalid login|email address.*invalid|signups not allowed/i.test(
+      msg
+    );
+    if (likelyMissingUser) {
+      return NextResponse.json(
+        { message: "If an account exists, you’ll get an email shortly." },
+        { status: 200 }
+      );
+    }
+    console.error("Password reset generateLink:", linkError);
+    return NextResponse.json(
+      {
+        error:
+          "We couldn’t create a reset link right now. Try again in a few minutes. If it keeps failing, the app’s email or auth setup may need fixing.",
+      },
+      { status: 502 }
+    );
   }
 
   const props = linkData && typeof linkData === "object" && "properties" in linkData ? (linkData as { properties?: { action_link?: string } }).properties : undefined;
@@ -100,7 +117,14 @@ export async function POST(request: NextRequest) {
     props?.action_link ?? (linkData as { action_link?: string } | null)?.action_link;
 
   if (!actionLink || typeof actionLink !== "string") {
-    return NextResponse.json({ message: "Check your email for the reset link." }, { status: 200 });
+    console.error("Password reset: generateLink returned no action_link", linkData);
+    return NextResponse.json(
+      {
+        error:
+          "We couldn’t create a reset link right now. Try again later or contact support.",
+      },
+      { status: 502 }
+    );
   }
 
   if (actionLink.startsWith("/")) {

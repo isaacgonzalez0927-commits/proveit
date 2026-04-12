@@ -47,6 +47,7 @@ import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
+import { isPremiumTrialActive } from "@/lib/premiumTrial";
 
 function DashboardContent() {
   const router = useRouter();
@@ -245,6 +246,23 @@ function DashboardContent() {
             >
               <X className="h-5 w-5" />
             </button>
+          </div>
+        )}
+        {user && isPremiumTrialActive(user) && user.premiumTrialEndsAt && (
+          <div
+            className="mb-4 rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
+            role="status"
+          >
+            <span className="font-semibold">Premium trial active.</span>{" "}
+            Full access until{" "}
+            <time dateTime={user.premiumTrialEndsAt}>
+              {format(new Date(user.premiumTrialEndsAt), "MMM d, yyyy")}
+            </time>
+            . After that, your plan returns to what you had before the trial unless you keep Premium from{" "}
+            <Link href="/pricing" className="font-medium underline underline-offset-2">
+              Plan
+            </Link>
+            .
           </div>
         )}
         <div className="mb-5">

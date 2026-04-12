@@ -11,6 +11,7 @@ import {
   usernameToAuthEmail,
 } from "@/lib/usernameAuth";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
+import { canStartPremiumTrial } from "@/lib/premiumTrial";
 import {
   PENDING_PLAN_AFTER_TOUR_KEY,
   TOUR_DONE_KEY,
@@ -36,7 +37,8 @@ function LandingContent() {
   const [loginError, setLoginError] = useState("");
   const [authMode, setAuthMode] = useState<AuthMode>("signup");
   const [loading, setLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
+  /** Non-null = show success-style reset feedback (message from API when available). */
+  const [resetFeedback, setResetFeedback] = useState<string | null>(null);
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -180,7 +182,7 @@ function LandingContent() {
       return;
     }
     setLoginError("");
-    setResetSent(false);
+    setResetFeedback(null);
 
     if (useSupabase && supabase) {
       setLoading(true);
@@ -296,6 +298,7 @@ function LandingContent() {
     if (!useSupabase || !supabase) return;
     setLoading(true);
     setLoginError("");
+    setResetFeedback(null);
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const isEmail = raw.includes("@");
@@ -310,9 +313,11 @@ function LandingContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: lower, origin }),
         });
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
         if (res.ok) {
-          setResetSent(true);
+          setResetFeedback(
+            typeof data.message === "string" ? data.message : "Check your email for the reset link."
+          );
           return;
         }
         if (res.status === 501) {
@@ -323,7 +328,9 @@ function LandingContent() {
             setLoginError(error.message);
             return;
           }
-          setResetSent(true);
+          setResetFeedback(
+            "If your account uses this email, check your inbox (and spam). If nothing arrives, the project may need Resend configured (RESEND_API_KEY + RESEND_FROM_EMAIL) so reset emails can send reliably."
+          );
           return;
         }
         setLoginError(typeof data.error === "string" ? data.error : "Something went wrong. Try again.");
@@ -340,9 +347,11 @@ function LandingContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: u, origin }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
       if (res.ok) {
-        setResetSent(true);
+        setResetFeedback(
+          typeof data.message === "string" ? data.message : "Check your email for the reset link."
+        );
         return;
       }
       if (res.status === 400 && typeof data.error === "string") {
@@ -350,17 +359,12 @@ function LandingContent() {
         return;
       }
       if (res.status === 501) {
-        const { error } = await supabase.auth.resetPasswordForEmail(usernameToAuthEmail(u), {
-          redirectTo: origin ? `${origin}/api/auth/callback?next=/reset-password` : undefined,
-        });
-        if (error) {
-          setLoginError(error.message);
-          return;
-        }
-        setResetSent(true);
+        setLoginError(
+          "Password reset by username needs the server to send email (Resend + Supabase service role). Until that’s set up, use “Forgot password” with the real email you added in Settings, or contact support."
+        );
         return;
       }
-      setLoginError("Something went wrong. Try again.");
+      setLoginError(typeof data.error === "string" ? data.error : "Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }
@@ -368,11 +372,13 @@ function LandingContent() {
 
   const handleChoosePlan = useCallback(
     async (planId: PlanId) => {
-      await setPlan(planId);
+      await setPlan(planId, "monthly", {
+        startPremiumTrial: planId === "premium" && canStartPremiumTrial(user),
+      });
       setPostPlanWelcomeFlag(planId);
       router.push("/dashboard");
     },
-    [router, setPlan]
+    [router, setPlan, user]
   );
 
   if (!authReady) {
@@ -546,7 +552,11 @@ function LandingContent() {
                       Forgot password?
                     </button>
                   )}
-                  {resetSent && <p className="text-[14px] text-prove-600 dark:text-prove-400" role="status">Check your email.</p>}
+                  {resetFeedback && (
+                    <p className="text-[14px] text-prove-600 dark:text-prove-400" role="status">
+                      {resetFeedback}
+                    </p>
+                  )}
                   <button
                     type="submit"
                     disabled={loading}
@@ -588,7 +598,7 @@ function LandingContent() {
                 Choose your plan
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                Start free — no card required. Upgrade whenever you’re ready.
+                Start free — no card required. Premium includes a one-time 7-day free trial (then the plan price below, or change plans anytime).
               </p>
               <div className="mt-4 min-h-0 flex-1 overflow-y-auto space-y-3 pb-2">
                 {PLANS.map((plan) => (
@@ -628,7 +638,11 @@ function LandingContent() {
                         ))}
                       </ul>
                       <p className="mt-3 text-[13px] font-semibold text-prove-600 dark:text-prove-400">
-                        {plan.id === "free" ? "Get started free →" : `Choose ${plan.name} →`}
+                        {plan.id === "free"
+                          ? "Get started free →"
+                          : plan.id === "premium" && user && canStartPremiumTrial(user)
+                            ? "Start 7-day Premium trial →"
+                            : `Choose ${plan.name} →`}
                       </p>
                     </div>
                   </button>

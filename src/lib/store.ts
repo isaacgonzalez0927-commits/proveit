@@ -26,6 +26,12 @@ export interface StoredUser {
   username?: string;
   /** Optional real email for password reset and notices (profiles.contact_email). */
   contactEmail?: string;
+  /** ISO end time for active Premium trial (Supabase + local demo). */
+  premiumTrialEndsAt?: string | null;
+  /** True after the one-time Premium trial was started (never reset). */
+  premiumTrialUsed?: boolean;
+  /** Plan to restore when a Premium trial expires. */
+  premiumTrialRevertPlan?: "free" | "pro";
 }
 
 function getStoredUser(): StoredUser | null {
@@ -37,6 +43,15 @@ function getStoredUser(): StoredUser | null {
     return {
       ...parsed,
       plan: normalizePlanId(parsed.plan),
+      premiumTrialEndsAt:
+        typeof parsed.premiumTrialEndsAt === "string" ? parsed.premiumTrialEndsAt : undefined,
+      premiumTrialUsed: parsed.premiumTrialUsed === true,
+      premiumTrialRevertPlan:
+        parsed.premiumTrialRevertPlan === "pro"
+          ? "pro"
+          : parsed.premiumTrialRevertPlan === "free"
+            ? "free"
+            : undefined,
     };
   } catch {
     return null;
