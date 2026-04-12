@@ -6,7 +6,7 @@
 /** Strip whitespace and optional wrapping quotes (common when pasting in Vercel). */
 export function trimEnvEmail(value: string | undefined): string | undefined {
   if (value == null) return undefined;
-  let t = value.trim();
+  let t = value.replace(/^\uFEFF/, "").replace(/\u200b/g, "").trim();
   if (t.length === 0) return undefined;
   if (
     (t.startsWith('"') && t.endsWith('"')) ||
@@ -17,19 +17,21 @@ export function trimEnvEmail(value: string | undefined): string | undefined {
   return t.length > 0 ? t : undefined;
 }
 
-/** First non-empty env wins (people mistype or use NEXT_PUBLIC by habit). */
+/**
+ * First non-empty env wins. Each name must be read as a **static** `process.env.NAME`
+ * expression — Next.js inlines those at build time; `process.env[variable]` loops break in production.
+ */
 export function readResendFromEnv(): string | undefined {
-  const keys = [
-    "RESEND_FROM_EMAIL",
-    "RESEND_FROM",
-    "EMAIL_FROM",
-    "MAIL_FROM",
-    "NEXT_PUBLIC_RESEND_FROM_EMAIL",
-  ] as const;
-  for (const k of keys) {
-    const v = trimEnvEmail(process.env[k]);
-    if (v) return v;
-  }
+  const a = trimEnvEmail(process.env.RESEND_FROM_EMAIL);
+  if (a) return a;
+  const b = trimEnvEmail(process.env.RESEND_FROM);
+  if (b) return b;
+  const c = trimEnvEmail(process.env.EMAIL_FROM);
+  if (c) return c;
+  const d = trimEnvEmail(process.env.MAIL_FROM);
+  if (d) return d;
+  const e = trimEnvEmail(process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL);
+  if (e) return e;
   return undefined;
 }
 
