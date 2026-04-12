@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { getResendFromOrProductionError } from "@/lib/resendFrom";
 import { isInternalAuthEmail, normalizeUsername } from "@/lib/usernameAuth";
 
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
@@ -106,7 +107,11 @@ export async function POST(request: NextRequest) {
     actionLink = `${supabaseUrl.replace(/\/$/, "")}${actionLink}`;
   }
 
-  const from = process.env.RESEND_FROM_EMAIL ?? "Proveit <onboarding@resend.dev>";
+  const fromResult = getResendFromOrProductionError();
+  if (!fromResult.ok) {
+    return NextResponse.json({ error: fromResult.error }, { status: fromResult.status });
+  }
+  const from = fromResult.from;
   const escapedLink = actionLink.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
   const html = `
 <!DOCTYPE html>
