@@ -400,7 +400,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               reminderTime: goal.reminderTime,
               reminderDay: goal.reminderDay,
               reminderDays: goal.reminderDays,
-              gracePeriod: goal.gracePeriod ?? "eod",
               proofSuggestions: goal.proofSuggestions,
               proofRequirement: goal.proofRequirement,
             }),
@@ -466,7 +465,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               reminderTime: updates.reminderTime,
               reminderDay: updates.reminderDay,
               reminderDays: updates.reminderDays,
-              gracePeriod: updates.gracePeriod,
             }),
           });
         } catch {

@@ -130,7 +130,6 @@ export async function POST(request: NextRequest) {
     reminderTime,
     reminderDay,
     reminderDays,
-    gracePeriod,
     proofSuggestions: proofSuggestionsBody,
     proofRequirement: proofRequirementBody,
   } = body;
@@ -205,12 +204,11 @@ export async function POST(request: NextRequest) {
 
   // Daily: only use minimal columns so we never touch reminder_day/reminder_days (avoids "could not find reminder day" on strict or older DBs).
   // Weekly: add reminder columns if present in schema.
-  const weeklyInsert: Record<string, unknown> = { ...minimalInsert, reminder_day: reminderDayVal, reminder_days: reminderDaysVal };
-  const fullInsert: Record<string, unknown> = { ...minimalInsert, grace_period: gracePeriod ?? "eod" };
-  if (!isDaily) {
-    fullInsert.reminder_day = reminderDayVal;
-    fullInsert.reminder_days = reminderDaysVal;
-  }
+  const weeklyInsert: Record<string, unknown> = {
+    ...minimalInsert,
+    reminder_day: reminderDayVal,
+    reminder_days: reminderDaysVal,
+  };
 
   const insertGoal = async (payload: Record<string, unknown>) => {
     return supabase.from("goals").insert(payload).select().single();
@@ -232,7 +230,7 @@ export async function POST(request: NextRequest) {
         const { times_per_week: _tw, ...withoutTimes } = minimalInsert;
         result = await insertGoal(withoutTimes);
       } else if (/grace_period|grace period|reminder|does not exist/i.test(msg)) {
-        result = await insertGoal({ ...minimalInsert, grace_period: gracePeriod ?? "eod" });
+        result = await insertGoal({ ...minimalInsert, grace_period: "eod" });
       }
       if (result.error) {
         error = result.error;
@@ -244,17 +242,17 @@ export async function POST(request: NextRequest) {
       data = result.data as Record<string, unknown>;
     }
   } else {
-    // Weekly: try full (with grace_period and reminder columns), then strip grace_period if DB doesn't have it
-    let result = await insertGoal(fullInsert);
+    // Weekly: reminder columns without grace_period (app no longer exposes grace).
+    let result = await insertGoal(weeklyInsert);
     if (result.error) {
       const msg = result.error.message ?? "";
       if (/proof_suggestions|proof_requirement/i.test(msg)) {
         return NextResponse.json({ error: proofMigrationMessage }, { status: 503 });
       } else if (/times.?per.?week/i.test(msg)) {
-        const { times_per_week: _tw, ...withoutTimes } = fullInsert;
+        const { times_per_week: _tw, ...withoutTimes } = weeklyInsert;
         result = await insertGoal(withoutTimes);
       } else if (/grace_period|grace period|does not exist/i.test(msg)) {
-        result = await insertGoal(weeklyInsert);
+        result = await insertGoal({ ...weeklyInsert, grace_period: "eod" });
       }
       if (result.error) {
         const retryMsg = result.error.message ?? "";
@@ -316,7 +314,6 @@ export async function PATCH(request: NextRequest) {
     const rd = updates.reminderDays;
     dbUpdates.reminder_days = Array.isArray(rd) && rd.length > 0 ? rd : null;
   }
-  if ("gracePeriod" in updates) dbUpdates.grace_period = updates.gracePeriod ?? null;
   if ("timesPerWeek" in updates) {
     const tw = updates.timesPerWeek;
     if (typeof tw === "number" && tw >= 1 && tw <= 7) dbUpdates.times_per_week = tw;

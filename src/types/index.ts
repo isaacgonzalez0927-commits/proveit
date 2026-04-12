@@ -86,7 +86,7 @@ export const PLANS: Plan[] = [
       "Full garden (Seedling → Flowering)",
       "3 plant styles to choose from",
       "Full AI verification (GPT-4 Vision)",
-      "Reminders & custom grace periods",
+      "Daily reminders & simple weekly targets",
       "Full plant growth & streak tracking",
       "Dashboard & watering progress",
     ],

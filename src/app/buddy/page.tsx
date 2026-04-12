@@ -9,7 +9,6 @@ import { useApp } from "@/context/AppContext";
 import { BuddySkeleton } from "@/components/BuddySkeleton";
 import {
   getDueDayName,
-  getReminderDays,
   getSubmissionWindowMessage,
   isGoalDue,
   isWithinSubmissionWindow,
@@ -44,7 +43,8 @@ import {
   PROOF_SUGGESTIONS_MAX,
   PROOF_SUGGESTIONS_MIN,
 } from "@/lib/proofSuggestions";
-import type { Goal, GracePeriod, TimesPerWeek } from "@/types";
+import type { Goal, TimesPerWeek } from "@/types";
+import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
 import {
   TOUR_CHANGED_EVENT,
   TOUR_GARDEN_HINT_KEY,
@@ -56,15 +56,6 @@ import {
 } from "@/lib/tourStorage";
 
 const FIRST_FULL_GROWN_STORAGE_KEY = "proveit_first_full_grown_congrats_shown";
-
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const GRACE_OPTIONS: { value: GracePeriod; label: string }[] = [
-  { value: "1h", label: "1 hour after due" },
-  { value: "3h", label: "3 hours after due" },
-  { value: "6h", label: "6 hours after due" },
-  { value: "12h", label: "12 hours after due" },
-  { value: "eod", label: "Until end of day" },
-];
 
 export default function BuddyPage() {
   const {
@@ -90,12 +81,9 @@ export default function BuddyPage() {
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newDailyTime, setNewDailyTime] = useState("09:00");
-  const [newWeeklyTime, setNewWeeklyTime] = useState("10:00");
-  const [newGracePeriod, setNewGracePeriod] = useState<GracePeriod>(
-    () => getStoredAppSettings().defaultGoalGracePeriod
-  );
-  const [newWeeklyDays, setNewWeeklyDays] = useState<number[]>([]); // which days to remind; starts unselected
+  const [newReminderTime, setNewReminderTime] = useState("09:00");
+  const [newTimesPerWeek, setNewTimesPerWeek] = useState<TimesPerWeek>(3);
+  const [scheduleTourAck, setScheduleTourAck] = useState(false);
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
@@ -109,14 +97,12 @@ export default function BuddyPage() {
   const [proofIdeasEditLoading, setProofIdeasEditLoading] = useState(false);
   const [editDraft, setEditDraft] = useState<{
     reminderTime: string;
-    weeklyDays: number[];
-    gracePeriod: GracePeriod;
+    timesPerWeek: TimesPerWeek;
     proofSuggestions: string[];
     proofRequirement: string;
   }>({
     reminderTime: "09:00",
-    weeklyDays: [],
-    gracePeriod: "eod",
+    timesPerWeek: 3,
     proofSuggestions: [],
     proofRequirement: "",
   });
@@ -170,7 +156,7 @@ export default function BuddyPage() {
       dispatchTourChanged();
       return;
     }
-    if (raw === "goal-schedule" && newWeeklyDays.length > 0) {
+    if (raw === "goal-schedule" && scheduleTourAck) {
       window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-submit");
       dispatchTourChanged();
     }
@@ -179,7 +165,7 @@ export default function BuddyPage() {
     newTitle,
     newProofSuggestions,
     selectedProofRequirement,
-    newWeeklyDays,
+    scheduleTourAck,
   ]);
 
   useEffect(() => {
@@ -326,7 +312,7 @@ export default function BuddyPage() {
     newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN &&
     selectedProofRequirement !== null &&
     isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions);
-  const canSubmitCreateGoalForm = canAddMoreGoals && newWeeklyDays.length > 0 && proofIdeasReadyForCreate;
+  const canSubmitCreateGoalForm = canAddMoreGoals && proofIdeasReadyForCreate;
 
   const resetCreateGoalForm = () => {
     if (typeof window !== "undefined") {
@@ -339,10 +325,9 @@ export default function BuddyPage() {
     const appSettings = getStoredAppSettings();
     setNewTitle("");
     setNewDescription("");
-    setNewDailyTime("09:00");
-    setNewWeeklyTime("10:00");
-    setNewWeeklyDays([]);
-    setNewGracePeriod(appSettings.defaultGoalGracePeriod);
+    setNewReminderTime("09:00");
+    setNewTimesPerWeek(3);
+    setScheduleTourAck(false);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
     setNewProofSuggestions([]);
     setSelectedProofRequirement(null);
@@ -478,8 +463,6 @@ export default function BuddyPage() {
     if (!canSubmitCreateGoalForm) {
       if (!proofIdeasReadyForCreate) {
         setGoalManagerMessage("Tap Get AI photo ideas, then pick how you’ll prove this goal (or fix the title if it changed).");
-      } else if (newWeeklyDays.length === 0) {
-        setGoalManagerMessage("Pick at least one reminder day.");
       } else if (!canAddMoreGoals) {
         setGoalManagerMessage("Goal limit reached for your current plan. Upgrade to add more.");
       }
@@ -493,14 +476,10 @@ export default function BuddyPage() {
       setGoalManagerMessage("Goal limit reached for your current plan. Upgrade to add more.");
       return;
     }
-    const reminderDays =
-      newWeeklyDays.length === 0 ? [] : [...newWeeklyDays].sort((a, b) => a - b);
-    if (reminderDays.length === 0) {
-      setGoalManagerMessage("Pick at least one reminder day.");
-      return;
-    }
-    const timesPerWeek = Math.min(Math.max(reminderDays.length, 1), 7) as TimesPerWeek;
-    const isDaily = reminderDays.length === 7;
+    const tw = newTimesPerWeek;
+    const isDaily = tw >= 7;
+    const reminderDays = isDaily ? undefined : spreadReminderDaysForTimesPerWeek(tw);
+    const reminderDayFirst = isDaily ? 0 : (reminderDays?.[0] ?? 0);
 
     if (
       !selectedProofRequirement ||
@@ -521,11 +500,10 @@ export default function BuddyPage() {
         title: newTitle.trim(),
         description: newDescription.trim() || undefined,
         frequency: isDaily ? "daily" : "weekly",
-        timesPerWeek,
-        reminderTime: isDaily ? newDailyTime : newWeeklyTime,
-        reminderDay: reminderDays[0],
-        reminderDays: isDaily ? undefined : reminderDays,
-        gracePeriod: newGracePeriod,
+        timesPerWeek: isDaily ? 7 : tw,
+        reminderTime: newReminderTime,
+        reminderDay: reminderDayFirst,
+        reminderDays,
         proofSuggestions: newProofSuggestions,
         proofRequirement: selectedProofRequirement,
       });
@@ -555,8 +533,6 @@ export default function BuddyPage() {
 
   const startEditingGoal = (goal: Goal) => {
     setEditingGoalId(goal.id);
-    const days = getReminderDays(goal);
-    const allWeek = days.length === 7;
     const timeNorm = normalizeReminderTimeInput(goal.reminderTime);
     const sugg = goal.proofSuggestions?.length ? [...goal.proofSuggestions] : [];
     const req =
@@ -564,9 +540,8 @@ export default function BuddyPage() {
         ? goal.proofRequirement
         : (sugg[0] ?? "");
     setEditDraft({
-      reminderTime: timeNorm || (allWeek ? "09:00" : "10:00"),
-      weeklyDays: allWeek ? [0, 1, 2, 3, 4, 5, 6] : [...days],
-      gracePeriod: goal.gracePeriod ?? "eod",
+      reminderTime: timeNorm || "09:00",
+      timesPerWeek: effectiveTimesPerWeek(goal),
       proofSuggestions: sugg,
       proofRequirement: req,
     });
@@ -580,11 +555,6 @@ export default function BuddyPage() {
 
   const saveEditingGoal = async (goal: Goal) => {
     setGoalManagerMessage(null);
-    const sorted = [...editDraft.weeklyDays].sort((a, b) => a - b);
-    if (sorted.length === 0) {
-      setGoalManagerMessage("Select at least one day.");
-      return;
-    }
     if (editDraft.proofSuggestions.length >= 2) {
       if (!isProofRequirementAllowed(editDraft.proofRequirement, editDraft.proofSuggestions)) {
         setGoalManagerMessage("Choose one of the suggested photo prompts.");
@@ -592,18 +562,18 @@ export default function BuddyPage() {
       }
     }
 
-    const isDaily = sorted.length === 7;
-    const tw = (isDaily ? 7 : sorted.length) as TimesPerWeek;
+    const tw = editDraft.timesPerWeek;
+    const isDaily = tw >= 7;
+    const reminderDays = isDaily ? ([] as number[]) : spreadReminderDaysForTimesPerWeek(tw);
 
     setIsSavingEdit(true);
     try {
       const schedulePayload = {
         frequency: isDaily ? ("daily" as const) : ("weekly" as const),
-        timesPerWeek: tw,
+        timesPerWeek: isDaily ? 7 : tw,
         reminderTime: editDraft.reminderTime,
-        reminderDay: sorted[0],
-        reminderDays: isDaily ? ([] as number[]) : sorted,
-        gracePeriod: editDraft.gracePeriod,
+        reminderDay: isDaily ? 0 : reminderDays[0]!,
+        reminderDays: isDaily ? ([] as number[]) : reminderDays,
       };
       if (editDraft.proofSuggestions.length >= 2) {
         await updateGoal(goal.id, {
@@ -738,19 +708,17 @@ export default function BuddyPage() {
           }}
         />
       )}
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <div className="mb-8">
-          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+        <div className="mb-8 border-b border-slate-200/80 pb-6 dark:border-slate-800/80">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Goal Garden
           </h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Every goal grows its own plant. Finish goals to water each one and reach the final stage.
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+            Each goal is a plant. Stay on rhythm, submit proof when it&apos;s due, and watch it grow to the final stage.
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            One goal = one plant. You currently have {goals.length} plant{goals.length === 1 ? "" : "s"}.
-          </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {plan.name} plan · {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{plan.maxGoals !== 1 ? "s" : ""}
+          <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-500">
+            {goals.length} active · {plan.name} ({plan.maxGoals === -1 ? "unlimited" : plan.maxGoals} goal
+            {plan.maxGoals === 1 ? "" : "s"})
           </p>
           {showGardenTourHint && !tourSpotlight && (
             <div className="mt-3 rounded-2xl border border-prove-200 bg-prove-50 px-3 py-3 text-xs text-slate-700 dark:border-prove-800 dark:bg-prove-950/40 dark:text-slate-200">
@@ -779,7 +747,7 @@ export default function BuddyPage() {
                     Step 3: Create your first goal
                   </p>
                   <p className="mt-1">
-                    First, give the goal a name that can be proven with a picture. Then pick reminder days/time and tap{" "}
+                    Name the goal, pick an AI photo prompt, set how many times per week and your reminder time, then tap{" "}
                     <span className="font-semibold">Add goal</span>.
                   </p>
                 </>
@@ -809,27 +777,26 @@ export default function BuddyPage() {
               }`}
             >
               <Plus className="h-3.5 w-3.5" />
-              {showCreateForm ? "Close add goal" : "Add goal in garden"}
+              {showCreateForm ? "Close" : "New goal"}
             </button>
           </div>
         </div>
 
-        <div className="mb-5 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl p-3 glass-card">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Goals</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{goals.length}</p>
+        <div className="mb-6 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 px-3 py-3 text-center dark:border-slate-700/90 dark:bg-slate-900/40">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Active</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{goals.length}</p>
           </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900/70 dark:bg-emerald-950/30">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-emerald-700 dark:text-emerald-300">Watered</p>
-            <p className="mt-1 text-lg font-semibold text-emerald-800 dark:text-emerald-200">{hydratedNow}</p>
-            <p className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80">
-              {goalsDueNow > 0 ? `of ${goalsDueNow} due now` : "none due now"}
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 px-3 py-3 text-center dark:border-slate-700/90 dark:bg-slate-900/40">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Watered today</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{hydratedNow}</p>
+            <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-500">
+              {goalsDueNow > 0 ? `${goalsDueNow} due` : "—"}
             </p>
           </div>
-          <div className="rounded-xl border border-fuchsia-200 bg-fuchsia-50/70 p-3 dark:border-fuchsia-900/70 dark:bg-fuchsia-950/30">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-fuchsia-700 dark:text-fuchsia-300">Fully grown</p>
-            <p className="mt-1 text-lg font-semibold text-fuchsia-800 dark:text-fuchsia-200">{fullyGrownCount}</p>
-            <p className="text-[10px] text-fuchsia-700/80 dark:text-fuchsia-300/80">Final stage</p>
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 px-3 py-3 text-center dark:border-slate-700/90 dark:bg-slate-900/40">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fully grown</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{fullyGrownCount}</p>
           </div>
         </div>
 
@@ -842,52 +809,58 @@ export default function BuddyPage() {
         {showCreateForm && (
           <form
             onSubmit={handleCreateGoal}
-            className="mb-6 rounded-2xl p-4 glass-card"
+            className="mb-8 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/70"
           >
-            <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-              Add goal in Garden
-            </h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              You can now create goals without leaving this page.
-            </p>
+            <div className="border-b border-slate-200/80 pb-4 dark:border-slate-700/80">
+              <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+                New goal
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Proof, weekly target, daily reminder — then add to your garden.
+              </p>
+            </div>
             {!canAddMoreGoals && (
-              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-                You&apos;ve reached your goal limit. Upgrade to add more.{" "}
-                <Link href="/pricing" className="font-medium underline">View plans</Link>
+              <p className="mt-4 text-sm text-amber-800 dark:text-amber-200">
+                Goal limit reached.{" "}
+                <Link href="/pricing" className="font-medium underline underline-offset-2">
+                  View plans
+                </Link>
               </p>
             )}
 
-            <input
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Goal title"
-              className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              required
-            />
-            <textarea
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Optional description"
-              rows={2}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+            <div className="mt-5 space-y-2" data-tour="goal-title">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Title</label>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Something you can prove with a photo"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                required
+              />
+              <textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Optional note (only you see this)"
+                rows={2}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
 
-            <div className="mt-4 rounded-xl border border-prove-200/80 bg-prove-50/40 p-3 dark:border-prove-900/50 dark:bg-prove-950/20">
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                How will you prove it?
+            <div
+              className="mt-6 rounded-xl border border-slate-200/90 bg-slate-50/60 p-4 dark:border-slate-600/80 dark:bg-slate-950/40"
+              data-tour="goal-proof-fetch"
+            >
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Photo proof</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                AI suggests short prompts from your title. Pick one; you can refresh or change it later in edit.
               </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-                Tap <span className="font-medium text-slate-700 dark:text-slate-300">Get AI photo ideas</span> — we ask AI
-                for prompts from your title. We pre-select the first; tap another to change. You can switch among those
-                prompts later in goal settings (no free-form text).
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => void fetchProofIdeasForCreate()}
                   disabled={proofSuggestionsLoading}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-prove-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-prove-700 disabled:opacity-60"
                 >
                   {proofSuggestionsLoading ? (
                     <>
@@ -910,19 +883,19 @@ export default function BuddyPage() {
                 )}
               </div>
               {proofSuggestionsError && (
-                <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-200">{proofSuggestionsError}</p>
+                <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-200">{proofSuggestionsError}</p>
               )}
               {newProofSuggestions.length > 0 && (
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-3 space-y-2" data-tour="goal-proof-pick">
                   {newProofSuggestions.map((s, idx) => (
                     <li key={`proof-opt-${idx}`}>
-                      <label className="flex cursor-pointer gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                      <label className="flex cursor-pointer gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                         <input
                           type="radio"
                           name="proof-requirement-new"
                           checked={selectedProofRequirement === s}
                           onChange={() => setSelectedProofRequirement(s)}
-                          className="mt-0.5"
+                          className="mt-1"
                         />
                         <span>{s}</span>
                       </label>
@@ -932,110 +905,68 @@ export default function BuddyPage() {
               )}
             </div>
 
-            <div className="mt-3">
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Reminder days</p>
-              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                Pick the days of the week this goal can be due. You can submit proof on any selected day.
-              </p>
-              {newWeeklyDays.length === 0 && (
-                <p className="mt-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                  Pick at least one day.
+            <div className="mt-6 space-y-4" data-tour="goal-schedule">
+              <div>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Times per week</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  How many check-ins you want (1–7). We space due days automatically. You&apos;ll get a reminder every day at the time below.
                 </p>
-              )}
-              <div className="mt-2 flex flex-wrap gap-2">
-                {DAY_NAMES.map((day, index) => (
-                  <label
-                    key={day}
-                    className={`inline-flex cursor-pointer items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
-                      newWeeklyDays.includes(index)
-                        ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
-                        : "border-slate-300 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={newWeeklyDays.includes(index)}
-                      onChange={(e) => {
-                        if (e.target.checked) setNewWeeklyDays((d) => [...d, index].sort((a, b) => a - b));
-                        else setNewWeeklyDays((d) => d.filter((x) => x !== index));
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => {
+                        setNewTimesPerWeek(n);
+                        setScheduleTourAck(true);
                       }}
-                      className="sr-only"
-                    />
-                    {day.slice(0, 3)}
-                  </label>
-                ))}
+                      className={`min-w-[2.5rem] rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums transition ${
+                        newTimesPerWeek === n
+                          ? "border-prove-600 bg-prove-600 text-white shadow-sm"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setNewWeeklyDays([0, 1, 2, 3, 4, 5, 6])}
-                  className="rounded-lg border border-prove-400 bg-prove-50 px-2.5 py-1 text-[11px] font-semibold text-prove-800 hover:bg-prove-100 dark:border-prove-600 dark:bg-prove-950/50 dark:text-prove-200 dark:hover:bg-prove-900/40"
-                >
-                  Every day
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewWeeklyDays([])}
-                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                  Clear days
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="text-xs text-slate-700 dark:text-slate-300">
-                Reminder time
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                Daily reminder time
                 <input
                   type="time"
-                  value={newWeeklyDays.length === 7 ? newDailyTime : newWeeklyTime}
-                  onChange={(e) =>
-                    newWeeklyDays.length === 7
-                      ? setNewDailyTime(e.target.value)
-                      : setNewWeeklyTime(e.target.value)
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  value={newReminderTime}
+                  onChange={(e) => {
+                    setNewReminderTime(e.target.value);
+                    setScheduleTourAck(true);
+                  }}
+                  className="mt-1.5 w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
                   required
                 />
               </label>
-
-              <label className="text-xs text-slate-700 dark:text-slate-300">
-                Prove it within
-                <select
-                  value={newGracePeriod}
-                  onChange={(e) => setNewGracePeriod(e.target.value as GracePeriod)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {GRACE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
 
-            <div className="mt-3">
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Plant style</p>
+            <div className="mt-6" data-tour="goal-submit">
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Plant</p>
               {goals.length === 0 && (
-                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  Style only affects the final stage — your plant looks the same until it&apos;s fully grown, then shows your chosen style.
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Final look only — growth stages stay the same until the plant is fully grown.
                 </p>
               )}
-              <div className="mt-1 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {plantVariantsForPlan.map((variant) => (
                   <button
                     key={variant}
                     type="button"
                     onClick={() => setNewPlantVariant(variant)}
-                    className={`rounded-md border p-1 ${
+                    className={`rounded-lg border p-1.5 transition ${
                       (Math.min(newPlantVariant, getMaxPlantVariantForPlan(user?.plan ?? "free")) as GoalPlantVariant) === variant
-                        ? "border-emerald-500 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-900/40"
-                        : "border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
+                        ? "border-prove-500 bg-prove-50 ring-1 ring-prove-500/30 dark:border-prove-400 dark:bg-prove-950/50"
+                        : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                     }`}
-                    aria-label={`Select plant style ${variant}`}
+                    aria-label={`Plant style ${variant}`}
                   >
-                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-md bg-slate-50 dark:bg-slate-950">
                       <PlantIllustration
                         stage="flowering"
                         wateringLevel={1}
@@ -1049,20 +980,14 @@ export default function BuddyPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-200/80 pt-5 dark:border-slate-700/80">
               <button
                 type="submit"
                 disabled={isAddingGoal || !canSubmitCreateGoalForm}
-                title={
-                  !proofIdeasReadyForCreate
-                    ? "Get AI photo ideas and choose one prompt first"
-                    : newWeeklyDays.length === 0
-                      ? "Pick at least one reminder day"
-                      : undefined
-                }
-                className="rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
+                title={!proofIdeasReadyForCreate ? "Get AI photo ideas and choose one prompt first" : undefined}
+                className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-prove-700 disabled:opacity-60"
               >
-                {isAddingGoal ? "Adding..." : "Add goal"}
+                {isAddingGoal ? "Adding…" : "Add goal"}
               </button>
               <button
                 type="button"
@@ -1070,7 +995,7 @@ export default function BuddyPage() {
                   setShowCreateForm(false);
                   resetCreateGoalForm();
                 }}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
@@ -1078,14 +1003,11 @@ export default function BuddyPage() {
           </form>
         )}
 
-        <section className="mb-6">
-          <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-            Garden view
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Overview
           </h2>
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            All your plants together in one view.
-          </p>
-          <GardenSnapshot plants={snapshotPlants} className="mt-2" />
+          <GardenSnapshot plants={snapshotPlants} className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/30 p-2 dark:border-slate-700/80 dark:bg-slate-900/30" />
         </section>
 
         {isCreatorAccount && developerSettings.enabled && (
@@ -1177,7 +1099,7 @@ export default function BuddyPage() {
             {garden.map((entry) => (
               <article
                 key={entry.goal.id}
-                className="flex flex-col rounded-2xl p-4 shadow-sm glass-card"
+                className="flex flex-col rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/50"
               >
                 <div className="flex w-full items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -1260,7 +1182,7 @@ export default function BuddyPage() {
 
                 <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
                   Streak: <span className="font-medium text-slate-900 dark:text-slate-200">{entry.streak}</span>{" "}
-                  {getReminderDays(entry.goal).length === 7 ? "days" : "times"}
+                  {effectiveTimesPerWeek(entry.goal) >= 7 ? "days" : "times"}
                   {entry.hasStreakOverride && (
                     <span className="ml-1 text-amber-700 dark:text-amber-300">
                       (real {entry.actualStreak})
@@ -1329,85 +1251,45 @@ export default function BuddyPage() {
                 </div>
 
                 {editingGoalId === entry.goal.id && (
-                  <div className="mt-3 rounded-lg border border-slate-300 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-900/70">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                      Edit goal
-                    </p>
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-600 dark:bg-slate-950/80">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Edit schedule & proof</p>
 
-                    <label className="mt-2 block text-[11px] text-slate-700 dark:text-slate-300">
-                      Reminder time
+                    <div className="mt-3">
+                      <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">Times per week</p>
+                      <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                        Daily reminders; due days spread automatically.
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setEditDraft((prev) => ({ ...prev, timesPerWeek: n }))}
+                            className={`min-w-[2rem] rounded-md border px-2 py-1 text-[11px] font-semibold tabular-nums ${
+                              editDraft.timesPerWeek === n
+                                ? "border-prove-600 bg-prove-600 text-white"
+                                : "border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <label className="mt-3 block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                      Daily reminder time
                       <input
                         type="time"
                         value={editDraft.reminderTime}
                         onChange={(e) =>
                           setEditDraft((prev) => ({ ...prev, reminderTime: e.target.value }))
                         }
-                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        className="mt-1 w-full max-w-[10rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                       />
                     </label>
 
-                    <div className="mt-2">
-                      <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                        Reminder days
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                        Select all seven for a daily goal, or any subset for specific weekdays.
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        {DAY_NAMES.map((day, index) => (
-                          <label
-                            key={day}
-                            className={`inline-flex cursor-pointer items-center rounded-md border px-2 py-1 text-[11px] font-medium ${
-                              editDraft.weeklyDays.includes(index)
-                                ? "border-prove-500 bg-prove-100 text-prove-800 dark:border-prove-500 dark:bg-prove-900/40 dark:text-prove-200"
-                                : "border-slate-300 bg-white text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={editDraft.weeklyDays.includes(index)}
-                              onChange={(e) => {
-                                if (e.target.checked)
-                                  setEditDraft((prev) => ({
-                                    ...prev,
-                                    weeklyDays: [...prev.weeklyDays, index].sort((a, b) => a - b),
-                                  }));
-                                else
-                                  setEditDraft((prev) => ({
-                                    ...prev,
-                                    weeklyDays: prev.weeklyDays.filter((x) => x !== index),
-                                  }));
-                              }}
-                              className="sr-only"
-                            />
-                            {day.slice(0, 3)}
-                          </label>
-                        ))}
-                      </div>
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditDraft((prev) => ({
-                              ...prev,
-                              weeklyDays: [0, 1, 2, 3, 4, 5, 6],
-                            }))
-                          }
-                          className="rounded-md border border-prove-400 bg-prove-50 px-2 py-0.5 text-[10px] font-semibold text-prove-800 dark:border-prove-600 dark:bg-prove-950/50 dark:text-prove-200"
-                        >
-                          All days
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditDraft((prev) => ({ ...prev, weeklyDays: [] }))}
-                          className="rounded-md border border-slate-300 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 rounded-md border border-prove-200/70 bg-prove-50/50 p-2 dark:border-prove-900/40 dark:bg-prove-950/20">
+                    <div className="mt-4 rounded-lg border border-slate-200/90 bg-slate-50/80 p-3 dark:border-slate-600 dark:bg-slate-900/50">
                       <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100">Photo proof</p>
                       <p className="mt-0.5 text-[10px] text-slate-600 dark:text-slate-400">
                         You can only choose from AI suggestions for “{entry.goal.title}”. Refresh loads new options.
@@ -1453,27 +1335,7 @@ export default function BuddyPage() {
                       </button>
                     </div>
 
-                    <label className="mt-2 block text-[11px] text-slate-700 dark:text-slate-300">
-                      Prove it within
-                      <select
-                        value={editDraft.gracePeriod}
-                        onChange={(e) =>
-                          setEditDraft((prev) => ({
-                            ...prev,
-                            gracePeriod: e.target.value as GracePeriod,
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      >
-                        {GRACE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() => saveEditingGoal(entry.goal)}

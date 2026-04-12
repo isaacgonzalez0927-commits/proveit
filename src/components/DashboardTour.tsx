@@ -31,14 +31,14 @@ const TOUR_STEPS: TourStep[] = [
   {
     title: "Goal Garden",
     body:
-      "The Goal Garden tab is your hub: create goals, set reminder days and times, and pick how each plant looks when it’s fully grown.",
+      "The Goal Garden tab is your hub: create goals, set how many times per week you’ll check in, pick a daily reminder time, and choose how each plant looks when it’s fully grown.",
     note: "Tap Next for instructions to open the Garden from the tab bar.",
   },
   {
     title: "Create your first goal",
     body:
       "You’ll blur the screen except the Goal Garden tab — tap it to go there. Then we highlight Add goal in garden so you open the form yourself.",
-    note: "After that: get AI photo ideas, pick a prompt, set days and time, then Add goal.",
+    note: "After that: get AI photo ideas, pick a prompt, set times per week and reminder time, then Add goal.",
   },
   {
     title: "Prove it with a photo",
@@ -50,7 +50,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Watch the garden grow",
     body:
       "Each goal is its own plant card: streak, growth stage, and whether it’s watered this cycle — all in one place.",
-    note: "Hit your reminder days consistently to keep streaks and stages moving.",
+    note: "Hit your due days consistently to keep streaks and stages moving.",
   },
   {
     title: "Home dashboard",

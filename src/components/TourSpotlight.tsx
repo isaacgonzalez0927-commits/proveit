@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useState, type CSSProperties } from "react";
 import { useApp } from "@/context/AppContext";
 import {
   TOUR_CHANGED_EVENT,
@@ -43,8 +43,8 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
     body: "Pick one of the AI-generated prompts (tap another option if you prefer).",
   },
   "goal-schedule": {
-    title: "When to remind you",
-    body: "Pick at least one day (or Every day), set reminder time, and adjust “Prove it within” if you like.",
+    title: "Rhythm & reminders",
+    body: "Choose how many times per week you want to check in (1–7). We space due days for you. Set your daily reminder time — you’ll get a nudge every day.",
   },
   "goal-submit": {
     title: "Add it to your garden",
@@ -53,17 +53,57 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
 };
 
 const HOLE_PAD = 8;
+const DEFAULT_HOLE_RADIUS = 16;
 
-function holeFromEl(el: HTMLElement): { top: number; left: number; right: number; bottom: number } {
+export type HoleMetrics = {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  /** Matches target UI rounding so the dimmer cutout aligns with the ring (no sharp-corner leaks). */
+  radius: number;
+};
+
+function readHoleRadiusPx(el: HTMLElement): number {
+  const s = getComputedStyle(el);
+  const raw = s.borderTopLeftRadius || "0";
+  const px = parseFloat(raw);
+  if (Number.isFinite(px) && px > 0) return px;
+  return DEFAULT_HOLE_RADIUS;
+}
+
+function holeMetricsFromEl(el: HTMLElement): HoleMetrics {
   const r = el.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  return {
-    top: Math.max(0, r.top - HOLE_PAD),
-    left: Math.max(0, r.left - HOLE_PAD),
-    right: Math.min(vw, r.right + HOLE_PAD),
-    bottom: Math.min(vh, r.bottom + HOLE_PAD),
-  };
+  const top = Math.max(0, r.top - HOLE_PAD);
+  const left = Math.max(0, r.left - HOLE_PAD);
+  const right = Math.min(vw, r.right + HOLE_PAD);
+  const bottom = Math.min(vh, r.bottom + HOLE_PAD);
+  const w = right - left;
+  const h = bottom - top;
+  const desired = readHoleRadiusPx(el);
+  const radius = Math.min(Math.max(desired, 4), w / 2, h / 2);
+  return { top, left, right, bottom, radius };
+}
+
+/** Even-odd path: full viewport minus rounded-rect hole (same winding as typical “donut” overlays). */
+function dimmerPathWithRoundedHole(
+  vw: number,
+  vh: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  rr: number
+): string {
+  const l = left;
+  const t = top;
+  const ri = right;
+  const b = bottom;
+  const outer = `M 0 0 L ${vw} 0 L ${vw} ${vh} L 0 ${vh} Z`;
+  const inner = `M ${l + rr} ${t} L ${ri - rr} ${t} A ${rr} ${rr} 0 0 1 ${ri} ${t + rr} L ${ri} ${b - rr} A ${rr} ${rr} 0 0 1 ${ri - rr} ${b} L ${l + rr} ${b} A ${rr} ${rr} 0 0 1 ${l} ${b - rr} L ${l} ${t + rr} A ${rr} ${rr} 0 0 1 ${l + rr} ${t} Z`;
+  return `${outer} ${inner}`;
 }
 
 function resolveActivePhase(phase: string | null, pathname: string): TourSpotlightPhase | null {
@@ -93,12 +133,13 @@ const SCROLL_INTO_VIEW_PHASES: TourSpotlightPhase[] = [
 export function TourSpotlight() {
   const { user } = useApp();
   const pathname = usePathname();
+  const maskUid = useId().replace(/\W/g, "");
   const [phase, setPhase] = useState<string | null>(null);
-  const [rect, setRect] = useState<{ top: number; left: number; right: number; bottom: number } | null>(
-    null
-  );
-  const [vh, setVh] = useState(() =>
-    typeof window !== "undefined" ? window.innerHeight : 640
+  const [hole, setHole] = useState<HoleMetrics | null>(null);
+  const [viewport, setViewport] = useState(() =>
+    typeof window !== "undefined"
+      ? { w: window.innerWidth, h: window.innerHeight }
+      : { w: 390, h: 640 }
   );
 
   const readPhase = useCallback(() => {
@@ -113,7 +154,8 @@ export function TourSpotlight() {
   }, [readPhase]);
 
   useEffect(() => {
-    const u = () => setVh(window.innerHeight);
+    const u = () =>
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
     u();
     window.addEventListener("resize", u);
     return () => window.removeEventListener("resize", u);
@@ -133,15 +175,18 @@ export function TourSpotlight() {
 
   useLayoutEffect(() => {
     if (!activePhase) {
-      setRect(null);
+      setHole(null);
       return;
     }
     const el = document.querySelector(SELECTORS[activePhase]) as HTMLElement | null;
     if (!el) {
-      setRect(null);
+      setHole(null);
       return;
     }
-    const update = () => setRect(holeFromEl(el));
+    const update = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      setHole(holeMetricsFromEl(el));
+    };
 
     if (SCROLL_INTO_VIEW_PHASES.includes(activePhase)) {
       el.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -164,11 +209,13 @@ export function TourSpotlight() {
     };
   }, [activePhase]);
 
-  if (!activePhase || !rect) return null;
+  if (!activePhase || !hole) return null;
 
-  const { top, left, right, bottom } = rect;
-  const panelClass =
-    "fixed z-[95] bg-black/35 pointer-events-auto dark:bg-black/45";
+  const { top, left, right, bottom, radius: holeRadius } = hole;
+  const { w: vw, h: vh } = viewport;
+  const maskId = `proveit-tour-spot-${maskUid}`;
+  const holeW = right - left;
+  const holeH = bottom - top;
 
   const text = COPY[activePhase];
   const midY = (top + bottom) / 2;
@@ -188,10 +235,42 @@ export function TourSpotlight() {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[94]" aria-hidden={false}>
-      <div className={panelClass} style={{ top: 0, left: 0, right: 0, height: top }} />
-      <div className={panelClass} style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
-      <div className={panelClass} style={{ top, left: 0, width: left, height: bottom - top }} />
-      <div className={panelClass} style={{ top, left: right, right: 0, height: bottom - top }} />
+      <svg
+        className="fixed inset-0 z-[95] h-full w-full touch-none"
+        width={vw}
+        height={vh}
+        viewBox={`0 0 ${vw} ${vh}`}
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <mask
+            id={maskId}
+            maskUnits="userSpaceOnUse"
+            x={0}
+            y={0}
+            width={vw}
+            height={vh}
+          >
+            <rect width={vw} height={vh} fill="white" />
+            <rect
+              x={left}
+              y={top}
+              width={holeW}
+              height={holeH}
+              rx={holeRadius}
+              ry={holeRadius}
+              fill="black"
+            />
+          </mask>
+        </defs>
+        <rect
+          width={vw}
+          height={vh}
+          mask={`url(#${maskId})`}
+          className="pointer-events-auto fill-black/35 dark:fill-black/45"
+        />
+      </svg>
 
       <div
         className="pointer-events-auto fixed z-[96] w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-600 dark:bg-slate-900"
@@ -215,12 +294,13 @@ export function TourSpotlight() {
       </div>
 
       <div
-        className="pointer-events-none fixed z-[97] rounded-2xl ring-2 ring-prove-500 ring-offset-2 ring-offset-transparent dark:ring-prove-400"
+        className="pointer-events-none fixed z-[97] ring-2 ring-prove-500 ring-offset-2 ring-offset-transparent dark:ring-prove-400"
         style={{
           top,
           left,
           width: right - left,
           height: bottom - top,
+          borderRadius: holeRadius,
           boxSizing: "border-box",
         }}
         aria-hidden

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { format } from "date-fns";
-import { getReminderDays } from "@/lib/goalDue";
 import type { Goal } from "@/types";
 
 const STORAGE_KEY_PREFIX = "proveit_notification_";
@@ -28,11 +27,7 @@ export function NotificationScheduler() {
     function maybeSendForGoal(goal: Goal) {
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
-      const todayDay = now.getDay();
-      const reminderDays = getReminderDays(goal);
-      if (!reminderDays.includes(todayDay)) return;
-
-      const { hour, minute } = parseTime(goal.reminderTime, goal.frequency === "daily" ? "09:00" : "10:00");
+      const { hour, minute } = parseTime(goal.reminderTime, "09:00");
       const reminder = new Date(now);
       reminder.setHours(hour, minute, 0, 0);
       const diff = now.getTime() - reminder.getTime();
