@@ -1,5 +1,46 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getResendFromOrProductionError } from "@/lib/resendFrom";
+import {
+  getResendFromOrProductionError,
+  mustUseVerifiedResendFrom,
+  readResendFromEnv,
+  trimEnvEmail,
+} from "@/lib/resendFrom";
+
+describe("trimEnvEmail", () => {
+  it("trims and strips double quotes", () => {
+    expect(trimEnvEmail('  "Proveit <a@b.com>"  ')).toBe("Proveit <a@b.com>");
+  });
+  it("returns undefined for empty", () => {
+    expect(trimEnvEmail("   ")).toBeUndefined();
+  });
+});
+
+describe("readResendFromEnv", () => {
+  const saved = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  it("prefers RESEND_FROM_EMAIL over RESEND_FROM", () => {
+    process.env.RESEND_FROM = "Wrong <w@w.com>";
+    process.env.RESEND_FROM_EMAIL = "Proveit <mail@verified.com>";
+    expect(readResendFromEnv()).toBe("Proveit <mail@verified.com>");
+  });
+
+  it("falls back to RESEND_FROM", () => {
+    delete process.env.RESEND_FROM_EMAIL;
+    process.env.RESEND_FROM = "Proveit <fallback@verified.com>";
+    expect(readResendFromEnv()).toBe("Proveit <fallback@verified.com>");
+  });
+
+  it("falls back to NEXT_PUBLIC_RESEND_FROM_EMAIL", () => {
+    delete process.env.RESEND_FROM_EMAIL;
+    delete process.env.RESEND_FROM;
+    process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL = "Proveit <pub@verified.com>";
+    expect(readResendFromEnv()).toBe("Proveit <pub@verified.com>");
+  });
+});
 
 describe("getResendFromOrProductionError", () => {
   const saved = { ...process.env };
@@ -9,6 +50,8 @@ describe("getResendFromOrProductionError", () => {
   });
 
   it("uses RESEND_FROM_EMAIL when set", () => {
+    process.env.NODE_ENV = "production";
+    process.env.VERCEL_ENV = "production";
     process.env.RESEND_FROM_EMAIL = "Proveit <mail@verified.com>";
     expect(getResendFromOrProductionError()).toEqual({
       ok: true,
@@ -16,22 +59,64 @@ describe("getResendFromOrProductionError", () => {
     });
   });
 
-  it("returns sandbox from in non-production when unset", () => {
+  it("returns sandbox from in development when unset", () => {
     process.env.NODE_ENV = "development";
+    delete process.env.RESEND_FROM_EMAIL;
+    delete process.env.RESEND_FROM;
+    delete process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL;
+    const r = getResendFromOrProductionError();
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.from).toContain("onboarding@resend.dev");
+  });
+
+  it("allows sandbox on Vercel Preview without RESEND_FROM_EMAIL", () => {
+    process.env.NODE_ENV = "production";
+    process.env.VERCEL_ENV = "preview";
     delete process.env.RESEND_FROM_EMAIL;
     const r = getResendFromOrProductionError();
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.from).toContain("onboarding@resend.dev");
   });
 
-  it("errors in production when unset", () => {
+  it("errors on Vercel Production when unset", () => {
     process.env.NODE_ENV = "production";
+    process.env.VERCEL_ENV = "production";
     delete process.env.RESEND_FROM_EMAIL;
+    delete process.env.RESEND_FROM;
+    delete process.env.EMAIL_FROM;
+    delete process.env.MAIL_FROM;
+    delete process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL;
     const r = getResendFromOrProductionError();
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.status).toBe(503);
       expect(r.error).toMatch(/RESEND_FROM_EMAIL/i);
+      expect(r.error).toMatch(/Redeploy/i);
     }
+  });
+});
+
+describe("mustUseVerifiedResendFrom", () => {
+  const saved = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  it("is false in dev", () => {
+    process.env.NODE_ENV = "development";
+    expect(mustUseVerifiedResendFrom()).toBe(false);
+  });
+
+  it("is false on Vercel preview", () => {
+    process.env.NODE_ENV = "production";
+    process.env.VERCEL_ENV = "preview";
+    expect(mustUseVerifiedResendFrom()).toBe(false);
+  });
+
+  it("is true on Vercel production", () => {
+    process.env.NODE_ENV = "production";
+    process.env.VERCEL_ENV = "production";
+    expect(mustUseVerifiedResendFrom()).toBe(true);
   });
 });
