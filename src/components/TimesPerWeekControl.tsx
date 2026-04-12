@@ -81,7 +81,7 @@ export function TimesPerWeekControl({ value, onChange, size = "default" }: Props
         </div>
       </div>
 
-      <div className={clsx(compact ? "mt-3" : "mt-4")}>
+      <div className={clsx(compact ? "mt-3" : "mt-4")} data-prevent-tab-swipe="true">
         <label className="sr-only" htmlFor={rangeId}>
           Check-ins per week, 1 to 7
         </label>
@@ -94,19 +94,10 @@ export function TimesPerWeekControl({ value, onChange, size = "default" }: Props
           value={v}
           onChange={(e) => onChange(clampTw(Number(e.target.value)))}
           className={clsx(
-            "w-full cursor-pointer appearance-none rounded-full bg-slate-200/90 accent-prove-600 dark:bg-slate-700/90 dark:accent-prove-500",
+            "w-full cursor-pointer touch-pan-x appearance-none rounded-full bg-slate-200/90 accent-prove-600 dark:bg-slate-700/90 dark:accent-prove-500",
             compact ? "h-2" : "h-2.5"
           )}
         />
-        <div
-          className={clsx(
-            "mt-1.5 flex justify-between font-medium tabular-nums text-slate-400 dark:text-slate-500",
-            compact ? "text-[9px] uppercase tracking-wider" : "text-[10px] uppercase tracking-wider"
-          )}
-        >
-          <span>Light (1)</span>
-          <span>Full week (7)</span>
-        </div>
       </div>
     </div>
   );

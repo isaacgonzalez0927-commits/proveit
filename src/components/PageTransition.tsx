@@ -14,6 +14,16 @@ function getTabIndex(pathname: string): number {
   return -1;
 }
 
+/** Don’t treat horizontal drags as tab swipes (e.g. range sliders, text areas). */
+function isTouchFromSwipeExemptTarget(target: EventTarget | null): boolean {
+  const el = target instanceof Element ? target : null;
+  if (!el) return false;
+  if (el.closest('input[type="range"]')) return true;
+  if (el.closest("textarea")) return true;
+  if (el.closest('[data-prevent-tab-swipe="true"]')) return true;
+  return false;
+}
+
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -51,6 +61,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       className={animClass}
       onTouchStart={(event) => {
         if (getTabIndex(pathname) === -1) return;
+        if (isTouchFromSwipeExemptTarget(event.target)) return;
         const touch = event.changedTouches[0];
         touchStartX.current = touch.clientX;
         touchStartY.current = touch.clientY;
