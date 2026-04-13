@@ -8,6 +8,13 @@
 export const PROOF_SUGGESTIONS_MIN = 2;
 export const PROOF_SUGGESTIONS_MAX = 3;
 
+export type ProofSuggestionsSource = "custom" | "openai" | "mock";
+
+export type ProofSuggestionsResult = {
+  suggestions: string[];
+  source: ProofSuggestionsSource;
+};
+
 const NEST_KEYS = ["data", "result", "payload", "output", "body", "response"] as const;
 
 /** Keys whose values are likely a string[] of prompts from common AI gateways. */
@@ -161,9 +168,11 @@ async function fetchOpenAiProofSuggestionsForTitle(goalTitle: string): Promise<s
  * - If no custom URL → OpenAI when OPENAI_API_KEY is set → else mock.
  * Custom: POST JSON { title, goalTitle }; optional CUSTOM_AI_SUGGESTIONS_API_KEY Bearer.
  */
-export async function getProofSuggestionsForTitle(title: string): Promise<string[]> {
+export async function getProofSuggestionsForTitle(title: string): Promise<ProofSuggestionsResult> {
   const trimmed = title.trim();
-  if (!trimmed) return mockProofSuggestionsForTitle("your goal");
+  if (!trimmed) {
+    return { suggestions: mockProofSuggestionsForTitle("your goal"), source: "mock" };
+  }
 
   const url = resolveCustomSuggestionsUrl();
   if (url) {
@@ -186,7 +195,7 @@ export async function getProofSuggestionsForTitle(title: string): Promise<string
       } else {
         const data: unknown = await res.json().catch(() => null);
         const list = extractSuggestionStringsFromJson(data);
-        if (list) return list;
+        if (list) return { suggestions: list, source: "custom" };
 
         console.warn(
           "[proofSuggestions] YOUR server returned JSON we could not parse into 2–3 strings. Top-level keys:",
@@ -201,13 +210,13 @@ export async function getProofSuggestionsForTitle(title: string): Promise<string
       );
     }
 
-    return mockProofSuggestionsForTitle(trimmed);
+    return { suggestions: mockProofSuggestionsForTitle(trimmed), source: "mock" };
   }
 
   const openAi = await fetchOpenAiProofSuggestionsForTitle(trimmed);
-  if (openAi) return openAi;
+  if (openAi) return { suggestions: openAi, source: "openai" };
 
-  return mockProofSuggestionsForTitle(trimmed);
+  return { suggestions: mockProofSuggestionsForTitle(trimmed), source: "mock" };
 }
 
 export function isProofRequirementAllowed(
