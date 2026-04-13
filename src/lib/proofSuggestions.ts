@@ -155,7 +155,10 @@ async function fetchOpenAiProofSuggestionsForTitle(goalTitle: string): Promise<s
 }
 
 /**
- * Server-only: custom suggestions URL → else OpenAI (same key as photo verify) → else mock.
+ * Server-only:
+ * - If CUSTOM_AI_SUGGESTIONS_URL (or alias) is set → **only** that server is used for ideas; on failure we use
+ *   placeholder lines (we do **not** fall back to OpenAI, so your API is never silently replaced).
+ * - If no custom URL → OpenAI when OPENAI_API_KEY is set → else mock.
  * Custom: POST JSON { title, goalTitle }; optional CUSTOM_AI_SUGGESTIONS_API_KEY Bearer.
  */
 export async function getProofSuggestionsForTitle(title: string): Promise<string[]> {
@@ -176,23 +179,28 @@ export async function getProofSuggestionsForTitle(title: string): Promise<string
       });
 
       if (!res.ok) {
-        console.warn("[proofSuggestions] Custom AI HTTP", res.status, await res.text().catch(() => ""));
+        const body = await res.text().catch(() => "");
+        console.warn(
+          `[proofSuggestions] YOUR server (${url}) returned HTTP ${res.status}. Body (truncated): ${body.slice(0, 500)}. Fix the endpoint — OpenAI is NOT used when this URL is set.`
+        );
       } else {
         const data: unknown = await res.json().catch(() => null);
         const list = extractSuggestionStringsFromJson(data);
         if (list) return list;
 
         console.warn(
-          "[proofSuggestions] Custom AI JSON had no usable prompt list. Keys:",
-          data && typeof data === "object" ? Object.keys(data as object).join(", ") : typeof data
+          "[proofSuggestions] YOUR server returned JSON we could not parse into 2–3 strings. Top-level keys:",
+          data && typeof data === "object" ? Object.keys(data as object).join(", ") : typeof data,
+          "— expected suggestions[], prompts[], ideas[], or nested data.* (see CUSTOM_AI.md). OpenAI is NOT used when CUSTOM_AI_SUGGESTIONS_URL is set."
         );
       }
     } catch (e) {
-      console.warn("[proofSuggestions] Custom AI error:", e);
+      console.warn(
+        "[proofSuggestions] YOUR server fetch failed (network/DNS/TLS). OpenAI is NOT used when CUSTOM_AI_SUGGESTIONS_URL is set:",
+        e
+      );
     }
 
-    const openAiFallback = await fetchOpenAiProofSuggestionsForTitle(trimmed);
-    if (openAiFallback) return openAiFallback;
     return mockProofSuggestionsForTitle(trimmed);
   }
 

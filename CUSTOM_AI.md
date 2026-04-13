@@ -59,7 +59,7 @@ When someone adds a goal, they must **pick one of 2–3 AI-generated photo ideas
 
 If **`OPENAI_API_KEY`** is set in Vercel (same key you use for photo verification) and you **do not** set `CUSTOM_AI_SUGGESTIONS_URL`, Proveit will call **OpenAI `gpt-4o-mini`** to generate 2–3 suggestion strings from the goal title. Redeploy after adding the key. No other setup.
 
-If you **do** set `CUSTOM_AI_SUGGESTIONS_URL`, that URL is tried first; if it fails or returns a bad shape, the app falls back to OpenAI when `OPENAI_API_KEY` is set, then to built-in placeholder lines.
+If you **do** set **`CUSTOM_AI_SUGGESTIONS_URL`** (your own AI), that endpoint is the **only** source for ideas — if it errors or returns JSON we cannot parse, the app uses **built-in placeholder lines** and logs a clear **`[proofSuggestions] YOUR server`** message in Vercel/server logs. **OpenAI is not used** for suggestions in that case (so your AI is never silently replaced).
 
 ### Endpoint your AI can expose (optional custom server)
 
