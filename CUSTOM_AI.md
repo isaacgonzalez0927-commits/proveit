@@ -55,7 +55,13 @@ So once their API is live, set `CUSTOM_AI_VERIFY_URL` (and `CUSTOM_AI_API_KEY` i
 
 When someone adds a goal, they must **pick one of 2–3 AI-generated photo ideas** (e.g. “selfie at the gym” vs “photo of you doing an exercise”). They can **only** choose from that list at creation time and in goal settings (refresh loads a new list for the **same goal title**).
 
-### Endpoint your AI can expose
+### Easiest: use OpenAI only (no second server)
+
+If **`OPENAI_API_KEY`** is set in Vercel (same key you use for photo verification) and you **do not** set `CUSTOM_AI_SUGGESTIONS_URL`, Proveit will call **OpenAI `gpt-4o-mini`** to generate 2–3 suggestion strings from the goal title. Redeploy after adding the key. No other setup.
+
+If you **do** set `CUSTOM_AI_SUGGESTIONS_URL`, that URL is tried first; if it fails or returns a bad shape, the app falls back to OpenAI when `OPENAI_API_KEY` is set, then to built-in placeholder lines.
+
+### Endpoint your AI can expose (optional custom server)
 
 - **Method:** `POST`
 - **Request body (JSON):** `{ "title": "Go to gym", "goalTitle": "Go to gym" }` (same string; some backends read one or the other)

@@ -1,6 +1,8 @@
 /**
  * Proof photo prompts for a goal title.
- * Wire your model with CUSTOM_AI_SUGGESTIONS_URL (server POST JSON { title }, JSON response — see extractSuggestionStringsFromJson).
+ *
+ * Priority: 1) CUSTOM_AI_SUGGESTIONS_URL (your API), 2) OPENAI_API_KEY (built-in OpenAI, no extra server),
+ * 3) short local fallback lines.
  */
 
 export const PROOF_SUGGESTIONS_MIN = 2;
@@ -90,61 +92,112 @@ export function extractSuggestionStringsFromJson(data: unknown): string[] | null
   return null;
 }
 
+/** Static env reads only — dynamic `process.env[k]` breaks in Next production builds. */
 function resolveCustomSuggestionsUrl(): string | undefined {
-  const candidates = [
-    process.env.CUSTOM_AI_SUGGESTIONS_URL,
-    process.env.CUSTOM_AI_GOAL_SUGGESTIONS_URL,
-    process.env.AI_PROOF_SUGGESTIONS_URL,
-  ];
-  for (const c of candidates) {
-    const t = c?.trim();
-    if (t) return t;
-  }
+  const a = process.env.CUSTOM_AI_SUGGESTIONS_URL?.trim();
+  if (a) return a;
+  const b = process.env.CUSTOM_AI_GOAL_SUGGESTIONS_URL?.trim();
+  if (b) return b;
+  const c = process.env.AI_PROOF_SUGGESTIONS_URL?.trim();
+  if (c) return c;
   return undefined;
 }
 
+async function fetchOpenAiProofSuggestionsForTitle(goalTitle: string): Promise<string[] | null> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) return null;
+
+  const system =
+    "You help habit apps. Reply with one JSON object only, no markdown. Keys: suggestions (array of 2 or 3 short strings). Each string tells the user exactly what photo to take to prove they did the goal that day — concrete, verifiable, different angles (e.g. person in frame, environment, mid-action). No numbering inside strings.";
+
+  const user = `Goal title: "${goalTitle}"\n\nReturn: {"suggestions":["...","...","..."]}`;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 400,
+        temperature: 0.75,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn("[proofSuggestions] OpenAI HTTP", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const content = data.choices?.[0]?.message?.content;
+    if (typeof content !== "string") return null;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content) as unknown;
+    } catch {
+      return null;
+    }
+    return extractSuggestionStringsFromJson(parsed);
+  } catch (e) {
+    console.warn("[proofSuggestions] OpenAI error:", e);
+    return null;
+  }
+}
+
 /**
- * Server-only: call external AI or fall back to mock.
- * Env (first set wins): CUSTOM_AI_SUGGESTIONS_URL | CUSTOM_AI_GOAL_SUGGESTIONS_URL | AI_PROOF_SUGGESTIONS_URL
- * POST JSON { title, goalTitle } (same string) for compatibility with different backends.
- * Optional: CUSTOM_AI_SUGGESTIONS_API_KEY as Bearer token.
+ * Server-only: custom suggestions URL → else OpenAI (same key as photo verify) → else mock.
+ * Custom: POST JSON { title, goalTitle }; optional CUSTOM_AI_SUGGESTIONS_API_KEY Bearer.
  */
 export async function getProofSuggestionsForTitle(title: string): Promise<string[]> {
   const trimmed = title.trim();
   if (!trimmed) return mockProofSuggestionsForTitle("your goal");
 
   const url = resolveCustomSuggestionsUrl();
-  if (!url) {
+  if (url) {
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const sugKey = process.env.CUSTOM_AI_SUGGESTIONS_API_KEY?.trim();
+      if (sugKey) headers.Authorization = `Bearer ${sugKey}`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ title: trimmed, goalTitle: trimmed }),
+      });
+
+      if (!res.ok) {
+        console.warn("[proofSuggestions] Custom AI HTTP", res.status, await res.text().catch(() => ""));
+      } else {
+        const data: unknown = await res.json().catch(() => null);
+        const list = extractSuggestionStringsFromJson(data);
+        if (list) return list;
+
+        console.warn(
+          "[proofSuggestions] Custom AI JSON had no usable prompt list. Keys:",
+          data && typeof data === "object" ? Object.keys(data as object).join(", ") : typeof data
+        );
+      }
+    } catch (e) {
+      console.warn("[proofSuggestions] Custom AI error:", e);
+    }
+
+    const openAiFallback = await fetchOpenAiProofSuggestionsForTitle(trimmed);
+    if (openAiFallback) return openAiFallback;
     return mockProofSuggestionsForTitle(trimmed);
   }
 
-  try {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const key = process.env.CUSTOM_AI_SUGGESTIONS_API_KEY?.trim();
-    if (key) headers.Authorization = `Bearer ${key}`;
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ title: trimmed, goalTitle: trimmed }),
-    });
-
-    if (!res.ok) {
-      console.warn("[proofSuggestions] Custom AI HTTP", res.status, await res.text().catch(() => ""));
-      return mockProofSuggestionsForTitle(trimmed);
-    }
-
-    const data: unknown = await res.json().catch(() => null);
-    const list = extractSuggestionStringsFromJson(data);
-    if (list) return list;
-
-    console.warn(
-      "[proofSuggestions] Custom AI JSON had no usable prompt list (expected suggestions[], prompts[], nested data.*, etc.). Keys:",
-      data && typeof data === "object" ? Object.keys(data as object).join(", ") : typeof data
-    );
-  } catch (e) {
-    console.warn("[proofSuggestions] Custom AI error, using mock:", e);
-  }
+  const openAi = await fetchOpenAiProofSuggestionsForTitle(trimmed);
+  if (openAi) return openAi;
 
   return mockProofSuggestionsForTitle(trimmed);
 }
