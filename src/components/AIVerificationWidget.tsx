@@ -31,25 +31,9 @@ import React, {
   useCallback,
   type CSSProperties,
 } from "react";
-import { pipeline, env } from "@huggingface/transformers";
-// ─── Public types ─────────────────────────────────────────────────────────────
+import type { VerificationResult, VerificationScore } from "@/types/aivVerification";
 
-export interface VerificationScore {
-  label: string;
-  score: number;
-}
-
-export interface VerificationResult {
-  /** Whether the image was recognised as matching the goal */
-  verified: boolean;
-  /** Combined probability across all goal-matching labels, 0–1 */
-  confidence: number;
-  topLabel: string;
-  goalName: string;
-  allScores: VerificationScore[];
-  /** Present on `onResult` so the host can save the same image (not shown in the widget UI). */
-  imageDataUrl?: string;
-}
+export type { VerificationResult, VerificationScore } from "@/types/aivVerification";
 
 export interface AIVerificationWidgetProps {
   /** Fired whenever a verification attempt finishes */
@@ -286,6 +270,7 @@ export default function AIVerificationWidget({
 
     (async () => {
       try {
+        const { pipeline, env } = await import("@huggingface/transformers");
         env.allowLocalModels = false;
         pipelineRef.current = await pipeline(
           "zero-shot-image-classification",

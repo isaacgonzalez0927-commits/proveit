@@ -17,7 +17,7 @@ import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
 import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
 import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
-import type { VerificationResult } from "@/components/AIVerificationWidget";
+import type { VerificationResult } from "@/types/aivVerification";
 
 const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
   ssr: false,
