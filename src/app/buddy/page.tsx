@@ -46,6 +46,7 @@ import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
 import { TimesPerWeekControl } from "@/components/TimesPerWeekControl";
+import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/proofSuggestions";
 import type { Goal, TimesPerWeek } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
@@ -91,17 +92,14 @@ export default function BuddyPage() {
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
-  const [newProofRequirement, setNewProofRequirement] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editDraft, setEditDraft] = useState<{
     reminderTime: string;
     timesPerWeek: TimesPerWeek;
-    proofRequirement: string;
   }>({
     reminderTime: "09:00",
     timesPerWeek: 3,
-    proofRequirement: "",
   });
   const router = useRouter();
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -130,16 +128,14 @@ export default function BuddyPage() {
     if (!raw || !isGoalFormTourPhase(raw)) return;
 
     if (raw === "goal-title" && newTitle.trim().length >= 2) {
-      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-proof-fetch");
-      dispatchTourChanged();
-      return;
-    }
-    if (raw === "goal-proof-fetch" && newProofRequirement.trim().length >= 3) {
       window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-schedule");
       dispatchTourChanged();
       return;
     }
-    if (raw === "goal-proof-pick" && newProofRequirement.trim().length >= 3) {
+    if (
+      (raw === "goal-proof-fetch" || raw === "goal-proof-pick") &&
+      newTitle.trim().length >= 2
+    ) {
       window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-schedule");
       dispatchTourChanged();
       return;
@@ -148,7 +144,7 @@ export default function BuddyPage() {
       window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-submit");
       dispatchTourChanged();
     }
-  }, [showCreateForm, newTitle, newProofRequirement, scheduleTourAck]);
+  }, [showCreateForm, newTitle, scheduleTourAck]);
 
   useEffect(() => {
     if (showCreateForm || typeof window === "undefined") return;
@@ -352,8 +348,7 @@ export default function BuddyPage() {
 
   const plan = getPlan(user.plan);
   const canAddMoreGoals = canAddGoal();
-  const proofIdeasReadyForCreate =
-    newTitle.trim().length >= 2 && newProofRequirement.trim().length >= 3;
+  const proofIdeasReadyForCreate = newTitle.trim().length >= 2;
   const canSubmitCreateGoalForm = canAddMoreGoals && proofIdeasReadyForCreate;
 
   const resetCreateGoalForm = () => {
@@ -371,7 +366,6 @@ export default function BuddyPage() {
     setNewTimesPerWeek(3);
     setScheduleTourAck(false);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
-    setNewProofRequirement("");
   };
 
   const handleCreateGoal = async (e: React.FormEvent) => {
@@ -380,9 +374,7 @@ export default function BuddyPage() {
     setGoalManagerMessage(null);
     if (!canSubmitCreateGoalForm) {
       if (!proofIdeasReadyForCreate) {
-        setGoalManagerMessage(
-          "Add a title and describe the clear proof photo that will show this goal being done (at least a few words)."
-        );
+        setGoalManagerMessage("Add a goal title (at least a couple of characters) so your proof can match this goal.");
       } else if (!canAddMoreGoals) {
         setGoalManagerMessage("Goal limit reached for your current plan. Upgrade to add more.");
       }
@@ -401,12 +393,13 @@ export default function BuddyPage() {
     const reminderDays = isDaily ? undefined : spreadReminderDaysForTimesPerWeek(tw);
     const reminderDayFirst = isDaily ? 0 : (reminderDays?.[0] ?? 0);
 
-    const proofReq = newProofRequirement.trim();
+    const titleTrim = newTitle.trim();
+    const proofReq = titleTrim;
     const hadNoGoals = goals.length === 0;
     setIsAddingGoal(true);
     try {
       const result = await addGoal({
-        title: newTitle.trim(),
+        title: titleTrim,
         description: newDescription.trim() || undefined,
         frequency: isDaily ? "daily" : "weekly",
         timesPerWeek: isDaily ? 7 : tw,
@@ -446,7 +439,6 @@ export default function BuddyPage() {
     setEditDraft({
       reminderTime: timeNorm || "09:00",
       timesPerWeek: effectiveTimesPerWeek(goal),
-      proofRequirement: (goal.proofRequirement?.trim() || goal.title).trim(),
     });
     setGoalManagerMessage(null);
   };
@@ -458,11 +450,9 @@ export default function BuddyPage() {
 
   const saveEditingGoal = async (goal: Goal) => {
     setGoalManagerMessage(null);
-    const req = editDraft.proofRequirement.trim();
+    const req = goal.title.trim();
     if (!req) {
-      setGoalManagerMessage(
-        "Describe the clear proof photo that will show this goal being done (what the picture should show)."
-      );
+      setGoalManagerMessage("This goal needs a title before saving schedule changes.");
       return;
     }
     const store = proofSuggestionsForStorage(req);
@@ -719,29 +709,6 @@ export default function BuddyPage() {
               />
             </div>
 
-            <div
-              className="mt-6 rounded-xl border border-slate-200/90 bg-slate-50/60 p-4 dark:border-slate-600/80 dark:bg-slate-950/40"
-              data-tour="goal-proof-fetch"
-            >
-              <label className="text-xs font-semibold text-slate-800 dark:text-slate-100" htmlFor="new-proof-req">
-                What should your proof photo show?
-              </label>
-              <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                When you check in, your proof must be a clear picture that shows this goal actually being done. Describe
-                what that photo should show here—local AI uses this line when you submit (same text on the proof screen).
-              </p>
-              <textarea
-                id="new-proof-req"
-                value={newProofRequirement}
-                onChange={(e) => setNewProofRequirement(e.target.value)}
-                rows={3}
-                required
-                minLength={3}
-                placeholder="e.g. Me on the treadmill with the display visible"
-                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
-              />
-            </div>
-
             <div className="mt-6 space-y-4" data-tour="goal-schedule">
               <div>
                 <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Times per week</p>
@@ -811,11 +778,7 @@ export default function BuddyPage() {
               <button
                 type="submit"
                 disabled={isAddingGoal || !canSubmitCreateGoalForm}
-                title={
-                  !proofIdeasReadyForCreate
-                    ? "Add a title and describe the clear proof photo that will show this goal being done"
-                    : undefined
-                }
+                title={!proofIdeasReadyForCreate ? "Add a goal title (your proof photo should match it)" : undefined}
                 className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-prove-700 disabled:opacity-60"
               >
                 {isAddingGoal ? "Adding…" : "Add goal"}
@@ -943,16 +906,10 @@ export default function BuddyPage() {
                         {entry.weekProgressLine}
                       </p>
                     )}
-                    {entry.goal.proofRequirement ? (
-                      <p className="mt-1 line-clamp-2 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Prove: </span>
-                        {entry.goal.proofRequirement}
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-[10px] text-amber-700/90 dark:text-amber-300/90">
-                        No photo prompt saved — edit this goal and load AI photo ideas.
-                      </p>
-                    )}
+                    <p className="mt-1 line-clamp-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="font-medium text-slate-600 dark:text-slate-300">Prove: </span>
+                      {verificationTextFromGoal(entry.goal)}
+                    </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     {entry.isOnBreak && (
@@ -1090,7 +1047,7 @@ export default function BuddyPage() {
 
                 {editingGoalId === entry.goal.id && (
                   <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-600 dark:bg-slate-950/80">
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Edit schedule & proof</p>
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Edit schedule</p>
 
                     <div className="mt-3">
                       <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">Times per week</p>
@@ -1118,21 +1075,10 @@ export default function BuddyPage() {
                       />
                     </label>
 
-                    <label className="mt-4 block text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                      What should proof photos show?
-                      <p className="mt-1 font-normal text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
-                        Check-ins need a clear picture that shows this goal being done—describe what that photo should
-                        show.
-                      </p>
-                      <textarea
-                        value={editDraft.proofRequirement}
-                        onChange={(e) =>
-                          setEditDraft((prev) => ({ ...prev, proofRequirement: e.target.value }))
-                        }
-                        rows={3}
-                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                      />
-                    </label>
+                    <p className="mt-3 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                      Proof checks use your goal title:{" "}
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{entry.goal.title}</span>
+                    </p>
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <button

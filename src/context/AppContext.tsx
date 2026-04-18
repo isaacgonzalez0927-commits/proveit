@@ -554,8 +554,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!isValidProofBundle(goal.proofSuggestions, goal.proofRequirement)) {
         return {
           created: null,
-          error:
-            "You'll need a clear photo that shows this goal being done. Describe what that photo should show, then add the goal.",
+          error: "Add a clear goal title, then try again — your proof photo should match that goal.",
         };
       }
       if (useSupabase) {

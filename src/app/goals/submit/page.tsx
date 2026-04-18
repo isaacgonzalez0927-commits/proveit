@@ -16,6 +16,7 @@ import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
 import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
+import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import type { VerificationResult } from "@/components/AIVerificationWidget";
 
 const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
@@ -76,7 +77,6 @@ function SubmitProofContent() {
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
   const [cameraStarted, setCameraStarted] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
-  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [feedback, setFeedback] = useState<string>("");
   const [submissionId, setSubmissionId] = useState<string | null>(null);
@@ -86,7 +86,6 @@ function SubmitProofContent() {
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartCameraAttemptedRef = useRef(false);
-  /** Host wrapper for the drop-in widget so we can read the uploaded proof `data:` URL after verify. */
   const aiWidgetMountRef = useRef<HTMLDivElement>(null);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -114,18 +113,12 @@ function SubmitProofContent() {
 
   const goalSubs = goal ? getSubmissionsForGoal(goal.id) : [];
   const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
-  /**
-   * Verification + UI copy: explicit proof instruction when set, otherwise goal title.
-   * Matches CLIP `goalText` (local Transformers.js only — no server verify).
-   */
-  const verifyPromptText = goal
-    ? (goal.proofRequirement?.trim() || goal.title).trim()
-    : "";
 
   const [, setHideHeader] = useHideHeader();
   const hideHeaderForCamera =
-    step === "capture" &&
-    ((cameraStarted && !imageDataUrl) || (!cameraStarted && !imageDataUrl && !cameraError && !!goal && inWindow));
+    (step === "capture" &&
+      (cameraStarted || (!cameraStarted && !cameraError && !!goal && inWindow))) ||
+    step === "uploading";
   useEffect(() => {
     setHideHeader(hideHeaderForCamera);
     return () => setHideHeader(false);
@@ -159,6 +152,12 @@ function SubmitProofContent() {
     setStreamReady(false);
     if (!keepCameraMode) setCameraStarted(false);
   }, []);
+
+  const exitCameraToDashboard = useCallback(() => {
+    stopCamera();
+    setCameraStarted(false);
+    router.push("/dashboard");
+  }, [stopCamera, router]);
 
   useEffect(() => {
     return () => stopCamera();
@@ -229,15 +228,15 @@ function SubmitProofContent() {
   useEffect(() => {
     if (!user || !goal) return;
     if (!inWindow) return;
-    if (step !== "capture" || cameraStarted || imageDataUrl) return;
+    if (step !== "capture" || cameraStarted) return;
     if (autoStartCameraAttemptedRef.current) return;
     autoStartCameraAttemptedRef.current = true;
     void handleStartCamera();
-  }, [user, goal, inWindow, step, cameraStarted, imageDataUrl, handleStartCamera]);
+  }, [user, goal, inWindow, step, cameraStarted, handleStartCamera]);
 
   // If camera is "opening" for too long, show retry option
   const isStartingCamera =
-    step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && !!goal && inWindow;
+    step === "capture" && !cameraStarted && !cameraError && !!goal && inWindow;
   useEffect(() => {
     if (!isStartingCamera) return;
     const t = setTimeout(() => {
@@ -245,28 +244,6 @@ function SubmitProofContent() {
     }, 8000);
     return () => clearTimeout(t);
   }, [isStartingCamera]);
-
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
-    const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    if (facingMode === "user") {
-      ctx.save();
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0);
-      ctx.restore();
-    } else {
-      ctx.drawImage(video, 0, 0);
-    }
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    setImageDataUrl(dataUrl);
-    stopCamera();
-  }, [facingMode, stopCamera]);
 
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
@@ -347,64 +324,59 @@ function SubmitProofContent() {
     ]
   );
 
-  const submitForVerification = useCallback(async () => {
-    if (!imageDataUrl || !goal || !user) return;
-    lightImpact();
-    setStep("uploading");
+  const runProofVerification = useCallback(
+    async (sourceDataUrl: string) => {
+      if (!goal || !user) return;
+      lightImpact();
+      setStep("uploading");
+      const imageToStore = sourceDataUrl;
 
-    let imageToStore = imageDataUrl;
-
-    try {
-      const compressed = await compressImage(imageDataUrl, 1200, 0.75);
-      const verifyGoalText = (goal.proofRequirement?.trim() || goal.title).trim();
-      const { verifyWithLocalClip, formatLocalClipUserFeedback } = await import(
-        "@/lib/localClipVerify"
-      );
-      const clip = await verifyWithLocalClip({
-        imageDataUrl: compressed,
-        goalText: verifyGoalText,
-        threshold: DEFAULT_CLIP_VERIFY_THRESHOLD,
-      });
-      const { summaryLine: clipSummary } = formatLocalClipUserFeedback(
-        clip,
-        DEFAULT_CLIP_VERIFY_THRESHOLD
-      );
-      await persistCompressedProof(compressed, clipSummary, clip.verified);
-    } catch (err) {
-      setVerified(false);
-      setFeedback("Something went wrong. Please try again.");
       try {
-        const sub = await addSubmission({
-          goalId: goal.id,
-          date: todayStr,
-          imageDataUrl: imageToStore,
-          status: "rejected",
-          aiFeedback: "Request failed.",
+        const compressed = await compressImage(sourceDataUrl, 1200, 0.75);
+        const verifyGoalText = verificationTextFromGoal(goal);
+        const { verifyWithLocalClip, formatLocalClipUserFeedback } = await import(
+          "@/lib/localClipVerify"
+        );
+        const clip = await verifyWithLocalClip({
+          imageDataUrl: compressed,
+          goalText: verifyGoalText,
+          threshold: DEFAULT_CLIP_VERIFY_THRESHOLD,
         });
-        setSubmissionId(sub.id);
+        const { summaryLine: clipSummary } = formatLocalClipUserFeedback(
+          clip,
+          DEFAULT_CLIP_VERIFY_THRESHOLD
+        );
+        await persistCompressedProof(compressed, clipSummary, clip.verified);
       } catch {
-        setFeedback("Failed to save submission. Please try again.");
+        setVerified(false);
+        setFeedback("Something went wrong. Please try again.");
+        try {
+          const sub = await addSubmission({
+            goalId: goal.id,
+            date: todayStr,
+            imageDataUrl: imageToStore,
+            status: "rejected",
+            aiFeedback: "Request failed.",
+          });
+          setSubmissionId(sub.id);
+        } catch {
+          setFeedback("Failed to save submission. Please try again.");
+        }
+        setStep("result");
       }
-      setStep("result");
-    }
-  }, [
-    imageDataUrl,
-    goal,
-    todayStr,
-    user,
-    addSubmission,
-    persistCompressedProof,
-  ]);
+    },
+    [goal, user, todayStr, addSubmission, persistCompressedProof]
+  );
 
   const handleAiWidgetResult = useCallback(
     (result: VerificationResult) => {
+      if (!goal || !user) return;
       const proofUrl =
         aiWidgetMountRef.current?.querySelector<HTMLImageElement>("img.aivw-img")?.src ?? null;
-      if (!goal || !user) return;
       if (!proofUrl?.startsWith("data:")) {
         if (typeof window !== "undefined") {
           window.alert(
-            "Could not read the photo from the widget. Try verifying again, or use the camera flow below."
+            "Could not read the photo from the widget. Try verifying again, or use the camera below."
           );
         }
         return;
@@ -430,6 +402,28 @@ function SubmitProofContent() {
     [goal, user, persistCompressedProof]
   );
 
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    if (facingMode === "user") {
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0);
+    }
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    stopCamera();
+    void runProofVerification(dataUrl);
+  }, [facingMode, stopCamera, runProofVerification]);
+
   if (!authReady || pageLoading || !user || !goal) {
     return (
       <main className="flex min-h-[50vh] items-center justify-center">
@@ -438,7 +432,9 @@ function SubmitProofContent() {
     );
   }
 
-  if (!inWindow) {
+  // After a verified check-in, `inWindow` becomes false (already proved today). Still show upload/result UI
+  // so the user sees verified vs denied — only block the capture flow when the window was closed on arrival.
+  if (!inWindow && step === "capture") {
     const msg = getSubmissionWindowMessage(goal, new Date(), goalSubs);
     return (
       <main className="mx-auto max-w-lg px-4 py-8">
@@ -467,17 +463,16 @@ function SubmitProofContent() {
     );
   }
 
-  const showFullScreenCamera = step === "capture" && cameraStarted && !imageDataUrl;
-  const showFullScreenPreview = step === "capture" && !!imageDataUrl;
+  const showFullScreenCamera = step === "capture" && cameraStarted;
   const showStartingCamera =
-    step === "capture" && !cameraStarted && !imageDataUrl && !cameraError && inWindow;
+    step === "capture" && !cameraStarted && !cameraError && inWindow;
   const showCameraRetry =
     step === "capture" && !showFullScreenCamera && !cameraStarted && !!cameraError;
 
   return (
     <>
       <main className="mx-auto max-w-lg px-4 py-8">
-        {!showFullScreenCamera && !showFullScreenPreview && !showStartingCamera && (
+        {!showFullScreenCamera && !showStartingCamera && (
           <Link
             href="/buddy"
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
@@ -487,39 +482,27 @@ function SubmitProofContent() {
           </Link>
         )}
 
-        {!showFullScreenCamera && !showFullScreenPreview && !showStartingCamera && (
+        {!showFullScreenCamera && !showStartingCamera && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
             </h1>
-            {verifyPromptText ? (
-              <div className="mt-3 rounded-xl border border-prove-200 bg-prove-50/80 px-3 py-2 dark:border-prove-900/50 dark:bg-prove-950/30">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-prove-800 dark:text-prove-200">
-                  Your photo should show
-                </p>
-                <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{verifyPromptText}</p>
-              </div>
-            ) : null}
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Take a photo that matches your goal. Verification runs on your device in the browser (CLIP via
-              Transformers.js) — no external AI APIs. You can submit any day you still have a check-in left this week
-              (Sun–Sat), once per calendar day.
+              Use the camera below for a quick check-in, or try the optional local AI box first — type your goal,
+              upload a photo, and verify (same CLIP model as the camera). One check-in per calendar day (Sun–Sat week
+              for weekly targets). The X on the camera exits to your dashboard.
             </p>
             <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/40">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                Local AI widget (optional)
-              </p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Local AI (optional)</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Type the same proof line as above (or describe your goal), upload a photo, then verify. Same CLIP-style
-                check as the camera flow; when verification finishes, your proof is saved like a normal submission. You
-                can still use the camera below instead.
+                When verification finishes here, your proof is saved like the camera flow.
               </p>
               <div className="mt-3" ref={aiWidgetMountRef}>
                 <AIVerificationWidget
                   key={goal.id}
                   threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
-                  onResult={(result) => {
-                    void handleAiWidgetResult(result);
+                  onResult={(r) => {
+                    void handleAiWidgetResult(r);
                   }}
                 />
               </div>
@@ -577,12 +560,10 @@ function SubmitProofContent() {
               </div>
             )}
             <button
-              onClick={() => {
-                stopCamera();
-                setCameraStarted(false);
-              }}
+              type="button"
+              onClick={exitCameraToDashboard}
               className="absolute left-4 top-[env(safe-area-inset-top,1rem)] z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-              aria-label="Close camera"
+              aria-label="Close camera and go to dashboard"
             >
               <X className="h-6 w-6" />
             </button>
@@ -605,50 +586,13 @@ function SubmitProofContent() {
           </div>
         )}
 
-        {showFullScreenPreview && imageDataUrl && (
-          <div className="fixed inset-0 z-50 flex flex-col bg-black">
-            <img
-              src={imageDataUrl}
-              alt="Your proof"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <button
-              onClick={() => {
-                stopCamera();
-                setCameraStarted(false);
-              }}
-              className="absolute left-4 top-[env(safe-area-inset-top,1rem)] z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-              aria-label="Close"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
-              <button
-                onClick={() => {
-                  setImageDataUrl(null);
-                  handleStartCamera(facingMode);
-                }}
-                className="glass-overlay-bar-btn rounded-full px-8 py-3.5 text-sm font-medium text-white hover:bg-white/20 active:scale-[0.98]"
-              >
-                Retake
-              </button>
-              <button
-                onClick={submitForVerification}
-                className="glass-overlay-bar-btn-primary rounded-full px-8 py-3.5 text-sm font-medium text-white hover:bg-prove-500/45 active:scale-[0.98]"
-              >
-                Use
-              </button>
-            </div>
-          </div>
-        )}
-
         {step === "uploading" && (
-          <div className="mt-8 flex flex-col items-center justify-center rounded-2xl py-16 glass-card">
-            <Loader2 className="h-12 w-12 animate-spin text-prove-600" />
-            <p className="mt-4 font-medium text-slate-900 dark:text-white">
+          <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black px-6">
+            <Loader2 className="h-12 w-12 animate-spin text-white" />
+            <p className="mt-4 text-center text-sm font-medium text-white">
               Verifying on your device…
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-2 max-w-sm text-center text-xs text-white/70">
               Running local CLIP on your photo (first visit may download the model).
             </p>
           </div>

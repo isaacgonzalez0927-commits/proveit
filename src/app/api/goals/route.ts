@@ -137,13 +137,12 @@ export async function POST(request: NextRequest) {
     proofRequirement: proofRequirementBody,
   } = body;
 
-  const proofRequirementParsed =
+  const titleTrimmed = typeof title === "string" ? title.trim() : "";
+  const proofFromBody =
     typeof proofRequirementBody === "string" ? proofRequirementBody.trim() : "";
+  const proofRequirementParsed = proofFromBody || titleTrimmed;
   if (!proofRequirementParsed) {
-    return NextResponse.json(
-      { error: "Add what your proof photo should show for this goal." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Goal title is required." }, { status: 400 });
   }
   let proofSuggestionsParsed = parseProofSuggestionsPayload(proofSuggestionsBody);
   if (!proofSuggestionsParsed) {
@@ -198,7 +197,7 @@ export async function POST(request: NextRequest) {
   const minimalInsert: Record<string, unknown> = {
     id,
     user_id: user.id,
-    title,
+    title: titleTrimmed,
     description: description ?? null,
     frequency: frequencyNorm,
     reminder_time: reminderTimeNorm,

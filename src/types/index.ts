@@ -50,12 +50,9 @@ export interface Goal {
   reminderDays?: number[];
   /** How long after due time to submit: 1h, 3h, 6h, 12h, or eod (end of day) */
   gracePeriod?: GracePeriod;
-  /**
-   * AI-generated photo prompts for this goal (typically 2–3). The user only picks
-   * proofRequirement from this list (or refreshes the list from the same title).
-   */
+  /** Stored suggestion triple for legacy/schema compatibility; verification uses the goal title. */
   proofSuggestions?: string[];
-  /** Selected prompt; must match one entry in proofSuggestions when both are set. */
+  /** Stored copy of the proof line (kept in sync with title for new goals). */
   proofRequirement?: string;
   /** Pro-only: freeze streak/growth while goal is paused */
   isOnBreak?: boolean;
