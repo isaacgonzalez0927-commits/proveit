@@ -6,6 +6,11 @@ import {
   trimEnvEmail,
 } from "@/lib/resendFrom";
 
+/** `process.env.NODE_ENV` is typed read-only; tests need to flip it safely. */
+function setEnvVar(name: string, value: string): void {
+  (process.env as Record<string, string | undefined>)[name] = value;
+}
+
 describe("trimEnvEmail", () => {
   it("trims and strips double quotes", () => {
     expect(trimEnvEmail('  "Proveit <a@b.com>"  ')).toBe("Proveit <a@b.com>");
@@ -60,7 +65,7 @@ describe("getResendFromOrProductionError", () => {
   });
 
   it("uses RESEND_FROM_EMAIL when set", () => {
-    process.env.NODE_ENV = "production";
+    setEnvVar("NODE_ENV", "production");
     process.env.VERCEL_ENV = "production";
     process.env.RESEND_FROM_EMAIL = "Proveit <mail@verified.com>";
     expect(getResendFromOrProductionError()).toEqual({
@@ -70,7 +75,7 @@ describe("getResendFromOrProductionError", () => {
   });
 
   it("returns sandbox from in development when unset", () => {
-    process.env.NODE_ENV = "development";
+    setEnvVar("NODE_ENV", "development");
     delete process.env.RESEND_FROM_EMAIL;
     delete process.env.RESEND_FROM;
     delete process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL;
@@ -80,7 +85,7 @@ describe("getResendFromOrProductionError", () => {
   });
 
   it("allows sandbox on Vercel Preview without RESEND_FROM_EMAIL", () => {
-    process.env.NODE_ENV = "production";
+    setEnvVar("NODE_ENV", "production");
     process.env.VERCEL_ENV = "preview";
     delete process.env.RESEND_FROM_EMAIL;
     const r = getResendFromOrProductionError();
@@ -89,7 +94,7 @@ describe("getResendFromOrProductionError", () => {
   });
 
   it("errors on Vercel Production when unset", () => {
-    process.env.NODE_ENV = "production";
+    setEnvVar("NODE_ENV", "production");
     process.env.VERCEL_ENV = "production";
     delete process.env.RESEND_FROM_EMAIL;
     delete process.env.RESEND_FROM;
@@ -114,18 +119,18 @@ describe("mustUseVerifiedResendFrom", () => {
   });
 
   it("is false in dev", () => {
-    process.env.NODE_ENV = "development";
+    setEnvVar("NODE_ENV", "development");
     expect(mustUseVerifiedResendFrom()).toBe(false);
   });
 
   it("is false on Vercel preview", () => {
-    process.env.NODE_ENV = "production";
+    setEnvVar("NODE_ENV", "production");
     process.env.VERCEL_ENV = "preview";
     expect(mustUseVerifiedResendFrom()).toBe(false);
   });
 
   it("is true on Vercel production", () => {
-    process.env.NODE_ENV = "production";
+    setEnvVar("NODE_ENV", "production");
     process.env.VERCEL_ENV = "production";
     expect(mustUseVerifiedResendFrom()).toBe(true);
   });
