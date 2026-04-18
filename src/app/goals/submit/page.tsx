@@ -15,11 +15,10 @@ import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
-import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
 import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
-import type { VerificationResult } from "@/types/aivVerification";
+import type { VerificationResult } from "@/components/AIVerificationWidget";
 
-const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget (3)"), {
+const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
   ssr: false,
   loading: () => (
     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading local AI verifier…</p>
@@ -87,6 +86,8 @@ function SubmitProofContent() {
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartCameraAttemptedRef = useRef(false);
+  /** Host wrapper for the drop-in widget so we can read the uploaded proof `data:` URL after verify. */
+  const aiWidgetMountRef = useRef<HTMLDivElement>(null);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasRedirected = useRef(false);
@@ -120,17 +121,6 @@ function SubmitProofContent() {
   const verifyPromptText = goal
     ? (goal.proofRequirement?.trim() || goal.title).trim()
     : "";
-  /** Prefer prompts saved with the goal (buddy “Get AI photo ideas”); else generic templates. */
-  const fromStoredProofIdeas = (goal?.proofSuggestions ?? [])
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-    .slice(0, 3);
-  const proofPhotoIdeas =
-    fromStoredProofIdeas.length > 0
-      ? fromStoredProofIdeas
-      : verifyPromptText
-        ? getProofPhotoSuggestions(verifyPromptText).slice(0, 3)
-        : [];
 
   const [, setHideHeader] = useHideHeader();
   const hideHeaderForCamera =
@@ -408,8 +398,17 @@ function SubmitProofContent() {
 
   const handleAiWidgetResult = useCallback(
     (result: VerificationResult) => {
-      const proofUrl = result.imageDataUrl;
-      if (!proofUrl || !goal || !user) return;
+      const proofUrl =
+        aiWidgetMountRef.current?.querySelector<HTMLImageElement>("img.aivw-img")?.src ?? null;
+      if (!goal || !user) return;
+      if (!proofUrl?.startsWith("data:")) {
+        if (typeof window !== "undefined") {
+          window.alert(
+            "Could not read the photo from the widget. Try verifying again, or use the camera flow below."
+          );
+        }
+        return;
+      }
       lightImpact();
       setStep("uploading");
       void (async () => {
@@ -501,24 +500,6 @@ function SubmitProofContent() {
                 <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{verifyPromptText}</p>
               </div>
             ) : null}
-            {proofPhotoIdeas.length > 0 ? (
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/40">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                  Ideas for your proof photo
-                </p>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-700 dark:text-slate-300">
-                  {proofPhotoIdeas.map((s) => (
-                    <li key={s}>{s}</li>
-                  ))}
-                </ul>
-                {fromStoredProofIdeas.length === 0 && (
-                  <p className="mt-2 text-[10px] leading-snug text-slate-500 dark:text-slate-400">
-                    These are generic examples. On Buddy, tap <strong>Get AI photo ideas</strong> when creating or
-                    editing this goal to save custom prompts — they will show here next time.
-                  </p>
-                )}
-              </div>
-            ) : null}
             <p className="mt-2 text-slate-600 dark:text-slate-400">
               Take a photo that matches your goal. Verification runs on your device in the browser (CLIP via
               Transformers.js) — no external AI APIs. You can submit any day you still have a check-in left this week
@@ -529,14 +510,13 @@ function SubmitProofContent() {
                 Local AI widget (optional)
               </p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Same CLIP-style check as the camera flow. When you finish verification here, your proof is saved like a
-                normal submission. You can still use the camera below instead.
+                Type the same proof line as above (or describe your goal), upload a photo, then verify. Same CLIP-style
+                check as the camera flow; when verification finishes, your proof is saved like a normal submission. You
+                can still use the camera below instead.
               </p>
-              <div className="mt-3">
+              <div className="mt-3" ref={aiWidgetMountRef}>
                 <AIVerificationWidget
-                  initialGoalText={verifyPromptText}
-                  prefetchedPhotoIdeas={proofPhotoIdeas}
-                  ideasFetchTitle={goal.title}
+                  key={goal.id}
                   threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
                   onResult={(result) => {
                     void handleAiWidgetResult(result);

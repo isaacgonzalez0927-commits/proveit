@@ -554,7 +554,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!isValidProofBundle(goal.proofSuggestions, goal.proofRequirement)) {
         return {
           created: null,
-          error: "Tap Get AI photo ideas, pick one prompt, then add the goal.",
+          error:
+            "You'll need a clear photo that shows this goal being done. Describe what that photo should show, then add the goal.",
         };
       }
       if (useSupabase) {

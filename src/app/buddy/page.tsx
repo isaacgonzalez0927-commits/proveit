@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Plus, Pencil, Save, Trash2, X, Pause, Play, Loader2 } from "lucide-react";
+import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BuddySkeleton } from "@/components/BuddySkeleton";
 import {
@@ -46,13 +46,7 @@ import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
 import { TimesPerWeekControl } from "@/components/TimesPerWeekControl";
-import { messageFromApiPayload } from "@/lib/apiErrors";
-import {
-  isProofRequirementAllowed,
-  PROOF_SUGGESTIONS_MAX,
-  PROOF_SUGGESTIONS_MIN,
-  type ProofSuggestionsSource,
-} from "@/lib/proofSuggestions";
+import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/proofSuggestions";
 import type { Goal, TimesPerWeek } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
 import {
@@ -97,26 +91,16 @@ export default function BuddyPage() {
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
-  const [newProofSuggestions, setNewProofSuggestions] = useState<string[]>([]);
-  const [selectedProofRequirement, setSelectedProofRequirement] = useState<string | null>(null);
-  const [suggestionsTitleKey, setSuggestionsTitleKey] = useState<string | null>(null);
-  const [proofSuggestionsLoading, setProofSuggestionsLoading] = useState(false);
-  const [proofSuggestionsError, setProofSuggestionsError] = useState<string | null>(null);
-  /** Last successful /api/goals/proof-suggestions `source` (null = unknown or before fetch). */
-  const [createProofIdeasSource, setCreateProofIdeasSource] = useState<ProofSuggestionsSource | null>(null);
-  const [editProofIdeasSource, setEditProofIdeasSource] = useState<ProofSuggestionsSource | null>(null);
+  const [newProofRequirement, setNewProofRequirement] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [proofIdeasEditLoading, setProofIdeasEditLoading] = useState(false);
   const [editDraft, setEditDraft] = useState<{
     reminderTime: string;
     timesPerWeek: TimesPerWeek;
-    proofSuggestions: string[];
     proofRequirement: string;
   }>({
     reminderTime: "09:00",
     timesPerWeek: 3,
-    proofSuggestions: [],
     proofRequirement: "",
   });
   const router = useRouter();
@@ -126,8 +110,6 @@ export default function BuddyPage() {
   const [showGardenTourHint, setShowGardenTourHint] = useState(false);
   const [gardenTourHintStep, setGardenTourHintStep] = useState<"manage" | "create">("manage");
   const [tourSpotlight, setTourSpotlight] = useState<string | null>(null);
-  const proofFetchGen = useRef(0);
-  const proofEditFetchGen = useRef(0);
   const newTitleRef = useRef(newTitle);
   newTitleRef.current = newTitle;
 
@@ -152,19 +134,12 @@ export default function BuddyPage() {
       dispatchTourChanged();
       return;
     }
-    if (raw === "goal-proof-fetch" && newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN) {
-      const picked =
-        selectedProofRequirement !== null &&
-        isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions);
-      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, picked ? "goal-schedule" : "goal-proof-pick");
+    if (raw === "goal-proof-fetch" && newProofRequirement.trim().length >= 3) {
+      window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-schedule");
       dispatchTourChanged();
       return;
     }
-    if (
-      raw === "goal-proof-pick" &&
-      selectedProofRequirement !== null &&
-      isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions)
-    ) {
+    if (raw === "goal-proof-pick" && newProofRequirement.trim().length >= 3) {
       window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-schedule");
       dispatchTourChanged();
       return;
@@ -173,13 +148,7 @@ export default function BuddyPage() {
       window.localStorage.setItem(TOUR_SPOTLIGHT_KEY, "goal-submit");
       dispatchTourChanged();
     }
-  }, [
-    showCreateForm,
-    newTitle,
-    newProofSuggestions,
-    selectedProofRequirement,
-    scheduleTourAck,
-  ]);
+  }, [showCreateForm, newTitle, newProofRequirement, scheduleTourAck]);
 
   useEffect(() => {
     if (showCreateForm || typeof window === "undefined") return;
@@ -384,11 +353,7 @@ export default function BuddyPage() {
   const plan = getPlan(user.plan);
   const canAddMoreGoals = canAddGoal();
   const proofIdeasReadyForCreate =
-    suggestionsTitleKey === newTitle.trim() &&
-    newTitle.trim().length >= 2 &&
-    newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN &&
-    selectedProofRequirement !== null &&
-    isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions);
+    newTitle.trim().length >= 2 && newProofRequirement.trim().length >= 3;
   const canSubmitCreateGoalForm = canAddMoreGoals && proofIdeasReadyForCreate;
 
   const resetCreateGoalForm = () => {
@@ -406,149 +371,7 @@ export default function BuddyPage() {
     setNewTimesPerWeek(3);
     setScheduleTourAck(false);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
-    setNewProofSuggestions([]);
-    setSelectedProofRequirement(null);
-    setSuggestionsTitleKey(null);
-    setProofSuggestionsError(null);
-    setProofSuggestionsLoading(false);
-    setCreateProofIdeasSource(null);
-  };
-
-  const fetchProofIdeasForCreate = async () => {
-    setProofSuggestionsError(null);
-    const trimmed = newTitle.trim();
-    if (trimmed.length < 2) {
-      setProofSuggestionsError("Enter a goal title first (at least 2 characters).");
-      return;
-    }
-    const gen = ++proofFetchGen.current;
-    setProofSuggestionsLoading(true);
-    try {
-      const res = await fetch("/api/goals/proof-suggestions", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmed }),
-      });
-      let data: { suggestions?: unknown; error?: string; source?: unknown };
-      try {
-        data = (await res.json()) as { suggestions?: unknown; error?: string; source?: unknown };
-      } catch {
-        if (gen !== proofFetchGen.current) return;
-        setProofSuggestionsError("Bad response from server. Try again.");
-        setNewProofSuggestions([]);
-        setSelectedProofRequirement(null);
-        setSuggestionsTitleKey(null);
-        setCreateProofIdeasSource(null);
-        return;
-      }
-      if (gen !== proofFetchGen.current) return;
-      if (newTitleRef.current.trim() !== trimmed) {
-        setProofSuggestionsError("Title changed while loading — tap Get AI photo ideas again.");
-        setNewProofSuggestions([]);
-        setSelectedProofRequirement(null);
-        setSuggestionsTitleKey(null);
-        setCreateProofIdeasSource(null);
-        return;
-      }
-      if (!res.ok) {
-        setProofSuggestionsError(messageFromApiPayload(data, "Could not load AI photo ideas."));
-        setNewProofSuggestions([]);
-        setSelectedProofRequirement(null);
-        setSuggestionsTitleKey(null);
-        setCreateProofIdeasSource(null);
-        return;
-      }
-      const list = Array.isArray(data.suggestions)
-        ? data.suggestions.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
-        : [];
-      if (list.length < PROOF_SUGGESTIONS_MIN) {
-        setProofSuggestionsError("AI didn’t return enough prompts. Try again.");
-        setNewProofSuggestions([]);
-        setSelectedProofRequirement(null);
-        setSuggestionsTitleKey(null);
-        setCreateProofIdeasSource(null);
-        return;
-      }
-      const slice = list.slice(0, PROOF_SUGGESTIONS_MAX);
-      const src = data.source;
-      setCreateProofIdeasSource(
-        src === "openai" || src === "custom" || src === "mock" ? src : null
-      );
-      setProofSuggestionsError(null);
-      setNewProofSuggestions(slice);
-      setSelectedProofRequirement(slice[0] ?? null);
-      setSuggestionsTitleKey(trimmed);
-    } catch {
-      if (gen !== proofFetchGen.current) return;
-      setProofSuggestionsError("Network error loading AI photo ideas.");
-      setNewProofSuggestions([]);
-      setSelectedProofRequirement(null);
-      setSuggestionsTitleKey(null);
-      setCreateProofIdeasSource(null);
-    } finally {
-      if (gen === proofFetchGen.current) {
-        setProofSuggestionsLoading(false);
-      }
-    }
-  };
-
-  const fetchProofIdeasForEdit = async (title: string) => {
-    const trimmed = title.trim();
-    if (trimmed.length < 2) return;
-    const gen = ++proofEditFetchGen.current;
-    setProofIdeasEditLoading(true);
-    setGoalManagerMessage(null);
-    try {
-      const res = await fetch("/api/goals/proof-suggestions", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmed }),
-      });
-      let data: { suggestions?: unknown; error?: string; source?: unknown };
-      try {
-        data = (await res.json()) as { suggestions?: unknown; error?: string; source?: unknown };
-      } catch {
-        if (gen !== proofEditFetchGen.current) return;
-        setGoalManagerMessage("Bad response from server. Try again.");
-        setEditProofIdeasSource(null);
-        return;
-      }
-      if (gen !== proofEditFetchGen.current) return;
-      if (!res.ok) {
-        setGoalManagerMessage(messageFromApiPayload(data, "Could not refresh AI photo ideas."));
-        setEditProofIdeasSource(null);
-        return;
-      }
-      const list = Array.isArray(data.suggestions)
-        ? data.suggestions.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
-        : [];
-      if (list.length < 2) {
-        setGoalManagerMessage("Not enough new suggestions. Try again.");
-        setEditProofIdeasSource(null);
-        return;
-      }
-      const next = list.slice(0, 3);
-      const src = data.source;
-      setEditProofIdeasSource(
-        src === "openai" || src === "custom" || src === "mock" ? src : null
-      );
-      setEditDraft((prev) => ({
-        ...prev,
-        proofSuggestions: next,
-        proofRequirement: next[0] ?? "",
-      }));
-      setGoalManagerMessage("Photo ideas refreshed — pick the one you want to use.");
-    } catch {
-      if (gen !== proofEditFetchGen.current) return;
-      setGoalManagerMessage("Could not refresh AI photo ideas.");
-      setEditProofIdeasSource(null);
-    } finally {
-      if (gen === proofEditFetchGen.current) {
-        setProofIdeasEditLoading(false);
-      }
-    }
+    setNewProofRequirement("");
   };
 
   const handleCreateGoal = async (e: React.FormEvent) => {
@@ -557,7 +380,9 @@ export default function BuddyPage() {
     setGoalManagerMessage(null);
     if (!canSubmitCreateGoalForm) {
       if (!proofIdeasReadyForCreate) {
-        setGoalManagerMessage("Tap Get AI photo ideas, then pick how you’ll prove this goal (or fix the title if it changed).");
+        setGoalManagerMessage(
+          "Add a title and describe the clear proof photo that will show this goal being done (at least a few words)."
+        );
       } else if (!canAddMoreGoals) {
         setGoalManagerMessage("Goal limit reached for your current plan. Upgrade to add more.");
       }
@@ -576,18 +401,7 @@ export default function BuddyPage() {
     const reminderDays = isDaily ? undefined : spreadReminderDaysForTimesPerWeek(tw);
     const reminderDayFirst = isDaily ? 0 : (reminderDays?.[0] ?? 0);
 
-    if (
-      !selectedProofRequirement ||
-      !isProofRequirementAllowed(selectedProofRequirement, newProofSuggestions)
-    ) {
-      setGoalManagerMessage("Tap Get AI photo ideas, then choose how you’ll prove this goal.");
-      return;
-    }
-    if (suggestionsTitleKey !== newTitle.trim()) {
-      setGoalManagerMessage("Your title changed after loading AI prompts. Tap Get AI photo ideas again.");
-      return;
-    }
-
+    const proofReq = newProofRequirement.trim();
     const hadNoGoals = goals.length === 0;
     setIsAddingGoal(true);
     try {
@@ -599,8 +413,8 @@ export default function BuddyPage() {
         reminderTime: newReminderTime,
         reminderDay: reminderDayFirst,
         reminderDays,
-        proofSuggestions: newProofSuggestions,
-        proofRequirement: selectedProofRequirement,
+        proofSuggestions: proofSuggestionsForStorage(proofReq),
+        proofRequirement: proofReq,
       });
       if (!result.created) {
         const err = result.error?.trim() || "Something went wrong. Please try again.";
@@ -629,34 +443,32 @@ export default function BuddyPage() {
   const startEditingGoal = (goal: Goal) => {
     setEditingGoalId(goal.id);
     const timeNorm = normalizeReminderTimeInput(goal.reminderTime);
-    const sugg = goal.proofSuggestions?.length ? [...goal.proofSuggestions] : [];
-    const req =
-      goal.proofRequirement && sugg.includes(goal.proofRequirement)
-        ? goal.proofRequirement
-        : (sugg[0] ?? "");
     setEditDraft({
       reminderTime: timeNorm || "09:00",
       timesPerWeek: effectiveTimesPerWeek(goal),
-      proofSuggestions: sugg,
-      proofRequirement: req,
+      proofRequirement: (goal.proofRequirement?.trim() || goal.title).trim(),
     });
     setGoalManagerMessage(null);
-    setEditProofIdeasSource(null);
   };
 
   const cancelEditingGoal = () => {
     setEditingGoalId(null);
     setIsSavingEdit(false);
-    setEditProofIdeasSource(null);
   };
 
   const saveEditingGoal = async (goal: Goal) => {
     setGoalManagerMessage(null);
-    if (editDraft.proofSuggestions.length >= 2) {
-      if (!isProofRequirementAllowed(editDraft.proofRequirement, editDraft.proofSuggestions)) {
-        setGoalManagerMessage("Choose one of the suggested photo prompts.");
-        return;
-      }
+    const req = editDraft.proofRequirement.trim();
+    if (!req) {
+      setGoalManagerMessage(
+        "Describe the clear proof photo that will show this goal being done (what the picture should show)."
+      );
+      return;
+    }
+    const store = proofSuggestionsForStorage(req);
+    if (!isProofRequirementAllowed(req, store)) {
+      setGoalManagerMessage("Invalid proof line.");
+      return;
     }
 
     const tw = editDraft.timesPerWeek;
@@ -671,16 +483,10 @@ export default function BuddyPage() {
         reminderTime: editDraft.reminderTime,
         reminderDay: isDaily ? 0 : reminderDays[0]!,
         reminderDays: isDaily ? ([] as number[]) : reminderDays,
+        proofSuggestions: store,
+        proofRequirement: req,
       };
-      if (editDraft.proofSuggestions.length >= 2) {
-        await updateGoal(goal.id, {
-          ...schedulePayload,
-          proofSuggestions: editDraft.proofSuggestions,
-          proofRequirement: editDraft.proofRequirement.trim(),
-        });
-      } else {
-        await updateGoal(goal.id, schedulePayload);
-      }
+      await updateGoal(goal.id, schedulePayload);
       setEditingGoalId(null);
       setGoalManagerMessage("Goal updated.");
     } finally {
@@ -917,66 +723,23 @@ export default function BuddyPage() {
               className="mt-6 rounded-xl border border-slate-200/90 bg-slate-50/60 p-4 dark:border-slate-600/80 dark:bg-slate-950/40"
               data-tour="goal-proof-fetch"
             >
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Photo proof</p>
+              <label className="text-xs font-semibold text-slate-800 dark:text-slate-100" htmlFor="new-proof-req">
+                What should your proof photo show?
+              </label>
               <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                Loads a few photo prompts from your title. Pick one; refresh or edit the goal anytime.
+                When you check in, your proof must be a clear picture that shows this goal actually being done. Describe
+                what that photo should show here—local AI uses this line when you submit (same text on the proof screen).
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void fetchProofIdeasForCreate()}
-                  disabled={proofSuggestionsLoading}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-prove-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-prove-700 disabled:opacity-60"
-                >
-                  {proofSuggestionsLoading ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Loading…
-                    </>
-                  ) : (
-                    "Get AI photo ideas"
-                  )}
-                </button>
-                {newProofSuggestions.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => void fetchProofIdeasForCreate()}
-                    disabled={proofSuggestionsLoading}
-                    className="text-xs font-medium text-prove-700 underline-offset-2 hover:underline disabled:opacity-50 dark:text-prove-300"
-                  >
-                    Refresh AI ideas
-                  </button>
-                )}
-              </div>
-              {proofSuggestionsError && (
-                <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-200">{proofSuggestionsError}</p>
-              )}
-              {createProofIdeasSource === "mock" && newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN && (
-                <p className="mt-2 text-xs text-amber-900 dark:text-amber-200/95">
-                  These are built-in sample prompts (not a live model). For real AI ideas, set{" "}
-                  <span className="font-mono text-[10px]">OPENAI_API_KEY</span> or{" "}
-                  <span className="font-mono text-[10px]">CUSTOM_AI_SUGGESTIONS_URL</span> where the app is hosted
-                  (e.g. Vercel).
-                </p>
-              )}
-              {newProofSuggestions.length > 0 && (
-                <ul className="mt-3 space-y-2" data-tour="goal-proof-pick">
-                  {newProofSuggestions.map((s, idx) => (
-                    <li key={`proof-opt-${idx}`}>
-                      <label className="flex cursor-pointer gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                        <input
-                          type="radio"
-                          name="proof-requirement-new"
-                          checked={selectedProofRequirement === s}
-                          onChange={() => setSelectedProofRequirement(s)}
-                          className="mt-1"
-                        />
-                        <span>{s}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <textarea
+                id="new-proof-req"
+                value={newProofRequirement}
+                onChange={(e) => setNewProofRequirement(e.target.value)}
+                rows={3}
+                required
+                minLength={3}
+                placeholder="e.g. Me on the treadmill with the display visible"
+                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+              />
             </div>
 
             <div className="mt-6 space-y-4" data-tour="goal-schedule">
@@ -1048,7 +811,11 @@ export default function BuddyPage() {
               <button
                 type="submit"
                 disabled={isAddingGoal || !canSubmitCreateGoalForm}
-                title={!proofIdeasReadyForCreate ? "Get AI photo ideas and choose one prompt first" : undefined}
+                title={
+                  !proofIdeasReadyForCreate
+                    ? "Add a title and describe the clear proof photo that will show this goal being done"
+                    : undefined
+                }
                 className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-prove-700 disabled:opacity-60"
               >
                 {isAddingGoal ? "Adding…" : "Add goal"}
@@ -1351,60 +1118,21 @@ export default function BuddyPage() {
                       />
                     </label>
 
-                    <div className="mt-4 rounded-lg border border-slate-200/90 bg-slate-50/80 p-3 dark:border-slate-600 dark:bg-slate-900/50">
-                      <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100">Photo proof</p>
-                      <p className="mt-0.5 text-[10px] text-slate-600 dark:text-slate-400">
-                        Choose from the saved prompts for “{entry.goal.title}”. Refresh loads new options from the
-                        server.
+                    <label className="mt-4 block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                      What should proof photos show?
+                      <p className="mt-1 font-normal text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+                        Check-ins need a clear picture that shows this goal being done—describe what that photo should
+                        show.
                       </p>
-                      {editDraft.proofSuggestions.length >= 2 ? (
-                        <ul className="mt-2 space-y-1.5">
-                          {editDraft.proofSuggestions.map((s) => (
-                            <li key={s}>
-                              <label className="flex cursor-pointer gap-2 rounded border border-slate-200 bg-white/90 px-2 py-1.5 text-[11px] dark:border-slate-600 dark:bg-slate-900/50">
-                                <input
-                                  type="radio"
-                                  name={`proof-req-${entry.goal.id}`}
-                                  checked={editDraft.proofRequirement === s}
-                                  onChange={() =>
-                                    setEditDraft((prev) => ({ ...prev, proofRequirement: s }))
-                                  }
-                                  className="mt-0.5"
-                                />
-                                <span>{s}</span>
-                              </label>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
-                          No prompts loaded for this goal yet.
-                        </p>
-                      )}
-                      {editProofIdeasSource === "mock" && editDraft.proofSuggestions.length >= 2 && (
-                        <p className="mt-2 text-[10px] text-amber-900 dark:text-amber-200/95">
-                          Last refresh used built-in samples. Set{" "}
-                          <span className="font-mono">OPENAI_API_KEY</span> or{" "}
-                          <span className="font-mono">CUSTOM_AI_SUGGESTIONS_URL</span> on the host for model-backed
-                          prompts.
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        disabled={proofIdeasEditLoading}
-                        onClick={() => void fetchProofIdeasForEdit(entry.goal.title)}
-                        className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-prove-700 hover:underline disabled:opacity-50 dark:text-prove-300"
-                      >
-                        {proofIdeasEditLoading ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Loading…
-                          </>
-                        ) : (
-                          "Refresh AI ideas"
-                        )}
-                      </button>
-                    </div>
+                      <textarea
+                        value={editDraft.proofRequirement}
+                        onChange={(e) =>
+                          setEditDraft((prev) => ({ ...prev, proofRequirement: e.target.value }))
+                        }
+                        rows={3}
+                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                      />
+                    </label>
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <button

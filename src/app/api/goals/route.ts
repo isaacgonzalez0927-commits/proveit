@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   isProofRequirementAllowed,
   parseProofSuggestionsPayload,
+  proofSuggestionsForStorage,
 } from "@/lib/proofSuggestions";
 import { normalizeProBreakUsageByMonth } from "@/lib/goalBreak";
 
@@ -136,18 +137,20 @@ export async function POST(request: NextRequest) {
     proofRequirement: proofRequirementBody,
   } = body;
 
-  const proofSuggestionsParsed = parseProofSuggestionsPayload(proofSuggestionsBody);
   const proofRequirementParsed =
     typeof proofRequirementBody === "string" ? proofRequirementBody.trim() : "";
-  if (
-    !proofSuggestionsParsed ||
-    !isProofRequirementAllowed(proofRequirementParsed, proofSuggestionsParsed)
-  ) {
+  if (!proofRequirementParsed) {
     return NextResponse.json(
-      {
-        error:
-          "Choose one of the AI-generated photo prompts for this goal (tap Get AI photo ideas, then pick an option).",
-      },
+      { error: "Add what your proof photo should show for this goal." },
+      { status: 400 }
+    );
+  }
+  let proofSuggestionsParsed = parseProofSuggestionsPayload(proofSuggestionsBody);
+  if (!proofSuggestionsParsed) {
+    proofSuggestionsParsed = proofSuggestionsForStorage(proofRequirementParsed);
+  } else if (!isProofRequirementAllowed(proofRequirementParsed, proofSuggestionsParsed)) {
+    return NextResponse.json(
+      { error: "Pick one of the photo prompts, or they must include your selected proof line." },
       { status: 400 }
     );
   }
@@ -335,16 +338,20 @@ export async function PATCH(request: NextRequest) {
   }
 
   if ("proofRequirement" in updates || "proofSuggestions" in updates) {
-    if (!("proofRequirement" in updates && "proofSuggestions" in updates)) {
-      return NextResponse.json(
-        { error: "Send proofSuggestions and proofRequirement together when updating proof prompts." },
-        { status: 400 }
-      );
-    }
-    const suggList = parseProofSuggestionsPayload(updates.proofSuggestions);
     const reqStr = typeof updates.proofRequirement === "string" ? updates.proofRequirement.trim() : "";
-    if (!suggList || !isProofRequirementAllowed(reqStr, suggList)) {
-      return NextResponse.json({ error: "Pick one of the suggested photo prompts." }, { status: 400 });
+    if (!reqStr) {
+      return NextResponse.json({ error: "Proof requirement text is required." }, { status: 400 });
+    }
+    const explicitList =
+      "proofSuggestions" in updates
+        ? parseProofSuggestionsPayload(updates.proofSuggestions)
+        : null;
+    if ("proofSuggestions" in updates && updates.proofSuggestions != null && !explicitList) {
+      return NextResponse.json({ error: "Invalid proofSuggestions payload." }, { status: 400 });
+    }
+    const suggList = explicitList ?? proofSuggestionsForStorage(reqStr);
+    if (!isProofRequirementAllowed(reqStr, suggList)) {
+      return NextResponse.json({ error: "Proof line must match one of the stored prompts, or resave without a list." }, { status: 400 });
     }
     dbUpdates.proof_suggestions = suggList;
     dbUpdates.proof_requirement = reqStr;

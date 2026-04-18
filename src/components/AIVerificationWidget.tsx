@@ -1,7 +1,5 @@
-"use client";
-
 /**
- * AIVerificationWidget (3)
+ * AIVerificationWidget
  * ─────────────────────────────────────────────────────────────────────────────
  * Drop-in React component for AI-powered goal verification.
  * Uses CLIP via Transformers.js — 100% local, zero external API calls.
@@ -10,7 +8,7 @@
  *   npm install @huggingface/transformers
  *
  * ─── Usage ──────────────────────────────────────────────────────────────────
- *   import AIVerificationWidget from './AIVerificationWidget (3)';
+ *   import AIVerificationWidget from './AIVerificationWidget';
  *
  *   <AIVerificationWidget
  *     onResult={(result) => console.log(result.verified, result.confidence)}
@@ -29,12 +27,26 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  useMemo,
   type CSSProperties,
-} from "react";
-import type { VerificationResult, VerificationScore } from "@/types/aivVerification";
+} from 'react';
+import { pipeline, env } from '@huggingface/transformers';
 
-export type { VerificationResult, VerificationScore } from "@/types/aivVerification";
+// ─── Public types ─────────────────────────────────────────────────────────────
+
+export interface VerificationScore {
+  label: string;
+  score: number;
+}
+
+export interface VerificationResult {
+  /** Whether the image was recognised as matching the goal */
+  verified: boolean;
+  /** Combined probability across all goal-matching labels, 0–1 */
+  confidence: number;
+  topLabel: string;
+  goalName: string;
+  allScores: VerificationScore[];
+}
 
 export interface AIVerificationWidgetProps {
   /** Fired whenever a verification attempt finishes */
@@ -53,18 +65,6 @@ export interface AIVerificationWidgetProps {
   className?: string;
   /** Extra inline styles applied to the widget's root element */
   style?: CSSProperties;
-  /** When set, seeds the goal field once (e.g. current goal proof line from the host page). */
-  initialGoalText?: string;
-  /**
-   * Optional lines for the purple “proof photo ideas” box (e.g. `goal.proofSuggestions` + fallbacks from the host).
-   * When non-empty, shown instead of the built-in `generateSuggestions` templates.
-   */
-  prefetchedPhotoIdeas?: string[];
-  /**
-   * When set (e.g. goal title), shows “Get AI photo ideas” which calls `POST /api/goals/proof-suggestions`
-   * — same pipeline as Buddy (OpenAI / your API / mock).
-   */
-  ideasFetchTitle?: string;
 }
 
 // ─── Label generation ─────────────────────────────────────────────────────────
@@ -85,29 +85,20 @@ const EXAMPLE_GOALS = [
   'journaling',
 ];
 
+// Broad/lenient label set — accepts direct action, scene, location, or
+// equipment/object shots. Any of these matching contributes to the combined
+// confidence, so you don't need a person-doing-the-thing photo to verify.
 function makeLabels(goalText: string): { all: string[]; positive: string[] } {
   const g = goalText.trim();
-  const positive = [`a photo of ${g}`, `a person ${g}`];
-  return { all: [...positive, ...NEGATIVE_LABELS], positive };
-}
-
-// Generates proof photo suggestions that are DIRECTLY aligned with what the
-// CLIP model scores against (the two positive labels in `makeLabels`:
-// "a photo of ${g}" and "a person ${g}").
-//
-// Each suggestion is just a different camera angle/framing of the same
-// underlying scene CLIP is looking for — so following ANY of them should
-// score high on at least one of the positive labels.
-function generateSuggestions(goalText: string): string[] {
-  const g = goalText.trim();
-  return [
-    // Framing #1 — action shot. Matches both positive labels strongly.
-    `A clear photo of you actively ${g}`,
-    // Framing #2 — selfie angle. Matches "a person ${g}" strongly.
-    `A selfie or self-taken shot that clearly shows you ${g}`,
-    // Framing #3 — wide shot. Matches "a photo of ${g}" strongly.
-    `A wider photo showing the full scene of you ${g}`,
+  const positive = [
+    `a photo of ${g}`,
+    `a person ${g}`,
+    `a scene or environment for ${g}`,
+    `a place or location where people ${g}`,
+    `equipment, tools, or items used for ${g}`,
+    `something clearly related to ${g}`,
   ];
+  return { all: [...positive, ...NEGATIVE_LABELS], positive };
 }
 
 // ─── Scoped CSS (injected once via <style id="aivw-styles">) ──────────────────
@@ -147,16 +138,6 @@ const CSS = `
 .aivw-chip{padding:4px 12px;border:1px solid #e2e8f0;border-radius:999px;background:#f8fafc;font-size:12px;color:#64748b;cursor:pointer;transition:border-color .12s,background .12s,color .12s;font-family:inherit}
 .aivw-chip:hover:not(:disabled){border-color:#c4b5fd;background:#f5f3ff;color:#7c3aed}
 .aivw-chip:disabled{opacity:.45;cursor:not-allowed}
-
-/* ── photo suggestions ── */
-.aivw-sugg{background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:12px 14px;margin-top:10px}
-.aivw-sugg-hdr{display:flex;align-items:center;gap:6px;margin:0 0 10px}
-.aivw-sugg-title{font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:.05em;margin:0}
-.aivw-sugg-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
-.aivw-sugg-item{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#3b0764;line-height:1.4}
-.aivw-sugg-bullet{width:18px;height:18px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.aivw-sugg-foot{margin:10px 0 0;padding-top:8px;border-top:1px dashed #e9d5ff;font-size:10.5px;color:#7c3aed;line-height:1.45}
-.aivw-sugg-foot code{background:rgba(124,58,237,.08);padding:1px 5px;border-radius:4px;font-family:ui-monospace,Consolas,monospace;font-size:10px;color:#5b21b6}
 
 /* ── divider ── */
 .aivw-hr{border:none;border-top:1px solid #f1f5f9;margin:0}
@@ -233,12 +214,9 @@ const CSS = `
 export default function AIVerificationWidget({
   onResult,
   threshold = 0.55,
-  modelId = "Xenova/clip-vit-base-patch32",
-  className = "",
+  modelId = 'Xenova/clip-vit-base-patch32',
+  className = '',
   style,
-  initialGoalText,
-  prefetchedPhotoIdeas,
-  ideasFetchTitle,
 }: AIVerificationWidgetProps) {
   type Status = 'loading' | 'ready' | 'error';
 
@@ -255,22 +233,11 @@ export default function AIVerificationWidget({
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [verifyErr, setVerifyErr] = useState<string | null>(null);
 
-  /** In-widget refresh from `/api/goals/proof-suggestions` (overrides prefetched list when set). */
-  const [serverPhotoIdeas, setServerPhotoIdeas] = useState<string[] | null>(null);
-  const [ideasLoading, setIdeasLoading] = useState(false);
-  const [ideasErr, setIdeasErr] = useState<string | null>(null);
-
-  type ClipClassifyFn = (image: string, labels: string[]) => Promise<VerificationScore[]>;
-  const pipelineRef = useRef<unknown>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pipelineRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const active = modelStatus === "ready" && !isVerifying;
-
-  useEffect(() => {
-    const g = initialGoalText?.trim();
-    if (!g) return;
-    setGoalText((prev) => (prev.trim() ? prev : g));
-  }, [initialGoalText]);
+  const active = modelStatus === 'ready' && !isVerifying;
 
   // ── Inject scoped CSS once ───────────────────────────────────────────────
   useEffect(() => {
@@ -288,17 +255,16 @@ export default function AIVerificationWidget({
 
     (async () => {
       try {
-        const { pipeline, env } = await import("@huggingface/transformers");
         env.allowLocalModels = false;
         pipelineRef.current = await pipeline(
-          "zero-shot-image-classification",
+          'zero-shot-image-classification',
           modelId,
           {
             progress_callback: (p: { status: string; progress?: number; file?: string }) => {
               if (cancelled) return;
-              if (p.status === "progress" && p.progress != null) {
+              if (p.status === 'progress' && p.progress != null) {
                 setLoadPct(Math.min(99, p.progress));
-                setLoadFile(p.file ?? "");
+                setLoadFile(p.file ?? '');
               }
             },
           }
@@ -349,8 +315,7 @@ export default function AIVerificationWidget({
   // ── Run CLIP on main thread ──────────────────────────────────────────────
   const handleVerify = async () => {
     const trimmed = goalText.trim();
-    const pipe = pipelineRef.current as ClipClassifyFn | null;
-    if (!trimmed || !imageData || !pipe) return;
+    if (!trimmed || !imageData || !pipelineRef.current) return;
 
     setIsVerifying(true);
     setResult(null);
@@ -361,7 +326,7 @@ export default function AIVerificationWidget({
 
     try {
       const { all: labels, positive: positiveLabels } = makeLabels(trimmed);
-      const raw: VerificationScore[] = await pipe(imageData, labels);
+      const raw: VerificationScore[] = await pipelineRef.current(imageData, labels);
       const sorted = [...raw].sort((a, b) => b.score - a.score);
       const top = sorted[0];
 
@@ -381,7 +346,7 @@ export default function AIVerificationWidget({
       };
 
       setResult(res);
-      onResult?.({ ...res, imageDataUrl: imageData });
+      onResult?.(res);
     } catch (err) {
       setVerifyErr(String(err));
     } finally {
@@ -394,73 +359,9 @@ export default function AIVerificationWidget({
     setImageData(null);
     setGoalText('');
     setVerifyErr(null);
-    setServerPhotoIdeas(null);
-    setIdeasErr(null);
   };
 
-  const fetchServerIdeas = useCallback(async () => {
-    const t = ideasFetchTitle?.trim();
-    if (!t || t.length < 2) return;
-    setIdeasLoading(true);
-    setIdeasErr(null);
-    try {
-      const res = await fetch("/api/goals/proof-suggestions", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: t }),
-      });
-      const data = (await res.json()) as { suggestions?: unknown; error?: string };
-      if (!res.ok) {
-        setIdeasErr(typeof data.error === "string" ? data.error : "Could not load ideas.");
-        return;
-      }
-      const list = Array.isArray(data.suggestions)
-        ? data.suggestions
-            .filter((x): x is string => typeof x === "string")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
-      if (list.length < 2) {
-        setIdeasErr("Not enough suggestions. Check production env or try again.");
-        return;
-      }
-      setServerPhotoIdeas(list.slice(0, 3));
-    } catch {
-      setIdeasErr("Network error loading ideas.");
-    } finally {
-      setIdeasLoading(false);
-    }
-  }, [ideasFetchTitle]);
-
-  useEffect(() => {
-    setServerPhotoIdeas(null);
-    setIdeasErr(null);
-  }, [ideasFetchTitle]);
-
   const trimmedGoal = goalText.trim();
-
-  const suggestionLines = useMemo(() => {
-    if (serverPhotoIdeas && serverPhotoIdeas.length > 0) {
-      return serverPhotoIdeas.slice(0, 3);
-    }
-    const pre = (prefetchedPhotoIdeas ?? []).map((s) => s.trim()).filter((s) => s.length > 0);
-    if (pre.length > 0) return pre.slice(0, 3);
-    return trimmedGoal ? generateSuggestions(trimmedGoal) : [];
-  }, [serverPhotoIdeas, prefetchedPhotoIdeas, trimmedGoal]);
-
-  const suggBoxTitle =
-    serverPhotoIdeas && serverPhotoIdeas.length > 0
-      ? "AI photo ideas"
-      : (prefetchedPhotoIdeas ?? []).some((s) => s.trim())
-        ? "Photo ideas (this goal)"
-        : "Proof photo ideas";
-
-  const usingClipTemplateFoot =
-    !(serverPhotoIdeas && serverPhotoIdeas.length > 0) &&
-    !(prefetchedPhotoIdeas ?? []).some((s) => s.trim()) &&
-    !!trimmedGoal;
-
   const canVerify = !!trimmedGoal && !!imageData && active;
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -569,7 +470,7 @@ export default function AIVerificationWidget({
           {/* Step 1 — Goal input */}
           <div>
             <label htmlFor="aivw-goal-input" className="aivw-field-label">
-              Step 1 — What&apos;s your goal?
+              Step 1 — What's your goal?
             </label>
             <div className="aivw-input-wrap">
               <input
@@ -613,82 +514,6 @@ export default function AIVerificationWidget({
               </div>
             )}
 
-            {/* Photo proof suggestions */}
-            {trimmedGoal && (
-              <div className="aivw-sugg">
-                <div
-                  className="aivw-sugg-hdr"
-                  style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                      <circle cx="12" cy="13" r="4"/>
-                    </svg>
-                    <p className="aivw-sugg-title" style={{ margin: 0 }}>
-                      {suggBoxTitle}
-                    </p>
-                  </div>
-                  {ideasFetchTitle && ideasFetchTitle.trim().length >= 2 && (
-                    <button
-                      type="button"
-                      onClick={() => void fetchServerIdeas()}
-                      disabled={!active || ideasLoading}
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#6d28d9",
-                        background: "#f5f3ff",
-                        border: "1px solid #e9d5ff",
-                        borderRadius: 8,
-                        padding: "4px 10px",
-                        cursor: active && !ideasLoading ? "pointer" : "not-allowed",
-                        opacity: active && !ideasLoading ? 1 : 0.65,
-                        fontFamily: "inherit",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {ideasLoading ? "Loading…" : "Get AI ideas"}
-                    </button>
-                  )}
-                </div>
-                {ideasErr ? (
-                  <p style={{ margin: "8px 0 0", fontSize: 11, color: "#b91c1c" }}>{ideasErr}</p>
-                ) : null}
-                <ul className="aivw-sugg-list">
-                  {suggestionLines.map((s) => (
-                    <li key={s} className="aivw-sugg-item">
-                      <span className="aivw-sugg-bullet">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 20 20" fill="#7c3aed">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd"/>
-                        </svg>
-                      </span>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-                <p className="aivw-sugg-foot">
-                  {usingClipTemplateFoot ? (
-                    <>
-                      The AI passes your photo if it looks like{" "}
-                      <code>&ldquo;a photo of {trimmedGoal}&rdquo;</code> or{" "}
-                      <code>&ldquo;a person {trimmedGoal}&rdquo;</code>. Each idea above is one way to capture
-                      exactly that.
-                    </>
-                  ) : serverPhotoIdeas && serverPhotoIdeas.length > 0 ? (
-                    <>
-                      These lines were just loaded from your app&apos;s server (same as Buddy). Local CLIP still
-                      compares your upload to the <strong>goal text in step 1</strong>.
-                    </>
-                  ) : (
-                    <>
-                      Lines above come from this goal (Buddy) or generic examples. Local CLIP still scores your photo
-                      against the <strong>goal text in step 1</strong>.
-                    </>
-                  )}
-                </p>
-              </div>
-            )}
           </div>
 
           <hr className="aivw-hr" />
@@ -701,7 +526,6 @@ export default function AIVerificationWidget({
 
             {imageData ? (
               <div className="aivw-img-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imageData} alt="Uploaded proof" className="aivw-img" />
                 <button
                   className="aivw-img-rm"

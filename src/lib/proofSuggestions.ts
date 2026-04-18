@@ -244,8 +244,15 @@ export function parseProofSuggestionsPayload(raw: unknown): string[] | null {
 }
 
 export function isValidProofBundle(proofSuggestions: unknown, proofRequirement: unknown): boolean {
-  const list = parseProofSuggestionsPayload(proofSuggestions);
-  if (!list) return false;
   const req = typeof proofRequirement === "string" ? proofRequirement.trim() : "";
+  if (!req) return false;
+  const list = parseProofSuggestionsPayload(proofSuggestions);
+  if (!list) return true;
   return isProofRequirementAllowed(req, list);
+}
+
+/** Legacy rows stored goal prompts as 2–3 strings; free-text goals use the requirement repeated. */
+export function proofSuggestionsForStorage(requirement: string): string[] {
+  const r = requirement.trim();
+  return [r, r, r];
 }
