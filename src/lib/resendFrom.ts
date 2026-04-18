@@ -32,6 +32,8 @@ export function readResendFromEnv(): string | undefined {
   if (d) return d;
   const e = trimEnvEmail(process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL);
   if (e) return e;
+  const f = trimEnvEmail(process.env.RESEND_EMAIL_FROM);
+  if (f) return f;
   return undefined;
 }
 
@@ -61,6 +63,6 @@ export function getResendFromOrProductionError():
     ok: false,
     status: 503,
     error:
-      "The server still does not see a verified sender. Fix: Vercel → Project → Settings → Environment Variables → add RESEND_FROM_EMAIL (e.g. Proveit <noreply@yourdomain.com>) on **Production**, save, then **Redeploy** (Deployments → … → Redeploy). Also try: no extra spaces or quotes around the value. Aliases we read: RESEND_FROM_EMAIL, RESEND_FROM, EMAIL_FROM, MAIL_FROM, NEXT_PUBLIC_RESEND_FROM_EMAIL. Branch / Preview URLs use sandbox mail unless you add the same variable for **Preview** too.",
+      "The server still does not see a verified Resend sender. Do this on Vercel: (1) Project → Settings → Environment Variables. (2) Add RESEND_FROM_EMAIL with value like Proveit <noreply@yourdomain.com> where the domain is verified in Resend. (3) Enable the **Production** checkbox for that variable (not only Preview). (4) Save, then Deployments → open latest Production deployment → Redeploy. (5) Open /api/health/email on your live site — senderResolved should be true. No extra quotes in the Vercel value. Names we accept: RESEND_FROM_EMAIL, RESEND_FROM, RESEND_EMAIL_FROM, EMAIL_FROM, MAIL_FROM, NEXT_PUBLIC_RESEND_FROM_EMAIL.",
   };
 }

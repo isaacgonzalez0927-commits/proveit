@@ -40,6 +40,16 @@ describe("readResendFromEnv", () => {
     process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL = "Proveit <pub@verified.com>";
     expect(readResendFromEnv()).toBe("Proveit <pub@verified.com>");
   });
+
+  it("falls back to RESEND_EMAIL_FROM after other keys", () => {
+    delete process.env.RESEND_FROM_EMAIL;
+    delete process.env.RESEND_FROM;
+    delete process.env.EMAIL_FROM;
+    delete process.env.MAIL_FROM;
+    delete process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL;
+    process.env.RESEND_EMAIL_FROM = "Proveit <alias@verified.com>";
+    expect(readResendFromEnv()).toBe("Proveit <alias@verified.com>");
+  });
 });
 
 describe("getResendFromOrProductionError", () => {

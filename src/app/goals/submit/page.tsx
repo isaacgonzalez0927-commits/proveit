@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
@@ -16,6 +17,14 @@ import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
 import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
 import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
+import type { VerificationResult } from "@/components/AIVerificationWidget";
+
+const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
+  ssr: false,
+  loading: () => (
+    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading local AI verifier…</p>
+  ),
+});
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
@@ -123,12 +132,6 @@ function SubmitProofContent() {
     setHideHeader(hideHeaderForCamera);
     return () => setHideHeader(false);
   }, [hideHeaderForCamera, setHideHeader]);
-
-  /** Warm up Transformers.js CLIP in the background (first load downloads ~300MB; then cached). */
-  useEffect(() => {
-    if (!user || !goal || !inWindow) return;
-    void import("@/lib/localClipVerify").then((m) => m.preloadLocalClipModel());
-  }, [user, goal?.id, inWindow]);
 
   useEffect(() => {
     if (!authReady || hasRedirected.current || pageLoading) return;
@@ -267,17 +270,11 @@ function SubmitProofContent() {
     stopCamera();
   }, [facingMode, stopCamera]);
 
-  const submitForVerification = useCallback(async () => {
-    if (!imageDataUrl || !goal || !user) return;
-    lightImpact();
-    setStep("uploading");
-
-    let imageToStore = imageDataUrl;
-    const submissionId = generateId();
-
-    try {
-      // Compress image to avoid API body size limits
-      const compressed = await compressImage(imageDataUrl, 1200, 0.75);
+  const persistCompressedProof = useCallback(
+    async (compressed: string, clipSummary: string, aiPassed: boolean) => {
+      if (!goal || !user) return;
+      let imageToStore = compressed;
+      const submissionId = generateId();
       const base64 = compressed.split(",")[1];
       if (!base64) {
         setVerified(false);
@@ -286,12 +283,11 @@ function SubmitProofContent() {
         return;
       }
 
-      // If using Supabase, upload to Storage and use URL instead of base64
       if (useSupabase && supabase) {
         try {
           const storageUrl = await uploadProofToStorage(supabase, user.id, submissionId, compressed);
           imageToStore = storageUrl;
-        } catch (uploadErr) {
+        } catch {
           setVerified(false);
           setFeedback("Failed to upload image. Please try again.");
           setStep("result");
@@ -301,7 +297,67 @@ function SubmitProofContent() {
         imageToStore = compressed;
       }
 
-      // Local CLIP only (browser, Transformers.js). Lazy-load so the heavy runtime is not in the main chunk.
+      try {
+        const now = new Date();
+        const subsNow = getSubmissionsForGoal(goal.id);
+        const withinWindow = isWithinSubmissionWindow(goal, now, subsNow);
+        const passed = aiPassed && withinWindow;
+        const msg = withinWindow ? clipSummary : "Submissions are closed right now.";
+
+        const sub = await addSubmission({
+          goalId: goal.id,
+          date: todayStr,
+          imageDataUrl: imageToStore,
+          status: passed ? "verified" : "rejected",
+          aiFeedback: msg,
+          verifiedAt: passed ? new Date().toISOString() : undefined,
+        });
+        setSubmissionId(sub.id);
+        setVerified(passed);
+        setFeedback(msg);
+        await updateSubmission(sub.id, {
+          status: passed ? "verified" : "rejected",
+          aiFeedback: msg,
+          verifiedAt: passed ? new Date().toISOString() : undefined,
+        });
+        if (passed) {
+          const g = goals.find((x: Goal) => x.id === goal.id);
+          if (g && !g.completedDates.includes(todayStr)) {
+            await updateGoal(goal.id, {
+              completedDates: [...g.completedDates, todayStr],
+            });
+          }
+        }
+      } catch {
+        setVerified(false);
+        setFeedback("Something went wrong. Please try again.");
+      } finally {
+        setStep("result");
+      }
+    },
+    [
+      goal,
+      todayStr,
+      user,
+      addSubmission,
+      updateSubmission,
+      updateGoal,
+      goals,
+      useSupabase,
+      supabase,
+      getSubmissionsForGoal,
+    ]
+  );
+
+  const submitForVerification = useCallback(async () => {
+    if (!imageDataUrl || !goal || !user) return;
+    lightImpact();
+    setStep("uploading");
+
+    let imageToStore = imageDataUrl;
+
+    try {
+      const compressed = await compressImage(imageDataUrl, 1200, 0.75);
       const verifyGoalText = (goal.proofRequirement?.trim() || goal.title).trim();
       const { verifyWithLocalClip, formatLocalClipUserFeedback } = await import(
         "@/lib/localClipVerify"
@@ -315,38 +371,7 @@ function SubmitProofContent() {
         clip,
         DEFAULT_CLIP_VERIFY_THRESHOLD
       );
-      const aiPassed = clip.verified;
-      const now = new Date();
-      const subsNow = getSubmissionsForGoal(goal.id);
-      const withinWindow = isWithinSubmissionWindow(goal, now, subsNow);
-
-      const passed = aiPassed && withinWindow;
-      const msg = withinWindow ? clipSummary : "Submissions are closed right now.";
-
-      const sub = await addSubmission({
-        goalId: goal.id,
-        date: todayStr,
-        imageDataUrl: imageToStore,
-        status: passed ? "verified" : "rejected",
-        aiFeedback: msg,
-        verifiedAt: passed ? new Date().toISOString() : undefined,
-      });
-      setSubmissionId(sub.id);
-      setVerified(passed);
-      setFeedback(msg);
-      await updateSubmission(sub.id, {
-        status: passed ? "verified" : "rejected",
-        aiFeedback: msg,
-        verifiedAt: passed ? new Date().toISOString() : undefined,
-      });
-      if (passed) {
-        const g = goals.find((x: Goal) => x.id === goal.id);
-        if (g && !g.completedDates.includes(todayStr)) {
-          await updateGoal(goal.id, {
-            completedDates: [...g.completedDates, todayStr],
-          });
-        }
-      }
+      await persistCompressedProof(compressed, clipSummary, clip.verified);
     } catch (err) {
       setVerified(false);
       setFeedback("Something went wrong. Please try again.");
@@ -362,21 +387,41 @@ function SubmitProofContent() {
       } catch {
         setFeedback("Failed to save submission. Please try again.");
       }
+      setStep("result");
     }
-    setStep("result");
   }, [
     imageDataUrl,
     goal,
     todayStr,
     user,
     addSubmission,
-    updateSubmission,
-    updateGoal,
-    goals,
-    useSupabase,
-    supabase,
-    getSubmissionsForGoal,
+    persistCompressedProof,
   ]);
+
+  const handleAiWidgetResult = useCallback(
+    (result: VerificationResult) => {
+      const proofUrl = result.imageDataUrl;
+      if (!proofUrl || !goal || !user) return;
+      lightImpact();
+      setStep("uploading");
+      void (async () => {
+        try {
+          const compressed = await compressImage(proofUrl, 1200, 0.75);
+          const { formatLocalClipUserFeedback } = await import("@/lib/localClipVerify");
+          const { summaryLine } = formatLocalClipUserFeedback(
+            { verified: result.verified, confidence: result.confidence },
+            DEFAULT_CLIP_VERIFY_THRESHOLD
+          );
+          await persistCompressedProof(compressed, summaryLine, result.verified);
+        } catch {
+          setVerified(false);
+          setFeedback("Something went wrong. Please try again.");
+          setStep("result");
+        }
+      })();
+    },
+    [goal, user, persistCompressedProof]
+  );
 
   if (!authReady || pageLoading || !user || !goal) {
     return (
@@ -465,6 +510,24 @@ function SubmitProofContent() {
               Transformers.js) — no external AI APIs. You can submit any day you still have a check-in left this week
               (Sun–Sat), once per calendar day.
             </p>
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/40">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                Local AI widget (optional)
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Same CLIP-style check as the camera flow. When you finish verification here, your proof is saved like a
+                normal submission. You can still use the camera below instead.
+              </p>
+              <div className="mt-3">
+                <AIVerificationWidget
+                  initialGoalText={verifyPromptText}
+                  threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
+                  onResult={(result) => {
+                    void handleAiWidgetResult(result);
+                  }}
+                />
+              </div>
+            </div>
           </>
         )}
 
