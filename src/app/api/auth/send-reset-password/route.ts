@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getResendFromOrProductionError } from "@/lib/resendFrom";
+import { readResendErrorMessage } from "@/lib/resendHttp";
 import { isInternalAuthEmail, normalizeUsername } from "@/lib/usernameAuth";
 
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
@@ -174,12 +175,9 @@ export async function POST(request: NextRequest) {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = err?.message ?? err?.error ?? (typeof err === "string" ? err : null);
-    return NextResponse.json(
-      { error: msg ? `Resend: ${msg}` : `Resend failed (${res.status}).` },
-      { status: 502 }
-    );
+    const msg = await readResendErrorMessage(res);
+    console.error("[send-reset-password] Resend API failed:", res.status, msg);
+    return NextResponse.json({ error: `Resend: ${msg}` }, { status: 502 });
   }
 
   return NextResponse.json({ message: "Check your email for the reset link." });

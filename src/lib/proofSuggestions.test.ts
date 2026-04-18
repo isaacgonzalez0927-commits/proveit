@@ -52,3 +52,4 @@ describe("mockProofSuggestionsForTitle", () => {
     expect(m.every((s) => s.includes("Run"))).toBe(true);
   });
 });
+

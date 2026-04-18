@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
+import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
+import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
@@ -102,6 +104,17 @@ function SubmitProofContent() {
 
   const goalSubs = goal ? getSubmissionsForGoal(goal.id) : [];
   const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
+  /**
+   * Verification + UI copy: explicit proof instruction when set, otherwise goal title.
+   * Matches CLIP `goalText` (local Transformers.js only — no server verify).
+   */
+  const verifyPromptText = goal
+    ? (goal.proofRequirement?.trim() || goal.title).trim()
+    : "";
+  const proofPhotoIdeas = verifyPromptText
+    ? getProofPhotoSuggestions(verifyPromptText).slice(0, 3)
+    : [];
+
   const [, setHideHeader] = useHideHeader();
   const hideHeaderForCamera =
     step === "capture" &&
@@ -110,6 +123,12 @@ function SubmitProofContent() {
     setHideHeader(hideHeaderForCamera);
     return () => setHideHeader(false);
   }, [hideHeaderForCamera, setHideHeader]);
+
+  /** Warm up Transformers.js CLIP in the background (first load downloads ~300MB; then cached). */
+  useEffect(() => {
+    if (!user || !goal || !inWindow) return;
+    void import("@/lib/localClipVerify").then((m) => m.preloadLocalClipModel());
+  }, [user, goal?.id, inWindow]);
 
   useEffect(() => {
     if (!authReady || hasRedirected.current || pageLoading) return;
@@ -282,46 +301,27 @@ function SubmitProofContent() {
         imageToStore = compressed;
       }
 
-      let aiPassed = false;
-      let aiFeedback = "Verification completed.";
-
-      // Match the chosen photo idea first; old goals without a prompt still use the title.
-      const verifyGoalText = goal.proofRequirement?.trim() || goal.title;
-
-      const provider = (process.env.NEXT_PUBLIC_VERIFY_PROVIDER ?? "clip").toLowerCase();
-      if (provider === "clip") {
-      // Lazy-load CLIP verifier so Next doesn't bundle the heavy transformers runtime on every page render.
-      const { verifyWithLocalClip } = await import("@/lib/localClipVerify");
+      // Local CLIP only (browser, Transformers.js). Lazy-load so the heavy runtime is not in the main chunk.
+      const verifyGoalText = (goal.proofRequirement?.trim() || goal.title).trim();
+      const { verifyWithLocalClip, formatLocalClipUserFeedback } = await import(
+        "@/lib/localClipVerify"
+      );
       const clip = await verifyWithLocalClip({
-          imageDataUrl: compressed,
-          goalText: verifyGoalText,
-          threshold: 0.55,
-        });
-        aiPassed = clip.verified;
-        aiFeedback = clip.verified
-          ? `Verified (confidence ${Math.round(clip.confidence * 100)}%).`
-          : `Not verified (confidence ${Math.round(clip.confidence * 100)}%).`;
-      } else {
-        const res = await fetch("/api/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageBase64: base64,
-            goalTitle: goal.title,
-            goalDescription: goal.description ?? "",
-            proofRequirement: goal.proofRequirement ?? "",
-          }),
-        });
-        const data = await res.json();
-        aiPassed = data.verified === true;
-        aiFeedback = data.feedback ?? aiFeedback;
-      }
+        imageDataUrl: compressed,
+        goalText: verifyGoalText,
+        threshold: DEFAULT_CLIP_VERIFY_THRESHOLD,
+      });
+      const { summaryLine: clipSummary } = formatLocalClipUserFeedback(
+        clip,
+        DEFAULT_CLIP_VERIFY_THRESHOLD
+      );
+      const aiPassed = clip.verified;
       const now = new Date();
       const subsNow = getSubmissionsForGoal(goal.id);
       const withinWindow = isWithinSubmissionWindow(goal, now, subsNow);
 
       const passed = aiPassed && withinWindow;
-      const msg = withinWindow ? aiFeedback : "Submissions are closed right now.";
+      const msg = withinWindow ? clipSummary : "Submissions are closed right now.";
 
       const sub = await addSubmission({
         goalId: goal.id,
@@ -386,37 +386,6 @@ function SubmitProofContent() {
     );
   }
 
-  const missingPhotoIdea = !goal.proofRequirement?.trim();
-  if (missingPhotoIdea) {
-    return (
-      <main className="mx-auto max-w-lg px-4 py-8">
-        <Link
-          href="/buddy"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to garden
-        </Link>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-8 text-center dark:border-amber-800/60 dark:bg-amber-950/25">
-          <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
-            Choose an AI photo prompt first
-          </h1>
-          <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
-            This goal doesn&apos;t have a saved prompt yet. Open{" "}
-            <strong>Goal Garden</strong>, tap <strong>Edit</strong> on this goal, tap{" "}
-            <strong>Refresh AI ideas</strong>, pick one option, then <strong>Save changes</strong>.
-          </p>
-          <Link
-            href="/buddy"
-            className="mt-6 inline-block rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700"
-          >
-            Go to Goal Garden
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
   if (!inWindow) {
     const msg = getSubmissionWindowMessage(goal, new Date(), goalSubs);
     return (
@@ -471,18 +440,30 @@ function SubmitProofContent() {
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
             </h1>
-            {goal.proofRequirement ? (
+            {verifyPromptText ? (
               <div className="mt-3 rounded-xl border border-prove-200 bg-prove-50/80 px-3 py-2 dark:border-prove-900/50 dark:bg-prove-950/30">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-prove-800 dark:text-prove-200">
                   Your photo should show
                 </p>
-                <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{goal.proofRequirement}</p>
+                <p className="mt-1 text-sm text-slate-800 dark:text-slate-100">{verifyPromptText}</p>
+              </div>
+            ) : null}
+            {proofPhotoIdeas.length > 0 ? (
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/40">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                  Ideas for your proof photo
+                </p>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                  {proofPhotoIdeas.map((s) => (
+                    <li key={s}>{s}</li>
+                  ))}
+                </ul>
               </div>
             ) : null}
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              {goal.proofRequirement
-                ? "Take a photo that matches the instruction above. AI will verify it. You can submit any day you still have a check-in left this week (Sun–Sat), once per calendar day."
-                : "Take a photo showing you doing this goal. AI will verify it. You can submit any day you still have a check-in left this week (Sun–Sat), once per calendar day."}
+              Take a photo that matches your goal. Verification runs on your device in the browser (CLIP via
+              Transformers.js) — no external AI APIs. You can submit any day you still have a check-in left this week
+              (Sun–Sat), once per calendar day.
             </p>
           </>
         )}
@@ -606,10 +587,10 @@ function SubmitProofContent() {
           <div className="mt-8 flex flex-col items-center justify-center rounded-2xl py-16 glass-card">
             <Loader2 className="h-12 w-12 animate-spin text-prove-600" />
             <p className="mt-4 font-medium text-slate-900 dark:text-white">
-              Verifying with AI…
+              Verifying on your device…
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Checking that your photo matches your goal.
+              Running local CLIP on your photo (first visit may download the model).
             </p>
           </div>
         )}

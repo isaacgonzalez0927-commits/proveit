@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getResendFromOrProductionError } from "@/lib/resendFrom";
+import { readResendErrorMessage } from "@/lib/resendHttp";
 
 /**
  * Sends confirmation email via Resend (same path as password reset).
@@ -55,9 +56,21 @@ export async function POST(request: NextRequest) {
   });
 
   if (linkError) {
+    const detail =
+      typeof linkError === "object" &&
+      linkError !== null &&
+      "message" in linkError &&
+      typeof (linkError as { message?: unknown }).message === "string"
+        ? (linkError as { message: string }).message
+        : String(linkError);
+    console.error("[resend-confirm] generateLink failed:", linkError);
     return NextResponse.json(
-      { message: "Check your inbox and spam folder." },
-      { status: 200 }
+      {
+        error:
+          "Could not generate a confirmation link. Check SUPABASE_SERVICE_ROLE_KEY matches your Supabase project and that Auth is enabled.",
+        ...(process.env.NODE_ENV === "development" ? { detail } : {}),
+      },
+      { status: 502 }
     );
   }
 
@@ -120,12 +133,9 @@ export async function POST(request: NextRequest) {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = err?.message ?? err?.error ?? (typeof err === "string" ? err : null);
-    return NextResponse.json(
-      { error: msg ? `Resend: ${msg}` : `Resend failed (${res.status}).` },
-      { status: 502 }
-    );
+    const msg = await readResendErrorMessage(res);
+    console.error("[resend-confirm] Resend API failed:", res.status, msg);
+    return NextResponse.json({ error: `Resend: ${msg}` }, { status: 502 });
   }
 
   return NextResponse.json({

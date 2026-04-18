@@ -6,11 +6,21 @@
  * Drop-in React component for AI-powered goal verification.
  * Uses CLIP via Transformers.js — 100% local, zero external API calls.
  *
- * Peer dependency: @huggingface/transformers (already in this project)
+ * Peer dependency: `npm install @huggingface/transformers`
+ *
+ * Usage (this repo):
+ *   import AIVerificationWidget from "@/components/AIVerificationWidget";
+ *   <AIVerificationWidget onResult={(r) => console.log(r.verified, r.confidence)} />
+ *
+ * Implementation note (Next.js):
+ *   Model load and inference go through `@/lib/localClipVerify` with **dynamic import**
+ *   of `@huggingface/transformers` so production builds stay stable. Do not add a
+ *   top-level `import { pipeline } from "@huggingface/transformers"` here.
  *
  * Compatibility:
- *   Next.js: this file is a client component ("use client" above).
+ *   Next.js App Router: this file is a client component (`"use client"`).
  *   Requires WebAssembly (~300 MB model, cached in the browser after first download).
+ *   Not for React Native (no WASM runtime).
  */
 
 import React, {
@@ -20,6 +30,14 @@ import React, {
   useCallback,
   type CSSProperties,
 } from "react";
+import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
+import {
+  verifyWithLocalClip,
+  ensureLocalClipReady,
+  formatLocalClipUserFeedback,
+  DEFAULT_CLIP_MODEL_ID,
+  type ClipVerifyResult,
+} from "@/lib/localClipVerify";
 
 export interface VerificationScore {
   label: string;
@@ -31,18 +49,28 @@ export interface VerificationResult {
   confidence: number;
   topLabel: string;
   goalName: string;
+  /** For callbacks/debug; not shown as a per-label list in the widget UI. */
   allScores: VerificationScore[];
 }
 
 export interface AIVerificationWidgetProps {
+  /** Fired whenever a verification attempt finishes */
   onResult?: (result: VerificationResult) => void;
+  /**
+   * Minimum confidence (0–1) required to mark the result as verified.
+   * @default 0.55 (see `DEFAULT_CLIP_VERIFY_THRESHOLD` in `clipVerifyConstants`)
+   */
   threshold?: number;
+  /**
+   * Hugging Face `zero-shot-image-classification` model id.
+   * @default Xenova/clip-vit-base-patch32 (`DEFAULT_CLIP_MODEL_ID`)
+   */
   modelId?: string;
+  /** Extra class name on the root element */
   className?: string;
+  /** Extra inline styles on the root element */
   style?: CSSProperties;
 }
-
-const NEGATIVE_LABELS = ["a random irrelevant picture", "a blank or unrelated photo"] as const;
 
 const EXAMPLE_GOALS = [
   "cleaning my room",
@@ -54,21 +82,6 @@ const EXAMPLE_GOALS = [
   "meditating",
   "journaling",
 ];
-
-function makeLabels(goalText: string): { all: string[]; positive: string[] } {
-  const g = goalText.trim();
-  const positive = [`a photo of ${g}`, `a person ${g}`];
-  return { all: [...positive, ...NEGATIVE_LABELS], positive };
-}
-
-function generateSuggestions(goalText: string): string[] {
-  const g = goalText.trim();
-  return [
-    `Take a selfie while ${g}`,
-    `Take a photo of the place or setup for ${g}`,
-    `Take a photo of any equipment or items you're using for ${g}`,
-  ];
-}
 
 const CSS = `
 .aivw*{box-sizing:border-box}
@@ -173,7 +186,7 @@ const CSS = `
 export default function AIVerificationWidget({
   onResult,
   threshold = 0.55,
-  modelId = "Xenova/clip-vit-base-patch32",
+  modelId = DEFAULT_CLIP_MODEL_ID,
   className = "",
   style,
 }: AIVerificationWidgetProps) {
@@ -190,11 +203,9 @@ export default function AIVerificationWidget({
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [clipSnapshot, setClipSnapshot] = useState<ClipVerifyResult | null>(null);
   const [verifyErr, setVerifyErr] = useState<string | null>(null);
 
-  /** Loaded via dynamic import so Next production build does not minify ORT WASM as a script chunk. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pipelineRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const active = modelStatus === "ready" && !isVerifying;
@@ -211,30 +222,26 @@ export default function AIVerificationWidget({
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      try {
-        const { pipeline, env } = await import("@huggingface/transformers");
-        env.allowLocalModels = false;
-        pipelineRef.current = await pipeline("zero-shot-image-classification", modelId, {
-          progress_callback: (p: { status: string; progress?: number; file?: string }) => {
-            if (cancelled) return;
-            if (p.status === "progress" && p.progress != null) {
-              setLoadPct(Math.min(99, p.progress));
-              setLoadFile(p.file ?? "");
-            }
-          },
-        });
-        if (!cancelled) {
-          setLoadPct(100);
-          setTimeout(() => setModelStatus("ready"), 300);
-        }
-      } catch (err) {
+    ensureLocalClipReady(modelId, (p) => {
+      if (cancelled) return;
+      if (p.status === "progress" && p.progress != null) {
+        setLoadPct(Math.min(99, p.progress));
+        setLoadFile(p.file ?? "");
+      }
+    })
+      .then(() => {
+        if (cancelled) return;
+        setLoadPct(100);
+        setTimeout(() => {
+          if (!cancelled) setModelStatus("ready");
+        }, 300);
+      })
+      .catch((err) => {
         if (!cancelled) {
           setModelStatus("error");
           setModelErr(String(err));
         }
-      }
-    })();
+      });
 
     return () => {
       cancelled = true;
@@ -249,6 +256,7 @@ export default function AIVerificationWidget({
       if (typeof data === "string") {
         setImageData(data);
         setResult(null);
+        setClipSnapshot(null);
         setVerifyErr(null);
       }
     };
@@ -270,32 +278,30 @@ export default function AIVerificationWidget({
 
   const handleVerify = async () => {
     const trimmed = goalText.trim();
-    if (!trimmed || !imageData || !pipelineRef.current) return;
+    if (!trimmed || !imageData || modelStatus !== "ready") return;
 
     setIsVerifying(true);
     setResult(null);
+    setClipSnapshot(null);
     setVerifyErr(null);
 
     await new Promise<void>((r) => setTimeout(r, 50));
 
     try {
-      const { all: labels, positive: positiveLabels } = makeLabels(trimmed);
-      const raw: VerificationScore[] = await pipelineRef.current(imageData, labels);
-      const sorted = [...raw].sort((a, b) => b.score - a.score);
-      const top = sorted[0];
-
-      const confidence = raw
-        .filter((s) => positiveLabels.includes(s.label))
-        .reduce((sum, s) => sum + s.score, 0);
-
+      const clip = await verifyWithLocalClip({
+        imageDataUrl: imageData,
+        goalText: trimmed,
+        threshold,
+        modelId,
+      });
       const res: VerificationResult = {
-        verified: confidence >= threshold,
-        confidence,
-        topLabel: top.label,
+        verified: clip.verified,
+        confidence: clip.confidence,
+        topLabel: clip.topLabel,
         goalName: trimmed,
-        allScores: sorted,
+        allScores: clip.allScores,
       };
-
+      setClipSnapshot(clip);
       setResult(res);
       onResult?.(res);
     } catch (err) {
@@ -307,6 +313,7 @@ export default function AIVerificationWidget({
 
   const handleReset = () => {
     setResult(null);
+    setClipSnapshot(null);
     setImageData(null);
     setGoalText("");
     setVerifyErr(null);
@@ -374,7 +381,7 @@ export default function AIVerificationWidget({
         </div>
       )}
 
-      {result && (
+      {result && clipSnapshot && (
         <div className={`aivw-res ${result.verified ? "aivw-res-ok" : "aivw-res-fail"}`}>
           <div className="aivw-res-top">
             <div
@@ -391,44 +398,10 @@ export default function AIVerificationWidget({
               <p
                 className={`aivw-res-desc ${result.verified ? "aivw-res-desc-ok" : "aivw-res-desc-fail"}`}
               >
-                {result.verified
-                  ? `Your photo confirms you completed "${result.goalName}".`
-                  : `The photo didn't match "${result.goalName}" with enough confidence.`}
-              </p>
-
-              <div className="aivw-conf-hdr">
-                <span
-                  className={`aivw-conf-name ${result.verified ? "aivw-conf-name-ok" : "aivw-conf-name-fail"}`}
-                >
-                  Confidence
-                </span>
-                <span
-                  className={`aivw-conf-val ${result.verified ? "aivw-conf-val-ok" : "aivw-conf-val-fail"}`}
-                >
-                  {Math.round(result.confidence * 100)}%
-                </span>
-              </div>
-              <div className="aivw-conf-track">
-                <div
-                  className={`aivw-conf-fill ${result.verified ? "aivw-conf-fill-ok" : "aivw-conf-fill-fail"}`}
-                  style={{ width: `${Math.round(result.confidence * 100)}%` }}
-                />
-              </div>
-              <p
-                className={`aivw-conf-note ${result.verified ? "aivw-conf-note-ok" : "aivw-conf-note-fail"}`}
-              >
-                Threshold: {Math.round(threshold * 100)}% required to verify
+                {formatLocalClipUserFeedback(clipSnapshot, threshold).summaryLine}
               </p>
             </div>
           </div>
-
-          <p
-            className={`aivw-match-note ${result.verified ? "aivw-match-note-ok" : "aivw-match-note-fail"}`}
-          >
-            {result.verified
-              ? `The AI is ${Math.round(result.confidence * 100)}% sure this photo matches your goal.`
-              : `The AI is only ${Math.round(result.confidence * 100)}% sure — ${Math.round(threshold * 100)}% is needed to verify.`}
-          </p>
 
           <button type="button" className="aivw-reset-btn" onClick={handleReset}>
             Try again
@@ -520,7 +493,7 @@ export default function AIVerificationWidget({
                   <p className="aivw-sugg-title">Proof photo ideas</p>
                 </div>
                 <ul className="aivw-sugg-list">
-                  {generateSuggestions(trimmedGoal).map((s) => (
+                  {getProofPhotoSuggestions(trimmedGoal).map((s) => (
                     <li key={s} className="aivw-sugg-item">
                       <span className="aivw-sugg-bullet">
                         <svg

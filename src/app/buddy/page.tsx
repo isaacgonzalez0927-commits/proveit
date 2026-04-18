@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -101,10 +101,6 @@ export default function BuddyPage() {
   const [suggestionsTitleKey, setSuggestionsTitleKey] = useState<string | null>(null);
   const [proofSuggestionsLoading, setProofSuggestionsLoading] = useState(false);
   const [proofSuggestionsError, setProofSuggestionsError] = useState<string | null>(null);
-  /** Where create-form ideas came from (server tells us so we do not fake “your AI”). */
-  const [proofIdeasSourceCreate, setProofIdeasSourceCreate] = useState<
-    "custom" | "openai" | "mock" | null
-  >(null);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [proofIdeasEditLoading, setProofIdeasEditLoading] = useState(false);
@@ -265,6 +261,61 @@ export default function BuddyPage() {
     }
   }, [goals, user?.plan, updateGoal]);
 
+  const garden = useMemo(() => {
+    if (!user) return [];
+    return goals.map((goal) => {
+      const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
+      const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
+      const stage = getPlantStageForStreak(streak);
+      const isOnBreak = goal.isOnBreak === true;
+      const goalSubs = getSubmissionsForGoal(goal.id);
+      const weekProgressLine = weeklyCheckInProgressLine(goal, goalSubs, new Date());
+      const due = isGoalDue(goal, new Date(), goalSubs);
+      const doneInCurrentWindow = isOnBreak
+        ? false
+        : isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
+      const canSubmitNow = isWithinSubmissionWindow(goal, new Date(), goalSubs);
+      const submissionWindowMessage =
+        !doneInCurrentWindow && !canSubmitNow
+          ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
+          : null;
+      const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
+      const isProPlan = user.plan === "pro";
+      const monthKey = proBreakMonthKey(new Date());
+      const proBreakDaysThisMonth = isProPlan
+        ? getProBreakDaysUsedInCalendarMonth(goal, monthKey, new Date())
+        : 0;
+      return {
+        goal,
+        isOnBreak,
+        isProPlan,
+        proBreakDaysThisMonth,
+        actualStreak,
+        streak,
+        stage,
+        due,
+        canSubmitNow,
+        doneInCurrentWindow,
+        submissionWindowMessage,
+        weekProgressLine,
+        wateringLevel,
+        plantVariant: getGoalPlantVariant(goal.id),
+        hasStreakOverride:
+          effectiveDeveloperSettings.enabled &&
+          typeof effectiveDeveloperSettings.goalStreakOverrides[goal.id] === "number",
+      };
+    });
+  }, [goals, user, effectiveDeveloperSettings, todayStr, getSubmissionsForGoal, getGoalPlantVariant]);
+
+  const fullyGrownCount = garden.filter((g) => isFinalStage(g.stage.stage, g.plantVariant)).length;
+
+  useEffect(() => {
+    if (fullyGrownCount < 1) return;
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(FIRST_FULL_GROWN_STORAGE_KEY)) return;
+    setShowFirstFullGrownCongrats(true);
+  }, [fullyGrownCount]);
+
   if (!user) {
     return <BuddySkeleton />;
   }
@@ -356,12 +407,10 @@ export default function BuddyPage() {
     setSuggestionsTitleKey(null);
     setProofSuggestionsError(null);
     setProofSuggestionsLoading(false);
-    setProofIdeasSourceCreate(null);
   };
 
   const fetchProofIdeasForCreate = async () => {
     setProofSuggestionsError(null);
-    setProofIdeasSourceCreate(null);
     const trimmed = newTitle.trim();
     if (trimmed.length < 2) {
       setProofSuggestionsError("Enter a goal title first (at least 2 characters).");
@@ -376,16 +425,15 @@ export default function BuddyPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-      let data: { suggestions?: unknown; error?: string; proveitSource?: string };
+      let data: { suggestions?: unknown; error?: string };
       try {
-        data = (await res.json()) as { suggestions?: unknown; error?: string; proveitSource?: string };
+        data = (await res.json()) as { suggestions?: unknown; error?: string };
       } catch {
         if (gen !== proofFetchGen.current) return;
         setProofSuggestionsError("Bad response from server. Try again.");
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
-        setProofIdeasSourceCreate(null);
         return;
       }
       if (gen !== proofFetchGen.current) return;
@@ -394,7 +442,6 @@ export default function BuddyPage() {
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
-        setProofIdeasSourceCreate(null);
         return;
       }
       if (!res.ok) {
@@ -402,7 +449,6 @@ export default function BuddyPage() {
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
-        setProofIdeasSourceCreate(null);
         return;
       }
       const list = Array.isArray(data.suggestions)
@@ -413,15 +459,10 @@ export default function BuddyPage() {
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
-        setProofIdeasSourceCreate(null);
         return;
       }
       const slice = list.slice(0, PROOF_SUGGESTIONS_MAX);
       setProofSuggestionsError(null);
-      const src = data.proveitSource;
-      setProofIdeasSourceCreate(
-        src === "custom" || src === "openai" || src === "mock" ? src : null
-      );
       setNewProofSuggestions(slice);
       setSelectedProofRequirement(slice[0] ?? null);
       setSuggestionsTitleKey(trimmed);
@@ -431,7 +472,6 @@ export default function BuddyPage() {
       setNewProofSuggestions([]);
       setSelectedProofRequirement(null);
       setSuggestionsTitleKey(null);
-      setProofIdeasSourceCreate(null);
     } finally {
       if (gen === proofFetchGen.current) {
         setProofSuggestionsLoading(false);
@@ -452,9 +492,9 @@ export default function BuddyPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-      let data: { suggestions?: unknown; error?: string; proveitSource?: string };
+      let data: { suggestions?: unknown; error?: string };
       try {
-        data = (await res.json()) as { suggestions?: unknown; error?: string; proveitSource?: string };
+        data = (await res.json()) as { suggestions?: unknown; error?: string };
       } catch {
         if (gen !== proofEditFetchGen.current) return;
         setGoalManagerMessage("Bad response from server. Try again.");
@@ -478,13 +518,7 @@ export default function BuddyPage() {
         proofSuggestions: next,
         proofRequirement: next[0] ?? "",
       }));
-      if (data.proveitSource === "mock") {
-        setGoalManagerMessage(
-          "Prompts updated, but these are built-in fallback lines — not your CUSTOM_AI_SUGGESTIONS_URL server (wrong env, HTTP error, or bad JSON). Check Vercel Production logs for [proofSuggestions]."
-        );
-      } else {
-        setGoalManagerMessage("AI prompts updated — pick the one you want to use.");
-      }
+      setGoalManagerMessage("Photo ideas refreshed — pick the one you want to use.");
     } catch {
       if (gen !== proofEditFetchGen.current) return;
       setGoalManagerMessage("Could not refresh AI photo ideas.");
@@ -686,55 +720,8 @@ export default function BuddyPage() {
     setGoalManagerMessage(`"${goal.title}" is now on break${breakLimitMsg}. Streak and growth are frozen.`);
   };
 
-  const garden = goals.map((goal) => {
-    const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
-    const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
-    // Stage is derived from streak only. Changing plant style (variant) must not affect stage.
-    const stage = getPlantStageForStreak(streak);
-    const isOnBreak = goal.isOnBreak === true;
-    const goalSubs = getSubmissionsForGoal(goal.id);
-    const weekProgressLine = weeklyCheckInProgressLine(goal, goalSubs, new Date());
-    const due = isGoalDue(goal, new Date(), goalSubs);
-    const doneInCurrentWindow = isOnBreak
-      ? false
-      : isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
-    const canSubmitNow = isWithinSubmissionWindow(goal, new Date(), goalSubs);
-    const submissionWindowMessage =
-      !doneInCurrentWindow && !canSubmitNow
-        ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
-        : null;
-    const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
-    const isProPlan = user?.plan === "pro";
-    const monthKey = proBreakMonthKey(new Date());
-    const proBreakDaysThisMonth = isProPlan
-      ? getProBreakDaysUsedInCalendarMonth(goal, monthKey, new Date())
-      : 0;
-    return {
-      goal,
-      isOnBreak,
-      isProPlan,
-      proBreakDaysThisMonth,
-      actualStreak,
-      streak,
-      stage,
-      due,
-      canSubmitNow,
-      doneInCurrentWindow,
-      submissionWindowMessage,
-      weekProgressLine,
-      wateringLevel,
-      plantVariant: getGoalPlantVariant(goal.id),
-      hasStreakOverride:
-        effectiveDeveloperSettings.enabled &&
-        typeof effectiveDeveloperSettings.goalStreakOverrides[goal.id] === "number",
-    };
-  });
-
   const hydratedNow = garden.filter((g) => g.doneInCurrentWindow).length;
   const goalsDueNow = garden.filter((g) => g.due).length;
-  const fullyGrownCount = garden.filter((g) =>
-    isFinalStage(g.stage.stage, g.plantVariant)
-  ).length;
   const snapshotPlants = [...garden]
     .sort((a, b) => b.streak - a.streak)
     .map((entry) => ({
@@ -743,13 +730,6 @@ export default function BuddyPage() {
       wateringLevel: entry.wateringLevel,
       variant: entry.plantVariant,
     }));
-
-  useEffect(() => {
-    if (fullyGrownCount < 1) return;
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(FIRST_FULL_GROWN_STORAGE_KEY)) return;
-    setShowFirstFullGrownCongrats(true);
-  }, [fullyGrownCount]);
 
   return (
     <>
@@ -946,21 +926,6 @@ export default function BuddyPage() {
               </div>
               {proofSuggestionsError && (
                 <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-200">{proofSuggestionsError}</p>
-              )}
-              {proofIdeasSourceCreate === "mock" && newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN && (
-                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100">
-                  <span className="font-semibold">These lines are placeholders,</span> not your custom ideas API.
-                  Either <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/80">CUSTOM_AI_SUGGESTIONS_URL</code> is
-                  missing on this deployment, or your server returned an error or JSON Proveit could not parse. Set the
-                  env on <span className="font-medium">Vercel → Production</span>, redeploy, then check logs for{" "}
-                  <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/80">[proofSuggestions]</code>.
-                </p>
-              )}
-              {proofIdeasSourceCreate === "openai" && newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN && (
-                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-                  These prompts were generated by OpenAI on the server (no{" "}
-                  <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">CUSTOM_AI_SUGGESTIONS_URL</code>).
-                </p>
               )}
               {newProofSuggestions.length > 0 && (
                 <ul className="mt-3 space-y-2" data-tour="goal-proof-pick">

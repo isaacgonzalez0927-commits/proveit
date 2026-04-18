@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * AI verification endpoint.
- * Priority: 1) Custom AI (CUSTOM_AI_VERIFY_URL), 2) OpenAI (OPENAI_API_KEY), 3) Demo mode
+ * Optional server-side verification (custom URL / OpenAI / demo).
+ * The in-app proof flow (`/goals/submit`) uses **local browser CLIP** via Transformers.js
+ * (`verifyWithLocalClip`); it does not call this route. Keep this for integrations or experiments.
  */
 export async function POST(request: NextRequest) {
   try {

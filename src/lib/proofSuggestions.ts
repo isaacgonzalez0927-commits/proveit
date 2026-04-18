@@ -107,6 +107,8 @@ function resolveCustomSuggestionsUrl(): string | undefined {
   if (b) return b;
   const c = process.env.AI_PROOF_SUGGESTIONS_URL?.trim();
   if (c) return c;
+  const typo = process.env.CUSTOM_AI_SUGGESTION_URL?.trim();
+  if (typo) return typo;
   return undefined;
 }
 
@@ -181,10 +183,12 @@ export async function getProofSuggestionsForTitle(title: string): Promise<ProofS
       const sugKey = process.env.CUSTOM_AI_SUGGESTIONS_API_KEY?.trim();
       if (sugKey) headers.Authorization = `Bearer ${sugKey}`;
 
+      headers["User-Agent"] = "Proveit/1.0 (+proof-suggestions-server)";
       const res = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify({ title: trimmed, goalTitle: trimmed }),
+        signal: AbortSignal.timeout(25_000),
       });
 
       if (!res.ok) {

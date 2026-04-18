@@ -48,29 +48,17 @@ function GalleryContent() {
     setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
   }, []);
 
-  if (!user) {
-    return (
-      <>
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12 pb-[max(6.5rem,env(safe-area-inset-bottom))] text-center">
-          <p className="text-slate-600 dark:text-slate-400">
-            Please sign in from the dashboard.
-          </p>
-          <Link href="/dashboard" className="mt-4 inline-block text-prove-600 hover:underline">
-            Go to Dashboard
-          </Link>
-        </main>
-      </>
-    );
-  }
-
-  const plan = getPlan(user.plan);
-  const hasGalleryAccess = user.plan === "pro" || user.plan === "premium";
-  const isPro = user.plan === "pro" || user.plan === "premium";
+  const plan = user ? getPlan(user.plan) : getPlan("free");
+  const hasGalleryAccess = user ? user.plan === "pro" || user.plan === "premium" : false;
+  const isPro = user ? user.plan === "pro" || user.plan === "premium" : false;
 
   // Build gallery source: verified submissions grouped by goal, sorted by date
-  const verifiedSubs = submissions
-    .filter((s) => s.status === "verified")
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const verifiedSubs = useMemo(() => {
+    if (!user) return [];
+    return submissions
+      .filter((s) => s.status === "verified")
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [user, submissions]);
 
   const byGoal = useMemo(
     () =>
@@ -148,6 +136,21 @@ function GalleryContent() {
     setHistoryActionMessage(`Hidden "${goalTitle}" from gallery.`);
     setHidingGoalId(null);
   };
+
+  if (!user) {
+    return (
+      <>
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12 pb-[max(6.5rem,env(safe-area-inset-bottom))] text-center">
+          <p className="text-slate-600 dark:text-slate-400">
+            Please sign in from the dashboard.
+          </p>
+          <Link href="/dashboard" className="mt-4 inline-block text-prove-600 hover:underline">
+            Go to Dashboard
+          </Link>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>

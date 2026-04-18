@@ -405,7 +405,14 @@ export default function SettingsPage() {
                       setConfirmEmailMessage("One-time setup: Supabase Dashboard → your project → Settings → API → copy the service_role key (click Reveal). In this project add to .env.local: SUPABASE_SERVICE_ROLE_KEY=paste_key_here then restart the app (Ctrl+C, npm run dev). On Vercel add the same variable in Project → Settings → Environment Variables.");
                       return;
                     }
-                    setConfirmEmailMessage(data.error ?? (res.status === 401 ? "Please sign in again." : "Something went wrong. Try again later."));
+                    if (res.status === 503 && typeof data.error === "string") {
+                      setConfirmEmailMessage(data.error);
+                      return;
+                    }
+                    setConfirmEmailMessage(
+                      data.error ??
+                        (res.status === 401 ? "Please sign in again." : "Something went wrong. Try again later.")
+                    );
                   } catch (e) {
                     setConfirmEmailMessage(e instanceof Error ? e.message : "Something went wrong. Try again later.");
                   } finally {
