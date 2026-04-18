@@ -2,6 +2,13 @@
 const nextConfig = {
   // Keep HF out of server bundles / tracing (cannot combine with transpilePackages for same pkg).
   serverExternalPackages: ["@huggingface/transformers"],
+  // Prevent @vercel/nft from copying huge WASM deps into every serverless trace (Vercel 200–250 MB cap).
+  outputFileTracingExcludes: {
+    "*": [
+      "./node_modules/@huggingface/transformers/**/*",
+      "./node_modules/onnxruntime-web/**/*",
+    ],
+  },
   images: {
     remotePatterns: [{ hostname: '**' }],
   },

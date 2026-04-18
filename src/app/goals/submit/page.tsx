@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } from "lucide-react";
@@ -17,14 +16,6 @@ import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
 import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
 import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
-import type { VerificationResult } from "@/types/aivVerification";
-
-const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
-  ssr: false,
-  loading: () => (
-    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading local AI verifier…</p>
-  ),
-});
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
@@ -398,31 +389,6 @@ function SubmitProofContent() {
     persistCompressedProof,
   ]);
 
-  const handleAiWidgetResult = useCallback(
-    (result: VerificationResult) => {
-      const proofUrl = result.imageDataUrl;
-      if (!proofUrl || !goal || !user) return;
-      lightImpact();
-      setStep("uploading");
-      void (async () => {
-        try {
-          const compressed = await compressImage(proofUrl, 1200, 0.75);
-          const { formatLocalClipUserFeedback } = await import("@/lib/localClipVerify");
-          const { summaryLine } = formatLocalClipUserFeedback(
-            { verified: result.verified, confidence: result.confidence },
-            DEFAULT_CLIP_VERIFY_THRESHOLD
-          );
-          await persistCompressedProof(compressed, summaryLine, result.verified);
-        } catch {
-          setVerified(false);
-          setFeedback("Something went wrong. Please try again.");
-          setStep("result");
-        }
-      })();
-    },
-    [goal, user, persistCompressedProof]
-  );
-
   if (!authReady || pageLoading || !user || !goal) {
     return (
       <main className="flex min-h-[50vh] items-center justify-center">
@@ -510,24 +476,6 @@ function SubmitProofContent() {
               Transformers.js) — no external AI APIs. You can submit any day you still have a check-in left this week
               (Sun–Sat), once per calendar day.
             </p>
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/40">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                Local AI widget (optional)
-              </p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Same CLIP-style check as the camera flow. When you finish verification here, your proof is saved like a
-                normal submission. You can still use the camera below instead.
-              </p>
-              <div className="mt-3">
-                <AIVerificationWidget
-                  initialGoalText={verifyPromptText}
-                  threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
-                  onResult={(result) => {
-                    void handleAiWidgetResult(result);
-                  }}
-                />
-              </div>
-            </div>
           </>
         )}
 
