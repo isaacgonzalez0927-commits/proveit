@@ -111,9 +111,17 @@ function SubmitProofContent() {
   const verifyPromptText = goal
     ? (goal.proofRequirement?.trim() || goal.title).trim()
     : "";
-  const proofPhotoIdeas = verifyPromptText
-    ? getProofPhotoSuggestions(verifyPromptText).slice(0, 3)
-    : [];
+  /** Prefer prompts saved with the goal (buddy “Get AI photo ideas”); else generic templates. */
+  const fromStoredProofIdeas = (goal?.proofSuggestions ?? [])
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .slice(0, 3);
+  const proofPhotoIdeas =
+    fromStoredProofIdeas.length > 0
+      ? fromStoredProofIdeas
+      : verifyPromptText
+        ? getProofPhotoSuggestions(verifyPromptText).slice(0, 3)
+        : [];
 
   const [, setHideHeader] = useHideHeader();
   const hideHeaderForCamera =
@@ -469,6 +477,12 @@ function SubmitProofContent() {
                     <li key={s}>{s}</li>
                   ))}
                 </ul>
+                {fromStoredProofIdeas.length === 0 && (
+                  <p className="mt-2 text-[10px] leading-snug text-slate-500 dark:text-slate-400">
+                    These are generic examples. On Buddy, tap <strong>Get AI photo ideas</strong> when creating or
+                    editing this goal to save custom prompts — they will show here next time.
+                  </p>
+                )}
               </div>
             ) : null}
             <p className="mt-2 text-slate-600 dark:text-slate-400">

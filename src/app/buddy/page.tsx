@@ -51,6 +51,7 @@ import {
   isProofRequirementAllowed,
   PROOF_SUGGESTIONS_MAX,
   PROOF_SUGGESTIONS_MIN,
+  type ProofSuggestionsSource,
 } from "@/lib/proofSuggestions";
 import type { Goal, TimesPerWeek } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
@@ -101,6 +102,9 @@ export default function BuddyPage() {
   const [suggestionsTitleKey, setSuggestionsTitleKey] = useState<string | null>(null);
   const [proofSuggestionsLoading, setProofSuggestionsLoading] = useState(false);
   const [proofSuggestionsError, setProofSuggestionsError] = useState<string | null>(null);
+  /** Last successful /api/goals/proof-suggestions `source` (null = unknown or before fetch). */
+  const [createProofIdeasSource, setCreateProofIdeasSource] = useState<ProofSuggestionsSource | null>(null);
+  const [editProofIdeasSource, setEditProofIdeasSource] = useState<ProofSuggestionsSource | null>(null);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [proofIdeasEditLoading, setProofIdeasEditLoading] = useState(false);
@@ -407,6 +411,7 @@ export default function BuddyPage() {
     setSuggestionsTitleKey(null);
     setProofSuggestionsError(null);
     setProofSuggestionsLoading(false);
+    setCreateProofIdeasSource(null);
   };
 
   const fetchProofIdeasForCreate = async () => {
@@ -425,15 +430,16 @@ export default function BuddyPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-      let data: { suggestions?: unknown; error?: string };
+      let data: { suggestions?: unknown; error?: string; source?: unknown };
       try {
-        data = (await res.json()) as { suggestions?: unknown; error?: string };
+        data = (await res.json()) as { suggestions?: unknown; error?: string; source?: unknown };
       } catch {
         if (gen !== proofFetchGen.current) return;
         setProofSuggestionsError("Bad response from server. Try again.");
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
+        setCreateProofIdeasSource(null);
         return;
       }
       if (gen !== proofFetchGen.current) return;
@@ -442,6 +448,7 @@ export default function BuddyPage() {
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
+        setCreateProofIdeasSource(null);
         return;
       }
       if (!res.ok) {
@@ -449,6 +456,7 @@ export default function BuddyPage() {
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
+        setCreateProofIdeasSource(null);
         return;
       }
       const list = Array.isArray(data.suggestions)
@@ -459,9 +467,14 @@ export default function BuddyPage() {
         setNewProofSuggestions([]);
         setSelectedProofRequirement(null);
         setSuggestionsTitleKey(null);
+        setCreateProofIdeasSource(null);
         return;
       }
       const slice = list.slice(0, PROOF_SUGGESTIONS_MAX);
+      const src = data.source;
+      setCreateProofIdeasSource(
+        src === "openai" || src === "custom" || src === "mock" ? src : null
+      );
       setProofSuggestionsError(null);
       setNewProofSuggestions(slice);
       setSelectedProofRequirement(slice[0] ?? null);
@@ -472,6 +485,7 @@ export default function BuddyPage() {
       setNewProofSuggestions([]);
       setSelectedProofRequirement(null);
       setSuggestionsTitleKey(null);
+      setCreateProofIdeasSource(null);
     } finally {
       if (gen === proofFetchGen.current) {
         setProofSuggestionsLoading(false);
@@ -492,17 +506,19 @@ export default function BuddyPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: trimmed }),
       });
-      let data: { suggestions?: unknown; error?: string };
+      let data: { suggestions?: unknown; error?: string; source?: unknown };
       try {
-        data = (await res.json()) as { suggestions?: unknown; error?: string };
+        data = (await res.json()) as { suggestions?: unknown; error?: string; source?: unknown };
       } catch {
         if (gen !== proofEditFetchGen.current) return;
         setGoalManagerMessage("Bad response from server. Try again.");
+        setEditProofIdeasSource(null);
         return;
       }
       if (gen !== proofEditFetchGen.current) return;
       if (!res.ok) {
         setGoalManagerMessage(messageFromApiPayload(data, "Could not refresh AI photo ideas."));
+        setEditProofIdeasSource(null);
         return;
       }
       const list = Array.isArray(data.suggestions)
@@ -510,9 +526,14 @@ export default function BuddyPage() {
         : [];
       if (list.length < 2) {
         setGoalManagerMessage("Not enough new suggestions. Try again.");
+        setEditProofIdeasSource(null);
         return;
       }
       const next = list.slice(0, 3);
+      const src = data.source;
+      setEditProofIdeasSource(
+        src === "openai" || src === "custom" || src === "mock" ? src : null
+      );
       setEditDraft((prev) => ({
         ...prev,
         proofSuggestions: next,
@@ -522,6 +543,7 @@ export default function BuddyPage() {
     } catch {
       if (gen !== proofEditFetchGen.current) return;
       setGoalManagerMessage("Could not refresh AI photo ideas.");
+      setEditProofIdeasSource(null);
     } finally {
       if (gen === proofEditFetchGen.current) {
         setProofIdeasEditLoading(false);
@@ -619,11 +641,13 @@ export default function BuddyPage() {
       proofRequirement: req,
     });
     setGoalManagerMessage(null);
+    setEditProofIdeasSource(null);
   };
 
   const cancelEditingGoal = () => {
     setEditingGoalId(null);
     setIsSavingEdit(false);
+    setEditProofIdeasSource(null);
   };
 
   const saveEditingGoal = async (goal: Goal) => {
@@ -895,7 +919,7 @@ export default function BuddyPage() {
             >
               <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Photo proof</p>
               <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                AI suggests short prompts from your title. Pick one; you can refresh or change it later in edit.
+                Loads a few photo prompts from your title. Pick one; refresh or edit the goal anytime.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
@@ -907,7 +931,7 @@ export default function BuddyPage() {
                   {proofSuggestionsLoading ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Asking AI…
+                      Loading…
                     </>
                   ) : (
                     "Get AI photo ideas"
@@ -926,6 +950,14 @@ export default function BuddyPage() {
               </div>
               {proofSuggestionsError && (
                 <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-200">{proofSuggestionsError}</p>
+              )}
+              {createProofIdeasSource === "mock" && newProofSuggestions.length >= PROOF_SUGGESTIONS_MIN && (
+                <p className="mt-2 text-xs text-amber-900 dark:text-amber-200/95">
+                  These are built-in sample prompts (not a live model). For real AI ideas, set{" "}
+                  <span className="font-mono text-[10px]">OPENAI_API_KEY</span> or{" "}
+                  <span className="font-mono text-[10px]">CUSTOM_AI_SUGGESTIONS_URL</span> where the app is hosted
+                  (e.g. Vercel).
+                </p>
               )}
               {newProofSuggestions.length > 0 && (
                 <ul className="mt-3 space-y-2" data-tour="goal-proof-pick">
@@ -1322,7 +1354,8 @@ export default function BuddyPage() {
                     <div className="mt-4 rounded-lg border border-slate-200/90 bg-slate-50/80 p-3 dark:border-slate-600 dark:bg-slate-900/50">
                       <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100">Photo proof</p>
                       <p className="mt-0.5 text-[10px] text-slate-600 dark:text-slate-400">
-                        You can only choose from AI suggestions for “{entry.goal.title}”. Refresh loads new options.
+                        Choose from the saved prompts for “{entry.goal.title}”. Refresh loads new options from the
+                        server.
                       </p>
                       {editDraft.proofSuggestions.length >= 2 ? (
                         <ul className="mt-2 space-y-1.5">
@@ -1346,6 +1379,14 @@ export default function BuddyPage() {
                       ) : (
                         <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
                           No prompts loaded for this goal yet.
+                        </p>
+                      )}
+                      {editProofIdeasSource === "mock" && editDraft.proofSuggestions.length >= 2 && (
+                        <p className="mt-2 text-[10px] text-amber-900 dark:text-amber-200/95">
+                          Last refresh used built-in samples. Set{" "}
+                          <span className="font-mono">OPENAI_API_KEY</span> or{" "}
+                          <span className="font-mono">CUSTOM_AI_SUGGESTIONS_URL</span> on the host for model-backed
+                          prompts.
                         </p>
                       )}
                       <button

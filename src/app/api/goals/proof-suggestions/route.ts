@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { suggestions } = await getProofSuggestionsForTitle(title);
-    return NextResponse.json({ suggestions });
+    const { suggestions, source } = await getProofSuggestionsForTitle(title);
+    return NextResponse.json({ suggestions, source });
   } catch (e) {
     console.error("proof-suggestions route:", e);
     return NextResponse.json({ error: "Could not load suggestions." }, { status: 500 });
