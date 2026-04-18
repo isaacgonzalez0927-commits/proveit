@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AIVerificationWidget
+ * AIVerificationWidget (3)
  * ─────────────────────────────────────────────────────────────────────────────
  * Drop-in React component for AI-powered goal verification.
  * Uses CLIP via Transformers.js — 100% local, zero external API calls.
@@ -10,7 +10,7 @@
  *   npm install @huggingface/transformers
  *
  * ─── Usage ──────────────────────────────────────────────────────────────────
- *   import AIVerificationWidget from './AIVerificationWidget';
+ *   import AIVerificationWidget from './AIVerificationWidget (3)';
  *
  *   <AIVerificationWidget
  *     onResult={(result) => console.log(result.verified, result.confidence)}

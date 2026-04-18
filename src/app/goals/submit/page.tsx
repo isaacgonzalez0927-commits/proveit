@@ -19,7 +19,7 @@ import { getProofPhotoSuggestions } from "@/lib/proofPhotoSuggestions";
 import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
 import type { VerificationResult } from "@/types/aivVerification";
 
-const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
+const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget (3)"), {
   ssr: false,
   loading: () => (
     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading local AI verifier…</p>
