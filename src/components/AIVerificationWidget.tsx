@@ -29,6 +29,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   type CSSProperties,
 } from "react";
 import type { VerificationResult, VerificationScore } from "@/types/aivVerification";
@@ -54,6 +55,16 @@ export interface AIVerificationWidgetProps {
   style?: CSSProperties;
   /** When set, seeds the goal field once (e.g. current goal proof line from the host page). */
   initialGoalText?: string;
+  /**
+   * Optional lines for the purple “proof photo ideas” box (e.g. `goal.proofSuggestions` + fallbacks from the host).
+   * When non-empty, shown instead of the built-in `generateSuggestions` templates.
+   */
+  prefetchedPhotoIdeas?: string[];
+  /**
+   * When set (e.g. goal title), shows “Get AI photo ideas” which calls `POST /api/goals/proof-suggestions`
+   * — same pipeline as Buddy (OpenAI / your API / mock).
+   */
+  ideasFetchTitle?: string;
 }
 
 // ─── Label generation ─────────────────────────────────────────────────────────
@@ -226,6 +237,8 @@ export default function AIVerificationWidget({
   className = "",
   style,
   initialGoalText,
+  prefetchedPhotoIdeas,
+  ideasFetchTitle,
 }: AIVerificationWidgetProps) {
   type Status = 'loading' | 'ready' | 'error';
 
@@ -241,6 +254,11 @@ export default function AIVerificationWidget({
   const [isVerifying, setIsVerifying] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [verifyErr, setVerifyErr] = useState<string | null>(null);
+
+  /** In-widget refresh from `/api/goals/proof-suggestions` (overrides prefetched list when set). */
+  const [serverPhotoIdeas, setServerPhotoIdeas] = useState<string[] | null>(null);
+  const [ideasLoading, setIdeasLoading] = useState(false);
+  const [ideasErr, setIdeasErr] = useState<string | null>(null);
 
   type ClipClassifyFn = (image: string, labels: string[]) => Promise<VerificationScore[]>;
   const pipelineRef = useRef<unknown>(null);
@@ -376,9 +394,73 @@ export default function AIVerificationWidget({
     setImageData(null);
     setGoalText('');
     setVerifyErr(null);
+    setServerPhotoIdeas(null);
+    setIdeasErr(null);
   };
 
+  const fetchServerIdeas = useCallback(async () => {
+    const t = ideasFetchTitle?.trim();
+    if (!t || t.length < 2) return;
+    setIdeasLoading(true);
+    setIdeasErr(null);
+    try {
+      const res = await fetch("/api/goals/proof-suggestions", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: t }),
+      });
+      const data = (await res.json()) as { suggestions?: unknown; error?: string };
+      if (!res.ok) {
+        setIdeasErr(typeof data.error === "string" ? data.error : "Could not load ideas.");
+        return;
+      }
+      const list = Array.isArray(data.suggestions)
+        ? data.suggestions
+            .filter((x): x is string => typeof x === "string")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+      if (list.length < 2) {
+        setIdeasErr("Not enough suggestions. Check production env or try again.");
+        return;
+      }
+      setServerPhotoIdeas(list.slice(0, 3));
+    } catch {
+      setIdeasErr("Network error loading ideas.");
+    } finally {
+      setIdeasLoading(false);
+    }
+  }, [ideasFetchTitle]);
+
+  useEffect(() => {
+    setServerPhotoIdeas(null);
+    setIdeasErr(null);
+  }, [ideasFetchTitle]);
+
   const trimmedGoal = goalText.trim();
+
+  const suggestionLines = useMemo(() => {
+    if (serverPhotoIdeas && serverPhotoIdeas.length > 0) {
+      return serverPhotoIdeas.slice(0, 3);
+    }
+    const pre = (prefetchedPhotoIdeas ?? []).map((s) => s.trim()).filter((s) => s.length > 0);
+    if (pre.length > 0) return pre.slice(0, 3);
+    return trimmedGoal ? generateSuggestions(trimmedGoal) : [];
+  }, [serverPhotoIdeas, prefetchedPhotoIdeas, trimmedGoal]);
+
+  const suggBoxTitle =
+    serverPhotoIdeas && serverPhotoIdeas.length > 0
+      ? "AI photo ideas"
+      : (prefetchedPhotoIdeas ?? []).some((s) => s.trim())
+        ? "Photo ideas (this goal)"
+        : "Proof photo ideas";
+
+  const usingClipTemplateFoot =
+    !(serverPhotoIdeas && serverPhotoIdeas.length > 0) &&
+    !(prefetchedPhotoIdeas ?? []).some((s) => s.trim()) &&
+    !!trimmedGoal;
+
   const canVerify = !!trimmedGoal && !!imageData && active;
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -534,15 +616,47 @@ export default function AIVerificationWidget({
             {/* Photo proof suggestions */}
             {trimmedGoal && (
               <div className="aivw-sugg">
-                <div className="aivw-sugg-hdr">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                    <circle cx="12" cy="13" r="4"/>
-                  </svg>
-                  <p className="aivw-sugg-title">Proof photo ideas</p>
+                <div
+                  className="aivw-sugg-hdr"
+                  style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <p className="aivw-sugg-title" style={{ margin: 0 }}>
+                      {suggBoxTitle}
+                    </p>
+                  </div>
+                  {ideasFetchTitle && ideasFetchTitle.trim().length >= 2 && (
+                    <button
+                      type="button"
+                      onClick={() => void fetchServerIdeas()}
+                      disabled={!active || ideasLoading}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#6d28d9",
+                        background: "#f5f3ff",
+                        border: "1px solid #e9d5ff",
+                        borderRadius: 8,
+                        padding: "4px 10px",
+                        cursor: active && !ideasLoading ? "pointer" : "not-allowed",
+                        opacity: active && !ideasLoading ? 1 : 0.65,
+                        fontFamily: "inherit",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {ideasLoading ? "Loading…" : "Get AI ideas"}
+                    </button>
+                  )}
                 </div>
+                {ideasErr ? (
+                  <p style={{ margin: "8px 0 0", fontSize: 11, color: "#b91c1c" }}>{ideasErr}</p>
+                ) : null}
                 <ul className="aivw-sugg-list">
-                  {generateSuggestions(trimmedGoal).map((s) => (
+                  {suggestionLines.map((s) => (
                     <li key={s} className="aivw-sugg-item">
                       <span className="aivw-sugg-bullet">
                         <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 20 20" fill="#7c3aed">
@@ -554,10 +668,24 @@ export default function AIVerificationWidget({
                   ))}
                 </ul>
                 <p className="aivw-sugg-foot">
-                  The AI passes your photo if it looks like{' '}
-                  <code>&ldquo;a photo of {trimmedGoal}&rdquo;</code> or{' '}
-                  <code>&ldquo;a person {trimmedGoal}&rdquo;</code>. Each idea
-                  above is one way to capture exactly that.
+                  {usingClipTemplateFoot ? (
+                    <>
+                      The AI passes your photo if it looks like{" "}
+                      <code>&ldquo;a photo of {trimmedGoal}&rdquo;</code> or{" "}
+                      <code>&ldquo;a person {trimmedGoal}&rdquo;</code>. Each idea above is one way to capture
+                      exactly that.
+                    </>
+                  ) : serverPhotoIdeas && serverPhotoIdeas.length > 0 ? (
+                    <>
+                      These lines were just loaded from your app&apos;s server (same as Buddy). Local CLIP still
+                      compares your upload to the <strong>goal text in step 1</strong>.
+                    </>
+                  ) : (
+                    <>
+                      Lines above come from this goal (Buddy) or generic examples. Local CLIP still scores your photo
+                      against the <strong>goal text in step 1</strong>.
+                    </>
+                  )}
                 </p>
               </div>
             )}

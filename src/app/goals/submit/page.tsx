@@ -535,6 +535,8 @@ function SubmitProofContent() {
               <div className="mt-3">
                 <AIVerificationWidget
                   initialGoalText={verifyPromptText}
+                  prefetchedPhotoIdeas={proofPhotoIdeas}
+                  ideasFetchTitle={goal.title}
                   threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
                   onResult={(result) => {
                     void handleAiWidgetResult(result);
