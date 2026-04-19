@@ -30,6 +30,11 @@ import React, {
   type CSSProperties,
 } from 'react';
 import { pipeline, env } from '@huggingface/transformers';
+import { evaluateClipLabelScores, makeLabels } from '@/lib/clipVerifyLabels';
+import {
+  DEFAULT_CLIP_MODEL_ID,
+  DEFAULT_CLIP_VERIFY_THRESHOLD,
+} from '@/lib/clipVerifyConstants';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -67,19 +72,6 @@ export interface AIVerificationWidgetProps {
   style?: CSSProperties;
 }
 
-// ─── Label generation ─────────────────────────────────────────────────────────
-
-// Stronger negative label set — more options gives the softmax better
-// alternatives for irrelevant images, so false-positives drop significantly.
-const NEGATIVE_LABELS = [
-  'a random irrelevant picture',
-  'a blank or unrelated photo',
-  'a completely different subject',
-  'a screenshot or text document',
-  'background scenery with nothing relevant',
-  'an empty or meaningless image',
-] as const;
-
 const EXAMPLE_GOALS = [
   'cleaning my room',
   'going to the gym',
@@ -90,180 +82,6 @@ const EXAMPLE_GOALS = [
   'meditating',
   'journaling',
 ];
-
-// Common English words to strip before pulling out subjects/actions. Keeps
-// "dog"/"walk" from "walk the dog", "gym"/"going" from "going to the gym".
-const STOP_WORDS = new Set([
-  'a', 'an', 'the', 'my', 'your', 'our', 'their', 'his', 'her', 'its',
-  'to', 'of', 'in', 'on', 'at', 'for', 'with', 'and', 'or', 'but', 'by', 'from',
-  'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being',
-  'do', 'does', 'did', 'doing', 'has', 'have', 'had', 'having',
-  'i', 'me', 'we', 'us', 'you', 'he', 'she', 'it', 'they', 'them',
-  'some', 'any', 'this', 'that', 'these', 'those', 'there', 'here',
-  'up', 'down', 'out', 'into', 'onto', 'off', 'over', 'under',
-]);
-
-// Pulls the meaningful subject/action words out of a goal so CLIP can score
-// each one individually. e.g. "walk the dog" -> ["walk", "dog"],
-// "going to the gym" -> ["going", "gym"].
-function extractKeyTerms(goal: string): string[] {
-  const words = goal
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, ' ')
-    .split(/\s+/)
-    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
-  return Array.from(new Set(words));
-}
-
-// Expansion dictionary — maps common goal phrases & keywords to related
-// visual concepts CLIP can score against. Lets the widget verify goals
-// via associated subjects even when they're not in the goal text
-// (e.g. "work out" -> look for dumbbells, a gym, exercise equipment).
-//
-// Keys are all lowercase. Multi-word keys match as substrings of the full
-// goal text; single-word keys match against extracted keywords.
-// Values should be self-contained noun phrases (they get wrapped in
-// "a photo of ${value}" automatically).
-const GOAL_EXPANSIONS: Record<string, string[]> = {
-  // ── fitness / strength ──
-  'work out': ['dumbbells', 'a gym', 'exercise equipment', 'a person exercising'],
-  'workout': ['dumbbells', 'a gym', 'exercise equipment', 'a person exercising'],
-  'exercise': ['dumbbells', 'a gym', 'exercise equipment', 'a person exercising'],
-  'exercising': ['dumbbells', 'a gym', 'exercise equipment', 'a person exercising'],
-  'gym': ['dumbbells', 'exercise equipment', 'a weight rack', 'a treadmill'],
-  'lift': ['dumbbells', 'a barbell', 'a weight rack'],
-  'lifting': ['dumbbells', 'a barbell', 'a weight rack'],
-  'weights': ['dumbbells', 'a barbell', 'a weight rack'],
-  'pushup': ['a person doing push-ups', 'a person on the floor exercising'],
-  'pushups': ['a person doing push-ups', 'a person on the floor exercising'],
-  'pullup': ['a pull-up bar', 'a person doing pull-ups'],
-  'pullups': ['a pull-up bar', 'a person doing pull-ups'],
-
-  // ── cardio / outdoor ──
-  'run': ['running shoes', 'a running track', 'a person running outside', 'a park path'],
-  'running': ['running shoes', 'a running track', 'a person running outside', 'a park path'],
-  'jog': ['running shoes', 'a park path', 'a person jogging'],
-  'jogging': ['running shoes', 'a park path', 'a person jogging'],
-  'walk': ['a walking path', 'a sidewalk', 'an outdoor path'],
-  'walking': ['a walking path', 'a sidewalk', 'an outdoor path'],
-  'hike': ['a hiking trail', 'mountains', 'a forest path'],
-  'hiking': ['a hiking trail', 'mountains', 'a forest path'],
-  'bike': ['a bicycle', 'a bike path'],
-  'biking': ['a bicycle', 'a bike path'],
-  'cycling': ['a bicycle', 'a bike path'],
-  'swim': ['a swimming pool', 'a person swimming'],
-  'swimming': ['a swimming pool', 'a person swimming'],
-
-  // ── mindfulness / stretching ──
-  'meditate': ['a person sitting cross-legged', 'a calm quiet room', 'a meditation cushion'],
-  'meditating': ['a person sitting cross-legged', 'a calm quiet room', 'a meditation cushion'],
-  'meditation': ['a person sitting cross-legged', 'a calm quiet room', 'a meditation cushion'],
-  'yoga': ['a yoga mat', 'a person in a yoga pose'],
-  'stretch': ['a person stretching', 'a yoga mat'],
-  'stretching': ['a person stretching', 'a yoga mat'],
-
-  // ── learning / reading / writing ──
-  'read': ['an open book', 'a stack of books', 'a person reading'],
-  'reading': ['an open book', 'a stack of books', 'a person reading'],
-  'book': ['an open book', 'a stack of books'],
-  'books': ['an open book', 'a stack of books'],
-  'study': ['textbooks', 'notes on a desk', 'a student studying'],
-  'studying': ['textbooks', 'notes on a desk', 'a student studying'],
-  'homework': ['a notebook', 'textbooks', 'a desk with papers'],
-  'write': ['a notebook', 'a pen and paper'],
-  'writing': ['a notebook', 'a pen and paper'],
-  'journal': ['an open notebook', 'a pen and a journal'],
-  'journaling': ['an open notebook', 'a pen and a journal'],
-
-  // ── chores / home ──
-  'clean': ['a tidy room', 'cleaning supplies', 'a vacuum'],
-  'cleaning': ['a tidy room', 'cleaning supplies', 'a vacuum'],
-  'tidy': ['a tidy room', 'an organized space'],
-  'room': ['a tidy bedroom'],
-  'laundry': ['a washing machine', 'folded clothes', 'a laundry basket'],
-  'dishes': ['a clean sink', 'clean plates', 'a dishwasher'],
-  'vacuum': ['a vacuum cleaner', 'a clean floor'],
-
-  // ── cooking / food ──
-  'cook': ['a kitchen', 'a pan on a stove', 'prepared food on a plate'],
-  'cooking': ['a kitchen', 'a pan on a stove', 'prepared food on a plate'],
-  'meal': ['a plate of food', 'a home cooked meal'],
-  'breakfast': ['a plate of breakfast food', 'eggs and toast'],
-  'lunch': ['a plate of lunch food', 'a sandwich'],
-  'dinner': ['a plate of dinner food', 'a home cooked meal'],
-
-  // ── hydration / health ──
-  'water': ['a glass of water', 'a water bottle'],
-  'hydrate': ['a glass of water', 'a water bottle'],
-  'vitamins': ['a bottle of vitamins', 'pills in a hand'],
-  'medication': ['a pill bottle', 'medication'],
-
-  // ── sleep ──
-  'sleep': ['a made bed', 'a dark bedroom'],
-  'bed': ['a made bed', 'a bedroom'],
-
-  // ── creative ──
-  'draw': ['a sketchbook', 'a drawing', 'art supplies'],
-  'drawing': ['a sketchbook', 'a drawing', 'art supplies'],
-  'paint': ['a painting', 'paintbrushes', 'an easel'],
-  'painting': ['a painting', 'paintbrushes', 'an easel'],
-
-  // ── music practice ──
-  'practice': ['a musical instrument', 'sheet music'],
-  'guitar': ['a guitar', 'a person playing guitar'],
-  'piano': ['a piano', 'a person playing piano'],
-
-  // ── pets ──
-  'dog': ['a dog', 'a person with a dog', 'a dog on a leash'],
-  'cat': ['a cat'],
-  'pet': ['a pet animal'],
-};
-
-// Looks up all expansions that apply to this goal. Multi-word keys match as
-// substrings of the full goal; single-word keys match against the extracted
-// keyword list (so "work out" -> dumbbells+gym, and "running" alone also
-// triggers the running expansion).
-function getExpansions(goal: string, terms: string[]): string[] {
-  const lowerGoal = goal.toLowerCase();
-  const termSet = new Set(terms);
-  const out = new Set<string>();
-
-  for (const [key, values] of Object.entries(GOAL_EXPANSIONS)) {
-    const isPhrase = key.includes(' ');
-    const matches = isPhrase ? lowerGoal.includes(key) : termSet.has(key);
-    if (matches) values.forEach((v) => out.add(v));
-  }
-
-  return Array.from(out);
-}
-
-// Broad/lenient label set. For a goal like "work out" this scores the image
-// against the full phrase, each extracted keyword, AND every expanded concept
-// (dumbbells, a gym, exercise equipment, etc.) so the widget verifies whether
-// any meaningful subject/action/scene of the goal appears.
-function makeLabels(goalText: string): { all: string[]; positive: string[] } {
-  const g = goalText.trim();
-  const terms = extractKeyTerms(g);
-  const expansions = getExpansions(g, terms);
-
-  const positive = [
-    `a photo of ${g}`,
-    `a person ${g}`,
-    `a scene or environment for ${g}`,
-    `equipment, tools, or items used for ${g}`,
-    ...terms.flatMap((t) => [
-      `a photo of a ${t}`,
-      `a photo showing ${t}`,
-    ]),
-    ...expansions.map((e) => `a photo of ${e}`),
-  ];
-
-  const dedupedPositive = Array.from(new Set(positive));
-  return {
-    all: Array.from(new Set([...dedupedPositive, ...NEGATIVE_LABELS])),
-    positive: dedupedPositive,
-  };
-}
 
 // ─── Scoped CSS (injected once via <style id="aivw-styles">) ──────────────────
 
@@ -360,8 +178,8 @@ const CSS = `
 
 export default function AIVerificationWidget({
   onResult,
-  threshold = 0.65,
-  modelId = 'Xenova/clip-vit-base-patch32',
+  threshold = DEFAULT_CLIP_VERIFY_THRESHOLD,
+  modelId = DEFAULT_CLIP_MODEL_ID,
   className = '',
   style,
 }: AIVerificationWidgetProps) {
@@ -474,26 +292,16 @@ export default function AIVerificationWidget({
     try {
       const { all: labels, positive: positiveLabels } = makeLabels(trimmed);
       const raw: VerificationScore[] = await pipelineRef.current(imageData, labels);
-      const sorted = [...raw].sort((a, b) => b.score - a.score);
-      const top = sorted[0];
-      const positiveSet = new Set(positiveLabels);
-
-      // Combined probability across ALL goal-matching labels.
-      const confidence = raw
-        .filter((s) => positiveSet.has(s.label))
-        .reduce((sum, s) => sum + s.score, 0);
-
-      // Strict verification: the sum of positive labels must clear the threshold
-      // AND the single highest-scoring label must itself be a positive one. This
-      // rejects images where many positives each get a tiny share while a
-      // negative dominates — a common false-positive pattern with many labels.
-      const topIsPositive = positiveSet.has(top.label);
-      const verified = confidence >= threshold && topIsPositive;
+      const { verified, confidence, topLabel, sorted } = evaluateClipLabelScores(
+        raw,
+        positiveLabels,
+        threshold
+      );
 
       const res: VerificationResult = {
         verified,
         confidence,
-        topLabel: top.label,
+        topLabel,
         goalName: trimmed,
         allScores: sorted,
       };

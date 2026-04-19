@@ -2,6 +2,7 @@ import {
   DEFAULT_CLIP_MODEL_ID,
   DEFAULT_CLIP_VERIFY_THRESHOLD,
 } from "./clipVerifyConstants";
+import { evaluateClipLabelScores, makeLabels } from "./clipVerifyLabels";
 
 export interface ClipScore {
   label: string;
@@ -22,15 +23,7 @@ export type ClipLoadProgress = {
   file?: string;
 };
 
-const NEGATIVE_LABELS = ["a random irrelevant picture", "a blank or unrelated photo"] as const;
-
 export { DEFAULT_CLIP_MODEL_ID, DEFAULT_CLIP_VERIFY_THRESHOLD };
-
-function makeLabels(goalText: string): { all: string[]; positive: string[] } {
-  const g = goalText.trim();
-  const positive = [`a photo of ${g}`, `a person ${g}`];
-  return { all: [...positive, ...NEGATIVE_LABELS], positive };
-}
 
 type ClipPipeline = (image: string, labels: string[]) => Promise<ClipScore[]>;
 
@@ -131,15 +124,15 @@ export async function verifyWithLocalClip(opts: {
   const { all: labels, positive: positiveLabels } = makeLabels(trimmed);
   const pipe = await getPipeline(modelId);
   const scores = await pipe(opts.imageDataUrl, labels);
-  const sorted = [...scores].sort((a, b) => b.score - a.score);
-  const top = sorted[0] ?? { label: "unknown", score: 0 };
-  const confidence = scores
-    .filter((s) => positiveLabels.includes(s.label))
-    .reduce((sum, s) => sum + s.score, 0);
+  const { verified, confidence, topLabel, sorted } = evaluateClipLabelScores(
+    scores,
+    positiveLabels,
+    threshold
+  );
   return {
-    verified: confidence >= threshold,
+    verified,
     confidence,
-    topLabel: top.label,
+    topLabel,
     allScores: sorted,
   };
 }
