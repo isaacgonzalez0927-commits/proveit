@@ -53,7 +53,7 @@ export interface AIVerificationWidgetProps {
   onResult?: (result: VerificationResult) => void;
   /**
    * Minimum confidence (0–1) required to mark the result as verified.
-   * @default 0.55
+   * @default 0.65
    */
   threshold?: number;
   /**
@@ -69,9 +69,15 @@ export interface AIVerificationWidgetProps {
 
 // ─── Label generation ─────────────────────────────────────────────────────────
 
+// Stronger negative label set — more options gives the softmax better
+// alternatives for irrelevant images, so false-positives drop significantly.
 const NEGATIVE_LABELS = [
   'a random irrelevant picture',
   'a blank or unrelated photo',
+  'a completely different subject',
+  'a screenshot or text document',
+  'background scenery with nothing relevant',
+  'an empty or meaningless image',
 ] as const;
 
 const EXAMPLE_GOALS = [
@@ -332,38 +338,21 @@ const CSS = `
 .aivw-reload-btn{margin-top:12px;padding:8px 18px;font-size:13px;font-weight:500;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit}
 .aivw-reload-btn:hover{background:#b91c1c}
 
-/* ── result card ── */
-.aivw-res{border-radius:16px;border:2px solid;padding:24px}
+/* ── result card — big definitive YES / NO ── */
+.aivw-res{border-radius:16px;border:2px solid;padding:32px 24px}
 .aivw-res-ok{border-color:#a7f3d0;background:#ecfdf5}
 .aivw-res-fail{border-color:#fecaca;background:#fef2f2}
-.aivw-res-top{display:flex;align-items:flex-start;gap:16px}
-.aivw-res-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.aivw-res-icon-ok{background:#d1fae5}
-.aivw-res-icon-fail{background:#fee2e2}
-.aivw-res-title{font-size:19px;font-weight:700;margin:0 0 4px}
-.aivw-res-title-ok{color:#065f46}
-.aivw-res-title-fail{color:#7f1d1d}
-.aivw-res-desc{font-size:13px;margin:0}
-.aivw-res-desc-ok{color:#047857}
-.aivw-res-desc-fail{color:#b91c1c}
-.aivw-conf-hdr{display:flex;justify-content:space-between;align-items:center;margin:14px 0 5px}
-.aivw-conf-name{font-size:12px;font-weight:500}
-.aivw-conf-name-ok{color:#047857}
-.aivw-conf-name-fail{color:#b91c1c}
-.aivw-conf-val{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
-.aivw-conf-val-ok{color:#065f46}
-.aivw-conf-val-fail{color:#7f1d1d}
-.aivw-conf-track{width:100%;height:10px;background:rgba(255,255,255,.65);border-radius:999px;overflow:hidden}
-.aivw-conf-fill{height:10px;border-radius:999px;transition:width .7s ease}
-.aivw-conf-fill-ok{background:#10b981}
-.aivw-conf-fill-fail{background:#f87171}
-.aivw-conf-note{font-size:11px;margin:5px 0 0}
-.aivw-conf-note-ok{color:#059669}
-.aivw-conf-note-fail{color:#ef4444}
-.aivw-match-note{margin:10px 0 0;font-size:12px}
-.aivw-match-note-ok{color:#047857}
-.aivw-match-note-fail{color:#b91c1c}
-.aivw-reset-btn{width:100%;margin-top:16px;padding:10px 16px;border-radius:10px;background:#fff;border:1px solid #e2e8f0;font-size:13px;font-weight:500;color:#475569;cursor:pointer;transition:background .12s,border-color .12s;font-family:inherit}
+.aivw-verdict{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.aivw-verdict-icon{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:700;line-height:1;flex-shrink:0}
+.aivw-verdict-icon-ok{background:#d1fae5;color:#047857}
+.aivw-verdict-icon-fail{background:#fee2e2;color:#b91c1c}
+.aivw-verdict-title{font-size:44px;font-weight:800;letter-spacing:.04em;margin:0;line-height:1}
+.aivw-verdict-title-ok{color:#065f46}
+.aivw-verdict-title-fail{color:#7f1d1d}
+.aivw-verdict-sub{font-size:14px;margin:0;max-width:340px}
+.aivw-verdict-sub-ok{color:#047857}
+.aivw-verdict-sub-fail{color:#b91c1c}
+.aivw-reset-btn{width:100%;margin-top:24px;padding:12px 16px;border-radius:10px;background:#fff;border:1px solid #e2e8f0;font-size:13px;font-weight:500;color:#475569;cursor:pointer;transition:background .12s,border-color .12s;font-family:inherit}
 .aivw-reset-btn:hover{background:#f8fafc;border-color:#cbd5e1}
 `;
 
@@ -371,7 +360,7 @@ const CSS = `
 
 export default function AIVerificationWidget({
   onResult,
-  threshold = 0.55,
+  threshold = 0.65,
   modelId = 'Xenova/clip-vit-base-patch32',
   className = '',
   style,
@@ -487,16 +476,22 @@ export default function AIVerificationWidget({
       const raw: VerificationScore[] = await pipelineRef.current(imageData, labels);
       const sorted = [...raw].sort((a, b) => b.score - a.score);
       const top = sorted[0];
+      const positiveSet = new Set(positiveLabels);
 
-      // Confidence = combined probability across ALL goal-matching labels.
-      // This gives one clean number: "how much does the model think this photo
-      // relates to the goal?" vs spreading scores across 4 individual labels.
+      // Combined probability across ALL goal-matching labels.
       const confidence = raw
-        .filter((s) => positiveLabels.includes(s.label))
+        .filter((s) => positiveSet.has(s.label))
         .reduce((sum, s) => sum + s.score, 0);
 
+      // Strict verification: the sum of positive labels must clear the threshold
+      // AND the single highest-scoring label must itself be a positive one. This
+      // rejects images where many positives each get a tiny share while a
+      // negative dominates — a common false-positive pattern with many labels.
+      const topIsPositive = positiveSet.has(top.label);
+      const verified = confidence >= threshold && topIsPositive;
+
       const res: VerificationResult = {
-        verified: confidence >= threshold,
+        verified,
         confidence,
         topLabel: top.label,
         goalName: trimmed,
@@ -569,51 +564,22 @@ export default function AIVerificationWidget({
         </div>
       )}
 
-      {/* ── Verification result ── */}
+      {/* ── Verification result — definitive YES / NO ── */}
       {result && (
         <div className={`aivw-res ${result.verified ? 'aivw-res-ok' : 'aivw-res-fail'}`}>
-          <div className="aivw-res-top">
-            <div className={`aivw-res-icon ${result.verified ? 'aivw-res-icon-ok' : 'aivw-res-icon-fail'}`}>
-              {result.verified ? '✅' : '❌'}
+          <div className="aivw-verdict">
+            <div className={`aivw-verdict-icon ${result.verified ? 'aivw-verdict-icon-ok' : 'aivw-verdict-icon-fail'}`}>
+              {result.verified ? '✓' : '✕'}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 className={`aivw-res-title ${result.verified ? 'aivw-res-title-ok' : 'aivw-res-title-fail'}`}>
-                {result.verified ? 'Goal Verified!' : 'Not Verified'}
-              </h3>
-              <p className={`aivw-res-desc ${result.verified ? 'aivw-res-desc-ok' : 'aivw-res-desc-fail'}`}>
-                {result.verified
-                  ? `Your photo confirms you completed "${result.goalName}".`
-                  : `The photo didn't match "${result.goalName}" with enough confidence.`}
-              </p>
-
-              {/* Confidence bar */}
-              <div className="aivw-conf-hdr">
-                <span className={`aivw-conf-name ${result.verified ? 'aivw-conf-name-ok' : 'aivw-conf-name-fail'}`}>
-                  Confidence
-                </span>
-                <span className={`aivw-conf-val ${result.verified ? 'aivw-conf-val-ok' : 'aivw-conf-val-fail'}`}>
-                  {Math.round(result.confidence * 100)}%
-                </span>
-              </div>
-              <div className="aivw-conf-track">
-                <div
-                  className={`aivw-conf-fill ${result.verified ? 'aivw-conf-fill-ok' : 'aivw-conf-fill-fail'}`}
-                  style={{ width: `${Math.round(result.confidence * 100)}%` }}
-                />
-              </div>
-              <p className={`aivw-conf-note ${result.verified ? 'aivw-conf-note-ok' : 'aivw-conf-note-fail'}`}>
-                Threshold: {Math.round(threshold * 100)}% required to verify
-              </p>
-            </div>
+            <h3 className={`aivw-verdict-title ${result.verified ? 'aivw-verdict-title-ok' : 'aivw-verdict-title-fail'}`}>
+              {result.verified ? 'YES' : 'NO'}
+            </h3>
+            <p className={`aivw-verdict-sub ${result.verified ? 'aivw-verdict-sub-ok' : 'aivw-verdict-sub-fail'}`}>
+              {result.verified
+                ? `This photo shows "${result.goalName}".`
+                : `This photo doesn't show "${result.goalName}".`}
+            </p>
           </div>
-
-          {/* Single-line match note */}
-          <p className={`aivw-match-note ${result.verified ? 'aivw-match-note-ok' : 'aivw-match-note-fail'}`}>
-            {result.verified
-              ? `The AI is ${Math.round(result.confidence * 100)}% sure this photo matches your goal.`
-              : `The AI is only ${Math.round(result.confidence * 100)}% sure — ${Math.round(threshold * 100)}% is needed to verify.`
-            }
-          </p>
 
           <button className="aivw-reset-btn" onClick={handleReset}>
             Try again
