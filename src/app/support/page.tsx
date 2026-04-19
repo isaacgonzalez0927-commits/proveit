@@ -2,15 +2,17 @@ import Link from "next/link";
 
 export default function SupportPage() {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10 pb-[max(7rem,env(safe-area-inset-bottom))]">
-      <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-        Support
-      </h1>
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Get help with Proveit.
-      </p>
+    <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-10">
+      <header>
+        <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
+          Support
+        </h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Get help with Proveit.
+        </p>
+      </header>
 
-      <div className="mt-8 space-y-6 text-sm text-slate-700 dark:text-slate-300">
+      <div className="space-y-6 rounded-2xl p-6 text-sm text-slate-700 dark:text-slate-300 sm:p-8 glass-card">
         <section>
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contact</h2>
           <p className="mt-1">
@@ -57,10 +59,10 @@ export default function SupportPage() {
         </section>
       </div>
 
-      <div className="mt-10">
+      <div>
         <Link
           href="/"
-          className="text-sm text-prove-600 hover:underline dark:text-prove-400"
+          className="text-sm font-medium text-prove-600 hover:underline dark:text-prove-400"
         >
           Back to app
         </Link>

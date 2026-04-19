@@ -66,6 +66,7 @@ export default function BuddyPage() {
   const {
     user,
     goals,
+    submissions,
     addGoal,
     updateGoal,
     removeGoal,
@@ -276,7 +277,7 @@ export default function BuddyPage() {
           typeof effectiveDeveloperSettings.goalStreakOverrides[goal.id] === "number",
       };
     });
-  }, [goals, user, effectiveDeveloperSettings, todayStr, getSubmissionsForGoal, getGoalPlantVariant]);
+  }, [goals, submissions, user, effectiveDeveloperSettings, todayStr, getSubmissionsForGoal, getGoalPlantVariant]);
 
   const fullyGrownCount = garden.filter((g) => isFinalStage(g.stage.stage, g.plantVariant)).length;
 
@@ -584,7 +585,7 @@ export default function BuddyPage() {
           }}
         />
       )}
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         <div className="mb-8 border-b border-slate-200/80 pb-6 dark:border-slate-800/80">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Goal Garden

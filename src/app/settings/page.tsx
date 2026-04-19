@@ -269,8 +269,8 @@ export default function SettingsPage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <header className="mb-8">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+        <header>
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Settings
           </h1>
@@ -322,7 +322,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl p-5 glass-card">
+        <section className="rounded-2xl p-5 glass-card">
           <h2 className="font-semibold text-slate-900 dark:text-white">Gallery display</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             These options control what is shown on the Goal Gallery page.
@@ -349,7 +349,7 @@ export default function SettingsPage() {
         </section>
 
         {useSupabase && (
-          <section className="mt-6 rounded-2xl p-5 glass-card">
+          <section className="rounded-2xl p-5 glass-card">
             <h2 className="font-semibold text-slate-900 dark:text-white">Contact email (optional)</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Add a real address if you want password reset links in your inbox. You still sign in with your username and password.
@@ -376,7 +376,7 @@ export default function SettingsPage() {
         )}
 
         {useSupabase && user?.email && !isInternalAuthEmail(user.email) && (
-          <section className="mt-6 rounded-2xl p-5 glass-card">
+          <section className="rounded-2xl p-5 glass-card">
             <h2 className="font-semibold text-slate-900 dark:text-white">Confirm email</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Confirming your email secures your account and lets you reset your password if you forget it. Resend the confirmation link below — it’s sent via Resend (same as password reset).
@@ -444,7 +444,7 @@ export default function SettingsPage() {
         )}
 
         {isCreatorAccount && (
-          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/55 p-5 dark:border-amber-900/60 dark:bg-amber-950/25">
+          <section className="rounded-2xl border border-amber-200/90 p-5 dark:border-amber-800/50 glass-card">
             <h2 className="font-semibold text-amber-900 dark:text-amber-200">Developer tools (private)</h2>
             <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
               Only visible for creator accounts. Toggle developer tools here.
@@ -492,7 +492,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-        <section className="mt-6 rounded-2xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/60 dark:bg-red-950/20">
+        <section className="rounded-2xl border border-red-200/90 p-5 dark:border-red-900/50 glass-card">
           <h2 className="font-semibold text-red-800 dark:text-red-200">Hide goals from gallery</h2>
           <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
             Hiding removes the goal from Gallery view only. It does not delete proof data.
@@ -554,7 +554,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl p-5 glass-card">
+        <section className="rounded-2xl p-5 glass-card">
           <h2 className="font-semibold text-slate-900 dark:text-white">Legal & support</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Review legal policies and contact support.
@@ -575,7 +575,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-2xl border border-red-300 bg-red-50 p-5 dark:border-red-900/70 dark:bg-red-950/25">
+        <section className="rounded-2xl border border-red-300/90 p-5 dark:border-red-900/55 glass-card">
           <h2 className="font-semibold text-red-800 dark:text-red-200">Delete account</h2>
           <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
             Permanently delete your account and all associated data.

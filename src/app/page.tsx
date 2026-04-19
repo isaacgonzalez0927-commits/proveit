@@ -426,7 +426,7 @@ function LandingContent() {
           <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
             <div className="flex w-full flex-1 flex-col items-center justify-center text-center">
               <div
-                className="inline-flex w-fit items-center gap-2 rounded-full bg-prove-100 px-[clamp(0.875rem,3vw,1.5rem)] py-[clamp(0.35rem,1.25vh,0.6rem)] animate-welcome-step [animation-fill-mode:forwards] dark:bg-prove-900/50"
+                className="inline-flex w-fit items-center gap-2 rounded-full px-[clamp(0.875rem,3vw,1.5rem)] py-[clamp(0.35rem,1.25vh,0.6rem)] shadow-sm animate-welcome-step [animation-fill-mode:forwards] glass-surface"
               >
                 <span className="h-[clamp(0.3rem,1.75vw,0.6rem)] w-[clamp(0.3rem,1.75vw,0.6rem)] rounded-full bg-prove-500" />
                 <p className="text-[clamp(0.75rem,2.25vw,1rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">
@@ -446,7 +446,7 @@ function LandingContent() {
                 Set goals. Snap proof. Grow your garden.
               </p>
               <div
-                className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-2xl border p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-xl animate-welcome-list [animation-fill-mode:forwards] glass-panel [border-color:var(--glass-border)]"
+                className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-3xl border p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-xl animate-welcome-list [animation-fill-mode:forwards] glass-panel [border-color:var(--glass-border)]"
               >
                 <ol className="space-y-[clamp(0.5rem,2vh,1rem)] text-left text-[clamp(1rem,3.5vmin,1.5rem)] leading-snug text-slate-600 dark:text-slate-400">
                   <li className="flex gap-4">
@@ -507,7 +507,7 @@ function LandingContent() {
                   {loginError && (
                     <p className="text-[13px] text-red-500" role="alert">{loginError}</p>
                   )}
-                  <div className="rounded-xl overflow-hidden [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0 glass-surface">
+                  <div className="overflow-hidden rounded-2xl [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0 glass-surface">
                     {authMode === "signup" && (
                       <label className="block">
                         <span className="sr-only">Name or nickname</span>
@@ -606,10 +606,10 @@ function LandingContent() {
                     key={plan.id}
                     type="button"
                     onClick={() => handleChoosePlan(plan.id as PlanId)}
-                    className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] ${
+                    className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] glass-card ${
                       plan.id === "free"
-                        ? "border-prove-400 dark:border-prove-500 bg-prove-50/80 dark:bg-prove-950/40 shadow-sm shadow-prove-200/50 dark:shadow-prove-900/30"
-                        : "border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/70 backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600 [border-color:var(--glass-border)]"
+                        ? "border-prove-400 dark:border-prove-500 shadow-md shadow-prove-600/10 dark:shadow-prove-900/25"
+                        : "border-slate-200/85 dark:border-slate-700/65 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
                   >
                     <div className="px-4 pt-4 pb-2">

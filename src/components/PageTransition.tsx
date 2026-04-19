@@ -58,7 +58,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className={`${animClass} flex min-h-0 flex-1 flex-col`.trim()}
+      className={`${animClass} flex min-h-0 flex-1 flex-col motion-reduce:animate-none`.trim()}
       onTouchStart={(event) => {
         if (getTabIndex(pathname) === -1) return;
         if (isTouchFromSwipeExemptTarget(event.target)) return;

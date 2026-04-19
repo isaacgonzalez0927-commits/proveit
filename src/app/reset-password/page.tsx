@@ -61,7 +61,8 @@ function ResetPasswordContent() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4 py-8">
+      <div className="w-full rounded-2xl p-6 sm:p-8 glass-card">
       <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Set new password</h1>
       <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">Enter your new password below.</p>
       <form onSubmit={handleSubmit} className="mt-6 w-full space-y-4">
@@ -96,7 +97,8 @@ function ResetPasswordContent() {
           {loading ? "Updating…" : "Update password"}
         </button>
       </form>
-      <Link href="/" className="mt-6 text-sm text-prove-600 hover:underline">← Back to sign in</Link>
+      <Link href="/" className="mt-6 inline-block text-sm font-medium text-prove-600 hover:underline dark:text-prove-400">← Back to sign in</Link>
+      </div>
     </main>
   );
 }

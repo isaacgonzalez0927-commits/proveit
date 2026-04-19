@@ -182,7 +182,7 @@ function DashboardContent() {
   return (
     <PullToRefresh>
       <DashboardTour />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         {user && isPremiumTrialActive(user) && user.premiumTrialEndsAt && (
           <div
             className="mb-4 rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
@@ -207,7 +207,7 @@ function DashboardContent() {
           <p className="mt-1 text-slate-600 dark:text-slate-400">{accountDisplayLabel(user)}</p>
         </div>
 
-        <section className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-cyan-50/40 p-4 dark:border-emerald-900/60 dark:from-emerald-950/25 dark:to-cyan-950/20">
+        <section className="rounded-2xl border border-emerald-200/70 p-4 dark:border-emerald-800/45 glass-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">

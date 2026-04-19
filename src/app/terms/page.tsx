@@ -2,15 +2,17 @@ import Link from "next/link";
 
 export default function TermsPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 pb-[max(7rem,env(safe-area-inset-bottom))]">
-      <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">
-        Terms of Use
-      </h1>
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Last updated: Feb 20, 2026
-      </p>
+    <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-10">
+      <header>
+        <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">
+          Terms of Use
+        </h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Last updated: Feb 20, 2026
+        </p>
+      </header>
 
-      <div className="mt-8 space-y-6 text-sm leading-6 text-slate-700 dark:text-slate-300">
+      <div className="space-y-6 rounded-2xl p-6 text-sm leading-6 text-slate-700 dark:text-slate-300 sm:p-8 glass-card">
         <section>
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Service purpose</h2>
           <p className="mt-2">
@@ -53,7 +55,7 @@ export default function TermsPage() {
         </section>
       </div>
 
-      <div className="mt-10 flex flex-wrap items-center gap-4 text-sm">
+      <div className="flex flex-wrap items-center gap-4 text-sm">
         <Link href="/privacy" className="text-prove-600 hover:underline dark:text-prove-400">
           Privacy Policy
         </Link>

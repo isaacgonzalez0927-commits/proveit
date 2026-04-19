@@ -3,8 +3,8 @@ import { Home, LayoutDashboard } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-transparent px-4">
-      <div className="max-w-md rounded-2xl border border-slate-200/90 px-8 py-10 text-center shadow-soft-lg dark:border-slate-700/80 glass-card">
+    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <div className="max-w-md rounded-2xl px-8 py-10 text-center shadow-soft-lg glass-card">
         <p className="font-display text-6xl font-bold text-slate-200 dark:text-slate-700">404</p>
         <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">
           Page not found

@@ -86,16 +86,16 @@ export default function ChangeEmailPage() {
 
   if (success) {
     return (
-      <main className="mx-auto max-w-md px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+      <main className="mx-auto max-w-md space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         <Link
           href="/settings"
           onClick={() => { try { window.sessionStorage.removeItem("proveit_change_email_sent"); } catch { /* ignore */ } }}
-          className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to settings
         </Link>
-        <div className="rounded-2xl border border-prove-200 bg-prove-50 p-6 dark:border-prove-800 dark:bg-prove-950/30">
+        <div className="rounded-2xl border border-prove-200/80 p-6 dark:border-prove-800/50 glass-card">
           <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Check your new email</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             We sent a confirmation link to <strong>{displayEmail}</strong>. Click that link to confirm the change. Your email will update after you confirm.
@@ -113,14 +113,15 @@ export default function ChangeEmailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 py-8 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+    <main className="mx-auto max-w-md space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
       <Link
         href="/settings"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to settings
       </Link>
+      <div className="rounded-2xl p-6 sm:p-7 glass-card">
       <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Change login email</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
         {isInternalAuthEmail(user?.email) ? (
@@ -178,6 +179,7 @@ export default function ChangeEmailPage() {
           {loading ? "Updating…" : "Update email"}
         </button>
       </form>
+      </div>
     </main>
   );
 }

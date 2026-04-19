@@ -25,7 +25,7 @@ function PricingContent() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-5xl flex-1 space-y-10 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         <div className="text-center">
           <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
             Simple pricing
@@ -33,23 +33,23 @@ function PricingContent() {
           <p className="mt-2 text-slate-600 dark:text-slate-400">
             Free: 2 goals, 3 plant styles. Pro: 5 goals, 6 plant styles, 6 theme colors, Goal Gallery, Goal Break (7 break-days per goal per month). Premium: unlimited goals, all 8 plant styles, all 10 theme colors. New to Premium? One 7-day free trial per account (then billed at the price you pick, or switch plans anytime).
           </p>
-          <div className="mt-6 flex justify-center gap-2">
+          <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl p-1.5 glass-card">
             <button
               onClick={() => setBilling("monthly")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
                 billing === "monthly"
                   ? "bg-prove-600 text-white btn-glass-primary"
-                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                  : "text-slate-700 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/5"
               }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBilling("yearly")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
                 billing === "yearly"
                   ? "bg-prove-600 text-white btn-glass-primary"
-                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                  : "text-slate-700 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/5"
               }`}
             >
               Yearly
@@ -63,7 +63,7 @@ function PricingContent() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-3 sm:gap-6">
           {PLANS.map((plan) => (
             <PricingCard
               key={plan.id}
@@ -78,7 +78,7 @@ function PricingContent() {
           ))}
         </div>
 
-        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+        <p className="mx-auto max-w-2xl rounded-2xl px-4 py-4 text-center text-sm text-slate-600 dark:text-slate-400 glass-card">
           <strong>Free:</strong> 2 goals, full plant growth, streak tracking, dashboard. &bull; <strong>Pro:</strong> 5 goals, 6 accent themes, Goal Gallery, Goal Break (7 break-days per goal per calendar month). &bull; <strong>Premium:</strong> Unlimited goals, all 10 accent themes, 8 plant styles, weekly photo collages, Goal Break any duration.
         </p>
       </main>
@@ -118,12 +118,12 @@ function PricingCard({
 
   return (
     <div
-      className={`relative rounded-2xl border p-6 ${
+      className={`relative rounded-2xl border p-6 glass-card ${
         isPremium
-          ? "border-amber-400 bg-amber-50/40 shadow-lg dark:border-amber-600 dark:bg-amber-950/25"
+          ? "border-amber-300/90 shadow-lg dark:border-amber-600/50"
           : isPro
-            ? "border-prove-400 bg-prove-50/50 shadow-lg dark:border-prove-600 dark:bg-prove-950/30"
-            : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+            ? "border-prove-400/80 shadow-lg dark:border-prove-600/45"
+            : "border-slate-200/80 dark:border-slate-700/60"
       }`}
     >
       {isPro && (

@@ -154,8 +154,8 @@ function GalleryContent() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <div className="mb-8">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+        <div>
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Images className="h-7 w-7 text-prove-600 dark:text-prove-400" />
             Goal gallery
@@ -163,7 +163,7 @@ function GalleryContent() {
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             {plan.name} plan · Browse your verified proofs goal by goal
           </p>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+          <div className="mt-3 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 glass-card">
             <SlidersHorizontal className="h-3.5 w-3.5" />
             {enabledSettingCount}/4 gallery display options enabled
             <Link
@@ -197,7 +197,7 @@ function GalleryContent() {
         ) : (
           <>
             {byGoal.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+              <div className="rounded-2xl border border-dashed border-slate-300/90 p-8 text-center dark:border-slate-600/70 glass-card">
                 <Images className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500" />
                 <p className="mt-4 text-slate-600 dark:text-slate-400">
                   No completed proofs yet. Prove it for your goals to fill your gallery.
@@ -255,7 +255,7 @@ function GalleryContent() {
                 </div>
 
                 {historyActionMessage && (
-                  <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                  <p className="rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-200 glass-card">
                     {historyActionMessage}
                   </p>
                 )}
@@ -316,7 +316,7 @@ function GalleryContent() {
                             return (
                               <li
                                 key={dateStr}
-                                className="rounded-lg border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/50"
+                                className="rounded-xl border border-slate-200/70 p-2 dark:border-slate-700/70 glass-card"
                               >
                                 <div className="aspect-square overflow-hidden rounded-md bg-slate-200 dark:bg-slate-700">
                                   {hasImage ? (

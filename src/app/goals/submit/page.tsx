@@ -8,7 +8,11 @@ import { Camera, CheckCircle2, XCircle, Loader2, ArrowLeft, SwitchCamera, X } fr
 import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
 import { LoadingView } from "@/components/LoadingView";
-import { isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
+import {
+  isWithinSubmissionWindow,
+  getSubmissionWindowMessage,
+  hasVerifiedSubmissionOnDate,
+} from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
 import { lightImpact } from "@/lib/haptics";
 import { format } from "date-fns";
@@ -186,6 +190,8 @@ function SubmitProofContent() {
 
   const goalSubs = goal ? getSubmissionsForGoal(goal.id) : [];
   const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
+  const alreadyVerifiedToday =
+    !!goal && hasVerifiedSubmissionOnDate(goalSubs, todayStr);
 
   const [, setHideHeader] = useHideHeader();
   const showStartingCameraForHeader =
@@ -246,6 +252,22 @@ function SubmitProofContent() {
     setStreamReady(false);
     if (!keepCameraMode) setCameraStarted(false);
   }, []);
+
+  /**
+   * After a successful proof, `goalSubs` includes today's verified row so `inWindow` becomes false.
+   * If `step` resets to "capture" (remount, etc.), avoid showing the closed-window screen over the success flow.
+   */
+  useLayoutEffect(() => {
+    if (!goal?.id) return;
+    if (step !== "capture") return;
+    if (!hasVerifiedSubmissionOnDate(goalSubs, todayStr)) return;
+    setVerified(true);
+    setStep("result");
+    setResultSummary((prev) => (prev && prev.trim().length > 0 ? prev : "You're all set for today."));
+    setDeferCameraAutostart(true);
+    setResumeAfterProofGate(true);
+    stopCamera();
+  }, [goal?.id, goalSubs, todayStr, step, stopCamera]);
 
   const exitCameraToDashboard = useCallback(() => {
     stopCamera();
@@ -621,7 +643,7 @@ function SubmitProofContent() {
 
   // After a verified check-in, `inWindow` becomes false (already proved today). Still show upload/result UI
   // so the user sees verified vs denied — only block the capture flow when the window was closed on arrival.
-  if (!inWindow && step === "capture") {
+  if (!inWindow && step === "capture" && !alreadyVerifiedToday) {
     const msg = getSubmissionWindowMessage(goal, new Date(), goalSubs);
     return (
       <main className="mx-auto max-w-lg px-4 py-8">
@@ -632,7 +654,7 @@ function SubmitProofContent() {
             <ArrowLeft className="h-4 w-4" />
             Back to garden
           </Link>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+          <div className="rounded-2xl p-8 text-center glass-card">
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               {goal.title}
             </h1>
@@ -672,12 +694,12 @@ function SubmitProofContent() {
   return (
     <>
       {step === "result" && verified !== null && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-6 backdrop-blur-md dark:bg-black/55">
           <div
-            className={`w-full max-w-sm rounded-2xl border-2 p-8 text-center shadow-xl ${
+            className={`w-full max-w-sm rounded-3xl border p-8 text-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10 glass-card ${
               verified
-                ? "border-emerald-400/80 bg-emerald-50 dark:border-emerald-600 dark:bg-emerald-950/90"
-                : "border-red-400/80 bg-red-50 dark:border-red-700 dark:bg-red-950/90"
+                ? "border-emerald-300/70 dark:border-emerald-600/50"
+                : "border-red-300/80 dark:border-red-600/45"
             }`}
           >
             {verified ? (
@@ -752,7 +774,7 @@ function SubmitProofContent() {
               upload a photo, and verify (same CLIP model as the camera). One check-in per calendar day (Sun–Sat week
               for weekly targets). The X on the camera exits to your dashboard.
             </p>
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/40">
+            <div className="mt-6 rounded-2xl p-4 glass-card">
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Local AI (optional)</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 When verification finishes here, your proof is saved like the camera flow.
