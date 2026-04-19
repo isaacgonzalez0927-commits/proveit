@@ -271,6 +271,20 @@ export function extractMainWord(goal: string): string | null {
   return terms.length > 0 ? terms[terms.length - 1]! : null;
 }
 
+/** Extra CLIP strings when the goal is clearly laptop / MacBook — plain "use my laptop" photos often lose under generic positives. */
+function laptopPositiveBoost(lowerGoal: string): string[] {
+  if (!/\blaptop\b|\bmacbook\b/i.test(lowerGoal)) return [];
+  return [
+    "a photo of a laptop computer sitting on a desk",
+    "a photo of an open laptop from above showing keyboard and trackpad",
+    "a laptop screen and keyboard visible in the frame",
+    "a closed or open laptop on a table photographed at an angle",
+    "someone using a laptop computer on their lap or at a desk",
+    "a close-up of a laptop keyboard and palm rest",
+    "a silver or black portable laptop computer",
+  ];
+}
+
 function getExpansions(goal: string, terms: string[]): string[] {
   const lowerGoal = goal.toLowerCase();
   const termSet = new Set(terms);
@@ -297,6 +311,7 @@ export function makeLabels(goalText: string): {
   const groupedSubjectLabels = subjectHintsForGoal(g.toLowerCase(), terms).flatMap((h) =>
     clipLabelVariantsForSubjectHint(h)
   );
+  const laptopBoost = laptopPositiveBoost(g.toLowerCase());
   const phraseOnly = omitsMainWordLabelsForActivityPhrase(g);
   const mainWord = phraseOnly ? null : extractMainWord(g);
   const mainWordLabels =
@@ -318,6 +333,7 @@ export function makeLabels(goalText: string): {
     `a casual real-life photo related to ${g}`,
     `someone completing or doing: ${g}`,
     ...terms.flatMap((t) => [`a photo of a ${t}`, `a photo showing ${t}`]),
+    ...laptopBoost,
     ...expansions.map((e) => `a photo of ${e}`),
     ...groupedSubjectLabels,
     ...mainWordLabels,
@@ -397,7 +413,7 @@ export function evaluateClipLabelScores(
   if (!verified && mwSet && mwl!.length > 0) {
     const ratio = opts?.subjectThresholdRatio ?? CLIP_SUBJECT_THRESHOLD_RATIO;
     if (
-      mwSum >= mwf * 0.8 &&
+      mwSum >= mwf * 0.62 &&
       mwMax >= bestNegativeScore + margin &&
       mwMax >= threshold * ratio
     ) {
@@ -417,9 +433,11 @@ export function evaluateClipLabelScores(
     /** Keep full separation from the strongest negative — avoids approving razor-thin ties. */
     const mRel = margin;
     const noMainWordGate = !mwl || mwl.length === 0;
+    /** Enough mass on main-word labels to allow a relaxed pass (blocks gym-vs-dog style false wins). */
     const mainWordSignalOk =
       !mwSet ||
-      (mwSum >= mwf * 0.55 && mwMax >= threshold * 0.28);
+      (mwSum >= mwf * 0.55 && mwMax >= threshold * 0.28) ||
+      (mwSum >= mwf * 0.75 && mwMax >= 0.056);
     if (
       (noMainWordGate || mainWordSignalOk) &&
       top.score >= threshold * pr &&

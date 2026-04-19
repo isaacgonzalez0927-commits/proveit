@@ -92,14 +92,16 @@ const NUTRITION_HINTS = [
 
 const WORK_SCREEN_HINTS = [
   "a laptop on a desk",
+  "a laptop photographed from above closed or slightly open",
   "a laptop screen showing text or email",
-  "hands typing on a keyboard",
+  "hands typing on a laptop keyboard",
   "a desktop monitor with windows open",
   "a video call on a laptop screen",
   "a code editor on a monitor",
   "a spreadsheet on a screen",
   "a second monitor workspace",
   "a desk with mouse and notepad",
+  "a MacBook-style aluminum laptop",
 ] as const;
 
 const CLEANING_HOME_HINTS = [
@@ -242,7 +244,13 @@ export const SUBJECT_GROUPS: readonly SubjectGroup[] = [
   {
     id: "work_screen",
     triggers: [
+      "use my laptop",
+      "use laptop",
+      "using my laptop",
+      "using laptop",
+      "on my laptop",
       "laptop",
+      "macbook",
       "computer",
       "typing",
       "email",

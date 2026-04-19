@@ -578,9 +578,9 @@ function SubmitProofContent() {
   const handleCloseApp = useCallback(() => {
     if (typeof window === "undefined") return;
     window.close();
-    window.setTimeout(() => {
-      router.push("/dashboard");
-    }, 200);
+    queueMicrotask(() => {
+      void router.push("/dashboard");
+    });
   }, [router]);
 
   const capturePhoto = useCallback(() => {

@@ -188,7 +188,6 @@ export async function getProofSuggestionsForTitle(title: string): Promise<ProofS
         method: "POST",
         headers,
         body: JSON.stringify({ title: trimmed, goalTitle: trimmed }),
-        signal: AbortSignal.timeout(25_000),
       });
 
       if (!res.ok) {

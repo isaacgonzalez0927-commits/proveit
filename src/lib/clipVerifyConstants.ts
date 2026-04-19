@@ -12,7 +12,7 @@ export const DEFAULT_CLIP_VERIFY_THRESHOLD = 0.2;
 export const DEFAULT_CLIP_VERIFY_MARGIN = 0.008;
 
 /** Minimum combined softmax on main-subject labels (see `makeLabels` main-word boost). */
-export const DEFAULT_CLIP_MAIN_WORD_FLOOR = 0.055;
+export const DEFAULT_CLIP_MAIN_WORD_FLOOR = 0.032;
 
 /**
  * When the global argmax is slightly below `threshold` but main-word labels clearly beat all
@@ -35,4 +35,4 @@ export const CLIP_PHRASE_SOFT_THRESHOLD_RATIO = 0.85;
  */
 export const WIDGET_CLIP_VERIFY_THRESHOLD = 0.18;
 export const WIDGET_CLIP_VERIFY_MARGIN = 0.006;
-export const WIDGET_CLIP_MAIN_WORD_FLOOR = 0.045;
+export const WIDGET_CLIP_MAIN_WORD_FLOOR = 0.03;

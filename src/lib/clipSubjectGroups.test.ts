@@ -28,4 +28,11 @@ describe("makeLabels includes grouped subjects", () => {
     expect(positive.some((p) => p.toLowerCase().includes("novel"))).toBe(true);
     expect(positive.some((p) => p.toLowerCase().includes("e-reader"))).toBe(true);
   });
+
+  it("adds laptop-focused positives for use my laptop", () => {
+    const { positive, mainWord } = makeLabels("use my laptop");
+    expect(mainWord).toBe("laptop");
+    expect(positive.some((p) => p.includes("keyboard and trackpad"))).toBe(true);
+    expect(positive.some((p) => p.toLowerCase().includes("laptop on a desk"))).toBe(true);
+  });
 });
