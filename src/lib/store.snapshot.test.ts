@@ -33,7 +33,7 @@ describe("mergeServerGoalsWithSessionSnapshot", () => {
   });
 
   it("unions completedDates when server row is stale vs snapshot", () => {
-    const serverG = { id: "g1", completedDates: [] } as Goal;
+    const serverG = { id: "g1", completedDates: [] } as unknown as Goal;
     const snapG = { id: "g1", completedDates: ["2026-04-15"] } as Goal;
     const merged = mergeServerGoalsWithSessionSnapshot([serverG], snap([snapG]), uid);
     expect(merged).toHaveLength(1);

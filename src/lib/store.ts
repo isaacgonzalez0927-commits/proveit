@@ -147,7 +147,7 @@ export type SbSessionSnapshotV1 = {
   submissions: ProofSubmission[];
 };
 
-function unionSortedDateStrings(a: string[] | undefined, b: string[] | undefined): string[] {
+export function unionSortedDateStrings(a: string[] | undefined, b: string[] | undefined): string[] {
   const set = new Set<string>();
   for (const d of a ?? []) {
     if (typeof d === "string" && d.length > 0) set.add(d);

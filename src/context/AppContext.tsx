@@ -25,6 +25,7 @@ import {
   clearSbSessionSnapshot,
   mergeServerGoalsWithSessionSnapshot,
   mergeServerSubmissionsWithSessionSnapshot,
+  unionSortedDateStrings,
   type StoredUser,
   STORAGE_KEYS,
 } from "@/lib/store";
@@ -296,14 +297,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             : {};
         const gs = Array.isArray(goalsBody.goals) ? goalsBody.goals : [];
         const mappedServerGoals = gs.map((g: Record<string, unknown>) => mapGoalFromApi(g));
-        const snapForMerge = readSbSessionSnapshot();
-        const snapMerge = snapForMerge?.userId === uid ? snapForMerge : null;
-        const mergedGoals = mergeServerGoalsWithSessionSnapshot(
-          mappedServerGoals,
-          snapMerge,
-          supabaseUser.id
-        );
-        setGoalsState(mergedGoals);
+        setGoalsState((prevGoals) => {
+          const snapForMerge = readSbSessionSnapshot();
+          const snapMerge = snapForMerge?.userId === uid ? snapForMerge : null;
+          const mergedGoalsCore = mergeServerGoalsWithSessionSnapshot(
+            mappedServerGoals,
+            snapMerge,
+            supabaseUser.id
+          );
+          const byId = new Map(mergedGoalsCore.map((g) => [g.id, g]));
+          for (const g of prevGoals) {
+            const cur = byId.get(g.id);
+            if (!cur) {
+              byId.set(g.id, g);
+              continue;
+            }
+            const mergedDates = unionSortedDateStrings(cur.completedDates, g.completedDates);
+            const prevLen = cur.completedDates?.length ?? 0;
+            if (
+              mergedDates.length !== prevLen ||
+              !mergedDates.every((d: string, i: number) => d === cur.completedDates?.[i])
+            ) {
+              byId.set(g.id, { ...cur, completedDates: mergedDates });
+            }
+          }
+          const mergedIds = new Set(mergedGoalsCore.map((g) => g.id));
+          const extras = [...byId.entries()]
+            .filter(([id]) => !mergedIds.has(id))
+            .map(([, g]) => g);
+          return extras.length === 0
+            ? mergedGoalsCore.map((g) => byId.get(g.id) ?? g)
+            : [...mergedGoalsCore.map((g) => byId.get(g.id) ?? g), ...extras];
+        });
 
         const subsWrap = subsResult.status === "fulfilled" ? subsResult.value : null;
         const subsBody =
@@ -324,12 +349,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           createdAt: s.createdAt as string,
         };
         });
-        const mergedSubs = mergeServerSubmissionsWithSessionSnapshot(
-          mappedSubs,
-          snapMerge,
-          supabaseUser.id
-        );
-        setSubmissionsState(mergedSubs);
+        setSubmissionsState((prevSubs) => {
+          const snapForMergeSubs = readSbSessionSnapshot();
+          const snapMergeSubs =
+            snapForMergeSubs?.userId === uid ? snapForMergeSubs : null;
+          const mergedSubsCore = mergeServerSubmissionsWithSessionSnapshot(
+            mappedSubs,
+            snapMergeSubs,
+            supabaseUser.id
+          );
+          const byId = new Map(mergedSubsCore.map((s) => [s.id, s]));
+          for (const s of prevSubs) {
+            if (s && typeof s.id === "string" && s.id.length > 0 && !byId.has(s.id)) {
+              byId.set(s.id, s);
+            }
+          }
+          return [...byId.values()];
+        });
 
         // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
         setGoalPlantSelections(getStoredGoalPlantSelections());
@@ -344,7 +380,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setIsDevGuestMode(false);
           const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
           const selectedByAccount = profileUser.plan !== "free";
-          const likelyExistingFreeUser = mergedGoals.length > 0 || mergedSubs.length > 0;
+          const likelyExistingFreeUser =
+            mappedServerGoals.length > 0 || mappedSubs.length > 0;
           setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
         }
       }).finally(() => setDataLoaded(true));
@@ -751,29 +788,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           });
           const data = await res.json();
           if (!res.ok) {
-            setSubmissionsState((prev) => {
-              const next = [...prev, sub];
-              if (user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
-              return next;
-            });
+            const next = [...submissionsRef.current, sub];
+            if (user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
+            setSubmissionsState(next);
             return sub;
           }
-          const created = data.submission as ProofSubmission;
-          setSubmissionsState((prev) => {
-            const next = [...prev, created];
-            if (user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
-            return next;
-          });
+          const created = (data.submission ?? sub) as ProofSubmission;
+          const next = submissionsRef.current.some((s) => s.id === created.id)
+            ? submissionsRef.current.map((s) => (s.id === created.id ? created : s))
+            : [...submissionsRef.current, created];
+          if (user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
+          setSubmissionsState(next);
           return created;
         } catch {
           // fallback to local
         }
       }
-      setSubmissionsState((prev) => {
-        const next = [...prev, sub];
-        if (useSupabase && user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
-        return next;
-      });
+      const nextLocal = [...submissionsRef.current, sub];
+      if (useSupabase && user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, nextLocal);
+      setSubmissionsState(nextLocal);
       return sub;
     },
     [useSupabase, user?.id]
@@ -792,11 +825,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           // fallback to local
         }
       }
-      setSubmissionsState((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-      );
+      setSubmissionsState((prev) => {
+        const next = prev.map((s) => (s.id === id ? { ...s, ...updates } : s));
+        if (useSupabase && user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
+        return next;
+      });
     },
-    [useSupabase]
+    [useSupabase, user?.id]
   );
 
   const deleteGoalHistory = useCallback(
