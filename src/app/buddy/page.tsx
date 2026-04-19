@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Plus, Pencil, Save, Trash2, X, Pause, Play } from "lucide-react";
+import { Plus, Pencil, Save, Trash2, X, Pause, Play, Lock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BuddySkeleton } from "@/components/BuddySkeleton";
 import {
@@ -226,6 +226,8 @@ export default function BuddyPage() {
         isOnBreak: false,
         streakCarryover: snapshot,
         proBreakUsageByMonth: nextUsage,
+      }).then((r) => {
+        if (!r.ok) console.error("Pro break auto-resume failed:", r.error);
       });
     }
   }, [goals, user?.plan, updateGoal]);
@@ -476,7 +478,11 @@ export default function BuddyPage() {
         proofSuggestions: store,
         proofRequirement: req,
       };
-      await updateGoal(goal.id, schedulePayload);
+      const saved = await updateGoal(goal.id, schedulePayload);
+      if (!saved.ok) {
+        setGoalManagerMessage(saved.error);
+        return;
+      }
       setEditingGoalId(null);
       setGoalManagerMessage("Goal updated.");
     } finally {
@@ -510,11 +516,15 @@ export default function BuddyPage() {
         user?.plan === "pro" && goal.breakStartedAt
           ? addBreakSessionToProUsage(goal.proBreakUsageByMonth ?? {}, goal.breakStartedAt, nowIso)
           : (goal.proBreakUsageByMonth ?? {});
-      await updateGoal(goal.id, {
+      const saved = await updateGoal(goal.id, {
         isOnBreak: false,
         streakCarryover: displayedStreak,
         ...(user?.plan === "pro" ? { proBreakUsageByMonth: nextUsage } : {}),
       });
+      if (!saved.ok) {
+        setGoalManagerMessage(saved.error);
+        return;
+      }
       setGoalManagerMessage(`"${goal.title}" is active again. Streak continuity is preserved.`);
       return;
     }
@@ -531,12 +541,16 @@ export default function BuddyPage() {
         ? ` (${PRO_BREAK_DAYS_PER_MONTH} break-days per calendar month on this goal)`
         : "";
 
-    await updateGoal(goal.id, {
+    const saved = await updateGoal(goal.id, {
       isOnBreak: true,
       breakStartedAt: new Date().toISOString(),
       breakStreakSnapshot: displayedStreak,
       streakCarryover: displayedStreak,
     });
+    if (!saved.ok) {
+      setGoalManagerMessage(saved.error);
+      return;
+    }
     setGoalManagerMessage(`"${goal.title}" is now on break${breakLimitMsg}. Streak and growth are frozen.`);
   };
 
@@ -926,16 +940,35 @@ export default function BuddyPage() {
                       type="button"
                       onClick={() => {
                         if (canUseGoalBreak) {
-                          toggleGoalBreak(entry.goal, entry.streak);
+                          void toggleGoalBreak(entry.goal, entry.streak);
                         } else {
                           setShowUpgradePrompt(true);
                         }
                       }}
-                      className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white/80 px-2 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-slate-900/60 dark:text-amber-300 dark:hover:bg-amber-900/30"
-                      aria-label={entry.isOnBreak ? "Resume goal from break" : "Put goal on break"}
+                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold dark:bg-slate-900/60 dark:hover:bg-amber-900/30 ${
+                        canUseGoalBreak
+                          ? "border-amber-300 bg-white/80 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300"
+                          : "border-slate-300 bg-white/80 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+                      }`}
+                      aria-label={
+                        canUseGoalBreak
+                          ? entry.isOnBreak
+                            ? "Resume goal from break"
+                            : "Put goal on break"
+                          : "Goal breaks are a Pro feature — upgrade to use"
+                      }
                     >
-                      {entry.isOnBreak ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-                      {entry.isOnBreak ? "Resume" : "Break"}
+                      {canUseGoalBreak ? (
+                        <>
+                          {entry.isOnBreak ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+                          {entry.isOnBreak ? "Resume" : "Break"}
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-3.5 w-3.5" />
+                          Break · Pro
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"

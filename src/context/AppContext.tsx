@@ -84,7 +84,10 @@ interface AppContextValue {
     options?: { startPremiumTrial?: boolean }
   ) => void | Promise<void>;
   addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Promise<{ created: Goal | null; error?: string }>;
-  updateGoal: (id: string, updates: Partial<Goal>) => void | Promise<void>;
+  updateGoal: (
+    id: string,
+    updates: Partial<Goal>
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   removeGoal: (id: string) => void | Promise<void>;
   addSubmission: (sub: Omit<ProofSubmission, "id" | "createdAt">) => ProofSubmission | Promise<ProofSubmission>;
   updateSubmission: (id: string, updates: Partial<ProofSubmission>) => void | Promise<void>;
@@ -650,10 +653,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateGoal = useCallback(
-    async (id: string, updates: Partial<Goal>) => {
+    async (
+      id: string,
+      updates: Partial<Goal>
+    ): Promise<{ ok: true } | { ok: false; error: string }> => {
       if (useSupabase) {
         try {
-          await fetch("/api/goals", {
+          const res = await fetch("/api/goals", {
             method: "PATCH",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
@@ -665,13 +671,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               reminderDays: updates.reminderDays,
             }),
           });
-        } catch {
-          // fallback to local
+          if (!res.ok) {
+            let err = `Could not save (HTTP ${res.status}).`;
+            try {
+              const j = (await res.json()) as { error?: unknown };
+              if (typeof j.error === "string" && j.error.trim()) err = j.error.trim();
+            } catch {
+              /* ignore */
+            }
+            return { ok: false, error: err };
+          }
+        } catch (e) {
+          // Offline / network: keep previous optimistic local behavior
+          console.warn("updateGoal: network error, applying change locally", e);
         }
       }
       setGoalsState((prev) =>
         prev.map((g) => (g.id === id ? { ...g, ...updates } : g))
       );
+      return { ok: true };
     },
     [useSupabase]
   );
@@ -816,7 +834,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         verifiedAt: new Date().toISOString(),
       });
       if (!g.completedDates.includes(dateStr)) {
-        await updateGoal(goalId, { completedDates: [...g.completedDates, dateStr] });
+        const saved = await updateGoal(goalId, { completedDates: [...g.completedDates, dateStr] });
+        if (!saved.ok) console.error("markGoalDone: goal PATCH failed", saved.error);
       }
     },
     [goals, submissions, addSubmission, updateGoal, getSubmissionsForGoal]

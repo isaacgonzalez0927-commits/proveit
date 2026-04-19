@@ -322,7 +322,14 @@ function SubmitProofContent() {
     const video = videoRef.current;
     if (!video.srcObject && streamRef.current) {
       video.srcObject = streamRef.current;
-      video.play().catch(() => {});
+      video.muted = true;
+      video.playsInline = true;
+      const tryPlay = () => {
+        void video.play().catch(() => {});
+      };
+      tryPlay();
+      video.addEventListener("loadedmetadata", tryPlay, { once: true });
+      video.addEventListener("canplay", tryPlay, { once: true });
     }
   }, [step, streamReady]);
 
@@ -360,7 +367,7 @@ function SubmitProofContent() {
     if (!isStartingCamera) return;
     const t = setTimeout(() => {
       setCameraError("Camera didn’t open. Tap to try again.");
-    }, 8000);
+    }, 22000);
     return () => clearTimeout(t);
   }, [isStartingCamera]);
 
@@ -419,9 +426,12 @@ function SubmitProofContent() {
         if (passed) {
           const g = goals.find((x: Goal) => x.id === goal.id);
           if (g && !g.completedDates.includes(todayStr)) {
-            await updateGoal(goal.id, {
+            const savedGoal = await updateGoal(goal.id, {
               completedDates: [...g.completedDates, todayStr],
             });
+            if (!savedGoal.ok) {
+              console.error("persist proof: could not update goal dates", savedGoal.error);
+            }
           }
         }
         finish(passed, msg);
@@ -798,7 +808,7 @@ function SubmitProofContent() {
               muted
               disablePictureInPicture
               controls={false}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="proof-camera-video absolute inset-0 h-full w-full object-cover"
               style={{
                 transform: facingMode === "user" ? "scaleX(-1)" : undefined,
               }}

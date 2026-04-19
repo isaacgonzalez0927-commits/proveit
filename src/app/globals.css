@@ -939,3 +939,16 @@ input[type="file"] {
 .animate-tab-slide-right {
   animation: tab-slide-right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Proof submit: hide Safari/WebKit play/pause chrome on live camera preview (controls={false} is not enough on iOS). */
+.proof-camera-video::-webkit-media-controls,
+.proof-camera-video::-webkit-media-controls-enclosure,
+.proof-camera-video::-webkit-media-controls-panel,
+.proof-camera-video::-webkit-media-controls-play-button,
+.proof-camera-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+.proof-camera-video {
+  pointer-events: none;
+}

@@ -29,12 +29,12 @@ import React, {
   useCallback,
   type CSSProperties,
 } from 'react';
-import { pipeline, env } from '@huggingface/transformers';
 import {
   evaluateClipLabelScores,
   extractMainWord,
   makeLabels,
 } from '@/lib/clipVerifyLabels';
+import { getSharedClipPipeline, type ClipLoadProgress } from '@/lib/localClipVerify';
 import {
   DEFAULT_CLIP_MODEL_ID,
   WIDGET_CLIP_MAIN_WORD_FLOOR,
@@ -236,8 +236,9 @@ export default function AIVerificationWidget({
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [verifyErr, setVerifyErr] = useState<string | null>(null);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pipelineRef = useRef<any>(null);
+  const pipelineRef = useRef<((image: string, labels: string[]) => Promise<VerificationScore[]>) | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const active = modelStatus === 'ready' && !isVerifying;
@@ -252,39 +253,54 @@ export default function AIVerificationWidget({
     document.head.appendChild(el);
   }, []);
 
-  // ── Load CLIP model ──────────────────────────────────────────────────────
+  // ── Load CLIP (shared singleton with camera `verifyWithLocalClip`; defer so getUserMedia isn’t starved) ──
   useEffect(() => {
     let cancelled = false;
+    let idleHandle: number | ReturnType<typeof setTimeout> | undefined;
 
-    (async () => {
-      try {
-        env.allowLocalModels = false;
-        pipelineRef.current = await pipeline(
-          'zero-shot-image-classification',
-          modelId,
-          {
-            progress_callback: (p: { status: string; progress?: number; file?: string }) => {
-              if (cancelled) return;
-              if (p.status === 'progress' && p.progress != null) {
-                setLoadPct(Math.min(99, p.progress));
-                setLoadFile(p.file ?? '');
-              }
-            },
-          }
-        );
-        if (!cancelled) {
+    const runLoad = () => {
+      void (async () => {
+        try {
+          const onProgress = (p: ClipLoadProgress) => {
+            if (cancelled) return;
+            if (p.status === 'progress' && p.progress != null) {
+              setLoadPct(Math.min(99, p.progress));
+              setLoadFile(p.file ?? '');
+            }
+          };
+          const runner = await getSharedClipPipeline(modelId, onProgress);
+          if (cancelled) return;
+          pipelineRef.current = runner;
           setLoadPct(100);
-          setTimeout(() => setModelStatus('ready'), 300);
+          setTimeout(() => {
+            if (!cancelled) setModelStatus('ready');
+          }, 300);
+        } catch (err) {
+          if (!cancelled) {
+            setModelStatus('error');
+            setModelErr(String(err));
+          }
         }
-      } catch (err) {
-        if (!cancelled) {
-          setModelStatus('error');
-          setModelErr(String(err));
-        }
-      }
-    })();
+      })();
+    };
 
-    return () => { cancelled = true; };
+    const ric = typeof window !== 'undefined' ? window.requestIdleCallback : undefined;
+    const cic = typeof window !== 'undefined' ? window.cancelIdleCallback : undefined;
+    if (ric) {
+      idleHandle = ric(() => {
+        if (!cancelled) runLoad();
+      }, { timeout: 4000 });
+    } else {
+      idleHandle = setTimeout(() => {
+        if (!cancelled) runLoad();
+      }, 600);
+    }
+
+    return () => {
+      cancelled = true;
+      if (ric && cic && idleHandle !== undefined) cic(idleHandle as number);
+      else if (idleHandle !== undefined) clearTimeout(idleHandle as ReturnType<typeof setTimeout>);
+    };
   }, [modelId]);
 
   // ── Image loading ────────────────────────────────────────────────────────

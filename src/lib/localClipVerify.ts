@@ -26,14 +26,14 @@ export type ClipLoadProgress = {
 
 export { DEFAULT_CLIP_MODEL_ID, DEFAULT_CLIP_VERIFY_THRESHOLD };
 
-type ClipPipeline = (image: string, labels: string[]) => Promise<ClipScore[]>;
+export type SharedClipRunner = (image: string, labels: string[]) => Promise<ClipScore[]>;
 
-const pipelineByModelId = new Map<string, Promise<ClipPipeline>>();
+const pipelineByModelId = new Map<string, Promise<SharedClipRunner>>();
 
 function getPipeline(
   modelId: string,
   onProgress?: (info: ClipLoadProgress) => void
-): Promise<ClipPipeline> {
+): Promise<SharedClipRunner> {
   if (typeof window === "undefined") {
     throw new Error("CLIP verification is only available in the browser.");
   }
@@ -80,6 +80,17 @@ export function ensureLocalClipReady(
 ): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   return getPipeline(modelId, onProgress).then(() => undefined);
+}
+
+/**
+ * Same WASM/CLIP singleton as `verifyWithLocalClip` (per `modelId`). Use from `AIVerificationWidget`
+ * so the submit page never loads two models and the camera thread is not starved on first paint.
+ */
+export function getSharedClipPipeline(
+  modelId: string = DEFAULT_CLIP_MODEL_ID,
+  onProgress?: (info: ClipLoadProgress) => void
+): Promise<SharedClipRunner> {
+  return getPipeline(modelId, onProgress);
 }
 
 /**
