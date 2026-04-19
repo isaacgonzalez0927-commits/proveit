@@ -71,4 +71,31 @@ describe("evaluateClipLabelScores", () => {
     });
     expect(verified).toBe(false);
   });
+
+  it("accepts via subject secondary when laptop labels beat negatives but top softmax is below threshold", () => {
+    const mainWordLabels = [
+      "a photo of a laptop",
+      "a clear close-up of a laptop",
+      "laptop clearly visible in the photo",
+      "someone using a laptop",
+      "laptop as the main subject of the photo",
+    ];
+    const positiveLabels = ["a photo of use laptop", "a photo of a laptop", ...mainWordLabels];
+    const scores = [
+      { label: "a photo of a laptop", score: 0.17 },
+      { label: "a clear close-up of a laptop", score: 0.1 },
+      { label: "laptop clearly visible in the photo", score: 0.06 },
+      { label: "someone using a laptop", score: 0.04 },
+      { label: "laptop as the main subject of the photo", score: 0.03 },
+      { label: "a blank or unrelated photo", score: 0.12 },
+      { label: "a random irrelevant picture", score: 0.1 },
+    ];
+    const { verified, confidence } = evaluateClipLabelScores(scores, positiveLabels, T, {
+      margin: M,
+      mainWordLabels,
+      mainWordFloor: 0.1,
+    });
+    expect(verified).toBe(true);
+    expect(confidence).toBeCloseTo(0.17, 5);
+  });
 });

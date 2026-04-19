@@ -15,6 +15,13 @@ export const DEFAULT_CLIP_VERIFY_MARGIN = 0.02;
 export const DEFAULT_CLIP_MAIN_WORD_FLOOR = 0.1;
 
 /**
+ * When the global argmax is slightly below `threshold` but main-word labels clearly beat all
+ * negatives (typical: clear photo of the object, verb-heavy goal like "use laptop"), allow verify
+ * if best main-word score ≥ `threshold × this ratio`.
+ */
+export const CLIP_SUBJECT_THRESHOLD_RATIO = 0.58;
+
+/**
  * Slightly relaxed CLIP gates for the optional `AIVerificationWidget` only.
  * Camera / `localClipVerify` submit path keeps `DEFAULT_*` for consistency with stored proofs from the shutter.
  */

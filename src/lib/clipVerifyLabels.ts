@@ -4,6 +4,7 @@
  */
 
 import {
+  CLIP_SUBJECT_THRESHOLD_RATIO,
   DEFAULT_CLIP_MAIN_WORD_FLOOR,
   DEFAULT_CLIP_VERIFY_MARGIN,
   DEFAULT_CLIP_VERIFY_THRESHOLD,
@@ -89,6 +90,69 @@ const STOP_WORDS = new Set([
   "off",
   "over",
   "under",
+  // Goal phrasing verbs — keeps "laptop" from "use laptop" (not "use" as a fake subject).
+  "use",
+  "using",
+  "try",
+  "trying",
+  "take",
+  "taking",
+  "make",
+  "making",
+  "get",
+  "getting",
+  "go",
+  "going",
+  "put",
+  "putting",
+  "set",
+  "setting",
+  "keep",
+  "keeping",
+  "start",
+  "starting",
+  "begin",
+  "beginning",
+  "finish",
+  "finishing",
+  "stop",
+  "stopping",
+  "help",
+  "helping",
+  "learn",
+  "learning",
+  "practice",
+  "practicing",
+  "spend",
+  "spending",
+  "save",
+  "saving",
+  "wake",
+  "waking",
+  "stay",
+  "staying",
+  "avoid",
+  "avoiding",
+  "drink",
+  "drinking",
+  "eat",
+  "eating",
+  "watch",
+  "watching",
+  "listen",
+  "listening",
+  "speak",
+  "speaking",
+  "write",
+  "writing",
+  "call",
+  "calling",
+  "send",
+  "sending",
+  "check",
+  "checking",
+  "build",
+  "building",
 ]);
 
 function extractKeyTerms(goal: string): string[] {
@@ -167,6 +231,18 @@ const GOAL_EXPANSIONS: Record<string, string[]> = {
   paint: ["a painting", "paintbrushes", "an easel"],
   painting: ["a painting", "paintbrushes", "an easel"],
   practice: ["a musical instrument", "sheet music"],
+  laptop: [
+    "a laptop computer",
+    "a laptop keyboard and screen",
+    "a person typing on a laptop",
+    "a computer on a desk",
+  ],
+  computer: ["a laptop computer", "a desktop computer", "a computer monitor and keyboard"],
+  typing: ["hands on a keyboard", "a laptop with someone typing", "a keyboard close up"],
+  email: ["a laptop or phone showing email", "a person reading email on a screen"],
+  zoom: ["a laptop with a video call on screen", "a person on a video call"],
+  code: ["a laptop with code on the screen", "a computer screen showing programming code"],
+  coding: ["a laptop with code on the screen", "a computer screen showing programming code"],
   guitar: ["a guitar", "a person playing guitar"],
   piano: ["a piano", "a person playing piano"],
   dog: ["a dog", "a person with a dog", "a dog on a leash"],
@@ -209,6 +285,8 @@ export function makeLabels(goalText: string): {
         `a photo of a ${mainWord}`,
         `a clear close-up of a ${mainWord}`,
         `${mainWord} clearly visible in the photo`,
+        `someone using a ${mainWord}`,
+        `${mainWord} as the main subject of the photo`,
       ]
     : [];
 
@@ -237,6 +315,8 @@ export type EvaluateClipLabelScoreOptions = {
   /** When non-empty, require sum of softmax scores on these labels ≥ `mainWordFloor`. */
   mainWordLabels?: readonly string[];
   mainWordFloor?: number;
+  /** Override `CLIP_SUBJECT_THRESHOLD_RATIO` for the subject-based secondary pass. */
+  subjectThresholdRatio?: number;
 };
 
 /**
@@ -277,14 +357,34 @@ export function evaluateClipLabelScores(
 
   const mwl = opts?.mainWordLabels;
   const mwf = opts?.mainWordFloor ?? DEFAULT_CLIP_MAIN_WORD_FLOOR;
-  if (verified && mwl && mwl.length > 0) {
-    const mwSet = new Set(mwl);
-    const mainWordScore = scores
-      .filter((s) => mwSet.has(s.label))
-      .reduce((sum, s) => sum + s.score, 0);
-    if (mainWordScore < mwf) verified = false;
+  const mwSet = mwl && mwl.length > 0 ? new Set(mwl) : null;
+  let mwSum = 0;
+  let mwMax = 0;
+  if (mwSet) {
+    const mwScores = scores.filter((s) => mwSet.has(s.label));
+    mwSum = mwScores.reduce((sum, s) => sum + s.score, 0);
+    mwMax = mwScores.length ? Math.max(...mwScores.map((s) => s.score)) : 0;
+    if (verified && mwSum < mwf) verified = false;
   }
 
-  const confidence = topIsPositive ? top.score : maxPositiveScore;
+  /** Subject clearly visible vs negatives, but global argmax is a hair below `threshold` (common on verb goals). */
+  let subjectSecondary = false;
+  if (!verified && mwSet && mwl!.length > 0) {
+    const ratio = opts?.subjectThresholdRatio ?? CLIP_SUBJECT_THRESHOLD_RATIO;
+    if (
+      mwSum >= mwf * 0.8 &&
+      mwMax >= bestNegativeScore + margin &&
+      mwMax >= threshold * ratio
+    ) {
+      verified = true;
+      subjectSecondary = true;
+    }
+  }
+
+  const confidence = subjectSecondary
+    ? mwMax
+    : topIsPositive
+      ? top.score
+      : maxPositiveScore;
   return { verified, confidence, topLabel: top.label, sorted };
 }
