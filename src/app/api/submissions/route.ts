@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { extractCalendarDateKey } from "@/lib/dateUtils";
+
+function normalizeSubmissionDate(value: unknown): string {
+  const s = typeof value === "string" ? value.trim() : String(value ?? "").trim();
+  return extractCalendarDateKey(s) ?? s;
+}
 
 type SupabaseClient = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 
@@ -42,7 +48,7 @@ export async function GET(request: NextRequest) {
   const submissions = (data ?? []).map((row) => ({
     id: row.id,
     goalId: row.goal_id,
-    date: row.date,
+    date: normalizeSubmissionDate(row.date),
     imageDataUrl: row.image_data_url,
     status: row.status,
     aiFeedback: row.ai_feedback ?? undefined,
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
     submission: {
       id: data.id,
       goalId: data.goal_id,
-      date: data.date,
+      date: normalizeSubmissionDate(data.date),
       imageDataUrl: data.image_data_url,
       status: data.status,
       aiFeedback: data.ai_feedback ?? undefined,

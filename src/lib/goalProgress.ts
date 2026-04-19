@@ -1,6 +1,6 @@
 import { addDays, format, subDays, startOfWeek, subWeeks } from "date-fns";
 import type { Goal, ProofSubmission } from "@/types";
-import { safeParseISO } from "@/lib/dateUtils";
+import { extractCalendarDateKey, safeParseISO } from "@/lib/dateUtils";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
 import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 
@@ -27,9 +27,14 @@ function getDailyCalendarStreak(
   const subs = getSubmissionsForGoal(goalId).filter((s) => {
     if (s.status !== "verified") return false;
     if (!minDateInclusive) return true;
-    return s.date >= minDateInclusive;
+    const key = extractCalendarDateKey(s.date);
+    return key != null && key >= minDateInclusive;
   });
-  const submittedDates = new Set(subs.map((s) => s.date));
+  const submittedDates = new Set(
+    subs
+      .map((s) => extractCalendarDateKey(s.date))
+      .filter((k): k is string => k != null)
+  );
   let streak = 0;
   let cursor = new Date();
   while (true) {
@@ -53,7 +58,8 @@ function getWeeklyQuotaStreak(
   const subsAll = getSubmissionsForGoal(goal.id).filter((s) => {
     if (s.status !== "verified") return false;
     if (!minDateInclusive) return true;
-    return s.date >= minDateInclusive;
+    const key = extractCalendarDateKey(s.date);
+    return key != null && key >= minDateInclusive;
   });
 
   let streak = 0;
@@ -124,5 +130,5 @@ export function isGoalDoneInCurrentWindow(
   todayStr = format(new Date(), "yyyy-MM-dd")
 ): boolean {
   const subs = getSubmissionsForGoal(goal.id).filter((s) => s.status === "verified");
-  return subs.some((s) => s.date === todayStr);
+  return subs.some((s) => extractCalendarDateKey(s.date) === todayStr);
 }

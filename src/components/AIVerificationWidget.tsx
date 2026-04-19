@@ -57,8 +57,8 @@ export interface AIVerificationWidgetProps {
   /** Fired whenever a verification attempt finishes */
   onResult?: (result: VerificationResult) => void;
   /**
-   * Minimum confidence (0–1) required to mark the result as verified.
-   * @default 0.65
+   * Minimum softmax score (0–1) on the winning label when that label matches the goal
+   * (see `DEFAULT_CLIP_VERIFY_THRESHOLD` in `@/lib/clipVerifyConstants`).
    */
   threshold?: number;
   /**

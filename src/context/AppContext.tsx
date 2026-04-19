@@ -292,16 +292,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ? (subsWrap.body as { submissions?: unknown })
             : {};
         const subsRaw = Array.isArray(subsBody.submissions) ? subsBody.submissions : [];
-        const mappedSubs = subsRaw.map((s: Record<string, unknown>) => ({
+        const mappedSubs = subsRaw.map((s: Record<string, unknown>) => {
+          const rawDate = typeof s.date === "string" ? s.date : String(s.date ?? "");
+          return {
           id: s.id as string,
           goalId: s.goalId as string,
-          date: s.date as string,
+          date: extractCalendarDateKey(rawDate) ?? rawDate,
           imageDataUrl: s.imageDataUrl as string,
           status: s.status as ProofSubmission["status"],
           aiFeedback: s.aiFeedback as string | undefined,
           verifiedAt: s.verifiedAt as string | undefined,
           createdAt: s.createdAt as string,
-        }));
+        };
+        });
         const mergedSubs = mergeServerSubmissionsWithSessionSnapshot(
           mappedSubs,
           snap,

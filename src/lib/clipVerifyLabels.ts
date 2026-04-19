@@ -3,6 +3,11 @@
  * Keep verification behavior identical between the proof submit path and the standalone widget.
  */
 
+import {
+  DEFAULT_CLIP_VERIFY_MARGIN,
+  DEFAULT_CLIP_VERIFY_THRESHOLD,
+} from "./clipVerifyConstants";
+
 export type ClipLabelScore = { label: string; score: number };
 
 // Stronger negative label set — more options gives the softmax better
@@ -204,14 +209,17 @@ export function makeLabels(goalText: string): { all: string[]; positive: string[
 }
 
 /**
- * Combined probability across positive labels must clear `threshold`, and the
- * single highest-scoring label must be a positive — otherwise unrelated images
- * can pass when many positives each get a small softmax slice.
+ * CLIP zero-shot uses one softmax over **all** labels. With many goal-related
+ * positives, their scores **sum** to most of the mass on almost any image, so
+ * a sum-based rule approves junk. We instead require the **global argmax** to
+ * be a positive label, clear `threshold` on that label, and beat the best
+ * negative by `margin` (defaults from `clipVerifyConstants`).
  */
 export function evaluateClipLabelScores(
   scores: ClipLabelScore[],
   positiveLabels: readonly string[],
-  threshold: number
+  threshold: number = DEFAULT_CLIP_VERIFY_THRESHOLD,
+  margin: number = DEFAULT_CLIP_VERIFY_MARGIN
 ): {
   verified: boolean;
   confidence: number;
@@ -221,10 +229,19 @@ export function evaluateClipLabelScores(
   const sorted = [...scores].sort((a, b) => b.score - a.score);
   const top = sorted[0] ?? { label: "unknown", score: 0 };
   const positiveSet = new Set(positiveLabels);
-  const confidence = scores
-    .filter((s) => positiveSet.has(s.label))
-    .reduce((sum, s) => sum + s.score, 0);
   const topIsPositive = positiveSet.has(top.label);
-  const verified = confidence >= threshold && topIsPositive;
+  const maxPositiveScore = Math.max(
+    0,
+    ...scores.filter((s) => positiveSet.has(s.label)).map((s) => s.score)
+  );
+  const bestNegativeScore = Math.max(
+    0,
+    ...scores.filter((s) => !positiveSet.has(s.label)).map((s) => s.score)
+  );
+  const verified =
+    topIsPositive &&
+    top.score >= threshold &&
+    top.score >= bestNegativeScore + margin;
+  const confidence = topIsPositive ? top.score : maxPositiveScore;
   return { verified, confidence, topLabel: top.label, sorted };
 }
