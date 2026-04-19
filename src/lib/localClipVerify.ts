@@ -106,18 +106,16 @@ export function preloadLocalClipModel(
   });
 }
 
-/**
- * Single-line copy for verified / not-verified (one confidence %; threshold only when not verified).
- */
+/** Single-line copy for proof storage — definitive yes/no wording (no confidence %). */
 export function formatLocalClipUserFeedback(
   result: Pick<ClipVerifyResult, "verified" | "confidence">,
-  threshold: number = DEFAULT_CLIP_VERIFY_THRESHOLD
+  _threshold: number = DEFAULT_CLIP_VERIFY_THRESHOLD
 ): { confidencePct: number; thresholdPct: number; summaryLine: string } {
   const confidencePct = Math.round(result.confidence * 100);
-  const thresholdPct = Math.round(threshold * 100);
+  const thresholdPct = Math.round(_threshold * 100);
   const summaryLine = result.verified
-    ? `AI is ${confidencePct}% sure this matches your goal.`
-    : `AI is ${confidencePct}% sure this matches your goal. At least ${thresholdPct}% is needed to verify.`;
+    ? "Verified — your photo matches this goal."
+    : "Not verified — your photo doesn’t match this goal closely enough. Try a clearer shot of what you’re doing.";
   return { confidencePct, thresholdPct, summaryLine };
 }
 

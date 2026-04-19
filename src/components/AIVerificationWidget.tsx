@@ -407,8 +407,8 @@ export default function AIVerificationWidget({
               </h3>
               <p className={`aivw-res-desc ${result.verified ? 'aivw-res-desc-ok' : 'aivw-res-desc-fail'}`}>
                 {result.verified
-                  ? `Your photo matches "${result.goalName}" well enough to count.`
-                  : `This photo doesn't look like a clear match for "${result.goalName}". Try another angle or a clearer shot.`}
+                  ? `Verified for "${result.goalName}" — this image counts as proof.`
+                  : `Not verified for "${result.goalName}". Take another photo that clearly shows what you did.`}
               </p>
             </div>
           </div>

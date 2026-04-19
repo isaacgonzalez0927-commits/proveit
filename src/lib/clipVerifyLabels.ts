@@ -10,6 +10,7 @@ import {
   DEFAULT_CLIP_VERIFY_MARGIN,
   DEFAULT_CLIP_VERIFY_THRESHOLD,
 } from "./clipVerifyConstants";
+import { clipLabelVariantsForSubjectHint, subjectHintsForGoal } from "./clipSubjectGroups";
 
 export type ClipLabelScore = { label: string; score: number };
 
@@ -293,6 +294,9 @@ export function makeLabels(goalText: string): {
   const g = goalText.trim();
   const terms = extractKeyTerms(g);
   const expansions = getExpansions(g, terms);
+  const groupedSubjectLabels = subjectHintsForGoal(g.toLowerCase(), terms).flatMap((h) =>
+    clipLabelVariantsForSubjectHint(h)
+  );
   const phraseOnly = omitsMainWordLabelsForActivityPhrase(g);
   const mainWord = phraseOnly ? null : extractMainWord(g);
   const mainWordLabels =
@@ -311,8 +315,11 @@ export function makeLabels(goalText: string): {
     `a person ${g}`,
     `a scene or environment for ${g}`,
     `equipment, tools, or items used for ${g}`,
+    `a casual real-life photo related to ${g}`,
+    `someone completing or doing: ${g}`,
     ...terms.flatMap((t) => [`a photo of a ${t}`, `a photo showing ${t}`]),
     ...expansions.map((e) => `a photo of ${e}`),
+    ...groupedSubjectLabels,
     ...mainWordLabels,
   ];
 
@@ -399,17 +406,31 @@ export function evaluateClipLabelScores(
     }
   }
 
-  /** Phrase-style goals omit `mainWordLabels`; without this, borderline verb/activity titles over-deny. */
-  let phraseSoft = false;
-  if (!verified && (!mwl || mwl.length === 0) && topIsPositive) {
+  /**
+   * Argmax is still a goal-positive label but the strict stack failed (threshold, margin, or
+   * main-word floor). Phrase-style goals have no `mwl`; noun goals need *some* main-word mass
+   * or the laptop/dog false-positive case would pass.
+   */
+  let relaxedTopPositive = false;
+  if (!verified && topIsPositive) {
     const pr = opts?.phraseSoftThresholdRatio ?? CLIP_PHRASE_SOFT_THRESHOLD_RATIO;
-    if (top.score >= threshold * pr && top.score >= bestNegativeScore + margin * 0.75) {
+    /** Keep full separation from the strongest negative — avoids approving razor-thin ties. */
+    const mRel = margin;
+    const noMainWordGate = !mwl || mwl.length === 0;
+    const mainWordSignalOk =
+      !mwSet ||
+      (mwSum >= mwf * 0.55 && mwMax >= threshold * 0.28);
+    if (
+      (noMainWordGate || mainWordSignalOk) &&
+      top.score >= threshold * pr &&
+      top.score >= bestNegativeScore + mRel
+    ) {
       verified = true;
-      phraseSoft = true;
+      relaxedTopPositive = true;
     }
   }
 
-  const confidence = phraseSoft
+  const confidence = relaxedTopPositive
     ? top.score
     : subjectSecondary
       ? mwMax
