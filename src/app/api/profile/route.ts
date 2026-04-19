@@ -262,7 +262,26 @@ export async function PATCH(request: NextRequest) {
 
   const meaningfulKeys = Object.keys(updates).filter((k) => k !== "updated_at");
   if (meaningfulKeys.length === 0) {
-    return NextResponse.json({ ok: true });
+    const { data: row } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    if (!row) {
+      return NextResponse.json({
+        ok: true,
+        profile: {
+          id: user.id,
+          email: user.email ?? "",
+          plan: "free" as const,
+          planBilling: "monthly",
+          createdAt: user.created_at,
+          username: undefined as string | undefined,
+          contactEmail: undefined as string | undefined,
+          name: undefined as string | undefined,
+          premiumTrialEndsAt: null,
+          premiumTrialUsed: false,
+        },
+      });
+    }
+    const final = await expirePremiumTrialIfNeeded(supabase, user.id, row as ProfileRow);
+    return NextResponse.json({ ok: true, profile: profileJsonFromRow(final) });
   }
 
   const { data: updatedRows, error: upError } = await supabase
@@ -292,13 +311,52 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  const { data: fresh } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-  const finalRow = fresh
+  const { data: fresh } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  let finalRow: ProfileRow | null = fresh
     ? await expirePremiumTrialIfNeeded(supabase, user.id, fresh as ProfileRow)
     : null;
 
+  if (!finalRow) {
+    const { data: again } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    if (again) {
+      finalRow = await expirePremiumTrialIfNeeded(supabase, user.id, again as ProfileRow);
+    }
+  }
+
+  if (!finalRow) {
+    return NextResponse.json({
+      ok: true,
+      profile: {
+        id: user.id,
+        email: user.email ?? "",
+        plan: normalizePlan(updates.plan),
+        planBilling:
+          typeof updates.plan_billing === "string" && ["monthly", "yearly"].includes(updates.plan_billing)
+            ? (updates.plan_billing as "monthly" | "yearly")
+            : "monthly",
+        createdAt: user.created_at,
+        username: typeof updates.username === "string" ? updates.username : undefined,
+        contactEmail:
+          updates.contact_email === null
+            ? undefined
+            : typeof updates.contact_email === "string"
+              ? updates.contact_email
+              : undefined,
+        name: typeof updates.name === "string" ? updates.name : undefined,
+        premiumTrialEndsAt:
+          updates.premium_trial_ends_at != null ? String(updates.premium_trial_ends_at) : null,
+        premiumTrialUsed: updates.premium_trial_used === true,
+      },
+    });
+  }
+
   return NextResponse.json({
     ok: true,
-    ...(finalRow ? { profile: profileJsonFromRow(finalRow) } : {}),
+    profile: profileJsonFromRow(finalRow),
   });
 }

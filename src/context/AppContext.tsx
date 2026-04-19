@@ -194,6 +194,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isDevGuestMode, setIsDevGuestMode] = useState(false);
   /** Avoid toggling dataLoaded off on every auth effect re-run — that unmounted the whole app and reset in-flow UIs (e.g. proof submit). */
   const supabaseBootstrapUidRef = useRef<string | null>(null);
+  /** Each new Supabase bootstrap run supersedes older in-flight `.then` handlers (effect re-runs, Strict Mode). */
+  const bootstrapApplySeqRef = useRef(0);
+  /** Bumped before client-driven profile writes so a stale `/api/profile` GET from an older bootstrap cannot overwrite. */
+  const profileClientEpochRef = useRef(0);
   /** Latest goals/submissions for synchronous session snapshot writes (avoid races with async bootstrap merge). */
   const goalsRef = useRef(goals);
   const submissionsRef = useRef(submissions);
@@ -216,16 +220,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setDataLoaded(false);
         lastSupabaseBootstrapUserId = uid;
       }
+      const bootstrapApplySeq = ++bootstrapApplySeqRef.current;
+      const profileEpochAtBootstrapStart = profileClientEpochRef.current;
       Promise.allSettled([
-        fetch("/api/profile").then(async (r) => ({
+        fetch("/api/profile", { credentials: "same-origin" }).then(async (r) => ({
           ok: r.ok,
           body: await r.json().catch(() => ({})),
         })),
-        fetch("/api/goals").then(async (r) => ({
+        fetch("/api/goals", { credentials: "same-origin" }).then(async (r) => ({
           ok: r.ok,
           body: await r.json().catch(() => ({})),
         })),
-        fetch("/api/submissions").then(async (r) => ({
+        fetch("/api/submissions", { credentials: "same-origin" }).then(async (r) => ({
           ok: r.ok,
           body: await r.json().catch(() => ({})),
         })),
@@ -288,7 +294,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               premiumTrialEndsAt: undefined,
               premiumTrialUsed: false,
             };
-        setUserState(profileUser);
+        const profileApplyStale =
+          bootstrapApplySeq !== bootstrapApplySeqRef.current ||
+          profileClientEpochRef.current !== profileEpochAtBootstrapStart;
+        setUserState((prev) => {
+          if (profileApplyStale) return prev ?? profileUser;
+          return profileUser;
+        });
 
         const goalsWrap = goalsResult.status === "fulfilled" ? goalsResult.value : null;
         const goalsBody =
@@ -483,11 +495,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserState(null);
       return;
     }
+    if (useSupabase) {
+      profileClientEpochRef.current += 1;
+    }
     setUserState({
       ...u,
       plan: normalizePlanId(u.plan),
     });
-  }, []);
+  }, [useSupabase]);
 
   const setPlan = useCallback(
     async (
@@ -531,6 +546,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await fetch("/api/profile", {
             method: "PATCH",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(
               startTrial
@@ -542,8 +558,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             profile?: ApiProfileLike;
             error?: string;
           };
-          if (data.profile && typeof data.profile === "object") {
-            const pr = data.profile;
+
+          const applyFromApiProfile = (pr: ApiProfileLike) => {
+            profileClientEpochRef.current += 1;
             setUserState({
               id: pr.id ?? user.id,
               email: pr.email ?? user.email,
@@ -567,14 +584,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);
             }
             setHasSelectedPlan(true);
+          };
+
+          if (data.profile && typeof data.profile === "object") {
+            applyFromApiProfile(data.profile);
             return;
           }
-          if (!res.ok) return;
-        } catch {
-          // network error — apply local next below
+
+          if (res.ok) {
+            const r2 = await fetch("/api/profile", { credentials: "same-origin" });
+            const j2 = (await r2.json().catch(() => ({}))) as { profile?: ApiProfileLike };
+            if (j2.profile && typeof j2.profile === "object") {
+              applyFromApiProfile(j2.profile);
+              return;
+            }
+          }
+
+          if (!res.ok) {
+            console.error("setPlan: PATCH /api/profile failed", res.status, data?.error);
+            const r3 = await fetch("/api/profile", { credentials: "same-origin" });
+            const j3 = (await r3.json().catch(() => ({}))) as { profile?: ApiProfileLike };
+            if (j3.profile && typeof j3.profile === "object") {
+              applyFromApiProfile(j3.profile);
+              return;
+            }
+            return;
+          }
+        } catch (e) {
+          console.warn("setPlan: network error, applying plan locally", e);
         }
       }
 
+      profileClientEpochRef.current += 1;
       setUserState(buildLocalNext());
       markStoredPlanSelection(user.id);
       if (typeof window !== "undefined") {
@@ -775,6 +816,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await fetch("/api/submissions", {
             method: "POST",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               id,
@@ -818,6 +860,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         try {
           await fetch("/api/submissions", {
             method: "PATCH",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id, ...updates }),
           });
@@ -838,7 +881,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (goalId: string) => {
       if (useSupabase) {
         try {
-          await fetch(`/api/submissions?goalId=${encodeURIComponent(goalId)}`, { method: "DELETE" });
+          await fetch(`/api/submissions?goalId=${encodeURIComponent(goalId)}`, {
+            method: "DELETE",
+            credentials: "same-origin",
+          });
         } catch {
           // fallback to local
         }
