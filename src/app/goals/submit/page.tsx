@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -131,6 +131,12 @@ function SubmitProofContent() {
    * until they choose “Try another photo” — avoids reopening when `goal` refetches from context.
    */
   const [deferCameraAutostart, setDeferCameraAutostart] = useState(false);
+  /**
+   * Session / in-flow flag: user has started a proof for this goal, so we must not auto-open the
+   * fullscreen camera or show the "Opening camera…" gate. **Separate from `deferCameraAutostart`**
+   * so a remount with sessionStorage set does not hide the Local AI widget (that was the bug).
+   */
+  const [resumeAfterProofGate, setResumeAfterProofGate] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartCameraAttemptedRef = useRef(false);
@@ -171,7 +177,12 @@ function SubmitProofContent() {
 
   const [, setHideHeader] = useHideHeader();
   const showStartingCameraForHeader =
-    step === "capture" && !cameraStarted && !cameraError && inWindow && !deferCameraAutostart;
+    step === "capture" &&
+    !cameraStarted &&
+    !cameraError &&
+    inWindow &&
+    !deferCameraAutostart &&
+    !resumeAfterProofGate;
   const hideHeaderForCamera =
     (step === "capture" && (cameraStarted || showStartingCameraForHeader)) ||
     step === "uploading" ||
@@ -201,15 +212,17 @@ function SubmitProofContent() {
     }
   }, [authReady, user, goalId, goal, router, pageLoading]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!goalId || typeof window === "undefined") return;
     try {
       if (window.sessionStorage.getItem(submitCameraGateKey(goalId)) === "1") {
-        setDeferCameraAutostart(true);
+        setResumeAfterProofGate(true);
         autoStartCameraAttemptedRef.current = true;
+      } else {
+        setResumeAfterProofGate(false);
       }
     } catch {
-      /* private mode */
+      setResumeAfterProofGate(false);
     }
   }, [goalId]);
 
@@ -237,6 +250,7 @@ function SubmitProofContent() {
       }
     }
     setDeferCameraAutostart(false);
+    setResumeAfterProofGate(false);
     setStep("capture");
     setVerified(null);
     setResultSummary(null);
@@ -317,14 +331,31 @@ function SubmitProofContent() {
     if (!inWindow) return;
     if (step !== "capture" || cameraStarted) return;
     if (deferCameraAutostart) return;
+    if (resumeAfterProofGate) return;
     if (autoStartCameraAttemptedRef.current) return;
     autoStartCameraAttemptedRef.current = true;
     void handleStartCamera();
-  }, [user?.id, goal?.id, goal, inWindow, step, cameraStarted, deferCameraAutostart, handleStartCamera]);
+  }, [
+    user?.id,
+    goal?.id,
+    goal,
+    inWindow,
+    step,
+    cameraStarted,
+    deferCameraAutostart,
+    resumeAfterProofGate,
+    handleStartCamera,
+  ]);
 
   // If camera is "opening" for too long, show retry option
   const isStartingCamera =
-    step === "capture" && !cameraStarted && !cameraError && !!goal && inWindow && !deferCameraAutostart;
+    step === "capture" &&
+    !cameraStarted &&
+    !cameraError &&
+    !!goal &&
+    inWindow &&
+    !deferCameraAutostart &&
+    !resumeAfterProofGate;
   useEffect(() => {
     if (!isStartingCamera) return;
     const t = setTimeout(() => {
@@ -420,12 +451,13 @@ function SubmitProofContent() {
       setResultSummary(null);
       lightImpact();
       setStep("uploading");
-      if (goalId && typeof window !== "undefined") {
+        if (goalId && typeof window !== "undefined") {
         try {
           window.sessionStorage.setItem(submitCameraGateKey(goalId), "1");
         } catch {
           /* ignore */
         }
+        setResumeAfterProofGate(true);
         setDeferCameraAutostart(true);
       }
       const imageToStore = sourceDataUrl;
@@ -493,6 +525,7 @@ function SubmitProofContent() {
           } catch {
             /* ignore */
           }
+          setResumeAfterProofGate(true);
           setDeferCameraAutostart(true);
         }
         try {
@@ -597,16 +630,22 @@ function SubmitProofContent() {
 
   const showFullScreenCamera = step === "capture" && cameraStarted;
   const showStartingCamera =
-    step === "capture" && !cameraStarted && !cameraError && inWindow && !deferCameraAutostart;
+    step === "capture" &&
+    !cameraStarted &&
+    !cameraError &&
+    inWindow &&
+    !deferCameraAutostart &&
+    !resumeAfterProofGate;
   const showCameraRetry =
     step === "capture" && !showFullScreenCamera && !cameraStarted && !!cameraError;
-  const showManualCameraInvite =
+  /** Tap-to-open camera card — after an in-session proof *or* when session gate says don’t auto-open. */
+  const showManualCameraPickup =
     step === "capture" &&
     inWindow &&
     !showFullScreenCamera &&
     !cameraStarted &&
     !cameraError &&
-    deferCameraAutostart;
+    (deferCameraAutostart || resumeAfterProofGate);
 
   return (
     <>
@@ -681,7 +720,7 @@ function SubmitProofContent() {
           </Link>
         )}
 
-        {!showFullScreenCamera && !showStartingCamera && !showManualCameraInvite && (
+        {!showFullScreenCamera && !showStartingCamera && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
@@ -716,15 +755,16 @@ function SubmitProofContent() {
           </div>
         )}
 
-        {(showCameraRetry || showManualCameraInvite) && (
+        {(showCameraRetry || showManualCameraPickup) && (
           <div className="mt-8 animate-fade-in">
             {showCameraRetry && cameraError ? (
               <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
                 {cameraError}
               </p>
-            ) : showManualCameraInvite ? (
+            ) : showManualCameraPickup ? (
               <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                Camera only opens when you tap below — so it won&apos;t jump on after you&apos;ve started a proof.
+                Camera only opens when you tap below (it won&apos;t auto-open after you&apos;ve started a proof). Local
+                AI above stays available.
               </p>
             ) : null}
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
