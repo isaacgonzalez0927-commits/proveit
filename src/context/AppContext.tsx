@@ -943,22 +943,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     supabase: useSupabase ? supabase : null,
   };
 
+  /** Blocks interaction until auth + first data load; never unmounts children (avoids resetting in-flight UIs like proof submit). */
   const showLoading = useSupabase && !authReady;
 
   return (
     <AppContext.Provider value={value}>
       <ThemeSync />
+      <>
+        <NotificationScheduler />
+        <NotificationPrompt />
+        {children}
+      </>
       {showLoading ? (
-        <main className="flex min-h-screen items-center justify-center bg-transparent">
+        <div
+          className="fixed inset-0 z-[200] flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 dark:bg-slate-950"
+          aria-busy="true"
+          aria-live="polite"
+        >
           <LoadingView />
-        </main>
-      ) : (
-        <>
-          <NotificationScheduler />
-          <NotificationPrompt />
-          {children}
-        </>
-      )}
+        </div>
+      ) : null}
     </AppContext.Provider>
   );
 }

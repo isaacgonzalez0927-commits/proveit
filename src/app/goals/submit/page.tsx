@@ -78,6 +78,7 @@ function SubmitProofContent() {
   const [cameraStarted, setCameraStarted] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [verified, setVerified] = useState<boolean | null>(null);
+  const [showFirstProofCelebration, setShowFirstProofCelebration] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -88,6 +89,25 @@ function SubmitProofContent() {
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasRedirected = useRef(false);
   const hasShownContent = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!verified) {
+      setShowFirstProofCelebration(false);
+      return;
+    }
+    try {
+      const seen = window.localStorage.getItem("proveit_first_proof_seen");
+      if (!seen) {
+        setShowFirstProofCelebration(true);
+        window.localStorage.setItem("proveit_first_proof_seen", "1");
+      } else {
+        setShowFirstProofCelebration(false);
+      }
+    } catch {
+      setShowFirstProofCelebration(true);
+    }
+  }, [verified]);
 
   // Once we've shown the submit UI (camera), never redirect - avoids auth blips
   useEffect(() => {
@@ -231,7 +251,11 @@ function SubmitProofContent() {
 
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
-      if (!goal || !user) return;
+      if (!goal || !user) {
+        setVerified(false);
+        setStep("result");
+        return;
+      }
       let imageToStore = compressed;
       const submissionId = generateId();
       const base64 = compressed.split(",")[1];
@@ -472,6 +496,11 @@ function SubmitProofContent() {
             <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
               {verified ? "Approved" : "Denied"}
             </h2>
+            {verified && showFirstProofCelebration && (
+              <p className="mt-4 text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                First proof — you&apos;re on a streak! 🌱
+              </p>
+            )}
             <div className="mt-8 flex flex-col gap-3">
               <Link
                 href="/dashboard"
