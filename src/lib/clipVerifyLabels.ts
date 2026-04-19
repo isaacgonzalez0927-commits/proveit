@@ -4,6 +4,7 @@
  */
 
 import {
+  DEFAULT_CLIP_MAIN_WORD_FLOOR,
   DEFAULT_CLIP_VERIFY_MARGIN,
   DEFAULT_CLIP_VERIFY_THRESHOLD,
 } from "./clipVerifyConstants";
@@ -173,6 +174,12 @@ const GOAL_EXPANSIONS: Record<string, string[]> = {
   pet: ["a pet animal"],
 };
 
+/** Last meaningful keyword — used to bias CLIP toward the primary subject (e.g. "dog" in "walk the dog"). */
+export function extractMainWord(goal: string): string | null {
+  const terms = extractKeyTerms(goal);
+  return terms.length > 0 ? terms[terms.length - 1]! : null;
+}
+
 function getExpansions(goal: string, terms: string[]): string[] {
   const lowerGoal = goal.toLowerCase();
   const termSet = new Set(terms);
@@ -187,10 +194,23 @@ function getExpansions(goal: string, terms: string[]): string[] {
   return Array.from(out);
 }
 
-export function makeLabels(goalText: string): { all: string[]; positive: string[] } {
+export function makeLabels(goalText: string): {
+  all: string[];
+  positive: string[];
+  mainWord: string | null;
+  mainWordLabels: string[];
+} {
   const g = goalText.trim();
   const terms = extractKeyTerms(g);
   const expansions = getExpansions(g, terms);
+  const mainWord = extractMainWord(g);
+  const mainWordLabels = mainWord
+    ? [
+        `a photo of a ${mainWord}`,
+        `a clear close-up of a ${mainWord}`,
+        `${mainWord} clearly visible in the photo`,
+      ]
+    : [];
 
   const positive = [
     `a photo of ${g}`,
@@ -199,14 +219,25 @@ export function makeLabels(goalText: string): { all: string[]; positive: string[
     `equipment, tools, or items used for ${g}`,
     ...terms.flatMap((t) => [`a photo of a ${t}`, `a photo showing ${t}`]),
     ...expansions.map((e) => `a photo of ${e}`),
+    ...mainWordLabels,
   ];
 
   const dedupedPositive = Array.from(new Set(positive));
+  const dedupedMainWordLabels = Array.from(new Set(mainWordLabels));
   return {
     all: Array.from(new Set([...dedupedPositive, ...NEGATIVE_LABELS])),
     positive: dedupedPositive,
+    mainWord,
+    mainWordLabels: dedupedMainWordLabels,
   };
 }
+
+export type EvaluateClipLabelScoreOptions = {
+  margin?: number;
+  /** When non-empty, require sum of softmax scores on these labels ≥ `mainWordFloor`. */
+  mainWordLabels?: readonly string[];
+  mainWordFloor?: number;
+};
 
 /**
  * CLIP zero-shot uses one softmax over **all** labels. With many goal-related
@@ -219,13 +250,14 @@ export function evaluateClipLabelScores(
   scores: ClipLabelScore[],
   positiveLabels: readonly string[],
   threshold: number = DEFAULT_CLIP_VERIFY_THRESHOLD,
-  margin: number = DEFAULT_CLIP_VERIFY_MARGIN
+  opts?: EvaluateClipLabelScoreOptions
 ): {
   verified: boolean;
   confidence: number;
   topLabel: string;
   sorted: ClipLabelScore[];
 } {
+  const margin = opts?.margin ?? DEFAULT_CLIP_VERIFY_MARGIN;
   const sorted = [...scores].sort((a, b) => b.score - a.score);
   const top = sorted[0] ?? { label: "unknown", score: 0 };
   const positiveSet = new Set(positiveLabels);
@@ -238,10 +270,21 @@ export function evaluateClipLabelScores(
     0,
     ...scores.filter((s) => !positiveSet.has(s.label)).map((s) => s.score)
   );
-  const verified =
+  let verified =
     topIsPositive &&
     top.score >= threshold &&
     top.score >= bestNegativeScore + margin;
+
+  const mwl = opts?.mainWordLabels;
+  const mwf = opts?.mainWordFloor ?? DEFAULT_CLIP_MAIN_WORD_FLOOR;
+  if (verified && mwl && mwl.length > 0) {
+    const mwSet = new Set(mwl);
+    const mainWordScore = scores
+      .filter((s) => mwSet.has(s.label))
+      .reduce((sum, s) => sum + s.score, 0);
+    if (mainWordScore < mwf) verified = false;
+  }
+
   const confidence = topIsPositive ? top.score : maxPositiveScore;
   return { verified, confidence, topLabel: top.label, sorted };
 }

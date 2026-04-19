@@ -10,3 +10,6 @@ export const DEFAULT_CLIP_VERIFY_THRESHOLD = 0.28;
 
 /** Winner must beat the strongest negative label by at least this much (same softmax). */
 export const DEFAULT_CLIP_VERIFY_MARGIN = 0.02;
+
+/** Minimum combined softmax on main-subject labels (see `makeLabels` main-word boost). */
+export const DEFAULT_CLIP_MAIN_WORD_FLOOR = 0.1;

@@ -30,8 +30,13 @@ import React, {
   type CSSProperties,
 } from 'react';
 import { pipeline, env } from '@huggingface/transformers';
-import { evaluateClipLabelScores, makeLabels } from '@/lib/clipVerifyLabels';
 import {
+  evaluateClipLabelScores,
+  extractMainWord,
+  makeLabels,
+} from '@/lib/clipVerifyLabels';
+import {
+  DEFAULT_CLIP_MAIN_WORD_FLOOR,
   DEFAULT_CLIP_MODEL_ID,
   DEFAULT_CLIP_VERIFY_THRESHOLD,
 } from '@/lib/clipVerifyConstants';
@@ -156,21 +161,47 @@ const CSS = `
 .aivw-reload-btn{margin-top:12px;padding:8px 18px;font-size:13px;font-weight:500;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit}
 .aivw-reload-btn:hover{background:#b91c1c}
 
-/* ── result card — big definitive YES / NO ── */
-.aivw-res{border-radius:16px;border:2px solid;padding:32px 24px}
+/* ── "Looking for: X" pill under goal input ── */
+.aivw-target{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 11px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:999px;font-size:12px;color:#6d28d9}
+.aivw-target-label{font-weight:500;color:#7c3aed}
+.aivw-target-word{font-weight:700}
+
+/* ── result card + confidence bar ── */
+.aivw-res{border-radius:16px;border:2px solid;padding:24px}
 .aivw-res-ok{border-color:#a7f3d0;background:#ecfdf5}
 .aivw-res-fail{border-color:#fecaca;background:#fef2f2}
-.aivw-verdict{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
-.aivw-verdict-icon{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:700;line-height:1;flex-shrink:0}
-.aivw-verdict-icon-ok{background:#d1fae5;color:#047857}
-.aivw-verdict-icon-fail{background:#fee2e2;color:#b91c1c}
-.aivw-verdict-title{font-size:44px;font-weight:800;letter-spacing:.04em;margin:0;line-height:1}
-.aivw-verdict-title-ok{color:#065f46}
-.aivw-verdict-title-fail{color:#7f1d1d}
-.aivw-verdict-sub{font-size:14px;margin:0;max-width:340px}
-.aivw-verdict-sub-ok{color:#047857}
-.aivw-verdict-sub-fail{color:#b91c1c}
-.aivw-reset-btn{width:100%;margin-top:24px;padding:12px 16px;border-radius:10px;background:#fff;border:1px solid #e2e8f0;font-size:13px;font-weight:500;color:#475569;cursor:pointer;transition:background .12s,border-color .12s;font-family:inherit}
+.aivw-res-top{display:flex;align-items:flex-start;gap:16px}
+.aivw-res-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.aivw-res-icon-ok{background:#d1fae5}
+.aivw-res-icon-fail{background:#fee2e2}
+.aivw-res-title{font-size:19px;font-weight:700;margin:0 0 4px}
+.aivw-res-title-ok{color:#065f46}
+.aivw-res-title-fail{color:#7f1d1d}
+.aivw-res-desc{font-size:13px;margin:0}
+.aivw-res-desc-ok{color:#047857}
+.aivw-res-desc-fail{color:#b91c1c}
+.aivw-conf-hdr{display:flex;justify-content:space-between;align-items:center;margin:14px 0 5px}
+.aivw-conf-name{font-size:12px;font-weight:500}
+.aivw-conf-name-ok{color:#047857}
+.aivw-conf-name-fail{color:#b91c1c}
+.aivw-conf-val{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.aivw-conf-val-ok{color:#065f46}
+.aivw-conf-val-fail{color:#7f1d1d}
+.aivw-conf-track{width:100%;height:10px;background:rgba(255,255,255,.65);border-radius:999px;overflow:hidden}
+.aivw-conf-fill{height:10px;border-radius:999px;transition:width .7s ease}
+.aivw-conf-fill-ok{background:#10b981}
+.aivw-conf-fill-fail{background:#f87171}
+.aivw-conf-note{font-size:11px;margin:5px 0 0}
+.aivw-conf-note-ok{color:#059669}
+.aivw-conf-note-fail{color:#ef4444}
+.aivw-match-note{margin:10px 0 0;font-size:12px}
+.aivw-match-note-ok{color:#047857}
+.aivw-match-note-fail{color:#b91c1c}
+.aivw-verdict-big{text-align:center;margin-top:8px}
+.aivw-verdict-big-title{font-size:36px;font-weight:800;letter-spacing:.03em;margin:0;line-height:1}
+.aivw-verdict-big-title-ok{color:#065f46}
+.aivw-verdict-big-title-fail{color:#7f1d1d}
+.aivw-reset-btn{width:100%;margin-top:16px;padding:10px 16px;border-radius:10px;background:#fff;border:1px solid #e2e8f0;font-size:13px;font-weight:500;color:#475569;cursor:pointer;transition:background .12s,border-color .12s;font-family:inherit}
 .aivw-reset-btn:hover{background:#f8fafc;border-color:#cbd5e1}
 `;
 
@@ -290,12 +321,16 @@ export default function AIVerificationWidget({
     await new Promise<void>((r) => setTimeout(r, 50));
 
     try {
-      const { all: labels, positive: positiveLabels } = makeLabels(trimmed);
+      const { all: labels, positive: positiveLabels, mainWordLabels } = makeLabels(trimmed);
       const raw: VerificationScore[] = await pipelineRef.current(imageData, labels);
       const { verified, confidence, topLabel, sorted } = evaluateClipLabelScores(
         raw,
         positiveLabels,
-        threshold
+        threshold,
+        {
+          mainWordLabels,
+          mainWordFloor: DEFAULT_CLIP_MAIN_WORD_FLOOR,
+        }
       );
 
       const res: VerificationResult = {
@@ -323,6 +358,7 @@ export default function AIVerificationWidget({
   };
 
   const trimmedGoal = goalText.trim();
+  const mainWord = trimmedGoal ? extractMainWord(trimmedGoal) : null;
   const canVerify = !!trimmedGoal && !!imageData && active;
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -372,24 +408,56 @@ export default function AIVerificationWidget({
         </div>
       )}
 
-      {/* ── Verification result — definitive YES / NO ── */}
+      {/* ── Verification result ── */}
       {result && (
         <div className={`aivw-res ${result.verified ? 'aivw-res-ok' : 'aivw-res-fail'}`}>
-          <div className="aivw-verdict">
-            <div className={`aivw-verdict-icon ${result.verified ? 'aivw-verdict-icon-ok' : 'aivw-verdict-icon-fail'}`}>
-              {result.verified ? '✓' : '✕'}
+          <div className="aivw-res-top">
+            <div className={`aivw-res-icon ${result.verified ? 'aivw-res-icon-ok' : 'aivw-res-icon-fail'}`}>
+              {result.verified ? '✅' : '❌'}
             </div>
-            <h3 className={`aivw-verdict-title ${result.verified ? 'aivw-verdict-title-ok' : 'aivw-verdict-title-fail'}`}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 className={`aivw-res-title ${result.verified ? 'aivw-res-title-ok' : 'aivw-res-title-fail'}`}>
+                {result.verified ? 'Goal verified' : 'Not verified'}
+              </h3>
+              <p className={`aivw-res-desc ${result.verified ? 'aivw-res-desc-ok' : 'aivw-res-desc-fail'}`}>
+                {result.verified
+                  ? `Your photo matches "${result.goalName}" well enough to count.`
+                  : `This photo does not match "${result.goalName}" with enough confidence.`}
+              </p>
+
+              <div className="aivw-conf-hdr">
+                <span className={`aivw-conf-name ${result.verified ? 'aivw-conf-name-ok' : 'aivw-conf-name-fail'}`}>
+                  Match score
+                </span>
+                <span className={`aivw-conf-val ${result.verified ? 'aivw-conf-val-ok' : 'aivw-conf-val-fail'}`}>
+                  {Math.round(result.confidence * 100)}%
+                </span>
+              </div>
+              <div className="aivw-conf-track">
+                <div
+                  className={`aivw-conf-fill ${result.verified ? 'aivw-conf-fill-ok' : 'aivw-conf-fill-fail'}`}
+                  style={{ width: `${Math.min(100, Math.round(result.confidence * 100))}%` }}
+                />
+              </div>
+              <p className={`aivw-conf-note ${result.verified ? 'aivw-conf-note-ok' : 'aivw-conf-note-fail'}`}>
+                Need about {Math.round(threshold * 100)}%+ on the best goal-related label to pass
+              </p>
+            </div>
+          </div>
+
+          <p className={`aivw-match-note ${result.verified ? 'aivw-match-note-ok' : 'aivw-match-note-fail'}`}>
+            {result.verified
+              ? `The model is ${Math.round(result.confidence * 100)}% confident in the top match.`
+              : `Top match confidence is ${Math.round(result.confidence * 100)}% — try a clearer photo of your goal.`}
+          </p>
+
+          <div className="aivw-verdict-big">
+            <p className={`aivw-verdict-big-title ${result.verified ? 'aivw-verdict-big-title-ok' : 'aivw-verdict-big-title-fail'}`}>
               {result.verified ? 'YES' : 'NO'}
-            </h3>
-            <p className={`aivw-verdict-sub ${result.verified ? 'aivw-verdict-sub-ok' : 'aivw-verdict-sub-fail'}`}>
-              {result.verified
-                ? `This photo shows "${result.goalName}".`
-                : `This photo doesn't show "${result.goalName}".`}
             </p>
           </div>
 
-          <button className="aivw-reset-btn" onClick={handleReset}>
+          <button type="button" className="aivw-reset-btn" onClick={handleReset}>
             Try again
           </button>
         </div>
@@ -443,6 +511,18 @@ export default function AIVerificationWidget({
                     {eg}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {trimmedGoal && mainWord && (
+              <div className="aivw-target">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="6" />
+                  <circle cx="12" cy="12" r="2" fill="currentColor" />
+                </svg>
+                <span className="aivw-target-label">Looking for:</span>
+                <span className="aivw-target-word">{mainWord}</span>
               </div>
             )}
 

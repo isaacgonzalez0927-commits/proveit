@@ -26,6 +26,10 @@ const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWi
   ),
 });
 
+function submitCameraGateKey(goalId: string) {
+  return `proveit_submit_camera_gate_${goalId}`;
+}
+
 function SubmitProofContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -78,13 +82,24 @@ function SubmitProofContent() {
   const [cameraStarted, setCameraStarted] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [verified, setVerified] = useState<boolean | null>(null);
+  /** Shown on the result overlay (CLIP / save messaging). */
+  const [resultSummary, setResultSummary] = useState<string | null>(null);
   const [showFirstProofCelebration, setShowFirstProofCelebration] = useState(false);
+  /** Bumps `AIVerificationWidget` key after a denied flow so the widget doesn’t keep the old verdict UI. */
+  const [aiWidgetSession, setAiWidgetSession] = useState(0);
   const [streamReady, setStreamReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  /**
+   * After the user starts a proof (uploading), never auto-open the fullscreen camera again
+   * until they choose “Try another photo” — avoids reopening when `goal` refetches from context.
+   */
+  const [deferCameraAutostart, setDeferCameraAutostart] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartCameraAttemptedRef = useRef(false);
   const aiWidgetMountRef = useRef<HTMLDivElement>(null);
+  /** Prevents overlapping CLIP + persist runs (double shutter, slow CLIP, widget + camera). */
+  const verifyInFlightRef = useRef(false);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasRedirected = useRef(false);
@@ -92,7 +107,7 @@ function SubmitProofContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!verified) {
+    if (verified !== true) {
       setShowFirstProofCelebration(false);
       return;
     }
@@ -118,9 +133,10 @@ function SubmitProofContent() {
   const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
 
   const [, setHideHeader] = useHideHeader();
+  const showStartingCameraForHeader =
+    step === "capture" && !cameraStarted && !cameraError && inWindow && !deferCameraAutostart;
   const hideHeaderForCamera =
-    (step === "capture" &&
-      (cameraStarted || (!cameraStarted && !cameraError && !!goal && inWindow))) ||
+    (step === "capture" && (cameraStarted || showStartingCameraForHeader)) ||
     step === "uploading" ||
     step === "result";
   useEffect(() => {
@@ -148,6 +164,18 @@ function SubmitProofContent() {
     }
   }, [authReady, user, goalId, goal, router, pageLoading]);
 
+  useEffect(() => {
+    if (!goalId || typeof window === "undefined") return;
+    try {
+      if (window.sessionStorage.getItem(submitCameraGateKey(goalId)) === "1") {
+        setDeferCameraAutostart(true);
+        autoStartCameraAttemptedRef.current = true;
+      }
+    } catch {
+      /* private mode */
+    }
+  }, [goalId]);
+
   const stopCamera = useCallback((keepCameraMode = false) => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -162,6 +190,24 @@ function SubmitProofContent() {
     setCameraStarted(false);
     router.push("/dashboard");
   }, [stopCamera, router]);
+
+  const handleTryAnotherPhoto = useCallback(() => {
+    if (goalId && typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem(submitCameraGateKey(goalId));
+      } catch {
+        /* ignore */
+      }
+    }
+    setDeferCameraAutostart(false);
+    setStep("capture");
+    setVerified(null);
+    setResultSummary(null);
+    setAiWidgetSession((n) => n + 1);
+    autoStartCameraAttemptedRef.current = false;
+    setCameraError(null);
+    stopCamera();
+  }, [goalId, stopCamera]);
 
   useEffect(() => {
     return () => stopCamera();
@@ -233,14 +279,15 @@ function SubmitProofContent() {
     if (!user || !goal) return;
     if (!inWindow) return;
     if (step !== "capture" || cameraStarted) return;
+    if (deferCameraAutostart) return;
     if (autoStartCameraAttemptedRef.current) return;
     autoStartCameraAttemptedRef.current = true;
     void handleStartCamera();
-  }, [user, goal, inWindow, step, cameraStarted, handleStartCamera]);
+  }, [user?.id, goal?.id, goal, inWindow, step, cameraStarted, deferCameraAutostart, handleStartCamera]);
 
   // If camera is "opening" for too long, show retry option
   const isStartingCamera =
-    step === "capture" && !cameraStarted && !cameraError && !!goal && inWindow;
+    step === "capture" && !cameraStarted && !cameraError && !!goal && inWindow && !deferCameraAutostart;
   useEffect(() => {
     if (!isStartingCamera) return;
     const t = setTimeout(() => {
@@ -251,17 +298,21 @@ function SubmitProofContent() {
 
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
-      if (!goal || !user) {
-        setVerified(false);
+      const finish = (ok: boolean, summary: string | null) => {
+        setVerified(ok);
+        setResultSummary(summary);
         setStep("result");
+      };
+
+      if (!goal || !user) {
+        finish(false, "Couldn’t save your proof. Try going back and opening this goal again.");
         return;
       }
       let imageToStore = compressed;
       const submissionId = generateId();
       const base64 = compressed.split(",")[1];
       if (!base64) {
-        setVerified(false);
-        setStep("result");
+        finish(false, "Couldn’t read that photo. Please try taking another picture.");
         return;
       }
 
@@ -270,8 +321,7 @@ function SubmitProofContent() {
           const storageUrl = await uploadProofToStorage(supabase, user.id, submissionId, compressed);
           imageToStore = storageUrl;
         } catch {
-          setVerified(false);
-          setStep("result");
+          finish(false, "Couldn’t upload your photo. Check your connection and try again.");
           return;
         }
       } else {
@@ -293,7 +343,6 @@ function SubmitProofContent() {
           aiFeedback: msg,
           verifiedAt: passed ? new Date().toISOString() : undefined,
         });
-        setVerified(passed);
         await updateSubmission(sub.id, {
           status: passed ? "verified" : "rejected",
           aiFeedback: msg,
@@ -307,10 +356,9 @@ function SubmitProofContent() {
             });
           }
         }
+        finish(passed, msg);
       } catch {
-        setVerified(false);
-      } finally {
-        setStep("result");
+        finish(false, "Something went wrong saving your proof. You can try again.");
       }
     },
     [
@@ -330,8 +378,19 @@ function SubmitProofContent() {
   const runProofVerification = useCallback(
     async (sourceDataUrl: string) => {
       if (!goal || !user) return;
+      if (verifyInFlightRef.current) return;
+      verifyInFlightRef.current = true;
+      setResultSummary(null);
       lightImpact();
       setStep("uploading");
+      if (goalId && typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(submitCameraGateKey(goalId), "1");
+        } catch {
+          /* ignore */
+        }
+        setDeferCameraAutostart(true);
+      }
       const imageToStore = sourceDataUrl;
 
       try {
@@ -351,27 +410,31 @@ function SubmitProofContent() {
         );
         await persistCompressedProof(compressed, clipSummary, clip.verified);
       } catch {
-        setVerified(false);
         try {
-          const sub = await addSubmission({
+          await addSubmission({
             goalId: goal.id,
             date: todayStr,
             imageDataUrl: imageToStore,
             status: "rejected",
-            aiFeedback: "Request failed.",
+            aiFeedback: "Verification failed on this device. Try again.",
           });
         } catch {
           /* keep denied state */
         }
+        setVerified(false);
+        setResultSummary("Verification failed on this device. Try again.");
         setStep("result");
+      } finally {
+        verifyInFlightRef.current = false;
       }
     },
-    [goal, user, todayStr, addSubmission, persistCompressedProof]
+    [goal, goalId, user, todayStr, addSubmission, persistCompressedProof]
   );
 
   const handleAiWidgetResult = useCallback(
     (result: VerificationResult) => {
       if (!goal || !user) return;
+      if (verifyInFlightRef.current) return;
       const proofUrl =
         aiWidgetMountRef.current?.querySelector<HTMLImageElement>("img.aivw-img")?.src ?? null;
       if (!proofUrl?.startsWith("data:")) {
@@ -382,9 +445,19 @@ function SubmitProofContent() {
         }
         return;
       }
-      lightImpact();
-      setStep("uploading");
       void (async () => {
+        verifyInFlightRef.current = true;
+        setResultSummary(null);
+        lightImpact();
+        setStep("uploading");
+        if (goalId && typeof window !== "undefined") {
+          try {
+            window.sessionStorage.setItem(submitCameraGateKey(goalId), "1");
+          } catch {
+            /* ignore */
+          }
+          setDeferCameraAutostart(true);
+        }
         try {
           const compressed = await compressImage(proofUrl, 1200, 0.75);
           const { formatLocalClipUserFeedback } = await import("@/lib/localClipVerify");
@@ -395,11 +468,14 @@ function SubmitProofContent() {
           await persistCompressedProof(compressed, summaryLine, result.verified);
         } catch {
           setVerified(false);
+          setResultSummary("Couldn’t process that photo. Try again.");
           setStep("result");
+        } finally {
+          verifyInFlightRef.current = false;
         }
       })();
     },
-    [goal, user, persistCompressedProof]
+    [goal, goalId, user, persistCompressedProof]
   );
 
   const handleCloseApp = useCallback(() => {
@@ -411,25 +487,36 @@ function SubmitProofContent() {
   }, [router]);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
+    if (verifyInFlightRef.current) return;
     const video = videoRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    if (facingMode === "user") {
-      ctx.save();
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0);
-      ctx.restore();
-    } else {
-      ctx.drawImage(video, 0, 0);
-    }
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    stopCamera();
-    void runProofVerification(dataUrl);
+    if (!video) return;
+    const grabFrame = () => {
+      if (video.videoWidth < 2 || video.videoHeight < 2) {
+        setCameraError("Camera frame wasn’t ready. Try again in a second.");
+        return;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      if (facingMode === "user") {
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.drawImage(video, 0, 0);
+      }
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      stopCamera();
+      void runProofVerification(dataUrl);
+    };
+    // One or two rAFs: some WebViews paint a black first frame right after stream attach.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(grabFrame);
+    });
   }, [facingMode, stopCamera, runProofVerification]);
 
   if (!authReady || pageLoading || !user || !goal) {
@@ -473,9 +560,16 @@ function SubmitProofContent() {
 
   const showFullScreenCamera = step === "capture" && cameraStarted;
   const showStartingCamera =
-    step === "capture" && !cameraStarted && !cameraError && inWindow;
+    step === "capture" && !cameraStarted && !cameraError && inWindow && !deferCameraAutostart;
   const showCameraRetry =
     step === "capture" && !showFullScreenCamera && !cameraStarted && !!cameraError;
+  const showManualCameraInvite =
+    step === "capture" &&
+    inWindow &&
+    !showFullScreenCamera &&
+    !cameraStarted &&
+    !cameraError &&
+    deferCameraAutostart;
 
   return (
     <>
@@ -496,15 +590,33 @@ function SubmitProofContent() {
             <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
               {verified ? "Approved" : "Denied"}
             </h2>
+            {resultSummary ? (
+              <p className="mt-4 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                {resultSummary}
+              </p>
+            ) : null}
             {verified && showFirstProofCelebration && (
               <p className="mt-4 text-sm font-medium text-emerald-800 dark:text-emerald-200">
                 First proof — you&apos;re on a streak! 🌱
               </p>
             )}
             <div className="mt-8 flex flex-col gap-3">
+              {!verified && inWindow ? (
+                <button
+                  type="button"
+                  onClick={handleTryAnotherPhoto}
+                  className="rounded-xl bg-prove-600 py-3.5 text-center text-sm font-semibold text-white shadow-sm hover:bg-prove-700"
+                >
+                  Try another photo
+                </button>
+              ) : null}
               <Link
                 href="/dashboard"
-                className="rounded-xl bg-prove-600 py-3.5 text-center text-sm font-semibold text-white shadow-sm hover:bg-prove-700"
+                className={`rounded-xl py-3.5 text-center text-sm font-semibold shadow-sm ${
+                  !verified && inWindow
+                    ? "border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                    : "bg-prove-600 text-white hover:bg-prove-700"
+                }`}
               >
                 Go to dashboard
               </Link>
@@ -532,7 +644,7 @@ function SubmitProofContent() {
           </Link>
         )}
 
-        {!showFullScreenCamera && !showStartingCamera && (
+        {!showFullScreenCamera && !showStartingCamera && !showManualCameraInvite && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
               Prove it: {goal.title}
@@ -549,7 +661,7 @@ function SubmitProofContent() {
               </p>
               <div className="mt-3" ref={aiWidgetMountRef}>
                 <AIVerificationWidget
-                  key={goal.id}
+                  key={`${goal.id}-${aiWidgetSession}`}
                   threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
                   onResult={(r) => {
                     void handleAiWidgetResult(r);
@@ -567,20 +679,28 @@ function SubmitProofContent() {
           </div>
         )}
 
-        {showCameraRetry && (
+        {(showCameraRetry || showManualCameraInvite) && (
           <div className="mt-8 animate-fade-in">
-            <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
-              {cameraError}
-            </p>
+            {showCameraRetry && cameraError ? (
+              <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                {cameraError}
+              </p>
+            ) : showManualCameraInvite ? (
+              <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                Camera only opens when you tap below — so it won&apos;t jump on after you&apos;ve started a proof.
+              </p>
+            ) : null}
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
               <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
                 <p className="text-center text-sm text-slate-300">
                   Tap to start camera
                 </p>
                 <button
+                  type="button"
                   onClick={() => {
                     setCameraError(null);
-                    handleStartCamera();
+                    autoStartCameraAttemptedRef.current = true;
+                    void handleStartCamera();
                   }}
                   className="glass-overlay-bar-btn-primary flex items-center gap-2 rounded-xl px-5 py-3 text-white hover:bg-prove-500/45"
                 >
@@ -599,6 +719,8 @@ function SubmitProofContent() {
               autoPlay
               playsInline
               muted
+              disablePictureInPicture
+              controls={false}
               className="absolute inset-0 h-full w-full object-cover"
               style={{
                 transform: facingMode === "user" ? "scaleX(-1)" : undefined,

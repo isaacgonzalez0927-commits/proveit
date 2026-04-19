@@ -1,4 +1,5 @@
 import {
+  DEFAULT_CLIP_MAIN_WORD_FLOOR,
   DEFAULT_CLIP_MODEL_ID,
   DEFAULT_CLIP_VERIFY_THRESHOLD,
 } from "./clipVerifyConstants";
@@ -121,13 +122,17 @@ export async function verifyWithLocalClip(opts: {
   if (!trimmed) throw new Error("goalText is required");
   if (!opts.imageDataUrl) throw new Error("imageDataUrl is required");
 
-  const { all: labels, positive: positiveLabels } = makeLabels(trimmed);
+  const { all: labels, positive: positiveLabels, mainWordLabels } = makeLabels(trimmed);
   const pipe = await getPipeline(modelId);
   const scores = await pipe(opts.imageDataUrl, labels);
   const { verified, confidence, topLabel, sorted } = evaluateClipLabelScores(
     scores,
     positiveLabels,
-    threshold
+    threshold,
+    {
+      mainWordLabels,
+      mainWordFloor: DEFAULT_CLIP_MAIN_WORD_FLOOR,
+    }
   );
   return {
     verified,

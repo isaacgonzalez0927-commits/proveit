@@ -167,6 +167,14 @@ type ApiProfileLike = {
   premiumTrialUsed?: boolean;
 };
 
+/**
+ * Tracks which Supabase user we already ran the initial `setDataLoaded(false)` bootstrap for.
+ * Must survive `AppProvider` remounts (React Strict Mode, layout remounts) and match on **user id**
+ * only — `supabaseUser` object identity changes on `TOKEN_REFRESHED`, which was flipping `dataLoaded`
+ * off and blocking the whole app with the loading overlay during long tasks (e.g. local CLIP verify).
+ */
+let lastSupabaseBootstrapUserId: string | null = null;
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const useSupabase = useSupabaseConfigured();
   const { user: supabaseUser, loading: authLoading, supabase } = useSupabaseAuth();
@@ -186,7 +194,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
       const uid = supabaseUser.id;
-      const alreadyBootstrapped = supabaseBootstrapUidRef.current === uid;
+      const alreadyBootstrapped = lastSupabaseBootstrapUserId === uid;
+      supabaseBootstrapUidRef.current = uid;
       const snap = readSbSessionSnapshot();
       // Only hydrate from snapshot on first bootstrap for this user — re-applying on every effect
       // run can overwrite fresher in-memory state before the fetch merge completes.
@@ -196,7 +205,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       if (!alreadyBootstrapped) {
         setDataLoaded(false);
-        supabaseBootstrapUidRef.current = uid;
+        lastSupabaseBootstrapUserId = uid;
       }
       Promise.allSettled([
         fetch("/api/profile").then(async (r) => ({
@@ -336,6 +345,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // clearing goals during the brief window before getSession() completes.
     if (useSupabase && supabase && !authLoading && !supabaseUser) {
       supabaseBootstrapUidRef.current = null;
+      lastSupabaseBootstrapUserId = null;
       clearSbSessionSnapshot();
       setUserState(null);
       setGoalsState([]);
@@ -369,7 +379,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (useSupabase && authLoading) {
       setHydrated(true);
     }
-  }, [useSupabase, supabaseUser, authLoading, supabase]);
+    // Intentionally omit `supabaseUser` — only `supabaseUser?.id` — so TOKEN_REFRESHED (new object, same id)
+    // does not re-run this effect and hammer /api + `dataLoaded`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable identity is `supabaseUser.id` for bootstrap
+  }, [useSupabase, supabaseUser?.id, authLoading, supabase]);
 
   useEffect(() => {
     if (!useSupabase || !user?.id || !dataLoaded) return;
