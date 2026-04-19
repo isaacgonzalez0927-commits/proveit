@@ -15,7 +15,10 @@ import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
-import { DEFAULT_CLIP_VERIFY_THRESHOLD } from "@/lib/clipVerifyConstants";
+import {
+  DEFAULT_CLIP_VERIFY_THRESHOLD,
+  WIDGET_CLIP_VERIFY_THRESHOLD,
+} from "@/lib/clipVerifyConstants";
 import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import type { VerificationResult } from "@/components/AIVerificationWidget";
 
@@ -49,8 +52,42 @@ function SubmitProofContent() {
   const [localUser, setLocalUser] = useState<StoredUser | null>(null);
   const [localGoal, setLocalGoal] = useState<Goal | null>(null);
   const [pageLoading, setPageLoading] = useState(false);
-  const user = contextUser ?? localUser;
-  const goal = contextGoals.find((g) => g.id === goalId) ?? localGoal ?? null;
+  /** Avoid full-page loading flashes when context refetches goals/user mid proof (same as sticky session in AppContext). */
+  const stickyUserRef = useRef<StoredUser | null>(null);
+  const stickyGoalRef = useRef<Goal | null>(null);
+
+  useEffect(() => {
+    stickyGoalRef.current = null;
+  }, [goalId]);
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (!contextUser && !localUser) {
+      stickyUserRef.current = null;
+      stickyGoalRef.current = null;
+    }
+  }, [authReady, contextUser, localUser]);
+
+  const userFromSources = contextUser ?? localUser;
+  const goalFromSources = goalId
+    ? contextGoals.find((g) => g.id === goalId) ?? localGoal ?? null
+    : null;
+
+  useEffect(() => {
+    if (userFromSources) stickyUserRef.current = userFromSources;
+    if (goalFromSources && goalId && goalFromSources.id === goalId) {
+      stickyGoalRef.current = goalFromSources;
+    }
+  }, [userFromSources, goalFromSources, goalId]);
+
+  const user =
+    userFromSources ??
+    (authReady && stickyUserRef.current ? stickyUserRef.current : null);
+  const goal =
+    goalFromSources ??
+    (goalId && authReady && stickyGoalRef.current?.id === goalId
+      ? stickyGoalRef.current
+      : null);
   const goals = goal && !contextGoals.find((g) => g.id === goal.id) ? [...contextGoals, goal] : contextGoals;
 
   useEffect(() => {
@@ -76,7 +113,7 @@ function SubmitProofContent() {
       if (!cancelled) setPageLoading(false);
     });
     return () => { cancelled = true; };
-  }, [goalId, authReady, contextUser, contextGoals, localUser, localGoal]);
+  }, [goalId, authReady, user?.id, goal?.id, contextUser?.id]);
 
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
   const [cameraStarted, setCameraStarted] = useState(false);
@@ -463,7 +500,7 @@ function SubmitProofContent() {
           const { formatLocalClipUserFeedback } = await import("@/lib/localClipVerify");
           const { summaryLine } = formatLocalClipUserFeedback(
             { verified: result.verified, confidence: result.confidence },
-            DEFAULT_CLIP_VERIFY_THRESHOLD
+            WIDGET_CLIP_VERIFY_THRESHOLD
           );
           await persistCompressedProof(compressed, summaryLine, result.verified);
         } catch {
@@ -662,7 +699,7 @@ function SubmitProofContent() {
               <div className="mt-3" ref={aiWidgetMountRef}>
                 <AIVerificationWidget
                   key={`${goal.id}-${aiWidgetSession}`}
-                  threshold={DEFAULT_CLIP_VERIFY_THRESHOLD}
+                  threshold={WIDGET_CLIP_VERIFY_THRESHOLD}
                   onResult={(r) => {
                     void handleAiWidgetResult(r);
                   }}
@@ -741,6 +778,7 @@ function SubmitProofContent() {
             </button>
             <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
               <button
+                type="button"
                 onClick={flipCamera}
                 className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
                 aria-label="Switch camera"
@@ -748,6 +786,7 @@ function SubmitProofContent() {
                 <SwitchCamera className="h-7 w-7" />
               </button>
               <button
+                type="button"
                 onClick={capturePhoto}
                 className="glass-overlay-bar-btn-primary flex h-16 w-16 items-center justify-center rounded-full text-white hover:bg-prove-500/45"
                 aria-label="Take photo"

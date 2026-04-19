@@ -36,9 +36,10 @@ import {
   makeLabels,
 } from '@/lib/clipVerifyLabels';
 import {
-  DEFAULT_CLIP_MAIN_WORD_FLOOR,
   DEFAULT_CLIP_MODEL_ID,
-  DEFAULT_CLIP_VERIFY_THRESHOLD,
+  WIDGET_CLIP_MAIN_WORD_FLOOR,
+  WIDGET_CLIP_VERIFY_MARGIN,
+  WIDGET_CLIP_VERIFY_THRESHOLD,
 } from '@/lib/clipVerifyConstants';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -63,9 +64,13 @@ export interface AIVerificationWidgetProps {
   onResult?: (result: VerificationResult) => void;
   /**
    * Minimum softmax score (0–1) on the winning label when that label matches the goal
-   * (see `DEFAULT_CLIP_VERIFY_THRESHOLD` in `@/lib/clipVerifyConstants`).
+   * (default: `WIDGET_CLIP_VERIFY_THRESHOLD` — relaxed vs camera submit).
    */
   threshold?: number;
+  /** Minimum margin of top label over best negative (default `WIDGET_CLIP_VERIFY_MARGIN`). */
+  margin?: number;
+  /** Main-word softmax sum floor when main-word labels exist (default `WIDGET_CLIP_MAIN_WORD_FLOOR`). */
+  mainWordFloor?: number;
   /**
    * Any HuggingFace zero-shot-image-classification model ID.
    * @default 'Xenova/clip-vit-base-patch32'
@@ -209,7 +214,9 @@ const CSS = `
 
 export default function AIVerificationWidget({
   onResult,
-  threshold = DEFAULT_CLIP_VERIFY_THRESHOLD,
+  threshold = WIDGET_CLIP_VERIFY_THRESHOLD,
+  margin = WIDGET_CLIP_VERIFY_MARGIN,
+  mainWordFloor = WIDGET_CLIP_MAIN_WORD_FLOOR,
   modelId = DEFAULT_CLIP_MODEL_ID,
   className = '',
   style,
@@ -328,8 +335,9 @@ export default function AIVerificationWidget({
         positiveLabels,
         threshold,
         {
+          margin,
           mainWordLabels,
-          mainWordFloor: DEFAULT_CLIP_MAIN_WORD_FLOOR,
+          mainWordFloor,
         }
       );
 
@@ -402,7 +410,7 @@ export default function AIVerificationWidget({
           <p style={{ margin: 0, fontSize: 12, color: '#b91c1c' }}>
             {modelErr ?? 'Unknown error — check the browser console for details.'}
           </p>
-          <button className="aivw-reload-btn" onClick={() => window.location.reload()}>
+          <button type="button" className="aivw-reload-btn" onClick={() => window.location.reload()}>
             Reload page
           </button>
         </div>
@@ -478,7 +486,11 @@ export default function AIVerificationWidget({
                 type="text"
                 value={goalText}
                 onChange={(e) => { setGoalText(e.target.value); setVerifyErr(null); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleVerify(); }}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  void handleVerify();
+                }}
                 placeholder="e.g. cleaning my room, reading a book…"
                 disabled={!active}
                 maxLength={80}
@@ -504,6 +516,7 @@ export default function AIVerificationWidget({
                 {EXAMPLE_GOALS.map((eg) => (
                   <button
                     key={eg}
+                    type="button"
                     className="aivw-chip"
                     onClick={() => setGoalText(eg)}
                     disabled={!active}
@@ -540,6 +553,7 @@ export default function AIVerificationWidget({
               <div className="aivw-img-wrap">
                 <img src={imageData} alt="Uploaded proof" className="aivw-img" />
                 <button
+                  type="button"
                   className="aivw-img-rm"
                   onClick={() => setImageData(null)}
                   disabled={!active}
@@ -590,7 +604,11 @@ export default function AIVerificationWidget({
 
           {/* Verify button */}
           <button
-            onClick={handleVerify}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              void handleVerify();
+            }}
             disabled={!canVerify}
             className={`aivw-btn ${canVerify ? 'aivw-btn-on' : 'aivw-btn-off'}`}
           >

@@ -13,3 +13,11 @@ export const DEFAULT_CLIP_VERIFY_MARGIN = 0.02;
 
 /** Minimum combined softmax on main-subject labels (see `makeLabels` main-word boost). */
 export const DEFAULT_CLIP_MAIN_WORD_FLOOR = 0.1;
+
+/**
+ * Slightly relaxed CLIP gates for the optional `AIVerificationWidget` only.
+ * Camera / `localClipVerify` submit path keeps `DEFAULT_*` for consistency with stored proofs from the shutter.
+ */
+export const WIDGET_CLIP_VERIFY_THRESHOLD = 0.22;
+export const WIDGET_CLIP_VERIFY_MARGIN = 0.01;
+export const WIDGET_CLIP_MAIN_WORD_FLOOR = 0.06;
