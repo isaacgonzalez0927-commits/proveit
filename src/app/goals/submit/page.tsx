@@ -33,6 +33,10 @@ function submitCameraGateKey(goalId: string) {
   return `proveit_submit_camera_gate_${goalId}`;
 }
 
+function firstProofSeenStorageKey(userId: string) {
+  return `proveit_first_proof_seen_${userId}`;
+}
+
 function SubmitProofContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -47,6 +51,7 @@ function SubmitProofContent() {
     supabase,
     authReady,
     getSubmissionsForGoal,
+    submissions,
   } = useApp();
   // Fallback: fetch directly when context doesn't have data (handles direct nav / context race)
   const [localUser, setLocalUser] = useState<StoredUser | null>(null);
@@ -150,22 +155,29 @@ function SubmitProofContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (verified !== true) {
+    if (verified !== true || !user?.id) {
+      setShowFirstProofCelebration(false);
+      return;
+    }
+    const verifiedTotal = submissions.filter((s) => s.status === "verified").length;
+    // Only the first verified proof ever in this account should show the line (not after localStorage clears).
+    if (verifiedTotal !== 1) {
       setShowFirstProofCelebration(false);
       return;
     }
     try {
-      const seen = window.localStorage.getItem("proveit_first_proof_seen");
+      const key = firstProofSeenStorageKey(user.id);
+      const seen = window.localStorage.getItem(key);
       if (!seen) {
         setShowFirstProofCelebration(true);
-        window.localStorage.setItem("proveit_first_proof_seen", "1");
+        window.localStorage.setItem(key, "1");
       } else {
         setShowFirstProofCelebration(false);
       }
     } catch {
-      setShowFirstProofCelebration(true);
+      setShowFirstProofCelebration(false);
     }
-  }, [verified]);
+  }, [verified, user?.id, submissions]);
 
   // Once we've shown the submit UI (camera), never redirect - avoids auth blips
   useEffect(() => {

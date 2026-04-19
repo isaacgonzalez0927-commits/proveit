@@ -11,8 +11,6 @@ import {
   CheckCircle2,
   Camera,
   ChevronDown,
-  Sparkles,
-  X,
 } from "lucide-react";
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
@@ -21,11 +19,7 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { getPlan } from "@/lib/store";
-import {
-  clearPostPlanWelcomeFlag,
-  peekPostPlanWelcomePlanId,
-} from "@/lib/postPlanWelcome";
-import type { PlanId } from "@/types";
+import { clearPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import { accountDisplayLabel } from "@/lib/usernameAuth";
 import {
@@ -66,11 +60,9 @@ function DashboardContent() {
   const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(DEFAULT_DEVELOPER_MODE_SETTINGS);
   const [streakCardExpanded, setStreakCardExpanded] = useState(false);
-  const [planWelcomeId, setPlanWelcomeId] = useState<PlanId | null>(null);
 
   useEffect(() => {
-    const id = peekPostPlanWelcomePlanId();
-    if (id) setPlanWelcomeId(id);
+    clearPostPlanWelcomeFlag();
   }, []);
 
   const thisWeekVerified = submissions.filter((s) => {
@@ -94,7 +86,6 @@ function DashboardContent() {
   })();
 
   const plan = user ? getPlan(user.plan) : null;
-  const welcomePlan = planWelcomeId ? getPlan(planWelcomeId) : null;
   const dailyGoals = goals.filter((g) => g.frequency === "daily");
   const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -192,62 +183,6 @@ function DashboardContent() {
     <PullToRefresh>
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        {welcomePlan && (
-          <div
-            className="mb-4 flex gap-3 rounded-2xl border border-emerald-200/90 bg-emerald-50/95 p-4 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/35"
-            role="status"
-          >
-            <div className="mt-0.5 shrink-0 rounded-full bg-emerald-100 p-2 dark:bg-emerald-900/50">
-              <Sparkles className="h-5 w-5 text-emerald-700 dark:text-emerald-300" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-emerald-950 dark:text-emerald-100">
-                You&apos;re on the {welcomePlan.name} plan
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-emerald-900/90 dark:text-emerald-200/90">
-                {welcomePlan.id === "free" && (
-                  <>
-                    Start in Goal Garden: add a goal, use <strong>Get AI photo ideas</strong> for prompts, then prove it
-                    when it fits your week to grow your plants.
-                  </>
-                )}
-                {welcomePlan.id === "pro" && (
-                  <>
-                    You now have more goals, extra themes, Goal Gallery, and Goal Break. Open{" "}
-                    <Link href="/buddy" className="font-medium underline underline-offset-2">
-                      Goal Garden
-                    </Link>{" "}
-                    or{" "}
-                    <Link href="/settings" className="font-medium underline underline-offset-2">
-                      Settings
-                    </Link>{" "}
-                    anytime.
-                  </>
-                )}
-                {welcomePlan.id === "premium" && (
-                  <>
-                    Unlimited goals, every plant style, and full theme access are yours. Build your garden from{" "}
-                    <Link href="/buddy" className="font-medium underline underline-offset-2">
-                      Goal Garden
-                    </Link>
-                    .
-                  </>
-                )}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                clearPostPlanWelcomeFlag();
-                setPlanWelcomeId(null);
-              }}
-              className="shrink-0 self-start rounded-lg p-1 text-emerald-800 hover:bg-emerald-100/80 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
-              aria-label="Dismiss"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        )}
         {user && isPremiumTrialActive(user) && user.premiumTrialEndsAt && (
           <div
             className="mb-4 rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
@@ -269,9 +204,7 @@ function DashboardContent() {
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Dashboard
           </h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
-            {accountDisplayLabel(user)} · {plan?.name} plan
-          </p>
+          <p className="mt-1 text-slate-600 dark:text-slate-400">{accountDisplayLabel(user)}</p>
         </div>
 
         <section className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-cyan-50/40 p-4 dark:border-emerald-900/60 dark:from-emerald-950/25 dark:to-cyan-950/20">
@@ -637,14 +570,6 @@ function DashboardContent() {
           )}
         </section>
 
-        {user?.plan === "free" && (
-          <Link
-            href="/pricing"
-            className="mt-8 block rounded-xl border border-prove-200 bg-prove-50/50 p-4 text-center text-sm text-prove-800 dark:border-prove-800 dark:bg-prove-950/30 dark:text-prove-200"
-          >
-            Want more goals or Goal Gallery access? Upgrade to Pro →
-          </Link>
-        )}
       </main>
     </PullToRefresh>
   );

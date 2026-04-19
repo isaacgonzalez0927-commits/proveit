@@ -193,6 +193,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isDevGuestMode, setIsDevGuestMode] = useState(false);
   /** Avoid toggling dataLoaded off on every auth effect re-run — that unmounted the whole app and reset in-flow UIs (e.g. proof submit). */
   const supabaseBootstrapUidRef = useRef<string | null>(null);
+  /** Latest goals/submissions for synchronous session snapshot writes (avoid races with async bootstrap merge). */
+  const goalsRef = useRef(goals);
+  const submissionsRef = useRef(submissions);
+  goalsRef.current = goals;
+  submissionsRef.current = submissions;
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
@@ -291,9 +296,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             : {};
         const gs = Array.isArray(goalsBody.goals) ? goalsBody.goals : [];
         const mappedServerGoals = gs.map((g: Record<string, unknown>) => mapGoalFromApi(g));
+        const snapForMerge = readSbSessionSnapshot();
+        const snapMerge = snapForMerge?.userId === uid ? snapForMerge : null;
         const mergedGoals = mergeServerGoalsWithSessionSnapshot(
           mappedServerGoals,
-          snap,
+          snapMerge,
           supabaseUser.id
         );
         setGoalsState(mergedGoals);
@@ -319,7 +326,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
         const mergedSubs = mergeServerSubmissionsWithSessionSnapshot(
           mappedSubs,
-          snap,
+          snapMerge,
           supabaseUser.id
         );
         setSubmissionsState(mergedSubs);
@@ -743,18 +750,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             }),
           });
           const data = await res.json();
-          if (!res.ok) return sub;
+          if (!res.ok) {
+            setSubmissionsState((prev) => {
+              const next = [...prev, sub];
+              if (user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
+              return next;
+            });
+            return sub;
+          }
           const created = data.submission as ProofSubmission;
-          setSubmissionsState((prev) => [...prev, created]);
+          setSubmissionsState((prev) => {
+            const next = [...prev, created];
+            if (user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
+            return next;
+          });
           return created;
         } catch {
           // fallback to local
         }
       }
-      setSubmissionsState((prev) => [...prev, sub]);
+      setSubmissionsState((prev) => {
+        const next = [...prev, sub];
+        if (useSupabase && user?.id) writeSbSessionSnapshot(user.id, goalsRef.current, next);
+        return next;
+      });
       return sub;
     },
-    [useSupabase]
+    [useSupabase, user?.id]
   );
 
   const updateSubmission = useCallback(
