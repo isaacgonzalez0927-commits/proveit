@@ -10,7 +10,7 @@ import { useHideHeader } from "@/context/HideHeaderContext";
 import { LoadingView } from "@/components/LoadingView";
 import { isWithinSubmissionWindow, getSubmissionWindowMessage } from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
-import { lightImpact, success } from "@/lib/haptics";
+import { lightImpact } from "@/lib/haptics";
 import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
@@ -78,11 +78,8 @@ function SubmitProofContent() {
   const [cameraStarted, setCameraStarted] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [verified, setVerified] = useState<boolean | null>(null);
-  const [feedback, setFeedback] = useState<string>("");
-  const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [streamReady, setStreamReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [showFirstProofCelebration, setShowFirstProofCelebration] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartCameraAttemptedRef = useRef(false);
@@ -91,20 +88,6 @@ function SubmitProofContent() {
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasRedirected = useRef(false);
   const hasShownContent = useRef(false);
-
-  useEffect(() => {
-    if (verified && typeof window !== "undefined") {
-      try {
-        const seen = localStorage.getItem("proveit_first_proof_seen");
-        if (!seen) {
-          setShowFirstProofCelebration(true);
-          localStorage.setItem("proveit_first_proof_seen", "1");
-        }
-      } catch {
-        setShowFirstProofCelebration(true);
-      }
-    }
-  }, [verified]);
 
   // Once we've shown the submit UI (camera), never redirect - avoids auth blips
   useEffect(() => {
@@ -118,7 +101,8 @@ function SubmitProofContent() {
   const hideHeaderForCamera =
     (step === "capture" &&
       (cameraStarted || (!cameraStarted && !cameraError && !!goal && inWindow))) ||
-    step === "uploading";
+    step === "uploading" ||
+    step === "result";
   useEffect(() => {
     setHideHeader(hideHeaderForCamera);
     return () => setHideHeader(false);
@@ -253,7 +237,6 @@ function SubmitProofContent() {
       const base64 = compressed.split(",")[1];
       if (!base64) {
         setVerified(false);
-        setFeedback("Invalid image.");
         setStep("result");
         return;
       }
@@ -264,7 +247,6 @@ function SubmitProofContent() {
           imageToStore = storageUrl;
         } catch {
           setVerified(false);
-          setFeedback("Failed to upload image. Please try again.");
           setStep("result");
           return;
         }
@@ -287,9 +269,7 @@ function SubmitProofContent() {
           aiFeedback: msg,
           verifiedAt: passed ? new Date().toISOString() : undefined,
         });
-        setSubmissionId(sub.id);
         setVerified(passed);
-        setFeedback(msg);
         await updateSubmission(sub.id, {
           status: passed ? "verified" : "rejected",
           aiFeedback: msg,
@@ -305,7 +285,6 @@ function SubmitProofContent() {
         }
       } catch {
         setVerified(false);
-        setFeedback("Something went wrong. Please try again.");
       } finally {
         setStep("result");
       }
@@ -349,7 +328,6 @@ function SubmitProofContent() {
         await persistCompressedProof(compressed, clipSummary, clip.verified);
       } catch {
         setVerified(false);
-        setFeedback("Something went wrong. Please try again.");
         try {
           const sub = await addSubmission({
             goalId: goal.id,
@@ -358,9 +336,8 @@ function SubmitProofContent() {
             status: "rejected",
             aiFeedback: "Request failed.",
           });
-          setSubmissionId(sub.id);
         } catch {
-          setFeedback("Failed to save submission. Please try again.");
+          /* keep denied state */
         }
         setStep("result");
       }
@@ -394,13 +371,20 @@ function SubmitProofContent() {
           await persistCompressedProof(compressed, summaryLine, result.verified);
         } catch {
           setVerified(false);
-          setFeedback("Something went wrong. Please try again.");
           setStep("result");
         }
       })();
     },
     [goal, user, persistCompressedProof]
   );
+
+  const handleCloseApp = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.close();
+    window.setTimeout(() => {
+      router.push("/dashboard");
+    }, 200);
+  }, [router]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
@@ -471,6 +455,43 @@ function SubmitProofContent() {
 
   return (
     <>
+      {step === "result" && verified !== null && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-6 backdrop-blur-sm">
+          <div
+            className={`w-full max-w-sm rounded-2xl border-2 p-8 text-center shadow-xl ${
+              verified
+                ? "border-emerald-400/80 bg-emerald-50 dark:border-emerald-600 dark:bg-emerald-950/90"
+                : "border-red-400/80 bg-red-50 dark:border-red-700 dark:bg-red-950/90"
+            }`}
+          >
+            {verified ? (
+              <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <XCircle className="mx-auto h-14 w-14 text-red-600 dark:text-red-400" />
+            )}
+            <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
+              {verified ? "Approved" : "Denied"}
+            </h2>
+            <div className="mt-8 flex flex-col gap-3">
+              <Link
+                href="/dashboard"
+                className="rounded-xl bg-prove-600 py-3.5 text-center text-sm font-semibold text-white shadow-sm hover:bg-prove-700"
+              >
+                Go to dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={handleCloseApp}
+                className="rounded-xl border-2 border-slate-300 bg-white py-3.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                Close app
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step !== "result" && (
       <main className="mx-auto max-w-lg px-4 py-8">
         {!showFullScreenCamera && !showStartingCamera && (
           <Link
@@ -597,48 +618,8 @@ function SubmitProofContent() {
             </p>
           </div>
         )}
-
-        {step === "result" && (
-          <div className="mt-8 animate-fade-in">
-            <div
-              className={`rounded-2xl border p-8 ${
-                verified
-                  ? "border-prove-200 bg-prove-50 dark:border-prove-800 dark:bg-prove-950/30"
-                  : "border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-950/20"
-              }`}
-            >
-              {verified ? (
-                <CheckCircle2 className="h-16 w-16 text-prove-600 dark:text-prove-400 animate-success-pop" />
-              ) : (
-                <XCircle className="h-16 w-16 text-red-600 dark:text-red-400" />
-              )}
-              <h2 className="mt-4 font-display text-xl font-bold text-slate-900 dark:text-white">
-                {verified ? "Verified!" : "Not verified"}
-              </h2>
-              <p className="mt-2 text-slate-600 dark:text-slate-400">{feedback}</p>
-              {verified && showFirstProofCelebration && (
-                <p className="mt-3 text-sm font-medium text-prove-700 dark:text-prove-300">
-                  First proof — you&apos;re on a streak! 🌱
-                </p>
-              )}
-            </div>
-            <div className="mt-6 flex gap-3">
-              <Link
-                href="/dashboard"
-                className="flex-1 rounded-lg bg-prove-600 py-3 text-center font-medium text-white hover:bg-prove-700 btn-glass-primary"
-              >
-                Back to dashboard
-              </Link>
-              <Link
-                href="/buddy"
-                className="flex-1 rounded-lg border border-slate-300 py-3 text-center font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Goal Garden
-              </Link>
-            </div>
-          </div>
-        )}
       </main>
+      )}
     </>
   );
 }

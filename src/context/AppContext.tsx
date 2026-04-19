@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   normalizePlanId,
   type Goal,
@@ -180,6 +180,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [goalPlantSelections, setGoalPlantSelections] = useState<Record<string, GoalPlantVariant>>({});
   const [hasSelectedPlan, setHasSelectedPlan] = useState(false);
   const [isDevGuestMode, setIsDevGuestMode] = useState(false);
+  /** Avoid toggling dataLoaded off on every auth effect re-run — that unmounted the whole app and reset in-flow UIs (e.g. proof submit). */
+  const supabaseBootstrapUidRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
@@ -188,7 +190,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setGoalsState(snap.goals);
         setSubmissionsState(snap.submissions);
       }
-      setDataLoaded(false);
+      const uid = supabaseUser.id;
+      const alreadyBootstrapped = supabaseBootstrapUidRef.current === uid;
+      if (!alreadyBootstrapped) {
+        setDataLoaded(false);
+        supabaseBootstrapUidRef.current = uid;
+      }
       Promise.allSettled([
         fetch("/api/profile").then(async (r) => ({
           ok: r.ok,
@@ -323,6 +330,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Only treat as signed-out once the client exists and auth finished resolving — avoids
     // clearing goals during the brief window before getSession() completes.
     if (useSupabase && supabase && !authLoading && !supabaseUser) {
+      supabaseBootstrapUidRef.current = null;
       clearSbSessionSnapshot();
       setUserState(null);
       setGoalsState([]);
