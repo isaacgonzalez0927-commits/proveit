@@ -147,9 +147,22 @@ export type SbSessionSnapshotV1 = {
   submissions: ProofSubmission[];
 };
 
+function unionSortedDateStrings(a: string[] | undefined, b: string[] | undefined): string[] {
+  const set = new Set<string>();
+  for (const d of a ?? []) {
+    if (typeof d === "string" && d.length > 0) set.add(d);
+  }
+  for (const d of b ?? []) {
+    if (typeof d === "string" && d.length > 0) set.add(d);
+  }
+  return [...set].sort();
+}
+
 /**
  * After a cold start, /api/goals may briefly return [] or fail (cookies, WebView) while localStorage
  * still has the last good snapshot. Keep goals that exist only in the snapshot so they are not wiped.
+ * For goals present on both sides, union `completedDates` so a stale GET (e.g. before PATCH lands)
+ * does not drop today's completion that the client and snapshot already have.
  */
 export function mergeServerGoalsWithSessionSnapshot(
   serverGoals: Goal[],
@@ -157,11 +170,22 @@ export function mergeServerGoalsWithSessionSnapshot(
   userId: string
 ): Goal[] {
   if (!snap || snap.userId !== userId) return serverGoals;
-  const serverIds = new Set(serverGoals.map((g) => g.id));
+  const snapById = new Map(snap.goals.map((g) => [g.id, g]));
+  const mergedCore = serverGoals.map((serverG) => {
+    const local = snapById.get(serverG.id);
+    if (!local) return serverG;
+    const mergedDates = unionSortedDateStrings(serverG.completedDates, local.completedDates);
+    const prevLen = serverG.completedDates?.length ?? 0;
+    if (mergedDates.length === prevLen && mergedDates.every((d, i) => d === serverG.completedDates?.[i])) {
+      return serverG;
+    }
+    return { ...serverG, completedDates: mergedDates };
+  });
+  const serverIds = new Set(mergedCore.map((g) => g.id));
   const extras = snap.goals.filter(
     (g) => g && typeof g.id === "string" && g.id.length > 0 && !serverIds.has(g.id)
   );
-  return extras.length === 0 ? serverGoals : [...serverGoals, ...extras];
+  return extras.length === 0 ? mergedCore : [...mergedCore, ...extras];
 }
 
 export function mergeServerSubmissionsWithSessionSnapshot(

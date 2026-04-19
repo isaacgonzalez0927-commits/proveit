@@ -185,13 +185,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (useSupabase && supabase && supabaseUser) {
+      const uid = supabaseUser.id;
+      const alreadyBootstrapped = supabaseBootstrapUidRef.current === uid;
       const snap = readSbSessionSnapshot();
-      if (snap?.userId === supabaseUser.id) {
+      // Only hydrate from snapshot on first bootstrap for this user — re-applying on every effect
+      // run can overwrite fresher in-memory state before the fetch merge completes.
+      if (!alreadyBootstrapped && snap?.userId === uid) {
         setGoalsState(snap.goals);
         setSubmissionsState(snap.submissions);
       }
-      const uid = supabaseUser.id;
-      const alreadyBootstrapped = supabaseBootstrapUidRef.current === uid;
       if (!alreadyBootstrapped) {
         setDataLoaded(false);
         supabaseBootstrapUidRef.current = uid;

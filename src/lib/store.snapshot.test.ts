@@ -31,6 +31,21 @@ describe("mergeServerGoalsWithSessionSnapshot", () => {
     const merged = mergeServerGoalsWithSessionSnapshot([g1], snap([g1, g2]), uid);
     expect(merged.map((g) => g.id).sort()).toEqual(["1", "2"]);
   });
+
+  it("unions completedDates when server row is stale vs snapshot", () => {
+    const serverG = { id: "g1", completedDates: [] } as Goal;
+    const snapG = { id: "g1", completedDates: ["2026-04-15"] } as Goal;
+    const merged = mergeServerGoalsWithSessionSnapshot([serverG], snap([snapG]), uid);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].completedDates).toEqual(["2026-04-15"]);
+  });
+
+  it("keeps server-only dates and adds snapshot dates", () => {
+    const serverG = { id: "g1", completedDates: ["2026-04-10"] } as Goal;
+    const snapG = { id: "g1", completedDates: ["2026-04-11"] } as Goal;
+    const merged = mergeServerGoalsWithSessionSnapshot([serverG], snap([snapG]), uid);
+    expect(merged[0].completedDates).toEqual(["2026-04-10", "2026-04-11"]);
+  });
 });
 
 describe("mergeServerSubmissionsWithSessionSnapshot", () => {
