@@ -4,6 +4,7 @@
  */
 
 import {
+  CLIP_PHRASE_SOFT_THRESHOLD_RATIO,
   CLIP_SUBJECT_THRESHOLD_RATIO,
   DEFAULT_CLIP_MAIN_WORD_FLOOR,
   DEFAULT_CLIP_VERIFY_MARGIN,
@@ -250,6 +251,19 @@ const GOAL_EXPANSIONS: Record<string, string[]> = {
   pet: ["a pet animal"],
 };
 
+/**
+ * Imperative / phrasal goals like "go to bed" or "get to sleep" have no clear **object**
+ * for CLIP's "a photo of a {noun}" main-word bundle — "bed" reads as furniture, not the activity.
+ * For these we match on the full phrase + expansions only (no mainWordFloor / subject-noun gate).
+ */
+export function omitsMainWordLabelsForActivityPhrase(goal: string): boolean {
+  const t = goal.trim().toLowerCase();
+  if (!t) return false;
+  if (/^(go|going|get|getting|come|coming|head|heading)\s+to\s+\S/.test(t)) return true;
+  if (/^(wake|waking)\s+up\b/.test(t)) return true;
+  return false;
+}
+
 /** Last meaningful keyword — used to bias CLIP toward the primary subject (e.g. "dog" in "walk the dog"). */
 export function extractMainWord(goal: string): string | null {
   const terms = extractKeyTerms(goal);
@@ -279,16 +293,18 @@ export function makeLabels(goalText: string): {
   const g = goalText.trim();
   const terms = extractKeyTerms(g);
   const expansions = getExpansions(g, terms);
-  const mainWord = extractMainWord(g);
-  const mainWordLabels = mainWord
-    ? [
-        `a photo of a ${mainWord}`,
-        `a clear close-up of a ${mainWord}`,
-        `${mainWord} clearly visible in the photo`,
-        `someone using a ${mainWord}`,
-        `${mainWord} as the main subject of the photo`,
-      ]
-    : [];
+  const phraseOnly = omitsMainWordLabelsForActivityPhrase(g);
+  const mainWord = phraseOnly ? null : extractMainWord(g);
+  const mainWordLabels =
+    phraseOnly || !mainWord
+      ? []
+      : [
+          `a photo of a ${mainWord}`,
+          `a clear close-up of a ${mainWord}`,
+          `${mainWord} clearly visible in the photo`,
+          `someone using a ${mainWord}`,
+          `${mainWord} as the main subject of the photo`,
+        ];
 
   const positive = [
     `a photo of ${g}`,
@@ -317,6 +333,8 @@ export type EvaluateClipLabelScoreOptions = {
   mainWordFloor?: number;
   /** Override `CLIP_SUBJECT_THRESHOLD_RATIO` for the subject-based secondary pass. */
   subjectThresholdRatio?: number;
+  /** Override `CLIP_PHRASE_SOFT_THRESHOLD_RATIO` when `mainWordLabels` is empty. */
+  phraseSoftThresholdRatio?: number;
 };
 
 /**
@@ -381,10 +399,22 @@ export function evaluateClipLabelScores(
     }
   }
 
-  const confidence = subjectSecondary
-    ? mwMax
-    : topIsPositive
-      ? top.score
-      : maxPositiveScore;
+  /** Phrase-style goals omit `mainWordLabels`; without this, borderline verb/activity titles over-deny. */
+  let phraseSoft = false;
+  if (!verified && (!mwl || mwl.length === 0) && topIsPositive) {
+    const pr = opts?.phraseSoftThresholdRatio ?? CLIP_PHRASE_SOFT_THRESHOLD_RATIO;
+    if (top.score >= threshold * pr && top.score >= bestNegativeScore + margin * 0.75) {
+      verified = true;
+      phraseSoft = true;
+    }
+  }
+
+  const confidence = phraseSoft
+    ? top.score
+    : subjectSecondary
+      ? mwMax
+      : topIsPositive
+        ? top.score
+        : maxPositiveScore;
   return { verified, confidence, topLabel: top.label, sorted };
 }

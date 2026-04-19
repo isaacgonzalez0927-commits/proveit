@@ -388,23 +388,6 @@ function SubmitProofContent() {
     handleStartCamera,
   ]);
 
-  // If camera is "opening" for too long, show retry option
-  const isStartingCamera =
-    step === "capture" &&
-    !cameraStarted &&
-    !cameraError &&
-    !!goal &&
-    inWindow &&
-    !deferCameraAutostart &&
-    !resumeAfterProofGate;
-  useEffect(() => {
-    if (!isStartingCamera) return;
-    const t = setTimeout(() => {
-      setCameraError("Camera didn’t open. Tap to try again.");
-    }, 22000);
-    return () => clearTimeout(t);
-  }, [isStartingCamera]);
-
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
       const finish = (ok: boolean, summary: string | null) => {

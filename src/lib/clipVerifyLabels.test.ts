@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { evaluateClipLabelScores } from "./clipVerifyLabels";
+import {
+  evaluateClipLabelScores,
+  makeLabels,
+  omitsMainWordLabelsForActivityPhrase,
+} from "./clipVerifyLabels";
 
 const T = 0.28;
 const M = 0.02;
@@ -72,6 +76,21 @@ describe("evaluateClipLabelScores", () => {
     expect(verified).toBe(false);
   });
 
+  it("accepts via phrase-soft pass when mainWordLabels empty and top positive is slightly below threshold", () => {
+    const positiveLabels = ["a photo of go to bed", "a person sleeping"];
+    const scores = [
+      { label: "a photo of go to bed", score: 0.24 },
+      { label: "a random irrelevant picture", score: 0.16 },
+      { label: "a blank or unrelated photo", score: 0.14 },
+    ];
+    const { verified, confidence } = evaluateClipLabelScores(scores, positiveLabels, 0.28, {
+      margin: 0.02,
+      mainWordLabels: [],
+    });
+    expect(verified).toBe(true);
+    expect(confidence).toBeCloseTo(0.24, 5);
+  });
+
   it("accepts via subject secondary when laptop labels beat negatives but top softmax is below threshold", () => {
     const mainWordLabels = [
       "a photo of a laptop",
@@ -97,5 +116,43 @@ describe("evaluateClipLabelScores", () => {
     });
     expect(verified).toBe(true);
     expect(confidence).toBeCloseTo(0.17, 5);
+  });
+});
+
+describe("omitsMainWordLabelsForActivityPhrase", () => {
+  it("is true for go/get/come/head … to … patterns", () => {
+    expect(omitsMainWordLabelsForActivityPhrase("go to bed")).toBe(true);
+    expect(omitsMainWordLabelsForActivityPhrase("Go to bed early")).toBe(true);
+    expect(omitsMainWordLabelsForActivityPhrase("get to sleep")).toBe(true);
+    expect(omitsMainWordLabelsForActivityPhrase("coming to terms")).toBe(true);
+    expect(omitsMainWordLabelsForActivityPhrase("heading to work")).toBe(true);
+  });
+
+  it("is true for wake up", () => {
+    expect(omitsMainWordLabelsForActivityPhrase("wake up early")).toBe(true);
+    expect(omitsMainWordLabelsForActivityPhrase("Waking up")).toBe(true);
+  });
+
+  it("is false for noun-led goals", () => {
+    expect(omitsMainWordLabelsForActivityPhrase("walk the dog")).toBe(false);
+    expect(omitsMainWordLabelsForActivityPhrase("use laptop")).toBe(false);
+    expect(omitsMainWordLabelsForActivityPhrase("gym 3x week")).toBe(false);
+  });
+});
+
+describe("makeLabels phrase-only goals", () => {
+  it("omits mainWord and mainWordLabels for go to bed so CLIP matches the activity phrase", () => {
+    const { mainWord, mainWordLabels } = makeLabels("go to bed");
+    expect(mainWord).toBeNull();
+    expect(mainWordLabels).toEqual([]);
+    expect(
+      makeLabels("go to bed").positive.some((p) => p.includes("go to bed") || p.includes("bed"))
+    ).toBe(true);
+  });
+
+  it("keeps mainWord for laptop goals", () => {
+    const { mainWord, mainWordLabels } = makeLabels("use laptop");
+    expect(mainWord).toBe("laptop");
+    expect(mainWordLabels.length).toBeGreaterThan(0);
   });
 });

@@ -27,13 +27,10 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   type CSSProperties,
 } from 'react';
-import {
-  evaluateClipLabelScores,
-  extractMainWord,
-  makeLabels,
-} from '@/lib/clipVerifyLabels';
+import { evaluateClipLabelScores, makeLabels } from '@/lib/clipVerifyLabels';
 import { compressImage } from '@/lib/imageUtils';
 import { getSharedClipPipeline, type ClipLoadProgress } from '@/lib/localClipVerify';
 import {
@@ -238,53 +235,32 @@ export default function AIVerificationWidget({
     document.head.appendChild(el);
   }, []);
 
-  // ── Load CLIP (shared singleton with camera `verifyWithLocalClip`; defer so getUserMedia isn’t starved) ──
+  // ── Load CLIP (shared singleton with camera `verifyWithLocalClip`) ──
   useEffect(() => {
     let cancelled = false;
-    let idleHandle: number | ReturnType<typeof setTimeout> | undefined;
-
-    const runLoad = () => {
-      void (async () => {
-        try {
-          const onProgress = (p: ClipLoadProgress) => {
-            if (cancelled) return;
-            if (p.status === 'progress' && p.progress != null) {
-              setLoadPct(Math.min(99, p.progress));
-              setLoadFile(p.file ?? '');
-            }
-          };
-          const runner = await getSharedClipPipeline(modelId, onProgress);
+    void (async () => {
+      try {
+        const onProgress = (p: ClipLoadProgress) => {
           if (cancelled) return;
-          pipelineRef.current = runner;
-          setLoadPct(100);
-          setTimeout(() => {
-            if (!cancelled) setModelStatus('ready');
-          }, 80);
-        } catch (err) {
-          if (!cancelled) {
-            setModelStatus('error');
-            setModelErr(String(err));
+          if (p.status === 'progress' && p.progress != null) {
+            setLoadPct(Math.min(99, p.progress));
+            setLoadFile(p.file ?? '');
           }
+        };
+        const runner = await getSharedClipPipeline(modelId, onProgress);
+        if (cancelled) return;
+        pipelineRef.current = runner;
+        setLoadPct(100);
+        setModelStatus('ready');
+      } catch (err) {
+        if (!cancelled) {
+          setModelStatus('error');
+          setModelErr(String(err));
         }
-      })();
-    };
-
-    const ric = typeof window !== 'undefined' ? window.requestIdleCallback : undefined;
-    const cic = typeof window !== 'undefined' ? window.cancelIdleCallback : undefined;
-    if (ric) {
-      idleHandle = ric(() => {
-        if (!cancelled) runLoad();
-      }, { timeout: 4000 });
-    } else {
-      idleHandle = setTimeout(() => {
-        if (!cancelled) runLoad();
-      }, 600);
-    }
-
+      }
+    })();
     return () => {
       cancelled = true;
-      if (ric && cic && idleHandle !== undefined) cic(idleHandle as number);
-      else if (idleHandle !== undefined) clearTimeout(idleHandle as ReturnType<typeof setTimeout>);
     };
   }, [modelId]);
 
@@ -365,7 +341,10 @@ export default function AIVerificationWidget({
   };
 
   const trimmedGoal = goalText.trim();
-  const mainWord = trimmedGoal ? extractMainWord(trimmedGoal) : null;
+  const mainWord = useMemo(() => {
+    if (!trimmedGoal) return null;
+    return makeLabels(trimmedGoal).mainWord;
+  }, [trimmedGoal]);
   const canVerify = !!trimmedGoal && !!imageData && active;
 
   // ── Render ───────────────────────────────────────────────────────────────

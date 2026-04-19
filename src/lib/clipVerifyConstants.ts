@@ -22,6 +22,13 @@ export const DEFAULT_CLIP_MAIN_WORD_FLOOR = 0.1;
 export const CLIP_SUBJECT_THRESHOLD_RATIO = 0.58;
 
 /**
+ * When there are no main-word labels (phrase-style goals like "go to bed"), the old
+ * `subjectSecondary` path does not run. This ratio scales `threshold` for a **soft** pass
+ * when the softmax argmax is still a positive label and clearly beats negatives.
+ */
+export const CLIP_PHRASE_SOFT_THRESHOLD_RATIO = 0.82;
+
+/**
  * Slightly relaxed CLIP gates for the optional `AIVerificationWidget` only.
  * Camera / `localClipVerify` submit path keeps `DEFAULT_*` for consistency with stored proofs from the shutter.
  */
