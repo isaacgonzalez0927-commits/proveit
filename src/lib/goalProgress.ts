@@ -48,7 +48,15 @@ function getDailyCalendarStreak(
   return streak;
 }
 
-/** Consecutive calendar weeks (Sunday-start) where verified count >= times-per-week target. */
+/**
+ * Streak for weekly goals.
+ *
+ * - Current (in-progress) week counts as +1 as soon as there is ANY verified
+ *   submission, so the user sees their streak react immediately when they
+ *   prove a goal — they don't have to wait for the full quota.
+ * - Past weeks count toward the streak only if the full times-per-week
+ *   quota was met (the original behavior).
+ */
 function getWeeklyQuotaStreak(
   goal: GoalProgressGoal,
   getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
@@ -68,7 +76,7 @@ function getWeeklyQuotaStreak(
 
   const countForWeek = (ref: Date) => countVerifiedInCalendarWeek(subsAll, ref);
 
-  if (countForWeek(weekCursor) >= tw) streak += 1;
+  if (countForWeek(weekCursor) > 0) streak += 1;
   weekCursor = subWeeks(weekCursor, 1);
 
   while (true) {
