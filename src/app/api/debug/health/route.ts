@@ -163,11 +163,92 @@ export async function GET() {
     };
   }
 
+  // Server-local "today" (UTC). The client uses local-tz `yyyy-MM-dd`, but
+  // for diagnostic purposes we just want to see the actual stored values.
+  const todayUtc = new Date().toISOString().slice(0, 10);
+
+  let recentSubmissions:
+    | Array<{
+        id: string;
+        goal_id: string;
+        date: string | null;
+        status: string | null;
+        verified_at: string | null;
+        created_at: string | null;
+        ai_feedback_present: boolean;
+        matchesTodayUtc: boolean;
+      }>
+    | null = null;
+  if (userGoalIds.length > 0) {
+    try {
+      const { data } = await supabase
+        .from("submissions")
+        .select("id, goal_id, date, status, verified_at, created_at, ai_feedback")
+        .in("goal_id", userGoalIds)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      recentSubmissions = (data ?? []).map((row) => {
+        const r = row as Record<string, unknown>;
+        const rawDate = typeof r.date === "string" ? r.date : null;
+        return {
+          id: String(r.id ?? ""),
+          goal_id: String(r.goal_id ?? ""),
+          date: rawDate,
+          status: typeof r.status === "string" ? r.status : null,
+          verified_at: typeof r.verified_at === "string" ? r.verified_at : null,
+          created_at: typeof r.created_at === "string" ? r.created_at : null,
+          ai_feedback_present: typeof r.ai_feedback === "string" && r.ai_feedback.length > 0,
+          matchesTodayUtc: rawDate === todayUtc,
+        };
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  let goalsCompletedDates:
+    | Array<{
+        id: string;
+        title: string | null;
+        frequency: string | null;
+        completed_dates: string[] | null;
+        completed_dates_count: number;
+      }>
+    | null = null;
+  if (authStatus.userId) {
+    try {
+      const { data } = await supabase
+        .from("goals")
+        .select("id, title, frequency, completed_dates")
+        .eq("user_id", authStatus.userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      goalsCompletedDates = (data ?? []).map((row) => {
+        const r = row as Record<string, unknown>;
+        const cd = Array.isArray(r.completed_dates)
+          ? (r.completed_dates as unknown[]).filter((v): v is string => typeof v === "string")
+          : null;
+        return {
+          id: String(r.id ?? ""),
+          title: typeof r.title === "string" ? r.title : null,
+          frequency: typeof r.frequency === "string" ? r.frequency : null,
+          completed_dates: cd,
+          completed_dates_count: cd?.length ?? 0,
+        };
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
   return NextResponse.json({
     env,
     supabase: { configured: true },
     auth: authStatus,
+    serverTodayUtc: todayUtc,
     tables,
     submissionsSelectProbe,
+    recentSubmissions,
+    goalsCompletedDates,
   });
 }
