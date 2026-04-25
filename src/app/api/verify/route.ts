@@ -82,27 +82,35 @@ async function verifyWithOpenAI(
   proofRequirement: string
 ) {
   const hasProof = Boolean(proofRequirement.trim());
+  const sharedPersonRules = `STEP 1 — Decide silently whether this goal requires a visible person in the photo:
+- REQUIRES a person: action goals where the act itself is the proof (e.g. "go on a walk", "go to the gym", "run", "do push-ups", "meditate", "shower"). For these, a photo of just an object is NOT enough.
+- DOES NOT require a person: object/state goals where the photo can prove the activity without showing the user (e.g. "read a book" → photo of an open book; "make the bed" → photo of a made bed; "do the dishes" → photo of clean dishes; "drink water" → photo of a water bottle being used; "journal" → photo of a journal page).
+- Use common sense for ambiguous cases. If a person is clearly required and there is none, mark not verified.
+
+STEP 2 — Judge the photo:
+- If the goal requires a person, check that a real person (or at least their hands/body) is visible doing the activity, not a stock photo or meme.
+- If the goal does NOT require a person, just check that the depicted object/scene clearly matches the goal.
+- The scene must match the stated goal, not just share keywords. (E.g. a photo of a treadmill at a store is NOT proof of "go to the gym".)
+- Memes, screenshots, drawings, and reused stock photos do NOT count as proof.`;
+
   const prompt = hasProof
-    ? `You are a strict but fair judge.
+    ? `You are a strict but fair judge for a goal-tracking app.
 
 PRIMARY TASK: The user must submit a photo that satisfies this exact proof instruction:
 "${proofRequirement.trim()}"
 
-Use the goal title only as background (do not pass a photo that ignores the instruction just because it loosely fits the title):
-Goal title: "${goalTitle}"${goalDescription ? ` — ${goalDescription}` : ""}
+Goal title (background only, do not pass a photo that ignores the instruction just because it loosely matches the title):
+"${goalTitle}"${goalDescription ? ` — ${goalDescription}` : ""}
 
-Look at the photo. Does it clearly satisfy the PROOF INSTRUCTION above? Consider:
-- Is there a real person in the frame when the instruction implies one?
-- Does the scene match what the instruction asks for, not just keywords from the title?
+${sharedPersonRules}
 
 Respond with JSON only, no markdown:
 { "verified": true or false, "feedback": "One short sentence explaining why." }`
-    : `You are a strict but fair judge. The user claims they did this goal: "${goalTitle}"${goalDescription ? ` (Details: ${goalDescription})` : ""}.
+    : `You are a strict but fair judge for a goal-tracking app.
 
-Look at the photo they submitted. Does the image clearly show the person doing or having completed this specific activity? Consider:
-- Is there a real person in the frame (not a stock photo or meme)?
-- Does the scene/activity match the stated goal?
-- Could this be the same day / recent (e.g. gym, run, meal, reading)?
+The user claims they did this goal: "${goalTitle}"${goalDescription ? ` (Details: ${goalDescription})` : ""}.
+
+${sharedPersonRules}
 
 Respond with JSON only, no markdown:
 { "verified": true or false, "feedback": "One short sentence explaining why." }`;
