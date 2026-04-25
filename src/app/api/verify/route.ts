@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Optional server-side verification (custom URL / OpenAI / demo).
- * The in-app proof flow (`/goals/submit`) uses **local browser CLIP** via Transformers.js
- * (`verifyWithLocalClip`); it does not call this route. Keep this for integrations or experiments.
+ * Server-side proof verification powered by OpenAI Vision.
+ * The in-app proof flow (`/goals/submit`) and the optional AI widget POST here
+ * with `{ imageBase64, goalTitle, goalDescription?, proofRequirement? }`.
+ * Response shape: `{ verified: boolean, feedback: string }`.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { imageBase64, goalTitle, goalDescription, proofRequirement } = body as {
       imageBase64?: string;
-      goalTitle: string;
+      goalTitle?: string;
       goalDescription?: string;
       proofRequirement?: string;
     };
 
-    if (!goalTitle) {
+    if (!goalTitle || !goalTitle.trim()) {
       return NextResponse.json(
-        { error: "goalTitle is required" },
+        { verified: false, feedback: "Missing goal." },
+        { status: 400 }
+      );
+    }
+    if (!imageBase64) {
+      return NextResponse.json(
+        { verified: false, feedback: "Missing photo. Try retaking it." },
         { status: 400 }
       );
     }
@@ -25,8 +32,8 @@ export async function POST(request: NextRequest) {
     const customUrl = process.env.CUSTOM_AI_VERIFY_URL;
     const openaiKey = process.env.OPENAI_API_KEY;
 
-    // 1. Custom AI (your friend's API)
-    if (customUrl && imageBase64) {
+    // 1. Optional custom AI relay (kept for integrations).
+    if (customUrl) {
       const result = await verifyWithCustomAI(
         customUrl,
         imageBase64,
@@ -37,8 +44,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // 2. OpenAI GPT-4 Vision
-    if (openaiKey && imageBase64) {
+    // 2. Primary path: OpenAI GPT-4o-mini Vision.
+    if (openaiKey) {
       const result = await verifyWithOpenAI(
         openaiKey,
         imageBase64,
@@ -49,9 +56,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // 3. Demo mode: simulate verification
-    const simulated = simulateVerification(goalTitle, proofRequirement);
-    return NextResponse.json(simulated);
+    // 3. No key configured — fail closed with a clear message instead of fake verdicts.
+    return NextResponse.json(
+      {
+        verified: false,
+        feedback:
+          "AI verification is not configured. Set OPENAI_API_KEY in the server environment.",
+      },
+      { status: 503 }
+    );
   } catch (e) {
     console.error("Verify API error:", e);
     return NextResponse.json(
@@ -101,9 +114,15 @@ Respond with JSON only, no markdown:
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       max_tokens: 200,
+      response_format: { type: "json_object" },
       messages: [
+        {
+          role: "system",
+          content:
+            "You are a strict but fair photo judge for a goal-tracking app. Reply with JSON only.",
+        },
         {
           role: "user",
           content: [
@@ -115,6 +134,7 @@ Respond with JSON only, no markdown:
               type: "image_url",
               image_url: {
                 url: `data:image/jpeg;base64,${imageBase64}`,
+                detail: "low",
               },
             },
           ],
@@ -185,19 +205,3 @@ async function verifyWithCustomAI(
   };
 }
 
-function simulateVerification(goalTitle: string, _proofRequirement?: string) {
-  const pass = Math.random() > 0.25; // 75% pass in demo
-  const feedbacksPass = [
-    "Photo clearly shows you doing the activity. Goal verified!",
-    "Scene matches your goal. Well done!",
-    "Evidence looks good. Counts as done.",
-  ];
-  const feedbacksFail = [
-    "The photo doesn't clearly show the activity. Try again with a clearer shot.",
-    "We couldn't confirm this matches your goal. Please submit another photo.",
-    "Image is unclear or doesn't match the goal. Give it another shot!",
-  ];
-  const list = pass ? feedbacksPass : feedbacksFail;
-  const feedback = list[Math.floor(Math.random() * list.length)];
-  return { verified: pass, feedback };
-}

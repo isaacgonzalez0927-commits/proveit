@@ -19,17 +19,53 @@ import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
-import {
-  DEFAULT_CLIP_VERIFY_THRESHOLD,
-  WIDGET_CLIP_VERIFY_THRESHOLD,
-} from "@/lib/clipVerifyConstants";
-import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import type { VerificationResult } from "@/components/AIVerificationWidget";
+
+async function verifyWithOpenAI(args: {
+  imageDataUrl: string;
+  goalTitle: string;
+  goalDescription?: string;
+  proofRequirement?: string;
+}): Promise<{ verified: boolean; feedback: string }> {
+  const base64 = args.imageDataUrl.includes(",")
+    ? args.imageDataUrl.split(",")[1]
+    : args.imageDataUrl;
+  const res = await fetch("/api/verify", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      imageBase64: base64,
+      goalTitle: args.goalTitle,
+      goalDescription: args.goalDescription ?? "",
+      proofRequirement: args.proofRequirement ?? "",
+    }),
+  });
+  let data: { verified?: boolean; feedback?: string } = {};
+  try {
+    data = (await res.json()) as { verified?: boolean; feedback?: string };
+  } catch {
+    /* keep defaults */
+  }
+  if (!res.ok && !data.feedback) {
+    return {
+      verified: false,
+      feedback:
+        res.status === 503
+          ? "AI verification isn't configured yet. Add an OpenAI key on the server."
+          : "Verification service is unavailable. Try again in a moment.",
+    };
+  }
+  return {
+    verified: Boolean(data.verified),
+    feedback: data.feedback ?? (data.verified ? "Verified." : "Not verified."),
+  };
+}
 
 const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
   ssr: false,
   loading: () => (
-    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading local AI verifier…</p>
+    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading AI verifier…</p>
   ),
 });
 
@@ -491,20 +527,13 @@ function SubmitProofContent() {
 
       try {
         const compressed = await compressImage(sourceDataUrl, 1200, 0.75);
-        const verifyGoalText = verificationTextFromGoal(goal);
-        const { verifyWithLocalClip, formatLocalClipUserFeedback } = await import(
-          "@/lib/localClipVerify"
-        );
-        const clip = await verifyWithLocalClip({
+        const result = await verifyWithOpenAI({
           imageDataUrl: compressed,
-          goalText: verifyGoalText,
-          threshold: DEFAULT_CLIP_VERIFY_THRESHOLD,
+          goalTitle: goal.title,
+          goalDescription: goal.description,
+          proofRequirement: goal.proofRequirement,
         });
-        const { summaryLine: clipSummary } = formatLocalClipUserFeedback(
-          clip,
-          DEFAULT_CLIP_VERIFY_THRESHOLD
-        );
-        await persistCompressedProof(compressed, clipSummary, clip.verified);
+        await persistCompressedProof(compressed, result.feedback, result.verified);
       } catch {
         try {
           await addSubmission({
@@ -557,12 +586,12 @@ function SubmitProofContent() {
         }
         try {
           const compressed = await compressImage(proofUrl, 1200, 0.75);
-          const { formatLocalClipUserFeedback } = await import("@/lib/localClipVerify");
-          const { summaryLine } = formatLocalClipUserFeedback(
-            { verified: result.verified, confidence: result.confidence },
-            WIDGET_CLIP_VERIFY_THRESHOLD
-          );
-          await persistCompressedProof(compressed, summaryLine, result.verified);
+          const summary =
+            result.feedback ??
+            (result.verified
+              ? `Verified for "${goal.title}".`
+              : `Not verified for "${goal.title}". Try another photo that clearly shows it.`);
+          await persistCompressedProof(compressed, summary, result.verified);
         } catch {
           setVerified(false);
           setResultSummary("Couldn’t process that photo. Try again.");
@@ -753,19 +782,21 @@ function SubmitProofContent() {
               Prove it: {goal.title}
             </h1>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Use the camera below for a quick check-in, or try the optional local AI box first — type your goal,
-              upload a photo, and verify (same CLIP model as the camera). One check-in per calendar day (Sun–Sat week
+              Use the camera below for a quick check-in, or try the optional AI box — type your goal,
+              upload a photo, and verify with our AI. One check-in per calendar day (Sun–Sat week
               for weekly targets). The X on the camera exits to your dashboard.
             </p>
             <div className="mt-6 rounded-2xl p-4 glass-card">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Local AI (optional)</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI verifier (optional)</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 When verification finishes here, your proof is saved like the camera flow.
               </p>
               <div className="mt-3" ref={aiWidgetMountRef}>
                 <AIVerificationWidget
                   key={`${goal.id}-${aiWidgetSession}`}
-                  threshold={WIDGET_CLIP_VERIFY_THRESHOLD}
+                  goalTitle={goal.title}
+                  goalDescription={goal.description}
+                  proofRequirement={goal.proofRequirement}
                   onResult={(r) => {
                     void handleAiWidgetResult(r);
                   }}
@@ -868,10 +899,10 @@ function SubmitProofContent() {
           <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black px-6">
             <Loader2 className="h-12 w-12 animate-spin text-white" />
             <p className="mt-4 text-center text-sm font-medium text-white">
-              Verifying on your device…
+              Verifying with AI…
             </p>
             <p className="mt-2 max-w-sm text-center text-xs text-white/70">
-              Running local CLIP on your photo (first visit may download the model).
+              Asking GPT-4o vision to look at your photo.
             </p>
           </div>
         )}
