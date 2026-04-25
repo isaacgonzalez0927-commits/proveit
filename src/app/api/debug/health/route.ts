@@ -62,14 +62,37 @@ export async function GET() {
   const tables: TableProbe[] = [];
   const tablesToProbe = ["profiles", "goals", "submissions"] as const;
 
+  // The submissions table links to a user only via `goal_id` → goals.user_id, so
+  // we look up the user's goal ids first and filter on those.
+  let userGoalIds: string[] = [];
+  if (authStatus.userId) {
+    try {
+      const { data } = await supabase
+        .from("goals")
+        .select("id")
+        .eq("user_id", authStatus.userId);
+      userGoalIds = (data ?? []).map((r) => (r as { id?: string }).id ?? "").filter(Boolean);
+    } catch {
+      /* ignore — diagnostic best-effort */
+    }
+  }
+
   for (const table of tablesToProbe) {
     try {
       let q = supabase.from(table).select("id", { count: "exact", head: true });
       if (authStatus.userId) {
         if (table === "profiles") {
           q = q.eq("id", authStatus.userId);
-        } else {
+        } else if (table === "goals") {
           q = q.eq("user_id", authStatus.userId);
+        } else if (table === "submissions") {
+          if (userGoalIds.length > 0) {
+            q = q.in("goal_id", userGoalIds);
+          } else {
+            // no goals → no submissions; report 0 without hitting a column-not-found path.
+            tables.push({ table, ok: true, count: 0, error: null });
+            continue;
+          }
         }
       }
       const { count, error } = await q;
@@ -102,12 +125,12 @@ export async function GET() {
     columnsSeen: string[];
     error: string | null;
   } | null = null;
-  if (authStatus.userId) {
+  if (userGoalIds.length > 0) {
     try {
       const { data, error } = await supabase
         .from("submissions")
         .select("*")
-        .eq("user_id", authStatus.userId)
+        .in("goal_id", userGoalIds)
         .limit(1);
       const firstRow = (data && data[0]) as Record<string, unknown> | undefined;
       submissionsSelectProbe = {
@@ -131,6 +154,13 @@ export async function GET() {
         error: e instanceof Error ? e.message : String(e),
       };
     }
+  } else {
+    submissionsSelectProbe = {
+      ok: true,
+      rowCount: 0,
+      columnsSeen: [],
+      error: "no goals to query submissions against",
+    };
   }
 
   return NextResponse.json({
