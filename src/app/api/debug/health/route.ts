@@ -77,7 +77,14 @@ export async function GET() {
         table,
         ok: !error,
         count: typeof count === "number" ? count : null,
-        error: error?.message ?? null,
+        error: error
+          ? JSON.stringify({
+              message: error.message ?? null,
+              code: (error as { code?: unknown }).code ?? null,
+              details: (error as { details?: unknown }).details ?? null,
+              hint: (error as { hint?: unknown }).hint ?? null,
+            })
+          : null,
       });
     } catch (e) {
       tables.push({
@@ -89,10 +96,48 @@ export async function GET() {
     }
   }
 
+  let submissionsSelectProbe: {
+    ok: boolean;
+    rowCount: number | null;
+    columnsSeen: string[];
+    error: string | null;
+  } | null = null;
+  if (authStatus.userId) {
+    try {
+      const { data, error } = await supabase
+        .from("submissions")
+        .select("*")
+        .eq("user_id", authStatus.userId)
+        .limit(1);
+      const firstRow = (data && data[0]) as Record<string, unknown> | undefined;
+      submissionsSelectProbe = {
+        ok: !error,
+        rowCount: data?.length ?? 0,
+        columnsSeen: firstRow ? Object.keys(firstRow) : [],
+        error: error
+          ? JSON.stringify({
+              message: error.message ?? null,
+              code: (error as { code?: unknown }).code ?? null,
+              details: (error as { details?: unknown }).details ?? null,
+              hint: (error as { hint?: unknown }).hint ?? null,
+            })
+          : null,
+      };
+    } catch (e) {
+      submissionsSelectProbe = {
+        ok: false,
+        rowCount: null,
+        columnsSeen: [],
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  }
+
   return NextResponse.json({
     env,
     supabase: { configured: true },
     auth: authStatus,
     tables,
+    submissionsSelectProbe,
   });
 }
