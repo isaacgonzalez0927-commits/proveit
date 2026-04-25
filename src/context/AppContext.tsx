@@ -381,21 +381,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
         setGoalPlantSelections(getStoredGoalPlantSelections());
-        const devGuestMode = typeof window !== "undefined" && window.localStorage.getItem("proveit_dev_guest_mode");
-        if (devGuestMode) {
-          setGoalsState([]);
-          setSubmissionsState([]);
-          setHasSelectedPlan(false);
-          setIsDevGuestMode(true);
-          setGoalPlantSelections({});
-        } else {
-          setIsDevGuestMode(false);
-          const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
-          const selectedByAccount = profileUser.plan !== "free";
-          const likelyExistingFreeUser =
-            mappedServerGoals.length > 0 || mappedSubs.length > 0;
-          setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
+        // A signed-in Supabase user is NOT a guest. Clear any stale guest flag
+        // left over from previous "Try as guest" sessions; otherwise the next
+        // bootstrap would wipe real goals/submissions to [].
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("proveit_dev_guest_mode");
         }
+        setIsDevGuestMode(false);
+        const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
+        const selectedByAccount = profileUser.plan !== "free";
+        const likelyExistingFreeUser =
+          mappedServerGoals.length > 0 || mappedSubs.length > 0;
+        setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
       }).finally(() => setDataLoaded(true));
       setHydrated(true);
       return;
