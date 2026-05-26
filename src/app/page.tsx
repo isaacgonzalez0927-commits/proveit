@@ -523,11 +523,12 @@ function LandingContent() {
                     Hit your proof goal to keep your plant healthy. Miss too much and it wilts.
                   </p>
                 </div>
-                <div className="flex flex-1 items-center justify-center py-4">
+                <div className="relative flex flex-1 items-center justify-center py-4">
+                  <div className="absolute h-[min(46vh,18rem)] w-[min(72vw,18rem)] rounded-full bg-prove-400/10 blur-3xl" />
                   <img
-                    src="/onboarding/plant-growth.png"
+                    src="/onboarding/plant-growth-transparent.png"
                     alt="Plant growing from a hand"
-                    className="h-[min(48vh,20rem)] w-[min(78vw,20rem)] object-contain mix-blend-screen drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
+                    className="relative h-[min(48vh,20rem)] w-[min(78vw,20rem)] object-contain drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
                   />
                 </div>
                 <button
