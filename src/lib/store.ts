@@ -32,6 +32,12 @@ export interface StoredUser {
   premiumTrialUsed?: boolean;
   /** Plan to restore when a Premium trial expires. */
   premiumTrialRevertPlan?: "free" | "pro";
+  graceDayBalance?: number;
+  graceDayCycleAnchor?: string | null;
+  strictAiVerification?: boolean;
+  trialExpiredNeedsReview?: boolean;
+  aiVerificationCycleKey?: string | null;
+  aiVerificationCount?: number;
 }
 
 function getStoredUser(): StoredUser | null {
@@ -52,6 +58,16 @@ function getStoredUser(): StoredUser | null {
           : parsed.premiumTrialRevertPlan === "free"
             ? "free"
             : undefined,
+      graceDayBalance:
+        typeof parsed.graceDayBalance === "number" ? parsed.graceDayBalance : undefined,
+      graceDayCycleAnchor:
+        typeof parsed.graceDayCycleAnchor === "string" ? parsed.graceDayCycleAnchor : undefined,
+      strictAiVerification: parsed.strictAiVerification === true,
+      trialExpiredNeedsReview: parsed.trialExpiredNeedsReview === true,
+      aiVerificationCycleKey:
+        typeof parsed.aiVerificationCycleKey === "string" ? parsed.aiVerificationCycleKey : undefined,
+      aiVerificationCount:
+        typeof parsed.aiVerificationCount === "number" ? parsed.aiVerificationCount : undefined,
     };
   } catch {
     return null;

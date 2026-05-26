@@ -62,10 +62,14 @@ async function verifyWithOpenAI(args: {
   };
 }
 
+function verificationImageMaxSide(plan: string | undefined): number {
+  return plan === "pro" || plan === "premium" ? 1200 : 512;
+}
+
 const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWidget"), {
   ssr: false,
   loading: () => (
-    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading AI verifier…</p>
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Loading fresh-photo verifier...</p>
   ),
 });
 
@@ -526,7 +530,11 @@ function SubmitProofContent() {
       const imageToStore = sourceDataUrl;
 
       try {
-        const compressed = await compressImage(sourceDataUrl, 1200, 0.75);
+        const compressed = await compressImage(
+          sourceDataUrl,
+          verificationImageMaxSide(user.plan),
+          user.plan === "pro" || user.plan === "premium" ? 0.75 : 0.65
+        );
         const result = await verifyWithOpenAI({
           imageDataUrl: compressed,
           goalTitle: goal.title,
@@ -585,7 +593,11 @@ function SubmitProofContent() {
           setDeferCameraAutostart(true);
         }
         try {
-          const compressed = await compressImage(proofUrl, 1200, 0.75);
+          const compressed = await compressImage(
+            proofUrl,
+            verificationImageMaxSide(user.plan),
+            user.plan === "pro" || user.plan === "premium" ? 0.75 : 0.65
+          );
           const summary =
             result.feedback ??
             (result.verified

@@ -13,6 +13,7 @@ import React, {
   type CSSProperties,
 } from "react";
 import { compressImage } from "@/lib/imageUtils";
+import { useApp } from "@/context/AppContext";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -144,6 +145,7 @@ export default function AIVerificationWidget({
   className = "",
   style,
 }: AIVerificationWidgetProps) {
+  const { user } = useApp();
   const presetGoal = (goalTitle ?? "").trim();
   const [goalText, setGoalText] = useState(presetGoal);
   const [imageData, setImageData] = useState<string | null>(null);
@@ -208,7 +210,8 @@ export default function AIVerificationWidget({
     try {
       // Compress before sending — OpenAI charges per pixel and big phone shots
       // dwarf the actual visual signal.
-      const compressed = await compressImage(imageData, 1024, 0.78);
+      const paid = user?.plan === "pro" || user?.plan === "premium";
+      const compressed = await compressImage(imageData, paid ? 1024 : 512, paid ? 0.78 : 0.65);
       const base64 = compressed.includes(",") ? compressed.split(",")[1] : compressed;
 
       const res = await fetch("/api/verify", {

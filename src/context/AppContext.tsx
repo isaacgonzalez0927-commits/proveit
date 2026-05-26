@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import {
   normalizePlanId,
   type Goal,
+  type GraceDayEvent,
   type PlanId,
   type ProofSubmission,
   type TimesPerWeek,
@@ -66,6 +67,7 @@ import {
   expireLocalPremiumTrialIfNeeded,
   trialEndsAtFromNow,
 } from "@/lib/premiumTrial";
+import { weekStartKey } from "@/lib/graceDays";
 
 const SUPABASE_CONFIGURED = !!(
   typeof window !== "undefined" &&
@@ -77,6 +79,7 @@ interface AppContextValue {
   user: StoredUser | null;
   goals: Goal[];
   submissions: ProofSubmission[];
+  graceDayEvents: GraceDayEvent[];
   authReady: boolean;
   setUser: (user: StoredUser | null) => void;
   setPlan: (
@@ -96,6 +99,7 @@ interface AppContextValue {
   canAddGoal: () => boolean;
   getSubmissionsForGoal: (goalId: string) => ProofSubmission[];
   markGoalDone: (goalId: string) => Promise<void>;
+  useGraceDay: (goalId: string, missedDate?: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   earnedItems: string[];
   equippedItems: EquippedItems;
   setEquipped: (slot: keyof EquippedItems, itemId: string | null) => void;
@@ -137,6 +141,7 @@ function mapGoalFromApi(g: Record<string, unknown>): Goal {
     frequency: freq,
     timesPerWeek: tw as TimesPerWeek,
     reminderTime: rt || undefined,
+    reminderIsActive: g.reminderIsActive !== false,
     reminderDay: typeof g.reminderDay === "number" ? g.reminderDay : undefined,
     reminderDays: Array.isArray(g.reminderDays) ? (g.reminderDays as number[]) : undefined,
     gracePeriod: g.gracePeriod as Goal["gracePeriod"] | undefined,
@@ -146,6 +151,7 @@ function mapGoalFromApi(g: Record<string, unknown>): Goal {
       typeof g.breakStreakSnapshot === "number" ? g.breakStreakSnapshot : undefined,
     streakCarryover: typeof g.streakCarryover === "number" ? g.streakCarryover : undefined,
     proBreakUsageByMonth: normalizeProBreakUsageByMonth(g.proBreakUsageByMonth),
+    archivedAt: typeof g.archivedAt === "string" ? g.archivedAt : undefined,
     createdAt: g.createdAt as string,
     completedDates: Array.isArray(g.completedDates) ? (g.completedDates as string[]) : [],
     proofSuggestions: Array.isArray(g.proofSuggestions)
@@ -169,6 +175,12 @@ type ApiProfileLike = {
   contactEmail?: string;
   premiumTrialEndsAt?: string | null;
   premiumTrialUsed?: boolean;
+  graceDayBalance?: number;
+  graceDayCycleAnchor?: string | null;
+  strictAiVerification?: boolean;
+  trialExpiredNeedsReview?: boolean;
+  aiVerificationCycleKey?: string | null;
+  aiVerificationCount?: number;
 };
 
 /**
@@ -185,6 +197,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<StoredUser | null>(null);
   const [goals, setGoalsState] = useState<Goal[]>([]);
   const [submissions, setSubmissionsState] = useState<ProofSubmission[]>([]);
+  const [graceDayEvents, setGraceDayEvents] = useState<GraceDayEvent[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [earnedItems, setEarnedItems] = useState<string[]>([]);
@@ -235,7 +248,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ok: r.ok,
           body: await r.json().catch(() => ({})),
         })),
-      ]).then(([profileResult, goalsResult, subsResult]) => {
+        fetch("/api/grace-days", { credentials: "same-origin" }).then(async (r) => ({
+          ok: r.ok,
+          body: await r.json().catch(() => ({})),
+        })),
+      ]).then(([profileResult, goalsResult, subsResult, graceResult]) => {
         const profileWrap = profileResult.status === "fulfilled" ? profileResult.value : null;
         type ApiProfile = {
           id: string;
@@ -248,6 +265,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           contactEmail?: unknown;
           premiumTrialEndsAt?: string | null;
           premiumTrialUsed?: boolean;
+          graceDayBalance?: unknown;
+          graceDayCycleAnchor?: unknown;
+          strictAiVerification?: unknown;
+          trialExpiredNeedsReview?: unknown;
+          aiVerificationCycleKey?: unknown;
+          aiVerificationCount?: unknown;
         };
         const profileRaw =
           profileWrap?.ok && profileWrap.body && typeof profileWrap.body === "object"
@@ -281,6 +304,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                     ? null
                     : undefined,
               premiumTrialUsed: p.premiumTrialUsed === true,
+              graceDayBalance:
+                typeof p.graceDayBalance === "number" ? p.graceDayBalance : undefined,
+              graceDayCycleAnchor:
+                typeof p.graceDayCycleAnchor === "string" ? p.graceDayCycleAnchor : null,
+              strictAiVerification: p.strictAiVerification === true,
+              trialExpiredNeedsReview: p.trialExpiredNeedsReview === true,
+              aiVerificationCycleKey:
+                typeof p.aiVerificationCycleKey === "string" ? p.aiVerificationCycleKey : null,
+              aiVerificationCount:
+                typeof p.aiVerificationCount === "number" ? p.aiVerificationCount : undefined,
             }
           : {
               id: supabaseUser.id,
@@ -293,6 +326,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               contactEmail: undefined as string | undefined,
               premiumTrialEndsAt: undefined,
               premiumTrialUsed: false,
+              graceDayBalance: 0,
+              graceDayCycleAnchor: null,
+              strictAiVerification: false,
+              trialExpiredNeedsReview: false,
+              aiVerificationCycleKey: null,
+              aiVerificationCount: 0,
             };
         const profileApplyStale =
           bootstrapApplySeq !== bootstrapApplySeqRef.current ||
@@ -379,6 +418,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return [...byId.values()];
         });
 
+        const graceWrap = graceResult.status === "fulfilled" ? graceResult.value : null;
+        const graceBody =
+          graceWrap?.ok === true && graceWrap.body && typeof graceWrap.body === "object"
+            ? (graceWrap.body as { events?: unknown })
+            : {};
+        const graceRaw = Array.isArray(graceBody.events) ? graceBody.events : [];
+        setGraceDayEvents(
+          graceRaw.map((event: Record<string, unknown>) => ({
+            id: String(event.id ?? ""),
+            userId: String(event.userId ?? ""),
+            goalId: String(event.goalId ?? ""),
+            weekStart: String(event.weekStart ?? ""),
+            missedDate: typeof event.missedDate === "string" ? event.missedDate : undefined,
+            usedAt: String(event.usedAt ?? ""),
+            reason: typeof event.reason === "string" ? event.reason : undefined,
+            createdAt: String(event.createdAt ?? ""),
+          })).filter((event) => event.id && event.goalId && event.weekStart)
+        );
+
         // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
         setGoalPlantSelections(getStoredGoalPlantSelections());
         // A signed-in Supabase user is NOT a guest. Clear any stale guest flag
@@ -406,6 +464,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserState(null);
       setGoalsState([]);
       setSubmissionsState([]);
+      setGraceDayEvents([]);
       setDataLoaded(true);
       setHydrated(true);
       return;
@@ -420,6 +479,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (devGuestMode) {
         setGoalsState([]);
         setSubmissionsState([]);
+        setGraceDayEvents([]);
         setHasSelectedPlan(false);
         setIsDevGuestMode(true);
         setGoalPlantSelections({});
@@ -575,6 +635,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                     ? null
                     : undefined,
               premiumTrialUsed: pr.premiumTrialUsed === true,
+              graceDayBalance:
+                typeof pr.graceDayBalance === "number" ? pr.graceDayBalance : undefined,
+              graceDayCycleAnchor:
+                typeof pr.graceDayCycleAnchor === "string" ? pr.graceDayCycleAnchor : null,
+              strictAiVerification: pr.strictAiVerification === true,
+              trialExpiredNeedsReview: pr.trialExpiredNeedsReview === true,
+              aiVerificationCycleKey:
+                typeof pr.aiVerificationCycleKey === "string" ? pr.aiVerificationCycleKey : null,
+              aiVerificationCount:
+                typeof pr.aiVerificationCount === "number" ? pr.aiVerificationCount : undefined,
             });
             markStoredPlanSelection(user.id);
             if (typeof window !== "undefined") {
@@ -633,6 +703,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     setGoalsState([]);
     setSubmissionsState([]);
+    setGraceDayEvents([]);
     setHasSelectedPlan(false);
     setIsDevGuestMode(true);
     setGoalPlantSelections({});
@@ -681,6 +752,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               frequency: goal.frequency,
               timesPerWeek: goal.timesPerWeek ?? (goal.frequency === "daily" ? 7 : 1),
               reminderTime: goal.reminderTime,
+              reminderIsActive: goal.reminderIsActive !== false,
               reminderDay: goal.reminderDay,
               reminderDays: goal.reminderDays,
               proofSuggestions: goal.proofSuggestions,
@@ -728,7 +800,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return { created: null, error: msg };
         }
       }
-      setGoalsState((prev) => [...prev, goal]);
+      setGoalsState((prev) => [...prev, { ...goal, reminderIsActive: goal.reminderIsActive !== false }]);
       return { created: goal, error: undefined };
     },
     [user, goals, useSupabase]
@@ -941,6 +1013,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [goals, submissions, addSubmission, updateGoal, getSubmissionsForGoal]
   );
 
+  const useGraceDay = useCallback(
+    async (goalId: string, missedDate?: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (!user) return { ok: false, error: "Sign in to use Streak Shields." };
+      if (useSupabase) {
+        try {
+          const res = await fetch("/api/grace-days", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ goalId, missedDate }),
+          });
+          const data = (await res.json().catch(() => ({}))) as {
+            event?: GraceDayEvent;
+            balance?: number;
+            error?: string;
+          };
+          if (!res.ok || !data.event) {
+            return { ok: false, error: data.error ?? "Could not use a Streak Shield." };
+          }
+          setGraceDayEvents((prev) => [data.event!, ...prev]);
+          setUserState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  graceDayBalance:
+                    typeof data.balance === "number" ? data.balance : Math.max(0, (prev.graceDayBalance ?? 0) - 1),
+                }
+              : prev
+          );
+          return { ok: true };
+        } catch {
+          return { ok: false, error: "Could not reach Streak Shields right now." };
+        }
+      }
+      const event: GraceDayEvent = {
+        id: generateId(),
+        userId: user.id,
+        goalId,
+        weekStart: weekStartKey(),
+        missedDate,
+        usedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        reason: "local",
+      };
+      setGraceDayEvents((prev) => [event, ...prev]);
+      setUserState((prev) =>
+        prev ? { ...prev, graceDayBalance: Math.max(0, (prev.graceDayBalance ?? 0) - 1) } : prev
+      );
+      return { ok: true };
+    },
+    [user, useSupabase]
+  );
+
   const setEquipped = useCallback((slot: keyof EquippedItems, itemId: string | null) => {
     setEquippedItemsState((prev) => {
       const next = { ...prev };
@@ -998,6 +1123,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
+    setGraceDayEvents([]);
     setHasSelectedPlan(false);
     setEarnedItems([]);
     setEquippedItemsState({});
@@ -1025,6 +1151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setGoalsState([]);
     setSubmissionsState([]);
+    setGraceDayEvents([]);
     setHasSelectedPlan(false);
     setEarnedItems([]);
     setEquippedItemsState({});
@@ -1051,6 +1178,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     user,
     goals,
     submissions,
+    graceDayEvents,
     authReady,
     setUser,
     setPlan,
@@ -1063,6 +1191,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     canAddGoal: canAddGoalCheck,
     getSubmissionsForGoal,
     markGoalDone,
+    useGraceDay,
     earnedItems,
     equippedItems,
     setEquipped,

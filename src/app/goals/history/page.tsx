@@ -32,7 +32,7 @@ import {
 } from "@/lib/historyVisibility";
 
 function GalleryContent() {
-  const { user, goals, submissions, getSubmissionsForGoal } = useApp();
+  const { user, goals, submissions, graceDayEvents, getSubmissionsForGoal } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -71,11 +71,11 @@ function GalleryContent() {
             goal,
             completedDates,
             subsByDate,
-            streak: getGoalStreak(goal, getSubmissionsForGoal),
+            streak: getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents),
           };
         })
         .filter((g) => g.completedDates.length > 0 && !hiddenGoalIds.includes(g.goal.id)),
-    [goals, verifiedSubs, hiddenGoalIds, getSubmissionsForGoal]
+    [goals, verifiedSubs, hiddenGoalIds, getSubmissionsForGoal, graceDayEvents]
   );
 
   useEffect(() => {

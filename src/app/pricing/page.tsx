@@ -31,7 +31,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Free: 2 goals, 3 plant styles. Pro: 5 goals, 6 plant styles, 6 theme colors, Goal Gallery, Goal Break (7 break-days per goal per month). Premium: unlimited goals, all 8 plant styles, all 10 theme colors. New to Premium? One 7-day free trial per account (then billed at the price you pick, or switch plans anytime).
+            Free: 2 goals, 2 reminders, and 3 AI checks per week. Pro adds 5 reminders, 100 AI checks/month, Strict AI, Streak Shields, Gallery, and Goal Break. Premium unlocks unlimited goals, 500 AI checks/month fair use, and 7 Shields. New to Premium? One 7-day trial per account.
           </p>
           <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl p-1.5 glass-card">
             <button

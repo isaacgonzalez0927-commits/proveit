@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CACTUS_VARIANT, getImageStageForVariant, type GoalPlantVariant } from "@/lib/goalPlants";
+import type { PlantHealthState } from "@/lib/plantState";
 
 export type PlantStageKey =
   | "seedling"
@@ -19,6 +20,7 @@ interface PlantIllustrationProps {
   wateredGoals: number;
   /** Optional style variant used across all stages */
   variant?: GoalPlantVariant;
+  healthState?: PlantHealthState;
   /** When true and at final stage, play the one-time "full grown" animation (default false) */
   playFinalStageAnimation?: boolean;
   className?: string;
@@ -220,6 +222,7 @@ export function PlantIllustration({
   wateringLevel,
   wateredGoals,
   variant = 1,
+  healthState = "healthy",
   playFinalStageAnimation = false,
   className = "",
   size = "default",
@@ -276,7 +279,14 @@ export function PlantIllustration({
           alt=""
           className="h-full w-full select-none object-contain"
           style={{
-            filter: `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+            filter:
+              healthState === "dead"
+                ? "grayscale(1) saturate(0.25) brightness(0.72)"
+                : healthState === "wilting"
+                  ? `saturate(${0.55 + safeWater * 0.2}) brightness(0.84)`
+                  : healthState === "shielded"
+                    ? `saturate(${0.9 + safeWater * 0.24}) brightness(${1 + safeWater * 0.12}) drop-shadow(0 0 10px rgba(148,163,184,0.7))`
+                    : `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
             transform: `scale(${variantSizeMultiplier})`,
             transformOrigin: "center bottom",
           }}
@@ -311,6 +321,7 @@ export function PlantIllustration({
       wateringLevel={wateringLevel}
       wateredGoals={wateredGoals}
       variant={variant}
+      healthState={healthState}
       playFinalStageAnimation={playFinalStageAnimation}
       className={className}
       size={size}
@@ -323,6 +334,7 @@ function SvgPlantIllustration({
   wateringLevel,
   wateredGoals: _wateredGoals,
   variant = 1,
+  healthState = "healthy",
   playFinalStageAnimation = false,
   className = "",
   size = "default",
@@ -352,12 +364,12 @@ function SvgPlantIllustration({
       >
         <defs>
           <linearGradient id={`leafGrad-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6ee7b7" />
-            <stop offset="100%" stopColor="#22c55e" />
+            <stop offset="0%" stopColor={healthState === "dead" ? "#94a3b8" : healthState === "wilting" ? "#a3a047" : "#6ee7b7"} />
+            <stop offset="100%" stopColor={healthState === "dead" ? "#475569" : healthState === "wilting" ? "#78716c" : "#22c55e"} />
           </linearGradient>
           <linearGradient id={`stemGrad-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#34d399" />
-            <stop offset="100%" stopColor="#15803d" />
+            <stop offset="0%" stopColor={healthState === "dead" ? "#64748b" : healthState === "wilting" ? "#a3a047" : "#34d399"} />
+            <stop offset="100%" stopColor={healthState === "dead" ? "#334155" : healthState === "wilting" ? "#57534e" : "#15803d"} />
           </linearGradient>
           <linearGradient id={`potGrad-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#c26d4f" />
@@ -376,6 +388,16 @@ function SvgPlantIllustration({
           fill={`url(#sunGlow-${id})`}
           opacity={0.2 + safeWater * 0.5}
         />
+        {healthState === "shielded" && (
+          <text x={103} y={35} textAnchor="middle" fontSize={20} aria-hidden>
+            S
+          </text>
+        )}
+        {healthState === "wilting" && (
+          <text x={103} y={35} textAnchor="middle" fontSize={20} aria-hidden>
+            !
+          </text>
+        )}
 
         <path
           d={`M 70 ${stemBottomY - 4} C ${70 - config.stemCurve} ${stemBottomY - 28}, ${70 + config.stemCurve} ${stemTopY + 14}, 70 ${stemTopY}`}

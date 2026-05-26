@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { normalizePlanId } from "@/types";
+import {
+  getAiVerificationCycleKind,
+  getAiVerificationLimit,
+} from "@/lib/subscriptionLimits";
 
 /**
  * Server-side proof verification powered by OpenAI Vision.
@@ -32,6 +38,49 @@ export async function POST(request: NextRequest) {
     const customUrl = process.env.CUSTOM_AI_VERIFY_URL;
     const openaiKey = process.env.OPENAI_API_KEY;
 
+    const supabase = await createClient();
+    const { data: auth } = supabase
+      ? await supabase.auth.getUser()
+      : { data: { user: null } };
+    const profile = auth.user && supabase
+      ? await supabase
+          .from("profiles")
+          .select("plan, premium_trial_ends_at, strict_ai_verification, ai_verification_cycle_key, ai_verification_count")
+          .eq("id", auth.user.id)
+          .maybeSingle()
+      : null;
+    const plan = normalizePlanId(profile?.data?.plan);
+    const premiumTrialEndsAt =
+      typeof profile?.data?.premium_trial_ends_at === "string"
+        ? profile.data.premium_trial_ends_at
+        : null;
+    const planContext = { plan, premiumTrialEndsAt };
+    const strictMode =
+      (plan === "pro" || plan === "premium") &&
+      profile?.data?.strict_ai_verification === true;
+    const usage = checkAiUsage({
+      planContext,
+      cycleKey: typeof profile?.data?.ai_verification_cycle_key === "string"
+        ? profile.data.ai_verification_cycle_key
+        : null,
+      count: typeof profile?.data?.ai_verification_count === "number"
+        ? profile.data.ai_verification_count
+        : 0,
+    });
+    if (!usage.allowed) {
+      return NextResponse.json(
+        {
+          verified: false,
+          feedback: usage.plan === "free"
+            ? `You used your ${usage.limit} free AI check${usage.limit === 1 ? "" : "s"} for this ${usage.cycleLabel}. Your checks reset next ${usage.resetLabel}, or upgrade for Strict AI, more checks, and Streak Shields.`
+            : `You used your ${usage.limit} AI checks for this ${usage.cycleLabel}. Your checks reset next ${usage.resetLabel}.`,
+          aiLimitReached: true,
+          aiUsage: { limit: usage.limit, used: usage.used, cycle: usage.cycleLabel },
+        },
+        { status: 429 }
+      );
+    }
+
     // 1. Optional custom AI relay (kept for integrations).
     if (customUrl) {
       const result = await verifyWithCustomAI(
@@ -41,7 +90,8 @@ export async function POST(request: NextRequest) {
         goalDescription ?? "",
         proofRequirement ?? ""
       );
-      return NextResponse.json(result);
+      await recordAiUsage(supabase, auth.user?.id, usage.nextCycleKey, usage.used + 1);
+      return NextResponse.json({ ...result, aiUsage: { used: usage.used + 1, limit: usage.limit } });
     }
 
     // 2. Primary path: OpenAI GPT-4o-mini Vision.
@@ -51,9 +101,11 @@ export async function POST(request: NextRequest) {
         imageBase64,
         goalTitle,
         goalDescription ?? "",
-        proofRequirement ?? ""
+        proofRequirement ?? "",
+        { plan, strictMode }
       );
-      return NextResponse.json(result);
+      await recordAiUsage(supabase, auth.user?.id, usage.nextCycleKey, usage.used + 1);
+      return NextResponse.json({ ...result, aiUsage: { used: usage.used + 1, limit: usage.limit } });
     }
 
     // 3. No key configured — fail closed with a clear message instead of fake verdicts.
@@ -74,12 +126,59 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function aiCycleKey(date: Date, kind: "week" | "month"): string {
+  if (kind === "month") {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+  const weekStart = new Date(date);
+  weekStart.setUTCDate(date.getUTCDate() - date.getUTCDay());
+  return `${weekStart.getUTCFullYear()}-W${String(Math.ceil((weekStart.getTime() - Date.UTC(weekStart.getUTCFullYear(), 0, 1)) / 604800000) + 1).padStart(2, "0")}`;
+}
+
+function checkAiUsage(args: {
+  planContext: { plan: "free" | "pro" | "premium"; premiumTrialEndsAt?: string | null };
+  cycleKey: string | null;
+  count: number;
+}) {
+  const kind = getAiVerificationCycleKind(args.planContext);
+  const nextCycleKey = aiCycleKey(new Date(), kind);
+  const used = args.cycleKey === nextCycleKey ? Math.max(0, args.count) : 0;
+  const limit = getAiVerificationLimit(args.planContext);
+  return {
+    allowed: used < limit,
+    used,
+    limit,
+    nextCycleKey,
+    cycleLabel: kind === "week" ? "week" : "month",
+    resetLabel: kind === "week" ? "Monday" : "billing cycle",
+    plan: args.planContext.plan,
+  };
+}
+
+async function recordAiUsage(
+  supabase: Awaited<ReturnType<typeof createClient>> | null,
+  userId: string | undefined,
+  cycleKey: string,
+  nextCount: number
+) {
+  if (!supabase || !userId) return;
+  await supabase
+    .from("profiles")
+    .update({
+      ai_verification_cycle_key: cycleKey,
+      ai_verification_count: nextCount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+}
+
 async function verifyWithOpenAI(
   apiKey: string,
   imageBase64: string,
   goalTitle: string,
   goalDescription: string,
-  proofRequirement: string
+  proofRequirement: string,
+  options: { plan: "free" | "pro" | "premium"; strictMode: boolean }
 ) {
   const hasProof = Boolean(proofRequirement.trim());
   const sharedPersonRules = `STEP 1 — Decide silently whether this goal requires a visible person in the photo:
@@ -92,6 +191,17 @@ STEP 2 — Judge the photo:
 - If the goal does NOT require a person, just check that the depicted object/scene clearly matches the goal.
 - The scene must match the stated goal, not just share keywords. (E.g. a photo of a treadmill at a store is NOT proof of "go to the gym".)
 - Memes, screenshots, drawings, and reused stock photos do NOT count as proof.`;
+  const strictRules = options.strictMode
+    ? `
+
+STRICT PAID MODE:
+- Be extra skeptical of old/reused proof: reject screenshots, gallery-looking images, heavily edited images, or photos that appear to be of another screen unless the goal explicitly involves screen work.
+- Mention one concrete visual detail that supports or rejects the proof.
+- If the proof could be staged without showing the actual habit, reject it.`
+    : `
+
+STANDARD FREE MODE:
+- Keep the check concise and cost-efficient. Decide from the obvious visual evidence only.`;
 
   const prompt = hasProof
     ? `You are a strict but fair judge for a goal-tracking app.
@@ -103,6 +213,7 @@ Goal title (background only, do not pass a photo that ignores the instruction ju
 "${goalTitle}"${goalDescription ? ` — ${goalDescription}` : ""}
 
 ${sharedPersonRules}
+${strictRules}
 
 Respond with JSON only, no markdown:
 { "verified": true or false, "feedback": "One short sentence explaining why." }`
@@ -111,6 +222,7 @@ Respond with JSON only, no markdown:
 The user claims they did this goal: "${goalTitle}"${goalDescription ? ` (Details: ${goalDescription})` : ""}.
 
 ${sharedPersonRules}
+${strictRules}
 
 Respond with JSON only, no markdown:
 { "verified": true or false, "feedback": "One short sentence explaining why." }`;
@@ -123,7 +235,7 @@ Respond with JSON only, no markdown:
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      max_tokens: 200,
+      max_tokens: options.strictMode ? 240 : 90,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -142,7 +254,7 @@ Respond with JSON only, no markdown:
               type: "image_url",
               image_url: {
                 url: `data:image/jpeg;base64,${imageBase64}`,
-                detail: "low",
+                detail: options.strictMode ? "auto" : "low",
               },
             },
           ],

@@ -49,6 +49,8 @@ import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/proofSuggestions";
 import type { Goal, TimesPerWeek } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
+import { getActiveReminderLimit, countActiveReminders } from "@/lib/subscriptionLimits";
+import { getWeeklyPlantState, plantWateringLevelForState } from "@/lib/plantState";
 import {
   TOUR_CHANGED_EVENT,
   TOUR_GARDEN_HINT_KEY,
@@ -66,11 +68,13 @@ export default function BuddyPage() {
     user,
     goals,
     submissions,
+    graceDayEvents,
     addGoal,
     updateGoal,
     removeGoal,
     canAddGoal,
     getSubmissionsForGoal,
+    useGraceDay,
     getGoalPlantVariant,
     setGoalPlantVariant,
     clearPlanSelectionForNewUser,
@@ -174,11 +178,11 @@ export default function BuddyPage() {
   }, [user, goals.length]);
 
   // Mark goals at final stage so we only play the full-grown animation once (use goals + streak/variant, no garden ref)
-  const finalStageDeps = goals.map((g) => `${g.id}:${getGoalStreak(g, getSubmissionsForGoal)}:${getGoalPlantVariant(g.id)}`).join("|");
+  const finalStageDeps = goals.map((g) => `${g.id}:${getGoalStreak(g, getSubmissionsForGoal, graceDayEvents)}:${getGoalPlantVariant(g.id)}`).join("|");
   useEffect(() => {
     let added = false;
     for (const goal of goals) {
-      const streak = getGoalStreak(goal, getSubmissionsForGoal);
+      const streak = getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents);
       const stage = getPlantStageForStreak(streak).stage;
       const variant = getGoalPlantVariant(goal.id);
       if (isFinalStage(stage, variant) && !hasPlayedFinalAnimationForGoal.current.has(goal.id)) {
@@ -196,6 +200,8 @@ export default function BuddyPage() {
   const canEditExistingGoalStyle = user?.plan === "pro" || user?.plan === "premium";
   const plantVariantsForPlan = getPlantVariantsForPlan(user?.plan ?? "free");
   const canUseGoalBreak = user?.plan === "pro" || user?.plan === "premium";
+  const activeReminderLimit = getActiveReminderLimit(user?.plan ?? "free");
+  const activeReminderCount = countActiveReminders(goals);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showFirstGoalCongrats, setShowFirstGoalCongrats] = useState(false);
   const [showFirstFullGrownCongrats, setShowFirstFullGrownCongrats] = useState(false);
@@ -235,7 +241,7 @@ export default function BuddyPage() {
   const garden = useMemo(() => {
     if (!user) return [];
     return goals.map((goal) => {
-      const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
+      const actualStreak = getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents);
       const streak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
       const stage = getPlantStageForStreak(streak);
       const isOnBreak = goal.isOnBreak === true;
@@ -249,7 +255,14 @@ export default function BuddyPage() {
         !doneInCurrentWindow && !canSubmitNow
           ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
           : null;
-      const wateringLevel = isOnBreak ? 0.62 : doneInCurrentWindow ? 1 : due ? 0.18 : 0.62;
+      const plantHealthState = getWeeklyPlantState(goal, goalSubs, graceDayEvents);
+      const wateringLevel = isOnBreak
+        ? 0.62
+        : doneInCurrentWindow
+          ? 1
+          : due
+            ? plantWateringLevelForState(plantHealthState)
+            : 0.62;
       const isProPlan = user.plan === "pro";
       const monthKey = proBreakMonthKey(new Date());
       const proBreakDaysThisMonth = isProPlan
@@ -268,13 +281,19 @@ export default function BuddyPage() {
         doneInCurrentWindow,
         submissionWindowMessage,
         wateringLevel,
+        plantHealthState,
         plantVariant: getGoalPlantVariant(goal.id),
+        canUseGraceDay:
+          !doneInCurrentWindow &&
+          !canSubmitNow &&
+          (user.graceDayBalance ?? 0) > 0 &&
+          (user.plan === "pro" || user.plan === "premium"),
         hasStreakOverride:
           effectiveDeveloperSettings.enabled &&
           typeof effectiveDeveloperSettings.goalStreakOverrides[goal.id] === "number",
       };
     });
-  }, [goals, submissions, user, effectiveDeveloperSettings, todayStr, getSubmissionsForGoal, getGoalPlantVariant]);
+  }, [goals, submissions, graceDayEvents, user, effectiveDeveloperSettings, todayStr, getSubmissionsForGoal, getGoalPlantVariant]);
 
   const fullyGrownCount = garden.filter((g) => isFinalStage(g.stage.stage, g.plantVariant)).length;
 
@@ -404,6 +423,7 @@ export default function BuddyPage() {
         frequency: isDaily ? "daily" : "weekly",
         timesPerWeek: isDaily ? 7 : tw,
         reminderTime: newReminderTime,
+        reminderIsActive: activeReminderCount < activeReminderLimit,
         reminderDay: reminderDayFirst,
         reminderDays,
         proofSuggestions: proofSuggestionsForStorage(proofReq),
@@ -471,6 +491,7 @@ export default function BuddyPage() {
         frequency: isDaily ? ("daily" as const) : ("weekly" as const),
         timesPerWeek: isDaily ? 7 : tw,
         reminderTime: editDraft.reminderTime,
+        reminderIsActive: goal.reminderIsActive !== false,
         reminderDay: isDaily ? 0 : reminderDays[0]!,
         reminderDays: isDaily ? ([] as number[]) : reminderDays,
         proofSuggestions: store,
@@ -561,6 +582,7 @@ export default function BuddyPage() {
       stage: entry.stage.stage,
       wateringLevel: entry.wateringLevel,
       variant: entry.plantVariant,
+      healthState: entry.plantHealthState,
     }));
 
   return (
@@ -925,6 +947,11 @@ export default function BuddyPage() {
                           : "On break"}
                       </span>
                     )}
+                    {entry.goal.reminderIsActive === false && (
+                      <span className="rounded-full border border-slate-300/80 bg-slate-100/80 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                        Reminder frozen
+                      </span>
+                    )}
                     <span className="rounded-full border border-emerald-200/90 bg-emerald-50/80 px-2 py-0.5 text-[10px] font-medium text-emerald-900 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-100">
                       {entry.stage.name}
                     </span>
@@ -1000,6 +1027,7 @@ export default function BuddyPage() {
                     wateringLevel={entry.wateringLevel}
                     wateredGoals={entry.doneInCurrentWindow ? 1 : 0}
                     variant={entry.plantVariant}
+                    healthState={entry.plantHealthState}
                     playFinalStageAnimation={isFinalStage(entry.stage.stage, entry.plantVariant) && !hasPlayedFinalAnimationForGoal.current.has(entry.goal.id)}
                   />
                 </div>
@@ -1029,6 +1057,21 @@ export default function BuddyPage() {
                   </div>
                   {entry.submissionWindowMessage && (
                     <p className="text-[11px] text-amber-800 dark:text-amber-200">{entry.submissionWindowMessage}</p>
+                  )}
+                  {entry.canUseGraceDay && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void useGraceDay(entry.goal.id, todayStr).then((result) => {
+                          setGoalManagerMessage(
+                            result.ok ? "Streak Shield used. Your streak is protected, but this week is marked shielded instead of perfect." : result.error
+                          );
+                        });
+                      }}
+                      className="inline-flex w-full justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:w-auto"
+                    >
+                      Use Streak Shield? ({user.graceDayBalance ?? 0} left)
+                    </button>
                   )}
                   {entry.canSubmitNow && !entry.doneInCurrentWindow && !entry.submissionWindowMessage && (
                     <Link
@@ -1114,6 +1157,18 @@ export default function BuddyPage() {
                       Proof checks use your goal title:{" "}
                       <span className="font-medium text-slate-700 dark:text-slate-300">{entry.goal.title}</span>
                     </p>
+                    <label className="mt-3 flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={entry.goal.reminderIsActive !== false}
+                        onChange={(e) => {
+                          void updateGoal(entry.goal.id, { reminderIsActive: e.target.checked }).then((saved) => {
+                            if (!saved.ok) setGoalManagerMessage(saved.error);
+                          });
+                        }}
+                      />
+                      Active reminder ({activeReminderCount}/{activeReminderLimit} active)
+                    </label>
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <button

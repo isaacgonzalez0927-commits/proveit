@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeUsername } from "@/lib/usernameAuth";
 import { PREMIUM_TRIAL_DAYS } from "@/lib/premiumTrial";
+import {
+  TRIAL_STREAK_SHIELD_BALANCE,
+  getActiveReminderLimit,
+  getGraceDayResetBalance,
+} from "@/lib/subscriptionLimits";
 
 function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
   if (plan === "premium") return "premium";
@@ -10,6 +15,32 @@ function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
 }
 
 type ProfileRow = Record<string, unknown>;
+
+async function freezeExcessRemindersForPlan(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  plan: "free" | "pro" | "premium"
+) {
+  const limit = getActiveReminderLimit(plan);
+  const { data } = await supabase
+    .from("goals")
+    .select("id, reminder_time, reminder_is_active, created_at, archived_at")
+    .eq("user_id", userId)
+    .is("archived_at", null)
+    .order("created_at", { ascending: true });
+  const rows = data ?? [];
+  let activeSeen = 0;
+  const idsToFreeze: string[] = [];
+  for (const row of rows as Array<Record<string, unknown>>) {
+    if (!row.reminder_time) continue;
+    if (row.reminder_is_active === false) continue;
+    activeSeen += 1;
+    if (activeSeen > limit && typeof row.id === "string") idsToFreeze.push(row.id);
+  }
+  if (idsToFreeze.length > 0) {
+    await supabase.from("goals").update({ reminder_is_active: false }).in("id", idsToFreeze);
+  }
+}
 
 function premiumTrialEndsAtISO(): string {
   const d = new Date();
@@ -33,15 +64,24 @@ async function expirePremiumTrialIfNeeded(
       plan: revert,
       premium_trial_ends_at: null,
       premium_trial_revert_plan: null,
+      grace_day_balance: getGraceDayResetBalance(revert),
+      grace_day_cycle_anchor: new Date().toISOString(),
+      strict_ai_verification: false,
+      trial_expired_needs_review: true,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
   if (error) return data;
+  await freezeExcessRemindersForPlan(supabase, userId, revert);
   return {
     ...data,
     plan: revert,
     premium_trial_ends_at: null,
     premium_trial_revert_plan: null,
+    grace_day_balance: getGraceDayResetBalance(revert),
+    grace_day_cycle_anchor: new Date().toISOString(),
+    strict_ai_verification: false,
+    trial_expired_needs_review: true,
   };
 }
 
@@ -58,6 +98,16 @@ function profileJsonFromRow(data: ProfileRow) {
     premiumTrialEndsAt:
       data.premium_trial_ends_at != null ? String(data.premium_trial_ends_at) : null,
     premiumTrialUsed: data.premium_trial_used === true,
+    graceDayBalance:
+      typeof data.grace_day_balance === "number" ? data.grace_day_balance : 0,
+    graceDayCycleAnchor:
+      data.grace_day_cycle_anchor != null ? String(data.grace_day_cycle_anchor) : null,
+    strictAiVerification: data.strict_ai_verification === true,
+    trialExpiredNeedsReview: data.trial_expired_needs_review === true,
+    aiVerificationCycleKey:
+      data.ai_verification_cycle_key != null ? String(data.ai_verification_cycle_key) : null,
+    aiVerificationCount:
+      typeof data.ai_verification_count === "number" ? data.ai_verification_count : 0,
   };
 }
 
@@ -87,6 +137,12 @@ export async function GET() {
         name: undefined as string | undefined,
         premiumTrialEndsAt: null,
         premiumTrialUsed: false,
+        graceDayBalance: 0,
+        graceDayCycleAnchor: null,
+        strictAiVerification: false,
+        trialExpiredNeedsReview: false,
+        aiVerificationCycleKey: null,
+        aiVerificationCount: 0,
       },
     });
   }
@@ -147,6 +203,10 @@ export async function PATCH(request: NextRequest) {
       premium_trial_ends_at: premiumTrialEndsAtISO(),
       premium_trial_used: true,
       premium_trial_revert_plan: revert,
+      grace_day_balance: TRIAL_STREAK_SHIELD_BALANCE,
+      grace_day_cycle_anchor: new Date().toISOString(),
+      strict_ai_verification: false,
+      trial_expired_needs_review: false,
       updated_at: new Date().toISOString(),
     };
 
@@ -188,12 +248,13 @@ export async function PATCH(request: NextRequest) {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
   const needsCurrentRow =
-    typeof plan === "string" && ["free", "pro", "premium"].includes(plan);
+    typeof plan === "string" && ["free", "pro", "premium"].includes(plan) ||
+    body.strictAiVerification !== undefined;
   let currentRow: ProfileRow | null = null;
   if (needsCurrentRow) {
     const { data } = await supabase
       .from("profiles")
-      .select("plan, premium_trial_ends_at")
+      .select("plan, premium_trial_ends_at, strict_ai_verification")
       .eq("id", user.id)
       .maybeSingle();
     currentRow = (data as ProfileRow) ?? null;
@@ -203,10 +264,14 @@ export async function PATCH(request: NextRequest) {
 
   if (typeof plan === "string" && ["free", "pro", "premium"].includes(plan)) {
     updates.plan = plan;
+    updates.grace_day_balance = getGraceDayResetBalance(plan as "free" | "pro" | "premium");
+    updates.grace_day_cycle_anchor = new Date().toISOString();
+    updates.trial_expired_needs_review = false;
     if (plan === "free" || plan === "pro") {
       updates.premium_trial_ends_at = null;
       updates.premium_trial_revert_plan = null;
     }
+    if (plan === "free") updates.strict_ai_verification = false;
     if (plan === "premium" && prevPlan !== "premium") {
       updates.premium_trial_ends_at = null;
       updates.premium_trial_revert_plan = null;
@@ -259,6 +324,12 @@ export async function PATCH(request: NextRequest) {
     const n = body.name.trim().slice(0, 80);
     updates.name = n || null;
   }
+  if (body.strictAiVerification !== undefined) {
+    const wantsStrict = body.strictAiVerification === true;
+    const effectivePlan = normalizePlan(updates.plan ?? currentRow?.plan);
+    updates.strict_ai_verification =
+      wantsStrict && (effectivePlan === "pro" || effectivePlan === "premium");
+  }
 
   const meaningfulKeys = Object.keys(updates).filter((k) => k !== "updated_at");
   if (meaningfulKeys.length === 0) {
@@ -277,6 +348,12 @@ export async function PATCH(request: NextRequest) {
           name: undefined as string | undefined,
           premiumTrialEndsAt: null,
           premiumTrialUsed: false,
+          graceDayBalance: 0,
+          graceDayCycleAnchor: null,
+          strictAiVerification: false,
+          trialExpiredNeedsReview: false,
+          aiVerificationCycleKey: null,
+          aiVerificationCount: 0,
         },
       });
     }
@@ -309,6 +386,14 @@ export async function PATCH(request: NextRequest) {
       }
       return NextResponse.json({ error: insError.message }, { status: 400 });
     }
+  }
+
+  if (typeof updates.plan === "string") {
+    await freezeExcessRemindersForPlan(
+      supabase,
+      user.id,
+      normalizePlan(updates.plan)
+    );
   }
 
   const { data: fresh } = await supabase
@@ -351,6 +436,16 @@ export async function PATCH(request: NextRequest) {
         premiumTrialEndsAt:
           updates.premium_trial_ends_at != null ? String(updates.premium_trial_ends_at) : null,
         premiumTrialUsed: updates.premium_trial_used === true,
+        graceDayBalance:
+          typeof updates.grace_day_balance === "number" ? updates.grace_day_balance : 0,
+        graceDayCycleAnchor:
+          updates.grace_day_cycle_anchor != null ? String(updates.grace_day_cycle_anchor) : null,
+        strictAiVerification: updates.strict_ai_verification === true,
+        trialExpiredNeedsReview: updates.trial_expired_needs_review === true,
+        aiVerificationCycleKey:
+          updates.ai_verification_cycle_key != null ? String(updates.ai_verification_cycle_key) : null,
+        aiVerificationCount:
+          typeof updates.ai_verification_count === "number" ? updates.ai_verification_count : 0,
       },
     });
   }

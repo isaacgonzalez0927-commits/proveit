@@ -1,5 +1,5 @@
 import { addDays, format, subDays, startOfWeek, subWeeks } from "date-fns";
-import type { Goal, ProofSubmission } from "@/types";
+import type { Goal, GraceDayEvent, ProofSubmission } from "@/types";
 import { extractCalendarDateKey, safeParseISO } from "@/lib/dateUtils";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
 import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
@@ -17,6 +17,7 @@ type GoalProgressGoal = Pick<
   | "breakStartedAt"
 >;
 type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
+type GoalProgressGraceDay = Pick<GraceDayEvent, "goalId" | "weekStart">;
 
 /** Consecutive calendar days (including today) with a verified submission. */
 function getDailyCalendarStreak(
@@ -60,6 +61,7 @@ function getDailyCalendarStreak(
 function getWeeklyQuotaStreak(
   goal: GoalProgressGoal,
   getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
+  graceDays: GoalProgressGraceDay[] = [],
   minDateInclusive?: string
 ): number {
   const tw = effectiveTimesPerWeek(goal as Goal);
@@ -75,12 +77,16 @@ function getWeeklyQuotaStreak(
   let weekCursor = startOfWeek(now, { weekStartsOn: 0 });
 
   const countForWeek = (ref: Date) => countVerifiedInCalendarWeek(subsAll, ref);
+  const graceForWeek = (ref: Date) => {
+    const key = format(startOfWeek(ref, { weekStartsOn: 0 }), "yyyy-MM-dd");
+    return graceDays.filter((event) => event.goalId === goal.id && event.weekStart === key).length;
+  };
 
   if (countForWeek(weekCursor) > 0) streak += 1;
   weekCursor = subWeeks(weekCursor, 1);
 
   while (true) {
-    if (countForWeek(weekCursor) < tw) break;
+    if (countForWeek(weekCursor) + graceForWeek(weekCursor) < tw) break;
     streak += 1;
     weekCursor = subWeeks(weekCursor, 1);
     if (streak > 520) break;
@@ -92,13 +98,14 @@ function getWeeklyQuotaStreak(
 function getBaseGoalStreak(
   goal: GoalProgressGoal,
   getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
+  graceDays: GoalProgressGraceDay[] = [],
   minDateInclusive?: string
 ): number {
   const tw = effectiveTimesPerWeek(goal as Goal);
   if (tw >= 7 || goal.frequency === "daily") {
     return getDailyCalendarStreak(goal.id, getSubmissionsForGoal, minDateInclusive);
   }
-  return getWeeklyQuotaStreak(goal, getSubmissionsForGoal, minDateInclusive);
+  return getWeeklyQuotaStreak(goal, getSubmissionsForGoal, graceDays, minDateInclusive);
 }
 
 function getPostBreakMinDate(goal: GoalProgressGoal): string | undefined {
@@ -110,9 +117,10 @@ function getPostBreakMinDate(goal: GoalProgressGoal): string | undefined {
 
 export function getGoalStreak(
   goal: GoalProgressGoal,
-  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[]
+  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
+  graceDays: GoalProgressGraceDay[] = []
 ): number {
-  const baseStreak = getBaseGoalStreak(goal, getSubmissionsForGoal);
+  const baseStreak = getBaseGoalStreak(goal, getSubmissionsForGoal, graceDays);
   const carryover = Math.max(0, goal.streakCarryover ?? 0);
 
   if (goal.isOnBreak) {
@@ -124,7 +132,12 @@ export function getGoalStreak(
   }
 
   if (carryover > 0) {
-    const postBreakBase = getBaseGoalStreak(goal, getSubmissionsForGoal, getPostBreakMinDate(goal));
+    const postBreakBase = getBaseGoalStreak(
+      goal,
+      getSubmissionsForGoal,
+      graceDays,
+      getPostBreakMinDate(goal)
+    );
     return carryover + postBreakBase;
   }
 

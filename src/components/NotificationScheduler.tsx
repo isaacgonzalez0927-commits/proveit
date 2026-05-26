@@ -24,7 +24,7 @@ export function NotificationScheduler() {
     if (!user || typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
-    const activeGoals = goals.filter((g) => !g.isOnBreak);
+    const activeGoals = goals.filter((g) => !g.isOnBreak && !g.archivedAt && g.reminderIsActive !== false);
     if (activeGoals.length === 0) return;
 
     function maybeSendForGoal(goal: Goal) {
@@ -48,10 +48,18 @@ export function NotificationScheduler() {
 
       const tw = effectiveTimesPerWeek(goal);
       const weekCount = countVerifiedInCalendarWeek(subs, now);
+      const remainingProofs = Math.max(0, tw - weekCount);
+      const remainingDays = Math.max(0, 6 - now.getDay());
+      const urgentPrefix =
+        remainingProofs > 0 && remainingDays <= 1
+          ? "Critical: "
+          : remainingProofs >= Math.max(1, remainingDays)
+            ? "Heads up: "
+            : "";
       const body =
         tw >= 7
           ? "Daily check-in — snap a photo if you haven’t verified yet today."
-          : `You’re at ${weekCount}/${tw} verified check-ins this week (Sun–Sat). Prove it today if you still have a slot.`;
+          : `${urgentPrefix}You’re at ${weekCount}/${tw} verified check-ins this week (Sun–Sat). ${remainingProofs} left with ${remainingDays + 1} day${remainingDays === 0 ? "" : "s"} to go.`;
 
       const n = new Notification(`Reminder: ${goal.title}`, {
         body,

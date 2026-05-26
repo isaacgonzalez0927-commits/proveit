@@ -6,6 +6,8 @@ import {
   proofSuggestionsForStorage,
 } from "@/lib/proofSuggestions";
 import { normalizeProBreakUsageByMonth } from "@/lib/goalBreak";
+import { getActiveReminderLimit } from "@/lib/subscriptionLimits";
+import { normalizePlanId } from "@/types";
 
 function normalizeCompletedDates(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -34,16 +36,38 @@ function normalizeReminderTime(value: unknown): string | undefined {
 }
 
 const GOALS_SCHEMA_CATCHUP =
-  "Your Supabase `goals` table is missing columns the app expects. Fix: Supabase Dashboard → SQL → New query → paste and run the file `supabase/migrations/011_goals_schema_catchup.sql` from this project, then try again.";
+  "Your Supabase `goals` table is missing columns the app expects. Fix: Supabase Dashboard -> SQL -> New query -> run the latest migrations, especially `supabase/migrations/011_goals_schema_catchup.sql` and `supabase/migrations/014_subscription_habit_logic.sql`, then try again.";
 
 function isGoalsSchemaColumnError(message: string): boolean {
   const m = message.toLowerCase();
   const soundsLikeMissing =
     m.includes("does not exist") || m.includes("could not find") || m.includes("not find");
   if (!soundsLikeMissing) return false;
-  return /proof_suggestions|proof_require|times_per_week|reminder_day|reminder_days|grace_period|is_on_break|break_|streak_carryover|pro_break_usage/i.test(
+  return /proof_suggestions|proof_require|times_per_week|reminder_day|reminder_days|reminder_is_active|archived_at|grace_period|is_on_break|break_|streak_carryover|pro_break_usage/i.test(
     m
   );
+}
+
+async function getUserPlan(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, userId: string) {
+  const { data } = await supabase.from("profiles").select("plan").eq("id", userId).maybeSingle();
+  return normalizePlanId(data?.plan);
+}
+
+async function countActiveRemindersForUser(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  excludeGoalId?: string
+): Promise<number> {
+  let query = supabase
+    .from("goals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .not("reminder_time", "is", null)
+    .eq("reminder_is_active", true)
+    .is("archived_at", null);
+  if (excludeGoalId) query = query.neq("id", excludeGoalId);
+  const { count } = await query;
+  return typeof count === "number" ? count : 0;
 }
 
 function normalizeProofSuggestionsFromRow(value: unknown): string[] | undefined {
@@ -78,6 +102,7 @@ function mapGoalRow(row: Record<string, unknown>) {
     frequency: frequency as "daily" | "weekly",
     timesPerWeek,
     reminderTime: normalizeReminderTime(row.reminder_time),
+    reminderIsActive: row.reminder_is_active !== false,
     reminderDay,
     reminderDays: frequency === "daily" ? undefined : reminderDays,
     gracePeriod: (row.grace_period as string | null) ?? undefined,
@@ -86,6 +111,7 @@ function mapGoalRow(row: Record<string, unknown>) {
     breakStreakSnapshot: (row.break_streak_snapshot as number | null) ?? undefined,
     streakCarryover: (row.streak_carryover as number | null) ?? undefined,
     proBreakUsageByMonth: normalizeProBreakUsageByMonth(row.pro_break_usage_by_month),
+    archivedAt: (row.archived_at as string | null) ?? undefined,
     createdAt: row.created_at as string,
     completedDates: normalizeCompletedDates(row.completed_dates),
     proofSuggestions: normalizeProofSuggestionsFromRow(row.proof_suggestions),
@@ -133,6 +159,7 @@ export async function POST(request: NextRequest) {
     reminderTime,
     reminderDay,
     reminderDays,
+    reminderIsActive,
     proofSuggestions: proofSuggestionsBody,
     proofRequirement: proofRequirementBody,
   } = body;
@@ -192,6 +219,11 @@ export async function POST(request: NextRequest) {
           : 1;
 
   const reminderTimeNorm = normalizeReminderTime(reminderTime) ?? null;
+  const userPlan = await getUserPlan(supabase, user.id);
+  const activeReminderLimit = getActiveReminderLimit(userPlan);
+  const currentActiveReminders = await countActiveRemindersForUser(supabase, user.id);
+  const requestedActiveReminder =
+    reminderTimeNorm != null && reminderIsActive !== false && currentActiveReminders < activeReminderLimit;
 
   // Minimal columns that exist in the base goals table (no reminder_day, reminder_days, grace_period).
   const minimalInsert: Record<string, unknown> = {
@@ -201,6 +233,7 @@ export async function POST(request: NextRequest) {
     description: description ?? null,
     frequency: frequencyNorm,
     reminder_time: reminderTimeNorm,
+    reminder_is_active: requestedActiveReminder,
     times_per_week: resolvedTimesPerWeek,
     proof_suggestions: proofSuggestionsParsed,
     proof_requirement: proofRequirementParsed,
@@ -313,6 +346,21 @@ export async function PATCH(request: NextRequest) {
   if ("reminderTime" in updates) {
     dbUpdates.reminder_time = normalizeReminderTime(updates.reminderTime) ?? null;
   }
+  if ("reminderIsActive" in updates) {
+    const wantsActive = updates.reminderIsActive === true;
+    if (wantsActive) {
+      const userPlan = await getUserPlan(supabase, user.id);
+      const activeReminderLimit = getActiveReminderLimit(userPlan);
+      const currentActiveReminders = await countActiveRemindersForUser(supabase, user.id, String(id));
+      if (currentActiveReminders >= activeReminderLimit) {
+        return NextResponse.json(
+          { error: `Your plan allows ${activeReminderLimit} active reminders. Turn one off first.` },
+          { status: 403 }
+        );
+      }
+    }
+    dbUpdates.reminder_is_active = wantsActive;
+  }
   if ("reminderDay" in updates) dbUpdates.reminder_day = updates.reminderDay ?? null;
   if ("reminderDays" in updates) {
     const rd = updates.reminderDays;
@@ -335,6 +383,7 @@ export async function PATCH(request: NextRequest) {
   if ("proBreakUsageByMonth" in updates) {
     dbUpdates.pro_break_usage_by_month = normalizeProBreakUsageByMonth(updates.proBreakUsageByMonth);
   }
+  if ("archivedAt" in updates) dbUpdates.archived_at = updates.archivedAt ?? null;
 
   if ("proofRequirement" in updates || "proofSuggestions" in updates) {
     const reqStr = typeof updates.proofRequirement === "string" ? updates.proofRequirement.trim() : "";

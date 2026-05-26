@@ -79,6 +79,7 @@ export default function SettingsPage() {
   const [confirmEmailMessage, setConfirmEmailMessage] = useState<string | null>(null);
   const [contactDraft, setContactDraft] = useState("");
   const [contactSaving, setContactSaving] = useState(false);
+  const [strictAiEnabled, setStrictAiEnabled] = useState(false);
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
 
   useEffect(() => {
@@ -90,7 +91,33 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setContactDraft(user?.contactEmail ?? "");
-  }, [user?.contactEmail]);
+    setStrictAiEnabled(user?.strictAiVerification === true);
+  }, [user?.contactEmail, user?.strictAiVerification]);
+
+  const handleStrictAiToggle = async (checked: boolean) => {
+    if (!user || (user.plan !== "pro" && user.plan !== "premium")) {
+      setUpgradePromptPlan("pro");
+      setUpgradePromptOpen(true);
+      return;
+    }
+    setStrictAiEnabled(checked);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ strictAiVerification: checked }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setStrictAiEnabled(!checked);
+      setSettingsMessage(typeof data.error === "string" ? data.error : "Could not save AI setting.");
+      return;
+    }
+    if (data.profile && user) {
+      setUser({ ...user, strictAiVerification: data.profile.strictAiVerification === true });
+    }
+    setSettingsMessage(checked ? "Strict AI verification enabled." : "Strict AI verification disabled.");
+  };
 
   useEffect(() => {
     const sanitized = sanitizeAccentThemeForPlan(getStoredAccentTheme(), user?.plan);
@@ -320,6 +347,30 @@ export default function SettingsPage() {
               Upgrade to Pro for 6 themes, or Premium for all 10.
             </p>
           )}
+        </section>
+
+        <section className="rounded-2xl p-5 glass-card">
+          <h2 className="font-semibold text-slate-900 dark:text-white">AI verification</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Free includes 3 standard AI checks per week. Pro gets 100/month with Strict AI, and Premium gets 500/month fair use.
+          </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Current usage: {user.aiVerificationCount ?? 0} checks this cycle.
+          </p>
+          <label className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+            <div>
+              <p className="text-sm font-medium text-slate-900 dark:text-white">Strict AI verification</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Looks harder for stale/reused photos and asks for more specific visual evidence.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={strictAiEnabled}
+              onChange={(event) => void handleStrictAiToggle(event.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
+            />
+          </label>
         </section>
 
         <section className="rounded-2xl p-5 glass-card">

@@ -443,7 +443,7 @@ function LandingContent() {
                 photos.
               </h1>
               <p className="mt-2 text-[clamp(0.9rem,2.5vmin,1.1rem)] text-slate-600 dark:text-slate-400 animate-welcome-headline [animation-fill-mode:forwards]">
-                Set goals. Snap proof. Grow your garden.
+                Pick weekly goals. Snap fresh proof. Keep your plants alive.
               </p>
               <div
                 className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-3xl border p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-xl animate-welcome-list [animation-fill-mode:forwards] glass-panel [border-color:var(--glass-border)]"
@@ -451,15 +451,15 @@ function LandingContent() {
                 <ol className="space-y-[clamp(0.5rem,2vh,1rem)] text-left text-[clamp(1rem,3.5vmin,1.5rem)] leading-snug text-slate-600 dark:text-slate-400">
                   <li className="flex gap-4">
                     <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
-                    Set a goal (how many times per week to prove it), reminder time, and plant style.
+                    Choose how many proofs you owe each week, then set your reminder and plant.
                   </li>
                   <li className="flex gap-4">
                     <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>
-                    Get a notification on your phone.
+                    Get reminders that get more urgent as the week runs out.
                   </li>
                   <li className="flex gap-4">
                     <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">3</span>
-                    Take a photo before midnight to keep your streak.
+                    Submit fresh photo proof. Pro can shield a miss with Streak Shields.
                   </li>
               </ol>
               </div>
@@ -598,7 +598,7 @@ function LandingContent() {
                 Choose your plan
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                Start free — no card required. Premium includes a one-time 7-day free trial (then the plan price below, or change plans anytime).
+                Start free with 3 AI checks per week. Premium includes a one-time 7-day trial with Strict AI and 3 Streak Shields.
               </p>
               <div className="mt-4 min-h-0 flex-1 overflow-y-auto space-y-3 pb-2">
                 {PLANS.map((plan) => (

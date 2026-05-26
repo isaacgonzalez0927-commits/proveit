@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Plus,
   Flame,
+  ShieldCheck,
   ChevronRight,
   Target,
   CheckCircle2,
@@ -42,6 +43,7 @@ import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
 import { isPremiumTrialActive } from "@/lib/premiumTrial";
+import { getWeeklyPlantState, plantWateringLevelForState } from "@/lib/plantState";
 
 function DashboardContent() {
   const router = useRouter();
@@ -51,6 +53,7 @@ function DashboardContent() {
     hasSelectedPlan,
     goals,
     submissions,
+    graceDayEvents,
     getSubmissionsForGoal,
     checkAndAwardItems,
     markGoalDone,
@@ -98,7 +101,7 @@ function DashboardContent() {
     isGoalDoneInCurrentWindow(goal, getSubmissionsForGoal, todayStr);
 
   const goalStreaks = goals.map((goal) => {
-    const actualStreak = getGoalStreak(goal, getSubmissionsForGoal);
+    const actualStreak = getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents);
     const displayStreak = applyGoalStreakOverride(goal.id, actualStreak, effectiveDeveloperSettings);
     return { goal, actualStreak, displayStreak };
   });
@@ -151,11 +154,17 @@ function DashboardContent() {
   const gardenSnapshotPlants = sortedGoalStreaks.map((entry) => {
     const due = isGoalDue(entry.goal, new Date(), getSubmissionsForGoal(entry.goal.id));
     const watered = isGoalCompletedInCurrentWindow(entry.goal);
+    const healthState = getWeeklyPlantState(
+      entry.goal,
+      getSubmissionsForGoal(entry.goal.id),
+      graceDayEvents
+    );
     return {
       id: entry.goal.id,
       stage: getPlantStageForStreak(entry.displayStreak).stage,
-      wateringLevel: watered ? 1 : due ? 0.18 : 0.62,
+      wateringLevel: watered ? 1 : due ? plantWateringLevelForState(healthState) : 0.62,
       variant: getGoalPlantVariant(entry.goal.id),
+      healthState,
     };
   });
 
@@ -318,7 +327,11 @@ function DashboardContent() {
                 aria-expanded={streakCardExpanded}
               >
                 <div className="flex items-center gap-2">
-                  <Flame className="h-5 w-5 text-amber-500" />
+                  {graceDayEvents.length > 0 ? (
+                    <ShieldCheck className="h-5 w-5 text-slate-400" />
+                  ) : (
+                    <Flame className="h-5 w-5 text-amber-500" />
+                  )}
                   <span className="font-semibold text-slate-900 dark:text-white">
                     Current streak
                   </span>

@@ -32,7 +32,7 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
   "goal-title": {
     title: "Name your goal",
-    body: "Type something you can prove with a photo (at least 2 characters). Optional description is below.",
+    body: "Type a habit that can be proven with a fresh photo. Clear goals make AI verification fairer.",
   },
   "goal-proof-fetch": {
     title: "Get AI photo ideas",
@@ -44,11 +44,11 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
   "goal-schedule": {
     title: "Rhythm & reminders",
-    body: "Set how many check-ins you want each week with the slider or + / −. You’ll get a daily reminder; you can prove it on any day (once per day, up to your weekly target). Pick your reminder time below.",
+    body: "Set how many proofs you owe each week. Free keeps 2 active reminders; Pro keeps 5 and gets Streak Shields if life gets messy.",
   },
   "goal-submit": {
     title: "Add it to your garden",
-    body: "Optionally pick a plant style, then tap Add goal to save.",
+    body: "Pick a plant style, then save. Stay on pace through Sunday to keep the plant healthy.",
   },
 };
 

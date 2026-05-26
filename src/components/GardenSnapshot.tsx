@@ -2,12 +2,14 @@
 
 import { PlantIllustration, type PlantStageKey } from "@/components/PlantIllustration";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
+import type { PlantHealthState } from "@/lib/plantState";
 
 export interface GardenSnapshotPlant {
   id: string;
   stage: PlantStageKey;
   wateringLevel: number;
   variant: GoalPlantVariant;
+  healthState?: PlantHealthState;
 }
 
 interface GardenSnapshotProps {
@@ -45,6 +47,7 @@ export function GardenSnapshot({
                 wateredGoals={plant.wateringLevel >= 0.99 ? 1 : 0}
                 size="small"
                 variant={plant.variant}
+                healthState={plant.healthState}
               />
             </div>
           ))}

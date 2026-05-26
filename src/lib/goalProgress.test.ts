@@ -57,4 +57,50 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
     expect(getGoalStreak(goal(), getSubmissionsForGoal)).toBeGreaterThanOrEqual(1);
     expect(isGoalDoneInCurrentWindow(goal(), getSubmissionsForGoal, today)).toBe(true);
   });
+
+  it("counts current weekly progress immediately but requires full quota for past weeks", () => {
+    const weekly = goal({ frequency: "weekly", timesPerWeek: 3 });
+    const subs: ProofSubmission[] = [
+      {
+        id: "s1",
+        goalId: "g1",
+        date: "2026-04-15",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-15T12:00:00.000Z",
+      },
+    ];
+    expect(getGoalStreak(weekly, () => subs)).toBe(1);
+  });
+
+  it("lets a Streak Shield protect a missed prior weekly quota", () => {
+    const weekly = goal({ frequency: "weekly", timesPerWeek: 3 });
+    const subs: ProofSubmission[] = [
+      {
+        id: "s1",
+        goalId: "g1",
+        date: "2026-04-15",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-15T12:00:00.000Z",
+      },
+      {
+        id: "s2",
+        goalId: "g1",
+        date: "2026-04-08",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-08T12:00:00.000Z",
+      },
+      {
+        id: "s3",
+        goalId: "g1",
+        date: "2026-04-09",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-09T12:00:00.000Z",
+      },
+    ];
+    expect(getGoalStreak(weekly, () => subs, [{ goalId: "g1", weekStart: "2026-04-05" }])).toBe(2);
+  });
 });
