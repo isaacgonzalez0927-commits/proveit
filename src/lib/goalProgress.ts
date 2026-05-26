@@ -52,11 +52,11 @@ function getDailyCalendarStreak(
 /**
  * Streak for weekly goals.
  *
- * - Current (in-progress) week counts as +1 as soon as there is ANY verified
- *   submission, so the user sees their streak react immediately when they
- *   prove a goal — they don't have to wait for the full quota.
+ * - Current (in-progress) week only counts once the full weekly quota is met.
+ * - Until then, completed past weeks remain visible so the streak does not
+ *   reset early before the week is over.
  * - Past weeks count toward the streak only if the full times-per-week
- *   quota was met (the original behavior).
+ *   quota was met.
  */
 function getWeeklyQuotaStreak(
   goal: GoalProgressGoal,
@@ -82,7 +82,7 @@ function getWeeklyQuotaStreak(
     return graceDays.filter((event) => event.goalId === goal.id && event.weekStart === key).length;
   };
 
-  if (countForWeek(weekCursor) > 0) streak += 1;
+  if (countForWeek(weekCursor) + graceForWeek(weekCursor) >= tw) streak += 1;
   weekCursor = subWeeks(weekCursor, 1);
 
   while (true) {

@@ -58,7 +58,7 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
     expect(isGoalDoneInCurrentWindow(goal(), getSubmissionsForGoal, today)).toBe(true);
   });
 
-  it("counts current weekly progress immediately but requires full quota for past weeks", () => {
+  it("does not increment the current weekly streak until the full quota is met", () => {
     const weekly = goal({ frequency: "weekly", timesPerWeek: 3 });
     const subs: ProofSubmission[] = [
       {
@@ -70,10 +70,49 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
         createdAt: "2026-04-15T12:00:00.000Z",
       },
     ];
+    expect(getGoalStreak(weekly, () => subs)).toBe(0);
+  });
+
+  it("keeps past weekly streak visible until the current week quota is met or fails", () => {
+    const weekly = goal({ frequency: "weekly", timesPerWeek: 3 });
+    const subs: ProofSubmission[] = [
+      {
+        id: "s1",
+        goalId: "g1",
+        date: "2026-04-15",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-15T12:00:00.000Z",
+      },
+      {
+        id: "s2",
+        goalId: "g1",
+        date: "2026-04-08",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-08T12:00:00.000Z",
+      },
+      {
+        id: "s3",
+        goalId: "g1",
+        date: "2026-04-09",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-09T12:00:00.000Z",
+      },
+      {
+        id: "s4",
+        goalId: "g1",
+        date: "2026-04-10",
+        imageDataUrl: "x",
+        status: "verified",
+        createdAt: "2026-04-10T12:00:00.000Z",
+      },
+    ];
     expect(getGoalStreak(weekly, () => subs)).toBe(1);
   });
 
-  it("lets a Streak Shield protect a missed prior weekly quota", () => {
+  it("lets a Streak Shield protect a missed prior weekly quota without counting partial current progress", () => {
     const weekly = goal({ frequency: "weekly", timesPerWeek: 3 });
     const subs: ProofSubmission[] = [
       {
@@ -101,6 +140,6 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
         createdAt: "2026-04-09T12:00:00.000Z",
       },
     ];
-    expect(getGoalStreak(weekly, () => subs, [{ goalId: "g1", weekStart: "2026-04-05" }])).toBe(2);
+    expect(getGoalStreak(weekly, () => subs, [{ goalId: "g1", weekStart: "2026-04-05" }])).toBe(1);
   });
 });
