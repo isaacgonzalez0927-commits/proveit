@@ -14,8 +14,12 @@ import {
  */
 export function ThemeSync() {
   useEffect(() => {
-    applyThemeMode(getStoredThemeMode());
+    const syncSystemTheme = () => applyThemeMode(getStoredThemeMode());
+    syncSystemTheme();
     applyAccentTheme(getStoredAccentTheme());
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    media.addEventListener("change", syncSystemTheme);
+    return () => media.removeEventListener("change", syncSystemTheme);
   }, []);
   return null;
 }

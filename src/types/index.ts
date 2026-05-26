@@ -118,11 +118,12 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    priceMonthly: 5.99,
-    priceYearly: 54,
+    priceMonthly: 0,
+    priceYearly: 0,
     maxGoals: 5,
     features: [
       "5 goals",
+      "Temporarily free until Stripe is ready",
       "6 plant styles (including strawberry)",
       "6 accent themes (Pink, Violet, Ocean, Teal, Orange, Amber + more)",
       "Strict AI verification option with richer feedback",
@@ -138,11 +139,11 @@ export const PLANS: Plan[] = [
   {
     id: "premium",
     name: "Premium",
-    priceMonthly: 12.99,
-    priceYearly: 99,
+    priceMonthly: 0,
+    priceYearly: 0,
     maxGoals: -1,
     features: [
-      "7-day free trial once per account (then monthly/yearly price)",
+      "Temporarily free until Stripe is ready",
       "Unlimited goals",
       "All 8 plant styles (including cactus)",
       "All 10 accent themes",

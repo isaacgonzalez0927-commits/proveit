@@ -74,7 +74,7 @@ export default function BuddyPage() {
     removeGoal,
     canAddGoal,
     getSubmissionsForGoal,
-    useGraceDay,
+    useGraceDay: consumeGraceDay,
     getGoalPlantVariant,
     setGoalPlantVariant,
     clearPlanSelectionForNewUser,
@@ -1062,7 +1062,7 @@ export default function BuddyPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        void useGraceDay(entry.goal.id, todayStr).then((result) => {
+                        void consumeGraceDay(entry.goal.id, todayStr).then((result) => {
                           setGoalManagerMessage(
                             result.ok ? "Streak Shield used. Your streak is protected, but this week is marked shielded instead of perfect." : result.error
                           );

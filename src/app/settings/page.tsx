@@ -3,7 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { SlidersHorizontal, Trash2, Lock } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  HelpCircle,
+  Info,
+  Lock,
+  Mail,
+  Palette,
+  Search,
+  Shield,
+  Sparkles,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { normalizePlanId } from "@/types";
 import { isInternalAuthEmail } from "@/lib/usernameAuth";
@@ -80,6 +93,7 @@ export default function SettingsPage() {
   const [contactDraft, setContactDraft] = useState("");
   const [contactSaving, setContactSaving] = useState(false);
   const [strictAiEnabled, setStrictAiEnabled] = useState(false);
+  const [settingsQuery, setSettingsQuery] = useState("");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
 
   useEffect(() => {
@@ -294,23 +308,83 @@ export default function SettingsPage() {
     );
   }
 
+  const query = settingsQuery.trim().toLowerCase();
+  const matchesSettingsQuery = (value: string) => query === "" || value.toLowerCase().includes(query);
+
   return (
     <>
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
-        <header>
-          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-            Settings
-          </h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-            Themes, gallery display, and account.
-          </p>
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+        <header className="sticky top-0 z-10 -mx-4 bg-slate-50/85 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl dark:bg-[#061527]/85">
+          <div className="grid grid-cols-3 items-center">
+            <Link
+              href="/dashboard"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-900 active:bg-slate-200/70 dark:text-white dark:active:bg-white/10"
+              aria-label="Back to dashboard"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Link>
+            <h1 className="text-center text-lg font-semibold text-slate-950 dark:text-white">Settings</h1>
+            <div />
+          </div>
+          <label className="mt-4 flex h-14 items-center gap-3 rounded-2xl bg-white px-4 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:ring-white/10">
+            <Search className="h-6 w-6 text-slate-900 dark:text-white" />
+            <span className="sr-only">Search settings</span>
+            <input
+              type="search"
+              value={settingsQuery}
+              onChange={(event) => setSettingsQuery(event.target.value)}
+              placeholder="Search for a setting..."
+              className="min-w-0 flex-1 bg-transparent text-[17px] text-slate-900 placeholder:text-slate-300 focus:outline-none dark:text-white dark:placeholder:text-slate-600"
+            />
+          </label>
         </header>
-        <section className="rounded-2xl p-5 glass-card">
-          <h2 className="font-semibold text-slate-900 dark:text-white">Theme colors</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Green is free. Pro: 6 theme colors. Premium: all 10 theme colors.
-          </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+
+        <div className="space-y-5 pt-3">
+          {matchesSettingsQuery("account profile plan") && (
+            <section>
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Account
+              </p>
+              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+                <div className="flex items-center gap-3 px-4 py-4">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300">
+                    <User className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-semibold text-slate-950 dark:text-white">
+                      {user.name || user.username || "Your account"}
+                    </p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                      {user.contactEmail || user.email || "Signed in"}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-prove-100 px-3 py-1 text-xs font-bold capitalize text-prove-700 dark:bg-prove-950 dark:text-prove-300">
+                    {user.plan}
+                  </span>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {matchesSettingsQuery("appearance theme colors accent dark") && (
+            <section>
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Appearance
+              </p>
+              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+                <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                    <Palette className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-semibold text-slate-950 dark:text-white">Theme colors</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      All colors are available while plans are free.
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-300" />
+                </div>
+                <div className="grid gap-2 p-3">
             {ACCENT_THEME_OPTIONS.map((option) => {
               const selected = accentTheme === option.id;
               const locked = !canUseAccentTheme(user?.plan, option.id);
@@ -319,7 +393,7 @@ export default function SettingsPage() {
                   key={option.id}
                   type="button"
                   onClick={() => updateAccentTheme(option.id)}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${
+                  className={`flex items-center justify-between rounded-2xl border px-3 py-2.5 text-sm transition ${
                     selected
                       ? "border-prove-500 bg-prove-50 text-prove-800 dark:border-prove-500 dark:bg-prove-950/40 dark:text-prove-300"
                       : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
@@ -341,23 +415,29 @@ export default function SettingsPage() {
                 </button>
               );
             })}
+                </div>
           </div>
-          {user?.plan === "free" && (
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-              Upgrade to Pro for 6 themes, or Premium for all 10.
-            </p>
+            </section>
           )}
-        </section>
 
-        <section className="rounded-2xl p-5 glass-card">
-          <h2 className="font-semibold text-slate-900 dark:text-white">AI verification</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Free includes 3 standard AI checks per week. Pro gets 100/month with Strict AI, and Premium gets 500/month fair use.
-          </p>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Current usage: {user.aiVerificationCount ?? 0} checks this cycle.
-          </p>
-          <label className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+          {matchesSettingsQuery("ai proof verification strict") && (
+            <section>
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Proof
+              </p>
+              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+                <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#061527] text-prove-300">
+                    <Sparkles className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-semibold text-slate-950 dark:text-white">AI verification</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {user.aiVerificationCount ?? 0} checks used this cycle.
+                    </p>
+                  </div>
+                </div>
+          <label className="flex items-start justify-between gap-3 px-4 py-4">
             <div>
               <p className="text-sm font-medium text-slate-900 dark:text-white">Strict AI verification</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -371,18 +451,20 @@ export default function SettingsPage() {
               className="mt-1 h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
             />
           </label>
-        </section>
+              </div>
+            </section>
+          )}
 
-        <section className="rounded-2xl p-5 glass-card">
-          <h2 className="font-semibold text-slate-900 dark:text-white">Gallery display</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            These options control what is shown on the Goal Gallery page.
-          </p>
-          <div className="mt-4 space-y-2">
+          {matchesSettingsQuery("gallery display proof photos streak verified history") && (
+            <section>
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Gallery
+              </p>
+              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
             {HISTORY_SETTING_ITEMS.map((item) => (
               <label
                 key={item.key}
-                className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50"
+                    className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 dark:border-white/10"
               >
                 <div>
                   <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
@@ -396,43 +478,64 @@ export default function SettingsPage() {
                 />
               </label>
             ))}
-          </div>
-        </section>
+              </div>
+            </section>
+          )}
 
-        {useSupabase && (
-          <section className="rounded-2xl p-5 glass-card">
-            <h2 className="font-semibold text-slate-900 dark:text-white">Contact email (optional)</h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Add a real address if you want password reset links in your inbox. You still sign in with your username and password.
+        {useSupabase && matchesSettingsQuery("contact email password reset account") && (
+          <section>
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Contact
             </p>
-            <div className="mt-4 space-y-2">
+            <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+              <div className="flex items-start gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <Mail className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Contact email</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Used for password reset links and account recovery.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2 p-4">
               <input
                 type="email"
                 value={contactDraft}
                 onChange={(e) => setContactDraft(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
               <button
                 type="button"
                 onClick={handleSaveContactEmail}
                 disabled={contactSaving}
-                className="rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
+                  className="w-full rounded-2xl bg-prove-600 px-4 py-3 text-sm font-semibold text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
               >
                 {contactSaving ? "Saving…" : "Save email"}
               </button>
+              </div>
             </div>
           </section>
         )}
 
-        {useSupabase && user?.email && !isInternalAuthEmail(user.email) && (
-          <section className="rounded-2xl p-5 glass-card">
-            <h2 className="font-semibold text-slate-900 dark:text-white">Confirm email</h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Confirming your email secures your account and lets you reset your password if you forget it. Resend the confirmation link below — it’s sent via Resend (same as password reset).
-            </p>
-            <div className="mt-4">
+        {useSupabase && user?.email && !isInternalAuthEmail(user.email) && matchesSettingsQuery("confirm email security") && (
+          <section>
+            <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+              <div className="flex items-start gap-3 px-4 py-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300">
+                  <Shield className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Confirm email</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Secure your account and enable password recovery.
+                  </p>
+                </div>
+              </div>
+              <div className="px-4 pb-4">
               <button
                 type="button"
                 onClick={async () => {
@@ -471,7 +574,7 @@ export default function SettingsPage() {
                   }
                 }}
                 disabled={confirmEmailLoading}
-                className="rounded-lg bg-prove-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
+                  className="w-full rounded-2xl bg-prove-600 px-4 py-3 text-sm font-semibold text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
               >
                 {confirmEmailLoading ? "Sending…" : "Resend confirmation email"}
               </button>
@@ -489,18 +592,19 @@ export default function SettingsPage() {
             {confirmEmailMessage && (
               <p className={`mt-3 text-sm ${confirmEmailMessage.startsWith("Check") ? "text-prove-700 dark:text-prove-300" : "text-amber-700 dark:text-amber-300"}`} role="status">
                 {confirmEmailMessage}
-              </p>
+                </p>
             )}
+            </div>
           </section>
         )}
 
-        {isCreatorAccount && (
-          <section className="rounded-2xl border border-amber-200/90 p-5 dark:border-amber-800/50 glass-card">
-            <h2 className="font-semibold text-amber-900 dark:text-amber-200">Developer tools (private)</h2>
-            <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/90">
-              Only visible for creator accounts. Toggle developer tools here.
+        {isCreatorAccount && matchesSettingsQuery("developer tools private guest mode") && (
+          <section>
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-500">
+              Developer
             </p>
-            <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-200">
+            <div className="rounded-3xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/50 dark:bg-amber-950/25">
+            <label className="inline-flex items-center gap-2 rounded-2xl border border-amber-300 bg-white px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-200">
               <input
                 type="checkbox"
                 checked={developerEnabled}
@@ -540,13 +644,19 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+            </div>
           </section>
         )}
 
-        <section className="rounded-2xl border border-red-200/90 p-5 dark:border-red-900/50 glass-card">
+        {matchesSettingsQuery("hide goals gallery privacy") && (
+        <section>
+          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-red-400">
+            Privacy
+          </p>
+          <div className="rounded-3xl border border-red-200 bg-white p-4 shadow-sm dark:border-red-900/60 dark:bg-slate-900">
           <h2 className="font-semibold text-red-800 dark:text-red-200">Hide goals from gallery</h2>
           <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
-            Hiding removes the goal from Gallery view only. It does not delete proof data.
+            Hide a goal from Gallery without deleting proof data.
           </p>
           {visibleGoalHistoryEntries.length === 0 ? (
             <p className="mt-3 text-sm text-red-700/90 dark:text-red-300/90">
@@ -603,30 +713,40 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+          </div>
         </section>
+        )}
 
-        <section className="rounded-2xl p-5 glass-card">
-          <h2 className="font-semibold text-slate-900 dark:text-white">Legal & support</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Review legal policies and contact support.
+        {matchesSettingsQuery("help support about legal privacy terms") && (
+        <section>
+          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            More
           </p>
-          <div className="mt-3 flex flex-wrap gap-4 text-sm">
-            <Link href="/privacy" className="text-prove-600 hover:underline dark:text-prove-400">
-              Privacy Policy
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+            <Link href="/privacy" className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
+              <Info className="h-5 w-5 text-slate-900 dark:text-white" />
+              <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white">Privacy Policy</span>
+              <ChevronRight className="h-5 w-5 text-slate-300" />
             </Link>
-            <Link href="/terms" className="text-prove-600 hover:underline dark:text-prove-400">
-              Terms of Use
+            <Link href="/terms" className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
+              <Shield className="h-5 w-5 text-slate-900 dark:text-white" />
+              <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white">Terms of Use</span>
+              <ChevronRight className="h-5 w-5 text-slate-300" />
             </Link>
             <a
               href="mailto:contact.proveit.app@gmail.com"
-              className="text-prove-600 hover:underline dark:text-prove-400"
+              className="flex items-center gap-3 px-4 py-4"
             >
-              Contact support
+              <HelpCircle className="h-5 w-5 text-slate-900 dark:text-white" />
+              <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white">Help and Support</span>
+              <ChevronRight className="h-5 w-5 text-slate-300" />
             </a>
           </div>
         </section>
+        )}
 
-        <section className="rounded-2xl border border-red-300/90 p-5 dark:border-red-900/55 glass-card">
+        {matchesSettingsQuery("delete account danger") && (
+        <section className="rounded-3xl border border-red-300/90 bg-red-50/70 p-5 dark:border-red-900/55 dark:bg-red-950/20">
           <h2 className="font-semibold text-red-800 dark:text-red-200">Delete account</h2>
           <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
             Permanently delete your account and all associated data.
@@ -640,19 +760,14 @@ export default function SettingsPage() {
             {deletingAccount ? "Deleting account..." : "Delete my account"}
           </button>
         </section>
+        )}
 
         {settingsMessage && (
-          <p className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
             {settingsMessage}
           </p>
         )}
-
-        <Link
-          href="/dashboard"
-          className="mt-8 block text-center text-sm text-prove-600 hover:underline dark:text-prove-400"
-        >
-          ← Back to dashboard
-        </Link>
+        </div>
       </main>
       <UpgradePromptModal
         open={upgradePromptOpen}

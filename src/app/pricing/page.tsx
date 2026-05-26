@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Check, Zap, Crown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
-import { canStartPremiumTrial } from "@/lib/premiumTrial";
 import { PLANS, type PlanId } from "@/types";
 
 function PricingContent() {
@@ -16,9 +15,7 @@ function PricingContent() {
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (!user) return;
-    await setPlan(planId, billing, {
-      startPremiumTrial: planId === "premium" && canStartPremiumTrial(user),
-    });
+    await setPlan(planId, billing);
     setPostPlanWelcomeFlag(planId);
     router.push("/dashboard");
   };
@@ -31,7 +28,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Free: 2 goals, 2 reminders, and 3 AI checks per week. Pro adds 5 reminders, 100 AI checks/month, Strict AI, Streak Shields, Gallery, and Goal Break. Premium unlocks unlimited goals, 500 AI checks/month fair use, and 7 Shields. New to Premium? One 7-day trial per account.
+            All plans are temporarily free until Stripe is ready. Try Pro or Premium now, then we’ll connect real billing later.
           </p>
           <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl p-1.5 glass-card">
             <button
@@ -72,7 +69,6 @@ function PricingContent() {
               currentPlanId={user?.plan ?? null}
               currentPlanBilling={user?.planBilling ?? "monthly"}
               hasUser={!!user}
-              canStartPremiumTrial={canStartPremiumTrial(user)}
               onSelect={() => handleSelectPlan(plan.id as PlanId)}
             />
           ))}
@@ -92,7 +88,6 @@ function PricingCard({
   currentPlanId,
   currentPlanBilling,
   hasUser,
-  canStartPremiumTrial,
   onSelect,
 }: {
   plan: (typeof PLANS)[0];
@@ -100,14 +95,8 @@ function PricingCard({
   currentPlanId: PlanId | null;
   currentPlanBilling: "monthly" | "yearly";
   hasUser: boolean;
-  canStartPremiumTrial: boolean;
   onSelect: () => void;
 }) {
-  const price =
-    billing === "yearly" && plan.priceYearly >= 0
-      ? plan.priceYearly
-      : plan.priceMonthly;
-  const isYearly = billing === "yearly" && plan.priceYearly > 0;
   const isCurrent =
     currentPlanId === plan.id && currentPlanBilling === billing;
   const isFree = plan.id === "free";
@@ -146,10 +135,10 @@ function PricingCard({
       </div>
       <div className="mt-4 flex items-baseline gap-1">
         <span className="text-3xl font-bold text-slate-900 dark:text-white">
-          ${price}
+          Free
         </span>
         <span className="text-slate-500 dark:text-slate-400">
-          /{isYearly ? "year" : "month"}
+          while Stripe is set up
         </span>
       </div>
       <ul className="mt-6 space-y-3">
@@ -186,9 +175,7 @@ function PricingCard({
           >
             {isFree
               ? "Get started free"
-              : isPremium && canStartPremiumTrial
-                ? "Start 7-day free trial"
-                : "Upgrade"}
+              : `Use ${plan.name} free`}
           </Link>
         )}
       </div>

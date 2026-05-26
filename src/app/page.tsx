@@ -11,7 +11,6 @@ import {
   usernameToAuthEmail,
 } from "@/lib/usernameAuth";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
-import { canStartPremiumTrial } from "@/lib/premiumTrial";
 import {
   PENDING_PLAN_AFTER_TOUR_KEY,
   TOUR_DONE_KEY,
@@ -372,9 +371,7 @@ function LandingContent() {
 
   const handleChoosePlan = useCallback(
     async (planId: PlanId) => {
-      await setPlan(planId, "monthly", {
-        startPremiumTrial: planId === "premium" && canStartPremiumTrial(user),
-      });
+    await setPlan(planId, "monthly");
       setPostPlanWelcomeFlag(planId);
       router.push("/dashboard");
     },
@@ -423,60 +420,48 @@ function LandingContent() {
           style={{ transform: `translateX(-${slide * (100 / 3)}%)` }}
         >
           {/* Slide 0 – Welcome – full-screen hero */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-[clamp(1rem,5vw,3rem)] pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
-            <div className="flex w-full flex-1 flex-col items-center justify-center text-center">
-              <div
-                className="inline-flex w-fit items-center gap-2 rounded-full px-[clamp(0.875rem,3vw,1.5rem)] py-[clamp(0.35rem,1.25vh,0.6rem)] shadow-sm animate-welcome-step [animation-fill-mode:forwards] glass-surface"
-              >
-                <span className="h-[clamp(0.3rem,1.75vw,0.6rem)] w-[clamp(0.3rem,1.75vw,0.6rem)] rounded-full bg-prove-500" />
-                <p className="text-[clamp(0.75rem,2.25vw,1rem)] font-semibold uppercase tracking-wider text-prove-700 dark:text-prove-300">
+          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
+            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+              <div className="relative mx-auto mb-5 h-72 w-full max-w-[320px]">
+                <div className="absolute left-0 top-7 h-44 w-36 overflow-hidden rounded-[2rem] border border-white/40 bg-white shadow-2xl shadow-slate-900/20 dark:border-white/10 dark:bg-slate-900">
+                  <img
+                    src="/onboarding/book-proof.png"
+                    alt="Open book proof"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="absolute bottom-0 right-0 flex h-44 w-44 items-center justify-center rounded-[2.25rem] border border-emerald-100 bg-[#061527] p-5 shadow-2xl shadow-emerald-950/35 dark:border-emerald-900/60">
+                  <img
+                    src="/onboarding/plant-growth.png"
+                    alt="Plant growing"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="absolute right-6 top-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-emerald-900/25">
+                  AI verified
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-prove-600 dark:text-prove-300">
                   Step 1 of 3
                 </p>
-              </div>
               <h1
-                className="mt-[clamp(0.5rem,2vh,1rem)] max-w-[14ch] font-display text-[clamp(3.5rem,16vmin,9rem)] font-bold leading-[1.02] tracking-tight text-slate-900 animate-welcome-headline [animation-fill-mode:forwards] dark:text-white"
+                className="mt-3 font-display text-5xl font-bold leading-[0.98] tracking-tight text-slate-950 dark:text-white"
               >
-                Prove your
-                <br />
-                <span className="text-prove-600 dark:text-prove-400">habits</span> with
-                <br />
-                photos.
+                Grow habits with proof.
               </h1>
-              <p className="mt-2 text-[clamp(0.9rem,2.5vmin,1.1rem)] text-slate-600 dark:text-slate-400 animate-welcome-headline [animation-fill-mode:forwards]">
-                Pick weekly goals. Snap fresh proof. Keep your plants alive.
+              <p className="mx-auto mt-4 max-w-[28ch] text-base leading-relaxed text-slate-600 dark:text-slate-300">
+                Set a weekly goal, snap fresh proof, and watch your garden react.
               </p>
-              <div
-                className="mt-[clamp(0.75rem,3vh,1.5rem)] w-full max-w-2xl rounded-3xl border p-[clamp(1rem,4vw,1.5rem)] backdrop-blur-xl animate-welcome-list [animation-fill-mode:forwards] glass-panel [border-color:var(--glass-border)]"
-              >
-                <ol className="space-y-[clamp(0.5rem,2vh,1rem)] text-left text-[clamp(1rem,3.5vmin,1.5rem)] leading-snug text-slate-600 dark:text-slate-400">
-                  <li className="flex gap-4">
-                    <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">1</span>
-                    Choose how many proofs you owe each week, then set your reminder and plant.
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">2</span>
-                    Get reminders that get more urgent as the week runs out.
-                  </li>
-                  <li className="flex gap-4">
-                    <span className="flex h-[clamp(1.5rem,5vmin,2.25rem)] w-[clamp(1.5rem,5vmin,2.25rem)] shrink-0 items-center justify-center rounded-full bg-prove-100 text-[clamp(0.75rem,2.5vmin,1rem)] font-bold text-prove-700 dark:bg-prove-900/80 dark:text-prove-300">3</span>
-                    Submit fresh photo proof. Pro can shield a miss with Streak Shields.
-                  </li>
-              </ol>
+              <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                <div className="rounded-2xl bg-white/70 px-2 py-3 shadow-sm dark:bg-slate-900/70">Weekly goals</div>
+                <div className="rounded-2xl bg-white/70 px-2 py-3 shadow-sm dark:bg-slate-900/70">Photo proof</div>
+                <div className="rounded-2xl bg-white/70 px-2 py-3 shadow-sm dark:bg-slate-900/70">Live garden</div>
+              </div>
               </div>
             </div>
-            <div className="mt-[clamp(0.75rem,3vh,1.5rem)] flex w-full items-center justify-between animate-welcome-cta [animation-fill-mode:forwards]">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode("signin");
-                    setLoginError("");
-                    goTo(1);
-                  }}
-                  className="rounded-full border px-3 py-[clamp(0.4rem,1.8vh,0.7rem)] text-[clamp(0.8rem,2.4vmin,1rem)] font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900/60 glass-outline-subtle [border-color:var(--glass-border)]"
-                >
-                  I already have an account
-                </button>
+            <div className="mt-5 flex w-full items-center justify-center">
+              <div className="flex w-full max-w-sm flex-col gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -484,9 +469,20 @@ function LandingContent() {
                     setLoginError("");
                     goTo(1);
                   }}
-                  className="rounded-full bg-prove-600 px-[clamp(1.25rem,4.5vw,1.75rem)] py-[clamp(0.6rem,2.5vh,0.9rem)] text-[clamp(0.9375rem,2.75vmin,1.125rem)] font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400 btn-glass-primary"
+                  className="rounded-2xl bg-prove-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400 btn-glass-primary"
                 >
                   Get started
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("signin");
+                    setLoginError("");
+                    goTo(1);
+                  }}
+                  className="rounded-2xl border border-slate-200 bg-white/70 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-white dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
+                >
+                  I already have an account
                 </button>
               </div>
             </div>
@@ -598,7 +594,7 @@ function LandingContent() {
                 Choose your plan
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                Start free with 3 AI checks per week. Premium includes a one-time 7-day trial with Strict AI and 3 Streak Shields.
+                All plans are free while payments are being set up. Pick the features you want to try.
               </p>
               <div className="mt-4 min-h-0 flex-1 overflow-y-auto space-y-3 pb-2">
                 {PLANS.map((plan) => (
@@ -626,7 +622,7 @@ function LandingContent() {
                           </p>
                         </div>
                         <span className={`text-[16px] font-bold shrink-0 ${plan.id === "free" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>
-                          {plan.priceMonthly === 0 ? "Free" : `$${plan.priceMonthly}/mo`}
+                          Free now
                         </span>
                       </div>
                       <ul className="mt-3 flex flex-col gap-1.5 text-[12px] text-slate-600 dark:text-slate-400">
@@ -640,9 +636,7 @@ function LandingContent() {
                       <p className="mt-3 text-[13px] font-semibold text-prove-600 dark:text-prove-400">
                         {plan.id === "free"
                           ? "Get started free →"
-                          : plan.id === "premium" && user && canStartPremiumTrial(user)
-                            ? "Start 7-day Premium trial →"
-                            : `Choose ${plan.name} →`}
+                          : `Try ${plan.name} free →`}
                       </p>
                     </div>
                   </button>
