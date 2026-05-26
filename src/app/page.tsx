@@ -421,24 +421,68 @@ function LandingContent() {
         >
           {/* Slide 0 – Welcome – full-screen hero */}
           <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
-            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
-              <div className="relative mx-auto mb-5 h-72 w-full max-w-[320px]">
-                <div className="absolute left-0 top-7 h-44 w-36 overflow-hidden rounded-[2rem] border border-white/40 bg-white shadow-2xl shadow-slate-900/20 dark:border-white/10 dark:bg-slate-900">
+            <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+              <div className="relative mx-auto mb-6 flex h-72 w-full max-w-[360px] items-center justify-center">
+                <div className="absolute left-0 top-8 h-56 w-[30%] min-w-[92px] rotate-[-5deg] overflow-hidden rounded-[1.45rem] border-[3px] border-slate-950 bg-slate-950 shadow-2xl shadow-slate-900/25">
                   <img
                     src="/onboarding/book-proof.png"
-                    alt="Open book proof"
-                    className="h-full w-full object-cover"
+                    alt="Book proof preview"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/92 via-[#061527]/35 to-[#061527]/95" />
+                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
+                    <div>
+                      <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-prove-200">
+                        Proof
+                      </p>
+                      <p className="mt-1 text-[13px] font-bold leading-tight">Snap it fresh</p>
+                    </div>
+                    <div className="rounded-full bg-prove-500 py-1.5 text-center text-[9px] font-bold text-white">
+                      Verify
+                    </div>
+                  </div>
                 </div>
-                <div className="absolute bottom-0 right-0 flex h-44 w-44 items-center justify-center rounded-[2.25rem] border border-emerald-100 bg-[#061527] p-5 shadow-2xl shadow-emerald-950/35 dark:border-emerald-900/60">
+
+                <div className="relative z-10 h-64 w-[34%] min-w-[108px] overflow-hidden rounded-[1.65rem] border-[3px] border-slate-950 bg-[#061527] shadow-2xl shadow-emerald-950/35">
+                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-prove-500/30 to-transparent" />
+                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
+                    <div>
+                      <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-prove-200">
+                        Garden
+                      </p>
+                      <p className="mt-1 text-[13px] font-bold leading-tight">Grow your streak</p>
+                    </div>
+                    <div className="flex flex-1 items-center justify-center py-2">
+                      <img
+                        src="/onboarding/plant-growth.png"
+                        alt="Transparent plant preview"
+                        className="h-28 w-28 object-contain drop-shadow-[0_18px_24px_rgba(16,185,129,0.25)]"
+                      />
+                    </div>
+                    <div className="rounded-full bg-prove-500 py-1.5 text-center text-[9px] font-bold text-white">
+                      Keep alive
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute right-0 top-8 h-56 w-[30%] min-w-[92px] rotate-[5deg] overflow-hidden rounded-[1.45rem] border-[3px] border-slate-950 bg-slate-950 shadow-2xl shadow-slate-900/25">
                   <img
-                    src="/onboarding/plant-growth.png"
-                    alt="Plant growing"
-                    className="h-full w-full object-contain"
+                    src="/onboarding/book-proof.png"
+                    alt="Habit reminder preview"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
-                </div>
-                <div className="absolute right-6 top-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-emerald-900/25">
-                  AI verified
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/45 to-[#061527]/95" />
+                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
+                    <div>
+                      <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-prove-200">
+                        Reminders
+                      </p>
+                      <p className="mt-1 text-[13px] font-bold leading-tight">Stay on track</p>
+                    </div>
+                    <div className="rounded-full bg-prove-500 py-1.5 text-center text-[9px] font-bold text-white">
+                      This week
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="text-center">
