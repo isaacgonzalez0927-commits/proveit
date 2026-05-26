@@ -646,52 +646,57 @@ function LandingContent() {
 
           {/* Slide 4 – Choose plan: clean, appetizing cards */}
           <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
-            <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1">
+            <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1 justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 5</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
                 Start your free trial
               </h2>
-              <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                Pick a plan to try. All plans are free while payments are being set up.
+              <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
+                Choose your trial. No payment while Stripe is being set up.
               </p>
-              <div className="mt-4 min-h-0 flex-1 overflow-y-auto space-y-3 pb-2">
-                {PLANS.map((plan) => (
+              <div className="mt-3 space-y-2">
+                {[...PLANS]
+                  .sort((a, b) => {
+                    const order: Record<string, number> = { premium: 0, pro: 1, free: 2 };
+                    return order[a.id] - order[b.id];
+                  })
+                  .map((plan) => (
                   <button
                     key={plan.id}
                     type="button"
                     onClick={() => handleChoosePlan(plan.id as PlanId)}
                     className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] glass-card ${
-                      plan.id === "free"
+                      plan.id === "premium"
                         ? "border-prove-400 dark:border-prove-500 shadow-md shadow-prove-600/10 dark:shadow-prove-900/25"
                         : "border-slate-200/85 dark:border-slate-700/65 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
                   >
-                    <div className="px-4 pt-4 pb-2">
+                    <div className="px-4 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          {plan.id === "free" && (
+                          {plan.id === "premium" && (
                             <span className="inline-block rounded-full bg-prove-200 dark:bg-prove-800/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-prove-700 dark:text-prove-300 mb-1.5">
-                              Recommended to start
+                              Start free trial
                             </span>
                           )}
-                          <p className="text-[17px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
-                          <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
+                          <p className="text-[16px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
+                          <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
                             {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{(plan.maxGoals ?? 0) !== 1 ? "s" : ""}
                           </p>
                         </div>
-                        <span className={`text-[16px] font-bold shrink-0 ${plan.id === "free" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>
-                          Free now
+                        <span className={`shrink-0 text-[14px] font-bold ${plan.id === "premium" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>
+                          {plan.id === "premium" ? "Trial" : "Free"}
                         </span>
                       </div>
-                      <ul className="mt-3 flex flex-col gap-1.5 text-[12px] text-slate-600 dark:text-slate-400">
-                        {plan.features.slice(0, 4).map((f, i) => (
+                      <ul className="mt-2 flex flex-col gap-1 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
+                        {plan.features.slice(0, 2).map((f, i) => (
                           <li key={i} className="flex gap-2">
                             <span className="text-prove-500 dark:text-prove-400 shrink-0 mt-0.5" aria-hidden>✓</span>
                             <span>{f}</span>
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-3 text-[13px] font-semibold text-prove-600 dark:text-prove-400">
+                      <p className="mt-2 text-[12px] font-semibold text-prove-600 dark:text-prove-400">
                         {plan.id === "free"
                           ? "Get started free →"
                           : `Try ${plan.name} free →`}
