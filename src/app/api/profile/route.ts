@@ -16,6 +16,27 @@ function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
 
 type ProfileRow = Record<string, unknown>;
 
+function isOptionalProfileSchemaError(message: string): boolean {
+  const lower = message.toLowerCase();
+  const soundsMissing =
+    lower.includes("does not exist") ||
+    lower.includes("could not find") ||
+    lower.includes("not find") ||
+    lower.includes("schema cache");
+  if (!soundsMissing) return false;
+  return /grace_day_|strict_ai_verification|trial_expired_needs_review|ai_verification_|premium_trial_/i.test(
+    message
+  );
+}
+
+function buildProfileFallbackUpdates(updates: Record<string, unknown>): Record<string, unknown> {
+  const fallback: Record<string, unknown> = { updated_at: updates.updated_at };
+  for (const key of ["plan", "plan_billing", "username", "contact_email", "name"]) {
+    if (updates[key] !== undefined) fallback[key] = updates[key];
+  }
+  return fallback;
+}
+
 async function freezeExcessRemindersForPlan(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
@@ -361,11 +382,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ ok: true, profile: profileJsonFromRow(final) });
   }
 
-  const { data: updatedRows, error: upError } = await supabase
+  let appliedUpdates = updates;
+  let { data: updatedRows, error: upError } = await supabase
     .from("profiles")
     .update(updates)
     .eq("id", user.id)
     .select("id");
+
+  if (upError) {
+    const fallbackUpdates = buildProfileFallbackUpdates(updates);
+    const canRetryWithCoreProfileColumns =
+      isOptionalProfileSchemaError(upError.message) &&
+      Object.keys(fallbackUpdates).some((key) => key !== "updated_at");
+    if (canRetryWithCoreProfileColumns) {
+      const retry = await supabase
+        .from("profiles")
+        .update(fallbackUpdates)
+        .eq("id", user.id)
+        .select("id");
+      updatedRows = retry.data;
+      upError = retry.error;
+      if (!upError) {
+        appliedUpdates = fallbackUpdates;
+      }
+    }
+  }
 
   if (upError) {
     if (/profiles_username_unique|duplicate key|unique constraint/i.test(upError.message)) {
@@ -378,7 +419,7 @@ export async function PATCH(request: NextRequest) {
     const { error: insError } = await supabase.from("profiles").insert({
       id: user.id,
       email: user.email ?? "",
-      ...updates,
+      ...appliedUpdates,
     });
     if (insError) {
       if (/profiles_username_unique|duplicate key|unique constraint/i.test(insError.message)) {
@@ -388,11 +429,11 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  if (typeof updates.plan === "string") {
+  if (typeof appliedUpdates.plan === "string") {
     await freezeExcessRemindersForPlan(
       supabase,
       user.id,
-      normalizePlan(updates.plan)
+      normalizePlan(appliedUpdates.plan)
     );
   }
 
@@ -419,33 +460,33 @@ export async function PATCH(request: NextRequest) {
       profile: {
         id: user.id,
         email: user.email ?? "",
-        plan: normalizePlan(updates.plan),
+        plan: normalizePlan(appliedUpdates.plan),
         planBilling:
-          typeof updates.plan_billing === "string" && ["monthly", "yearly"].includes(updates.plan_billing)
-            ? (updates.plan_billing as "monthly" | "yearly")
+          typeof appliedUpdates.plan_billing === "string" && ["monthly", "yearly"].includes(appliedUpdates.plan_billing)
+            ? (appliedUpdates.plan_billing as "monthly" | "yearly")
             : "monthly",
         createdAt: user.created_at,
-        username: typeof updates.username === "string" ? updates.username : undefined,
+        username: typeof appliedUpdates.username === "string" ? appliedUpdates.username : undefined,
         contactEmail:
-          updates.contact_email === null
+          appliedUpdates.contact_email === null
             ? undefined
-            : typeof updates.contact_email === "string"
-              ? updates.contact_email
+            : typeof appliedUpdates.contact_email === "string"
+              ? appliedUpdates.contact_email
               : undefined,
-        name: typeof updates.name === "string" ? updates.name : undefined,
+        name: typeof appliedUpdates.name === "string" ? appliedUpdates.name : undefined,
         premiumTrialEndsAt:
-          updates.premium_trial_ends_at != null ? String(updates.premium_trial_ends_at) : null,
-        premiumTrialUsed: updates.premium_trial_used === true,
+          appliedUpdates.premium_trial_ends_at != null ? String(appliedUpdates.premium_trial_ends_at) : null,
+        premiumTrialUsed: appliedUpdates.premium_trial_used === true,
         graceDayBalance:
-          typeof updates.grace_day_balance === "number" ? updates.grace_day_balance : 0,
+          typeof appliedUpdates.grace_day_balance === "number" ? appliedUpdates.grace_day_balance : 0,
         graceDayCycleAnchor:
-          updates.grace_day_cycle_anchor != null ? String(updates.grace_day_cycle_anchor) : null,
-        strictAiVerification: updates.strict_ai_verification === true,
-        trialExpiredNeedsReview: updates.trial_expired_needs_review === true,
+          appliedUpdates.grace_day_cycle_anchor != null ? String(appliedUpdates.grace_day_cycle_anchor) : null,
+        strictAiVerification: appliedUpdates.strict_ai_verification === true,
+        trialExpiredNeedsReview: appliedUpdates.trial_expired_needs_review === true,
         aiVerificationCycleKey:
-          updates.ai_verification_cycle_key != null ? String(updates.ai_verification_cycle_key) : null,
+          appliedUpdates.ai_verification_cycle_key != null ? String(appliedUpdates.ai_verification_cycle_key) : null,
         aiVerificationCount:
-          typeof updates.ai_verification_count === "number" ? updates.ai_verification_count : 0,
+          typeof appliedUpdates.ai_verification_count === "number" ? appliedUpdates.ai_verification_count : 0,
       },
     });
   }
