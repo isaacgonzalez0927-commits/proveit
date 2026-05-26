@@ -18,7 +18,7 @@ import {
   TOUR_START_KEY,
 } from "@/lib/tourStorage";
 
-type Slide = 0 | 1 | 2; // 0 = welcome, 1 = login, 2 = plan
+type Slide = 0 | 1 | 2 | 3 | 4;
 type AuthMode = "signin" | "signup";
 
 // Format-only check for real-looking email (password reset by email)
@@ -49,7 +49,7 @@ function LandingContent() {
   useEffect(() => {
     if (authError === "auth") {
       setSessionSettled(true);
-      setSlide(1);
+      setSlide(3);
       setLoginError("Sign-in failed. Try again.");
       setAuthMode("signin");
       router.replace("/?step=login", { scroll: false });
@@ -70,32 +70,21 @@ function LandingContent() {
         return;
       }
       if (requestedStep === "plan") {
-        setSlide(2);
+        setSlide(4);
         return;
       }
-      if (typeof window !== "undefined" && user.id) {
-        const pending = window.localStorage.getItem(PENDING_PLAN_AFTER_TOUR_KEY) === user.id;
-        const tourDone = window.localStorage.getItem(TOUR_DONE_KEY) === TOUR_DONE_VERSION;
-        if (pending && tourDone) {
-          router.replace("/?step=plan", { scroll: false });
-          return;
-        }
-        window.localStorage.setItem(PENDING_PLAN_AFTER_TOUR_KEY, user.id);
-        window.localStorage.setItem(TOUR_START_KEY, "1");
-        window.localStorage.removeItem(TOUR_DONE_KEY);
-      }
-      router.replace("/dashboard");
+      setSlide(4);
       return;
     }
 
     if (requestedStep === "plan") {
       setSessionSettled(true);
-      setSlide(2);
+      setSlide(4);
       return;
     }
     if (requestedStep === "login") {
       setSessionSettled(true);
-      setSlide(1);
+      setSlide(3);
       return;
     }
 
@@ -139,7 +128,7 @@ function LandingContent() {
     const threshold = 50; // px
     if (delta > threshold && slide > 0) {
       setSlide((prev) => (prev - 1) as Slide);
-    } else if (delta < -threshold && slide < 2) {
+    } else if (delta < -threshold && slide < 4) {
       setSlide((prev) => (prev + 1) as Slide);
     }
   };
@@ -371,7 +360,13 @@ function LandingContent() {
 
   const handleChoosePlan = useCallback(
     async (planId: PlanId) => {
-    await setPlan(planId, "monthly");
+      if (!user) {
+        setAuthMode("signup");
+        setLoginError("");
+        setSlide(3);
+        return;
+      }
+      await setPlan(planId, "monthly");
       setPostPlanWelcomeFlag(planId);
       router.push("/dashboard");
     },
@@ -416,92 +411,27 @@ function LandingContent() {
       >
         {/* Slides container */}
         <div
-          className="flex min-h-0 flex-1 w-[300%] transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${slide * (100 / 3)}%)` }}
+          className="flex min-h-0 flex-1 w-[500%] transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${slide * (100 / 5)}%)` }}
         >
-          {/* Slide 0 – Welcome – full-screen hero */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
-            <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-              <div className="relative mx-auto mb-6 flex h-72 w-full max-w-[360px] items-center justify-center">
-                <div className="absolute left-0 top-8 h-56 w-[30%] min-w-[92px] rotate-[-5deg] overflow-hidden rounded-[1.45rem] border-[3px] border-slate-950 bg-slate-950 shadow-2xl shadow-slate-900/25">
-                  <img
-                    src="/onboarding/book-proof.png"
-                    alt="Book proof preview"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/92 via-[#061527]/35 to-[#061527]/95" />
-                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
-                    <div>
-                      <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-prove-200">
-                        Proof
-                      </p>
-                      <p className="mt-1 text-[13px] font-bold leading-tight">Snap it fresh</p>
-                    </div>
-                    <div className="rounded-full bg-prove-500 py-1.5 text-center text-[9px] font-bold text-white">
-                      Verify
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative z-10 h-64 w-[34%] min-w-[108px] overflow-hidden rounded-[1.65rem] border-[3px] border-slate-950 bg-[#061527] shadow-2xl shadow-emerald-950/35">
-                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-prove-500/30 to-transparent" />
-                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
-                    <div>
-                      <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-prove-200">
-                        Garden
-                      </p>
-                      <p className="mt-1 text-[13px] font-bold leading-tight">Grow your streak</p>
-                    </div>
-                    <div className="flex flex-1 items-center justify-center py-2">
-                      <img
-                        src="/onboarding/plant-growth.png"
-                        alt="Transparent plant preview"
-                        className="h-28 w-28 object-contain drop-shadow-[0_18px_24px_rgba(16,185,129,0.25)]"
-                      />
-                    </div>
-                    <div className="rounded-full bg-prove-500 py-1.5 text-center text-[9px] font-bold text-white">
-                      Keep alive
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute right-0 top-8 h-56 w-[30%] min-w-[92px] rotate-[5deg] overflow-hidden rounded-[1.45rem] border-[3px] border-slate-950 bg-slate-950 shadow-2xl shadow-slate-900/25">
-                  <img
-                    src="/onboarding/book-proof.png"
-                    alt="Habit reminder preview"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/45 to-[#061527]/95" />
-                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
-                    <div>
-                      <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-prove-200">
-                        Reminders
-                      </p>
-                      <p className="mt-1 text-[13px] font-bold leading-tight">Stay on track</p>
-                    </div>
-                    <div className="rounded-full bg-prove-500 py-1.5 text-center text-[9px] font-bold text-white">
-                      This week
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Slide 0 – Welcome */}
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
+            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
               <div className="text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-prove-600 dark:text-prove-300">
-                  Step 1 of 3
+                  Welcome to Proveit
                 </p>
-              <h1
-                className="mt-3 font-display text-5xl font-bold leading-[0.98] tracking-tight text-slate-950 dark:text-white"
-              >
-                Grow habits with proof.
-              </h1>
-              <p className="mx-auto mt-4 max-w-[28ch] text-base leading-relaxed text-slate-600 dark:text-slate-300">
-                Set a weekly goal, snap fresh proof, and watch your garden react.
-              </p>
-              <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                <div className="rounded-2xl bg-white/70 px-2 py-3 shadow-sm dark:bg-slate-900/70">Weekly goals</div>
-                <div className="rounded-2xl bg-white/70 px-2 py-3 shadow-sm dark:bg-slate-900/70">Photo proof</div>
-                <div className="rounded-2xl bg-white/70 px-2 py-3 shadow-sm dark:bg-slate-900/70">Live garden</div>
-              </div>
+                <h1 className="mt-4 font-display text-6xl font-bold leading-[0.95] tracking-tight text-slate-950 dark:text-white">
+                  Grow habits with proof.
+                </h1>
+                <p className="mx-auto mt-5 max-w-[28ch] text-base leading-relaxed text-slate-600 dark:text-slate-300">
+                  Build a weekly routine, prove it with fresh photos, and keep your garden alive.
+                </p>
+                <div className="mx-auto mt-8 grid max-w-xs grid-cols-3 gap-2 text-center text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Goals</div>
+                  <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Proof</div>
+                  <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Plants</div>
+                </div>
               </div>
             </div>
             <div className="mt-5 flex w-full items-center justify-center">
@@ -509,20 +439,18 @@ function LandingContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMode("signup");
-                    setLoginError("");
                     goTo(1);
                   }}
                   className="rounded-2xl bg-prove-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400 btn-glass-primary"
                 >
-                  Get started
+                  See how it works
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode("signin");
                     setLoginError("");
-                    goTo(1);
+                    goTo(3);
                   }}
                   className="rounded-2xl border border-slate-200 bg-white/70 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-white dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
                 >
@@ -532,15 +460,97 @@ function LandingContent() {
             </div>
           </section>
 
-          {/* Slide 1 – Sign in: form centered in the screen */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          {/* Slide 1 – AI verification */}
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4">
+            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+              <div className="relative mx-auto h-[360px] w-[210px] overflow-hidden rounded-[2rem] border-[5px] border-slate-950 bg-slate-950 shadow-2xl shadow-slate-900/30">
+                <img
+                  src="/onboarding/book-proof.png"
+                  alt="Book proof example"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
+                <div className="relative flex h-full flex-col justify-between p-4 text-white">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-prove-200">
+                      AI proof check
+                    </p>
+                    <h2 className="mt-2 text-2xl font-bold leading-tight">
+                      Snap fresh proof of what you did.
+                    </h2>
+                    <p className="mt-2 text-xs leading-relaxed text-white/75">
+                      Proveit checks that your photo matches your goal, like reading a book or finishing a walk.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => goTo(2)}
+                    className="rounded-full bg-prove-500 py-3 text-sm font-bold text-white shadow-lg shadow-prove-950/30"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="mx-auto flex w-full max-w-sm items-center justify-between text-[12px] text-slate-500 dark:text-slate-400">
+              <button type="button" onClick={() => goTo(0)} className="active:opacity-70">Back</button>
+              <span>Swipe → plants</span>
+            </div>
+          </section>
+
+          {/* Slide 2 – Plants */}
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4">
+            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+              <div className="relative mx-auto h-[360px] w-[210px] overflow-hidden rounded-[2rem] border-[5px] border-slate-950 bg-[#061527] shadow-2xl shadow-emerald-950/35">
+                <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-prove-500/35 to-transparent" />
+                <div className="relative flex h-full flex-col justify-between p-4 text-white">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-prove-200">
+                      Live garden
+                    </p>
+                    <h2 className="mt-2 text-2xl font-bold leading-tight">
+                      Your plant reacts to your week.
+                    </h2>
+                    <p className="mt-2 text-xs leading-relaxed text-white/75">
+                      Hit your proof goal to keep it healthy. Miss too much and it wilts.
+                    </p>
+                  </div>
+                  <div className="flex flex-1 items-center justify-center">
+                    <img
+                      src="/onboarding/plant-growth.png"
+                      alt="Plant growing from a hand"
+                      className="h-44 w-44 object-contain mix-blend-screen drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("signup");
+                      setLoginError("");
+                      goTo(3);
+                    }}
+                    className="rounded-full bg-prove-500 py-3 text-sm font-bold text-white shadow-lg shadow-prove-950/30"
+                  >
+                    Start
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="mx-auto flex w-full max-w-sm items-center justify-between text-[12px] text-slate-500 dark:text-slate-400">
+              <button type="button" onClick={() => goTo(1)} className="active:opacity-70">Back</button>
+              <span>Swipe → sign in</span>
+            </div>
+          </section>
+
+          {/* Slide 3 – Sign in: form centered in the screen */}
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
             <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full justify-center">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 2 of 3</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 4 of 5</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
                 {authMode === "signin" ? "Sign in" : "Create account"}
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                {authMode === "signin" ? "Welcome back." : "Free to start."}
+                {authMode === "signin" ? "Welcome back." : "Create your account, then choose your free trial plan."}
               </p>
               <div className="mt-4 overflow-y-auto">
                 <form onSubmit={handleLoginSubmit} className="space-y-2.5 pb-2">
@@ -625,20 +635,20 @@ function LandingContent() {
               </div>
             </div>
             <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
-              <button type="button" onClick={() => goTo(0)} className="active:opacity-70">Back</button>
-              <span>Swipe → plan</span>
+              <button type="button" onClick={() => goTo(2)} className="active:opacity-70">Back</button>
+              <span>Plan comes next</span>
             </div>
           </section>
 
-          {/* Slide 2 – Choose plan: clean, appetizing cards */}
-          <section className="flex h-full w-1/3 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          {/* Slide 4 – Choose plan: clean, appetizing cards */}
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
             <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 3 of 3</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 5</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
-                Choose your plan
+                Start your free trial
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                All plans are free while payments are being set up. Pick the features you want to try.
+                Pick a plan to try. All plans are free while payments are being set up.
               </p>
               <div className="mt-4 min-h-0 flex-1 overflow-y-auto space-y-3 pb-2">
                 {PLANS.map((plan) => (
@@ -688,7 +698,7 @@ function LandingContent() {
               </div>
             </div>
             <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
-              <button type="button" onClick={() => goTo(1)} className="active:opacity-70">Back</button>
+              <button type="button" onClick={() => goTo(3)} className="active:opacity-70">Back</button>
               <span>Swipe ← back</span>
             </div>
           </section>
@@ -697,7 +707,7 @@ function LandingContent() {
         <div
           className="flex shrink-0 items-center justify-center gap-[clamp(0.375rem,1.5vw,0.5rem)] px-4 py-[clamp(0.375rem,1.5vh,0.5rem)] pb-[max(0.5rem,env(safe-area-inset-bottom))] animate-welcome-dots [animation-fill-mode:forwards]"
         >
-          {[0, 1, 2].map((i) => (
+          {[0, 1, 2, 3, 4].map((i) => (
             <button
               key={i}
               type="button"
