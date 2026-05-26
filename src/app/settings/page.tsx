@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -46,6 +46,44 @@ import {
   type AccentTheme,
 } from "@/lib/theme";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
+
+function SettingsDisclosure({
+  title,
+  description,
+  icon,
+  children,
+  danger = false,
+}: {
+  title: string;
+  description?: string;
+  icon: ReactNode;
+  children: ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <details className={`group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10 ${danger ? "bg-red-50/80 ring-red-200 dark:bg-red-950/20 dark:ring-red-900/50" : ""}`}>
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 marker:hidden">
+        <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${danger ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" : "bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300"}`}>
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block text-[15px] font-semibold ${danger ? "text-red-800 dark:text-red-200" : "text-slate-950 dark:text-white"}`}>
+            {title}
+          </span>
+          {description && (
+            <span className={`mt-0.5 block text-xs ${danger ? "text-red-700/90 dark:text-red-300/90" : "text-slate-500 dark:text-slate-400"}`}>
+              {description}
+            </span>
+          )}
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition-transform group-open:rotate-90" />
+      </summary>
+      <div className="border-t border-slate-100 dark:border-white/10">
+        {children}
+      </div>
+    </details>
+  );
+}
 
 const HISTORY_SETTING_ITEMS: Array<{
   key: keyof HistoryDisplaySettings;
@@ -345,24 +383,18 @@ export default function SettingsPage() {
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Account
               </p>
-              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
-                <div className="flex items-center gap-3 px-4 py-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300">
-                    <User className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold text-slate-950 dark:text-white">
-                      {user.name || user.username || "Your account"}
-                    </p>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                      {user.contactEmail || user.email || "Signed in"}
-                    </p>
-                  </div>
+              <SettingsDisclosure
+                title={user.name || user.username || "Your account"}
+                description={user.contactEmail || user.email || "Signed in"}
+                icon={<User className="h-5 w-5" />}
+              >
+                <div className="flex items-center justify-between px-4 py-4">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">Current plan</span>
                   <span className="rounded-full bg-prove-100 px-3 py-1 text-xs font-bold capitalize text-prove-700 dark:bg-prove-950 dark:text-prove-300">
                     {user.plan}
                   </span>
                 </div>
-              </div>
+              </SettingsDisclosure>
             </section>
           )}
 
@@ -371,19 +403,11 @@ export default function SettingsPage() {
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Appearance
               </p>
-              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
-                <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                    <Palette className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-semibold text-slate-950 dark:text-white">Theme colors</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      All colors are available while plans are free.
-                    </p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-slate-300" />
-                </div>
+              <SettingsDisclosure
+                title="Appearance"
+                description="Theme colors and app style."
+                icon={<Palette className="h-5 w-5" />}
+              >
                 <div className="grid gap-2 p-3">
             {ACCENT_THEME_OPTIONS.map((option) => {
               const selected = accentTheme === option.id;
@@ -416,7 +440,7 @@ export default function SettingsPage() {
               );
             })}
                 </div>
-          </div>
+              </SettingsDisclosure>
             </section>
           )}
 
@@ -425,18 +449,11 @@ export default function SettingsPage() {
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Proof
               </p>
-              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
-                <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#061527] text-prove-300">
-                    <Sparkles className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-semibold text-slate-950 dark:text-white">AI verification</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {user.aiVerificationCount ?? 0} checks used this cycle.
-                    </p>
-                  </div>
-                </div>
+              <SettingsDisclosure
+                title="AI verification"
+                description={`${user.aiVerificationCount ?? 0} checks used this cycle.`}
+                icon={<Sparkles className="h-5 w-5" />}
+              >
           <label className="flex items-start justify-between gap-3 px-4 py-4">
             <div>
               <p className="text-sm font-medium text-slate-900 dark:text-white">Strict AI verification</p>
@@ -451,7 +468,7 @@ export default function SettingsPage() {
               className="mt-1 h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
             />
           </label>
-              </div>
+              </SettingsDisclosure>
             </section>
           )}
 
@@ -460,7 +477,11 @@ export default function SettingsPage() {
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Gallery
               </p>
-              <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+              <SettingsDisclosure
+                title="Gallery display"
+                description="Choose what shows in your proof gallery."
+                icon={<Info className="h-5 w-5" />}
+              >
             {HISTORY_SETTING_ITEMS.map((item) => (
               <label
                 key={item.key}
@@ -478,7 +499,7 @@ export default function SettingsPage() {
                 />
               </label>
             ))}
-              </div>
+              </SettingsDisclosure>
             </section>
           )}
 
@@ -487,18 +508,11 @@ export default function SettingsPage() {
             <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
               Contact
             </p>
-            <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
-              <div className="flex items-start gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <Mail className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">Contact email</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Used for password reset links and account recovery.
-                  </p>
-                </div>
-              </div>
+            <SettingsDisclosure
+              title="Contact email"
+              description="Used for password reset links and account recovery."
+              icon={<Mail className="h-5 w-5" />}
+            >
               <div className="space-y-2 p-4">
               <input
                 type="email"
@@ -517,24 +531,17 @@ export default function SettingsPage() {
                 {contactSaving ? "Saving…" : "Save email"}
               </button>
               </div>
-            </div>
+            </SettingsDisclosure>
           </section>
         )}
 
         {useSupabase && user?.email && !isInternalAuthEmail(user.email) && matchesSettingsQuery("confirm email security") && (
           <section>
-            <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
-              <div className="flex items-start gap-3 px-4 py-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300">
-                  <Shield className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">Confirm email</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Secure your account and enable password recovery.
-                  </p>
-                </div>
-              </div>
+            <SettingsDisclosure
+              title="Confirm email"
+              description="Secure your account and enable password recovery."
+              icon={<Shield className="h-5 w-5" />}
+            >
               <div className="px-4 pb-4">
               <button
                 type="button"
@@ -594,7 +601,7 @@ export default function SettingsPage() {
                 {confirmEmailMessage}
                 </p>
             )}
-            </div>
+            </SettingsDisclosure>
           </section>
         )}
 
@@ -603,7 +610,12 @@ export default function SettingsPage() {
             <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-500">
               Developer
             </p>
-            <div className="rounded-3xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/50 dark:bg-amber-950/25">
+            <SettingsDisclosure
+              title="Developer tools"
+              description="Private creator account controls."
+              icon={<Lock className="h-5 w-5" />}
+            >
+            <div className="p-4">
             <label className="inline-flex items-center gap-2 rounded-2xl border border-amber-300 bg-white px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/35 dark:text-amber-200">
               <input
                 type="checkbox"
@@ -645,6 +657,7 @@ export default function SettingsPage() {
               </div>
             )}
             </div>
+            </SettingsDisclosure>
           </section>
         )}
 
@@ -653,11 +666,13 @@ export default function SettingsPage() {
           <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-red-400">
             Privacy
           </p>
-          <div className="rounded-3xl border border-red-200 bg-white p-4 shadow-sm dark:border-red-900/60 dark:bg-slate-900">
-          <h2 className="font-semibold text-red-800 dark:text-red-200">Hide goals from gallery</h2>
-          <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
-            Hide a goal from Gallery without deleting proof data.
-          </p>
+          <SettingsDisclosure
+            title="Hide goals from gallery"
+            description="Hide a goal from Gallery without deleting proof data."
+            icon={<Shield className="h-5 w-5" />}
+            danger
+          >
+          <div className="p-4">
           {visibleGoalHistoryEntries.length === 0 ? (
             <p className="mt-3 text-sm text-red-700/90 dark:text-red-300/90">
               No visible goal gallery right now.
@@ -714,6 +729,7 @@ export default function SettingsPage() {
             </div>
           )}
           </div>
+          </SettingsDisclosure>
         </section>
         )}
 
@@ -722,7 +738,11 @@ export default function SettingsPage() {
           <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
             More
           </p>
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10">
+          <SettingsDisclosure
+            title="Legal & support"
+            description="Policies and contact links."
+            icon={<HelpCircle className="h-5 w-5" />}
+          >
             <Link href="/privacy" className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
               <Info className="h-5 w-5 text-slate-900 dark:text-white" />
               <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white">Privacy Policy</span>
@@ -741,16 +761,19 @@ export default function SettingsPage() {
               <span className="flex-1 text-sm font-medium text-slate-900 dark:text-white">Help and Support</span>
               <ChevronRight className="h-5 w-5 text-slate-300" />
             </a>
-          </div>
+          </SettingsDisclosure>
         </section>
         )}
 
         {matchesSettingsQuery("delete account danger") && (
-        <section className="rounded-3xl border border-red-300/90 bg-red-50/70 p-5 dark:border-red-900/55 dark:bg-red-950/20">
-          <h2 className="font-semibold text-red-800 dark:text-red-200">Delete account</h2>
-          <p className="mt-1 text-xs text-red-700/90 dark:text-red-300/90">
-            Permanently delete your account and all associated data.
-          </p>
+        <section>
+          <SettingsDisclosure
+            title="Delete account"
+            description="Permanently delete your account and all associated data."
+            icon={<Trash2 className="h-5 w-5" />}
+            danger
+          >
+          <div className="p-4">
           <button
             type="button"
             onClick={handleDeleteAccount}
@@ -759,6 +782,8 @@ export default function SettingsPage() {
           >
             {deletingAccount ? "Deleting account..." : "Delete my account"}
           </button>
+          </div>
+          </SettingsDisclosure>
         </section>
         )}
 
