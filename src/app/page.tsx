@@ -461,84 +461,87 @@ function LandingContent() {
           </section>
 
           {/* Slide 1 – AI verification */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4">
-            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
-              <div className="relative mx-auto h-[360px] w-[210px] overflow-hidden rounded-[2rem] border-[5px] border-slate-950 bg-slate-950 shadow-2xl shadow-slate-900/30">
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-slate-950 shadow-2xl shadow-slate-900/25 dark:border-white/10">
                 <img
                   src="/onboarding/book-proof.png"
                   alt="Book proof example"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
-                <div className="relative flex h-full flex-col justify-between p-4 text-white">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-prove-200">
-                      AI proof check
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold leading-tight">
-                      Snap fresh proof of what you did.
-                    </h2>
-                    <p className="mt-2 text-xs leading-relaxed text-white/75">
-                      Proveit checks that your photo matches your goal, like reading a book or finishing a walk.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => goTo(2)}
-                    className="rounded-full bg-prove-500 py-3 text-sm font-bold text-white shadow-lg shadow-prove-950/30"
-                  >
-                    Next
-                  </button>
+              <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
+              <div className="relative flex h-full w-full flex-col justify-between p-6 text-white">
+                <button
+                  type="button"
+                  onClick={() => goTo(0)}
+                  className="w-fit rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur-md active:bg-white/25"
+                >
+                  Back
+                </button>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
+                    AI proof check
+                  </p>
+                  <h2 className="mt-3 max-w-[10ch] text-5xl font-bold leading-[0.95] tracking-tight">
+                    Snap fresh proof.
+                  </h2>
+                  <p className="mt-4 max-w-[28ch] text-sm leading-relaxed text-white/75">
+                    Proveit checks that your photo matches your goal, like reading a book or finishing a walk.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => goTo(2)}
+                  className="rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                >
+                  Next
+                </button>
               </div>
-            </div>
-            <div className="mx-auto flex w-full max-w-sm items-center justify-between text-[12px] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={() => goTo(0)} className="active:opacity-70">Back</button>
-              <span>Swipe → plants</span>
             </div>
           </section>
 
           {/* Slide 2 – Plants */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4">
-            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
-              <div className="relative mx-auto h-[360px] w-[210px] overflow-hidden rounded-[2rem] border-[5px] border-slate-950 bg-[#061527] shadow-2xl shadow-emerald-950/35">
-                <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-prove-500/35 to-transparent" />
-                <div className="relative flex h-full flex-col justify-between p-4 text-white">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-prove-200">
-                      Live garden
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold leading-tight">
-                      Your plant reacts to your week.
-                    </h2>
-                    <p className="mt-2 text-xs leading-relaxed text-white/75">
-                      Hit your proof goal to keep it healthy. Miss too much and it wilts.
-                    </p>
-                  </div>
-                  <div className="flex flex-1 items-center justify-center">
-                    <img
-                      src="/onboarding/plant-growth.png"
-                      alt="Plant growing from a hand"
-                      className="h-44 w-44 object-contain mix-blend-screen drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode("signup");
-                      setLoginError("");
-                      goTo(3);
-                    }}
-                    className="rounded-full bg-prove-500 py-3 text-sm font-bold text-white shadow-lg shadow-prove-950/30"
-                  >
-                    Start
-                  </button>
+          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-[#061527] shadow-2xl shadow-emerald-950/35 dark:border-white/10">
+              <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
+              <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
+              <div className="relative flex h-full w-full flex-col justify-between p-6 text-white">
+                <button
+                  type="button"
+                  onClick={() => goTo(1)}
+                  className="w-fit rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur-md active:bg-white/25"
+                >
+                  Back
+                </button>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
+                    Live garden
+                  </p>
+                  <h2 className="mt-3 max-w-[11ch] text-5xl font-bold leading-[0.95] tracking-tight">
+                    Grow what you prove.
+                  </h2>
+                  <p className="mt-4 max-w-[29ch] text-sm leading-relaxed text-white/75">
+                    Hit your proof goal to keep your plant healthy. Miss too much and it wilts.
+                  </p>
                 </div>
+                <div className="flex flex-1 items-center justify-center py-4">
+                  <img
+                    src="/onboarding/plant-growth.png"
+                    alt="Plant growing from a hand"
+                    className="h-[min(48vh,20rem)] w-[min(78vw,20rem)] object-contain mix-blend-screen drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("signup");
+                    setLoginError("");
+                    goTo(3);
+                  }}
+                  className="rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                >
+                  Start
+                </button>
               </div>
-            </div>
-            <div className="mx-auto flex w-full max-w-sm items-center justify-between text-[12px] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={() => goTo(1)} className="active:opacity-70">Back</button>
-              <span>Swipe → sign in</span>
             </div>
           </section>
 
