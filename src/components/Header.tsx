@@ -129,17 +129,18 @@ export function Header() {
             </button>
             {accountOpen && (
               <div
-                className="absolute right-0 top-full z-[100] mt-2 min-w-[200px] rounded-2xl py-2 shadow-soft-lg glass-dropdown"
+                className="motion-dropdown absolute right-0 top-full z-[100] mt-2 min-w-[200px] origin-top-right rounded-2xl py-2 shadow-soft-lg glass-dropdown"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
               >
+                <div className="motion-stagger-grid">
                 <div className="flex items-center justify-between gap-3 px-3 py-2" role="none">
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Theme</span>
                   <div onClick={(e) => e.stopPropagation()}>
                     <ThemeToggle />
                   </div>
                 </div>
-                <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                <div className="my-1 border-t border-slate-100 dark:border-slate-800" role="separator" />
                 <Link
                   href="/settings"
                   onClick={() => setAccountOpen(false)}
@@ -184,6 +185,7 @@ export function Header() {
                   <LogOut className="h-4 w-4 shrink-0" />
                   Sign out
                 </button>
+                </div>
               </div>
             )}
           </div>

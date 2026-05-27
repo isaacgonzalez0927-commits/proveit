@@ -60,8 +60,17 @@ function SettingsDisclosure({
   children: ReactNode;
   danger?: boolean;
 }) {
+  const [openSeq, setOpenSeq] = useState(0);
+
   return (
-    <details className={`motion-disclosure group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10 ${danger ? "bg-red-50/80 ring-red-200 dark:bg-red-950/20 dark:ring-red-900/50" : ""}`}>
+    <details
+      className={`motion-disclosure group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10 ${danger ? "bg-red-50/80 ring-red-200 dark:bg-red-950/20 dark:ring-red-900/50" : ""}`}
+      onToggle={(event) => {
+        if ((event.currentTarget as HTMLDetailsElement).open) {
+          setOpenSeq((seq) => seq + 1);
+        }
+      }}
+    >
       <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 marker:hidden">
         <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${danger ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" : "bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300"}`}>
           {icon}
@@ -79,7 +88,7 @@ function SettingsDisclosure({
         <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition-transform group-open:rotate-90" />
       </summary>
       <div className="motion-disclosure-panel border-t border-slate-100 dark:border-white/10">
-        <div className="motion-disclosure-inner">
+        <div className="motion-disclosure-inner" key={openSeq}>
           {children}
         </div>
       </div>
@@ -379,7 +388,7 @@ export default function SettingsPage() {
           </label>
         </header>
 
-        <div className="space-y-5 pt-3">
+        <div className="motion-stagger-rise space-y-5 pt-3">
           {matchesSettingsQuery("account profile plan") && (
             <section>
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">

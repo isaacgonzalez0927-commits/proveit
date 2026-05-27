@@ -49,7 +49,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       if (prevIdx !== -1 && nextIdx !== -1) {
         setAnimClass(nextIdx > prevIdx ? "animate-tab-slide-left" : "animate-tab-slide-right");
       } else {
-        setAnimClass("");
+        setAnimClass("motion-page-enter");
       }
       const t = setTimeout(() => setAnimClass(""), 320);
       return () => clearTimeout(t);
