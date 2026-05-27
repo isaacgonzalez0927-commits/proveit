@@ -1,27 +1,27 @@
 import type { PlanId } from "@/types";
 import type { StoredUser } from "@/lib/store";
 
+/** Trials are disabled — kept for legacy profile rows only. */
 export const PREMIUM_TRIAL_DAYS = 7;
 
-export function canStartPremiumTrial(
-  u: Pick<StoredUser, "plan" | "premiumTrialUsed"> | null | undefined
-): boolean {
-  if (!u) return false;
-  if (u.plan === "premium") return false;
-  return !u.premiumTrialUsed;
+export function canStartPremiumTrial(): boolean {
+  return false;
 }
 
-export function isPremiumTrialActive(
-  u: Pick<StoredUser, "plan" | "premiumTrialEndsAt">
-): boolean {
-  if (u.plan !== "premium" || !u.premiumTrialEndsAt) return false;
-  return Date.parse(u.premiumTrialEndsAt) > Date.now();
+export function isPremiumTrialActive(): boolean {
+  return false;
 }
 
-/** After trial expiry, restore prior tier (local / demo mode). */
+/** Clear legacy trial fields if an old profile still has an expired trial timestamp. */
 export function expireLocalPremiumTrialIfNeeded(user: StoredUser): StoredUser {
-  if (user.plan !== "premium" || !user.premiumTrialEndsAt) return user;
-  if (Date.parse(user.premiumTrialEndsAt) > Date.now()) return user;
+  if (!user.premiumTrialEndsAt) return user;
+  if (Date.parse(user.premiumTrialEndsAt) > Date.now()) {
+    return {
+      ...user,
+      premiumTrialEndsAt: undefined,
+      premiumTrialRevertPlan: undefined,
+    };
+  }
   const revert: PlanId = user.premiumTrialRevertPlan === "pro" ? "pro" : "free";
   return {
     ...user,
@@ -33,9 +33,7 @@ export function expireLocalPremiumTrialIfNeeded(user: StoredUser): StoredUser {
 }
 
 export function trialEndsAtFromNowISO(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + PREMIUM_TRIAL_DAYS);
-  return d.toISOString();
+  return new Date().toISOString();
 }
 
 export const trialEndsAtFromNow = trialEndsAtFromNowISO;

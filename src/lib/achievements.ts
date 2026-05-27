@@ -3,9 +3,13 @@ import type { Goal, GraceDayEvent, ProofSubmission, User } from "@/types";
 import { safeParseISO } from "@/lib/dateUtils";
 import { getGoalStreak } from "@/lib/goalProgress";
 import { weekStartKey, weeklyQuotaMetWithGrace } from "@/lib/graceDays";
-import { isPremiumTrialActive } from "@/lib/premiumTrial";
 
 export type AchievementTier = "standard" | "premium";
+
+export function isPremiumMember(user: Pick<User, "plan"> | null | undefined): boolean {
+  if (!user) return false;
+  return user.plan === "premium";
+}
 
 export type AchievementId =
   | "first_proof"
@@ -132,11 +136,6 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     tier: "premium",
   },
 ];
-
-export function isPremiumMember(user: Pick<User, "plan" | "premiumTrialEndsAt"> | null | undefined): boolean {
-  if (!user) return false;
-  return user.plan === "premium" || isPremiumTrialActive(user);
-}
 
 type StreakLookup = (goalId: string) => ProofSubmission[];
 

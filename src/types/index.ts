@@ -14,7 +14,9 @@ export interface Plan {
   /** Max total goals (any frequency). -1 = unlimited. */
   maxGoals: number;
   features: string[];
-  stripePriceId?: string;
+  /** Stripe Price IDs — swap for real IDs when billing is live. */
+  stripePriceIdMonthly?: string;
+  stripePriceIdYearly?: string;
 }
 
 export interface User {
@@ -22,12 +24,13 @@ export interface User {
   email: string;
   plan: PlanId;
   createdAt: string;
-  /** Set while a one-time Premium trial is counting down (ISO). */
+  /** Legacy field — trials disabled; may still exist on old profiles. */
   premiumTrialEndsAt?: string | null;
   premiumTrialUsed?: boolean;
   graceDayBalance?: number;
   graceDayCycleAnchor?: string | null;
   strictAiVerification?: boolean;
+  /** Legacy downgrade review flag from expired trials. */
   trialExpiredNeedsReview?: boolean;
   aiVerificationCycleKey?: string | null;
   aiVerificationCount?: number;
@@ -118,12 +121,11 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    priceMonthly: 0,
-    priceYearly: 0,
+    priceMonthly: 5.99,
+    priceYearly: 54,
     maxGoals: 5,
     features: [
       "5 goals",
-      "Temporarily free until Stripe is ready",
       "6 plant styles (including strawberry)",
       "6 accent themes (Pink, Violet, Ocean, Teal, Orange, Amber + more)",
       "Strict AI verification option with richer feedback",
@@ -134,16 +136,16 @@ export const PLANS: Plan[] = [
       "Goal Gallery (history, proof photos, streaks)",
       "Priority support",
     ],
-    stripePriceId: "price_pro_monthly",
+    stripePriceIdMonthly: "price_pro_monthly",
+    stripePriceIdYearly: "price_pro_yearly",
   },
   {
     id: "premium",
     name: "Premium",
-    priceMonthly: 0,
-    priceYearly: 0,
+    priceMonthly: 12.99,
+    priceYearly: 99,
     maxGoals: -1,
     features: [
-      "Temporarily free until Stripe is ready",
       "Unlimited goals",
       "All 8 plant styles (including cactus)",
       "All 10 accent themes",
@@ -155,6 +157,7 @@ export const PLANS: Plan[] = [
       "Exclusive achievements & rewards",
       "Priority & dedicated support",
     ],
-    stripePriceId: "price_premium_monthly",
+    stripePriceIdMonthly: "price_premium_monthly",
+    stripePriceIdYearly: "price_premium_yearly",
   },
 ];

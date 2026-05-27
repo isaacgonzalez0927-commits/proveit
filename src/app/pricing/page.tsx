@@ -6,18 +6,50 @@ import { useRouter } from "next/navigation";
 import { Check, Zap, Crown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
+import { startStripeCheckout } from "@/lib/checkoutClient";
+import { formatUsd, planPriceForBilling, yearlySavingsPercent } from "@/lib/billing";
 import { PLANS, type PlanId } from "@/types";
 
 function PricingContent() {
   const router = useRouter();
   const { user, setPlan } = useApp();
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [busyPlan, setBusyPlan] = useState<PlanId | null>(null);
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (!user) return;
-    await setPlan(planId, billing);
-    setPostPlanWelcomeFlag(planId);
-    router.push("/dashboard");
+    setPlanError(null);
+    setBusyPlan(planId);
+
+    try {
+      if (planId === "free") {
+        const ok = await setPlan(planId, billing);
+        if (!ok) {
+          setPlanError("Could not update your plan. Try again.");
+          return;
+        }
+        setPostPlanWelcomeFlag(planId);
+        router.push("/dashboard");
+        return;
+      }
+
+      const checkout = await startStripeCheckout(planId, billing);
+      if (checkout.ok) {
+        window.location.href = checkout.url;
+        return;
+      }
+
+      const ok = await setPlan(planId, billing);
+      if (ok) {
+        setPostPlanWelcomeFlag(planId);
+        router.push("/dashboard");
+        return;
+      }
+      setPlanError(checkout.error);
+    } finally {
+      setBusyPlan(null);
+    }
   };
 
   return (
@@ -28,7 +60,7 @@ function PricingContent() {
             Simple pricing
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            All plans are temporarily free until Stripe is ready. Try Pro or Premium now, then we’ll connect real billing later.
+            Start free. Upgrade to Pro or Premium when you are ready.
           </p>
           <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl p-1.5 glass-card">
             <button
@@ -60,6 +92,12 @@ function PricingContent() {
           </p>
         </div>
 
+        {planError && (
+          <p className="text-center text-sm text-red-600 dark:text-red-400" role="alert">
+            {planError}
+          </p>
+        )}
+
         <div className="grid gap-5 sm:grid-cols-3 sm:gap-6">
           {PLANS.map((plan) => (
             <PricingCard
@@ -70,6 +108,7 @@ function PricingContent() {
               currentPlanBilling={user?.planBilling ?? "monthly"}
               hasUser={!!user}
               onSelect={() => handleSelectPlan(plan.id as PlanId)}
+              busy={busyPlan === plan.id}
             />
           ))}
         </div>
@@ -86,6 +125,7 @@ function PricingCard({
   currentPlanBilling,
   hasUser,
   onSelect,
+  busy,
 }: {
   plan: (typeof PLANS)[0];
   billing: "monthly" | "yearly";
@@ -93,6 +133,7 @@ function PricingCard({
   currentPlanBilling: "monthly" | "yearly";
   hasUser: boolean;
   onSelect: () => void;
+  busy?: boolean;
 }) {
   const isCurrent =
     currentPlanId === plan.id && currentPlanBilling === billing;
@@ -101,6 +142,8 @@ function PricingCard({
   const isPremium = plan.id === "premium";
 
   const Icon = isPro ? Zap : isPremium ? Crown : null;
+  const price = planPriceForBilling(plan, billing);
+  const yearlySave = yearlySavingsPercent(plan);
 
   return (
     <div
@@ -132,12 +175,19 @@ function PricingCard({
       </div>
       <div className="mt-4 flex items-baseline gap-1">
         <span className="text-3xl font-bold text-slate-900 dark:text-white">
-          Free
+          {formatUsd(price)}
         </span>
-        <span className="text-slate-500 dark:text-slate-400">
-          while Stripe is set up
-        </span>
+        {!isFree && (
+          <span className="text-slate-500 dark:text-slate-400">
+            /{billing === "yearly" ? "year" : "mo"}
+          </span>
+        )}
       </div>
+      {!isFree && billing === "yearly" && yearlySave != null && (
+        <p className="mt-1 text-xs font-medium text-prove-600 dark:text-prove-400">
+          Save {yearlySave}% vs monthly
+        </p>
+      )}
       <ul className="mt-6 space-y-3">
         {plan.features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
@@ -171,8 +221,12 @@ function PricingCard({
             }`}
           >
             {isFree
-              ? "Get started free"
-              : `Use ${plan.name} free`}
+              ? busy
+                ? "Updating…"
+                : "Get started free"
+              : busy
+                ? "Opening checkout…"
+                : `Subscribe to ${plan.name}`}
           </Link>
         )}
       </div>

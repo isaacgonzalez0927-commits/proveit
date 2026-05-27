@@ -14,27 +14,13 @@ const baseUser = (): StoredUser => ({
 });
 
 describe("canStartPremiumTrial", () => {
-  it("allows free user who has not used trial", () => {
-    expect(canStartPremiumTrial({ plan: "free", premiumTrialUsed: false })).toBe(true);
-    expect(canStartPremiumTrial({ plan: "free" })).toBe(true);
-  });
-
-  it("blocks premium plan", () => {
-    expect(canStartPremiumTrial({ plan: "premium", premiumTrialUsed: false })).toBe(false);
-  });
-
-  it("blocks after trial used", () => {
-    expect(canStartPremiumTrial({ plan: "free", premiumTrialUsed: true })).toBe(false);
-    expect(canStartPremiumTrial({ plan: "pro", premiumTrialUsed: true })).toBe(false);
-  });
-
-  it("blocks null user", () => {
-    expect(canStartPremiumTrial(null)).toBe(false);
+  it("is always disabled", () => {
+    expect(canStartPremiumTrial()).toBe(false);
   });
 });
 
 describe("isPremiumTrialActive", () => {
-  it("true when premium and end in future", () => {
+  it("is always false", () => {
     const ends = new Date();
     ends.setUTCDate(ends.getUTCDate() + 1);
     expect(
@@ -42,25 +28,12 @@ describe("isPremiumTrialActive", () => {
         plan: "premium",
         premiumTrialEndsAt: ends.toISOString(),
       })
-    ).toBe(true);
-  });
-
-  it("false when end in past", () => {
-    expect(
-      isPremiumTrialActive({
-        plan: "premium",
-        premiumTrialEndsAt: "2020-01-01T00:00:00.000Z",
-      })
     ).toBe(false);
-  });
-
-  it("false when no end date", () => {
-    expect(isPremiumTrialActive({ plan: "premium", premiumTrialEndsAt: null })).toBe(false);
   });
 });
 
 describe("expireLocalPremiumTrialIfNeeded", () => {
-  it("reverts to free when trial ended", () => {
+  it("reverts to free when legacy trial ended", () => {
     const u = baseUser();
     const ended = {
       ...u,
@@ -87,5 +60,19 @@ describe("expireLocalPremiumTrialIfNeeded", () => {
     const next = expireLocalPremiumTrialIfNeeded(ended);
     expect(next.plan).toBe("pro");
     expect(next.planBilling).toBe("yearly");
+  });
+
+  it("clears active legacy trial timestamps", () => {
+    const ends = new Date();
+    ends.setUTCDate(ends.getUTCDate() + 1);
+    const active = {
+      ...baseUser(),
+      plan: "premium" as const,
+      premiumTrialEndsAt: ends.toISOString(),
+      premiumTrialRevertPlan: "free" as const,
+    };
+    const next = expireLocalPremiumTrialIfNeeded(active);
+    expect(next.premiumTrialEndsAt).toBeUndefined();
+    expect(next.premiumTrialRevertPlan).toBeUndefined();
   });
 });

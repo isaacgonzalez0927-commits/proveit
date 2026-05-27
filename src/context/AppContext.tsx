@@ -63,9 +63,7 @@ import {
   TOUR_DONE_VERSION,
 } from "@/lib/tourStorage";
 import {
-  canStartPremiumTrial,
   expireLocalPremiumTrialIfNeeded,
-  trialEndsAtFromNow,
 } from "@/lib/premiumTrial";
 import { weekStartKey } from "@/lib/graceDays";
 
@@ -84,9 +82,8 @@ interface AppContextValue {
   setUser: (user: StoredUser | null) => void;
   setPlan: (
     plan: PlanId,
-    billing?: "monthly" | "yearly",
-    options?: { startPremiumTrial?: boolean }
-  ) => void | Promise<void>;
+    billing?: "monthly" | "yearly"
+  ) => Promise<boolean>;
   addGoal: (goal: Omit<Goal, "id" | "userId" | "createdAt" | "completedDates">) => Promise<{ created: Goal | null; error?: string }>;
   updateGoal: (
     id: string,
@@ -564,26 +561,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setPlan = useCallback(
     async (
       plan: PlanId,
-      billing: "monthly" | "yearly" = "monthly",
-      options?: { startPremiumTrial?: boolean }
-    ) => {
-      if (!user) return;
-      const startTrial =
-        plan === "premium" &&
-        options?.startPremiumTrial === true &&
-        canStartPremiumTrial(user);
+      billing: "monthly" | "yearly" = "monthly"
+    ): Promise<boolean> => {
+      if (!user) return false;
 
       const buildLocalNext = (): StoredUser => {
-        if (startTrial) {
-          return {
-            ...user,
-            plan: "premium",
-            planBilling: billing,
-            premiumTrialEndsAt: trialEndsAtFromNow(),
-            premiumTrialUsed: true,
-            premiumTrialRevertPlan: user.plan === "pro" ? "pro" : "free",
-          };
-        }
         const next: StoredUser = {
           ...user,
           plan,
@@ -605,18 +587,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             method: "PATCH",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(
-              startTrial
-                ? { startPremiumTrial: true, planBilling: billing }
-                : { plan, planBilling: billing }
-            ),
+            body: JSON.stringify({ plan, planBilling: billing }),
           });
           const data = (await res.json().catch(() => ({}))) as {
             profile?: ApiProfileLike;
             error?: string;
           };
 
-          const applyFromApiProfile = (pr: ApiProfileLike) => {
+          const applyFromApiProfile = (pr: ApiProfileLike): boolean => {
             profileClientEpochRef.current += 1;
             setUserState({
               id: pr.id ?? user.id,
@@ -651,19 +629,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);
             }
             setHasSelectedPlan(true);
+            return normalizePlanId(pr.plan) === plan;
           };
 
           if (data.profile && typeof data.profile === "object") {
-            applyFromApiProfile(data.profile);
-            return;
+            return applyFromApiProfile(data.profile);
           }
 
           if (res.ok) {
             const r2 = await fetch("/api/profile", { credentials: "same-origin" });
             const j2 = (await r2.json().catch(() => ({}))) as { profile?: ApiProfileLike };
             if (j2.profile && typeof j2.profile === "object") {
-              applyFromApiProfile(j2.profile);
-              return;
+              return applyFromApiProfile(j2.profile);
             }
           }
 
@@ -672,10 +649,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const r3 = await fetch("/api/profile", { credentials: "same-origin" });
             const j3 = (await r3.json().catch(() => ({}))) as { profile?: ApiProfileLike };
             if (j3.profile && typeof j3.profile === "object") {
-              applyFromApiProfile(j3.profile);
-              return;
+              return applyFromApiProfile(j3.profile);
             }
-            return;
+            return false;
           }
         } catch (e) {
           console.warn("setPlan: network error, applying plan locally", e);
@@ -689,6 +665,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);
       }
       setHasSelectedPlan(true);
+      return true;
     },
     [user, useSupabase]
   );

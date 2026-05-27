@@ -41,7 +41,6 @@ import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
-import { isPremiumTrialActive } from "@/lib/premiumTrial";
 import { getWeeklyPlantState, plantWateringLevelForState } from "@/lib/plantState";
 
 function DashboardContent() {
@@ -192,23 +191,6 @@ function DashboardContent() {
     <PullToRefresh>
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
-        {user && isPremiumTrialActive(user) && user.premiumTrialEndsAt && (
-          <div
-            className="mb-4 rounded-2xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
-            role="status"
-          >
-            <span className="font-semibold">Premium trial active.</span>{" "}
-            Full access until{" "}
-            <time dateTime={user.premiumTrialEndsAt}>
-              {format(new Date(user.premiumTrialEndsAt), "MMM d, yyyy")}
-            </time>
-            . After that, your plan returns to what you had before the trial unless you keep Premium from{" "}
-            <Link href="/pricing" className="font-medium underline underline-offset-2">
-              Plan
-            </Link>
-            .
-          </div>
-        )}
         <div className="mb-5">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Dashboard

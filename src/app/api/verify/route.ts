@@ -45,16 +45,12 @@ export async function POST(request: NextRequest) {
     const profile = auth.user && supabase
       ? await supabase
           .from("profiles")
-          .select("plan, premium_trial_ends_at, strict_ai_verification, ai_verification_cycle_key, ai_verification_count")
+          .select("plan, strict_ai_verification, ai_verification_cycle_key, ai_verification_count")
           .eq("id", auth.user.id)
           .maybeSingle()
       : null;
     const plan = normalizePlanId(profile?.data?.plan);
-    const premiumTrialEndsAt =
-      typeof profile?.data?.premium_trial_ends_at === "string"
-        ? profile.data.premium_trial_ends_at
-        : null;
-    const planContext = { plan, premiumTrialEndsAt };
+    const planContext = { plan };
     const strictMode =
       (plan === "pro" || plan === "premium") &&
       profile?.data?.strict_ai_verification === true;
@@ -136,7 +132,7 @@ function aiCycleKey(date: Date, kind: "week" | "month"): string {
 }
 
 function checkAiUsage(args: {
-  planContext: { plan: "free" | "pro" | "premium"; premiumTrialEndsAt?: string | null };
+  planContext: { plan: "free" | "pro" | "premium" };
   cycleKey: string | null;
   count: number;
 }) {

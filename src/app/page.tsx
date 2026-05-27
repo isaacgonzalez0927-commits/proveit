@@ -11,6 +11,8 @@ import {
   usernameToAuthEmail,
 } from "@/lib/usernameAuth";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
+import { startStripeCheckout } from "@/lib/checkoutClient";
+import { formatUsd, planPriceForBilling } from "@/lib/billing";
 import {
   PENDING_PLAN_AFTER_TOUR_KEY,
   TOUR_DONE_KEY,
@@ -366,9 +368,23 @@ function LandingContent() {
         setSlide(3);
         return;
       }
-      await setPlan(planId, "monthly");
-      setPostPlanWelcomeFlag(planId);
-      router.push("/dashboard");
+      if (planId === "free") {
+        const ok = await setPlan(planId, "monthly");
+        if (!ok) return;
+        setPostPlanWelcomeFlag(planId);
+        router.push("/dashboard");
+        return;
+      }
+      const checkout = await startStripeCheckout(planId, "monthly");
+      if (checkout.ok) {
+        window.location.href = checkout.url;
+        return;
+      }
+      const ok = await setPlan(planId, "monthly");
+      if (ok) {
+        setPostPlanWelcomeFlag(planId);
+        router.push("/dashboard");
+      }
     },
     [router, setPlan, user]
   );
@@ -554,7 +570,7 @@ function LandingContent() {
                 {authMode === "signin" ? "Sign in" : "Create account"}
               </h2>
               <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                {authMode === "signin" ? "Welcome back." : "Create your account, then choose your free trial plan."}
+                {authMode === "signin" ? "Welcome back." : "Create your account, then choose your plan."}
               </p>
               <div className="mt-4 overflow-y-auto">
                 <form onSubmit={handleLoginSubmit} className="space-y-2.5 pb-2">
@@ -649,15 +665,15 @@ function LandingContent() {
             <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1 justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 5</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
-                Start your free trial
+                Choose your plan
               </h2>
               <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
-                Choose your trial. No payment while Stripe is being set up.
+                Start on Free, or subscribe to Pro or Premium.
               </p>
               <div className="mt-3 space-y-2">
                 {[...PLANS]
                   .sort((a, b) => {
-                    const order: Record<string, number> = { premium: 0, pro: 1, free: 2 };
+                    const order: Record<string, number> = { free: 0, pro: 1, premium: 2 };
                     return order[a.id] - order[b.id];
                   })
                   .map((plan) => (
@@ -666,7 +682,7 @@ function LandingContent() {
                     type="button"
                     onClick={() => handleChoosePlan(plan.id as PlanId)}
                     className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] glass-card ${
-                      plan.id === "premium"
+                      plan.id === "pro"
                         ? "border-prove-400 dark:border-prove-500 shadow-md shadow-prove-600/10 dark:shadow-prove-900/25"
                         : "border-slate-200/85 dark:border-slate-700/65 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
@@ -674,9 +690,9 @@ function LandingContent() {
                     <div className="px-4 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          {plan.id === "premium" && (
+                          {plan.id === "pro" && (
                             <span className="inline-block rounded-full bg-prove-200 dark:bg-prove-800/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-prove-700 dark:text-prove-300 mb-1.5">
-                              Start free trial
+                              Popular
                             </span>
                           )}
                           <p className="text-[16px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
@@ -684,8 +700,10 @@ function LandingContent() {
                             {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{(plan.maxGoals ?? 0) !== 1 ? "s" : ""}
                           </p>
                         </div>
-                        <span className={`shrink-0 text-[14px] font-bold ${plan.id === "premium" ? "text-prove-600 dark:text-prove-400" : "text-slate-700 dark:text-slate-300"}`}>
-                          {plan.id === "premium" ? "Trial" : "Free"}
+                        <span className={`shrink-0 text-[14px] font-bold ${plan.id === "free" ? "text-slate-700 dark:text-slate-300" : "text-prove-600 dark:text-prove-400"}`}>
+                          {plan.id === "free"
+                            ? "Free"
+                            : `${formatUsd(plan.priceMonthly)}/mo`}
                         </span>
                       </div>
                       <ul className="mt-2 flex flex-col gap-1 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
@@ -698,8 +716,8 @@ function LandingContent() {
                       </ul>
                       <p className="mt-2 text-[12px] font-semibold text-prove-600 dark:text-prove-400">
                         {plan.id === "free"
-                          ? "Get started free →"
-                          : `Try ${plan.name} free →`}
+                          ? "Continue with Free →"
+                          : `Subscribe to ${plan.name} →`}
                       </p>
                     </div>
                   </button>

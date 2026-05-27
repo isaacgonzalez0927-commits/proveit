@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { hasCreatorAccess } from "@/lib/accountAccess";
+import { canSelfAssignPlan } from "@/lib/billing";
 import { normalizeUsername } from "@/lib/usernameAuth";
-import { PREMIUM_TRIAL_DAYS } from "@/lib/premiumTrial";
 import {
-  TRIAL_STREAK_SHIELD_BALANCE,
   getActiveReminderLimit,
   getGraceDayResetBalance,
 } from "@/lib/subscriptionLimits";
@@ -63,22 +63,21 @@ async function freezeExcessRemindersForPlan(
   }
 }
 
-function premiumTrialEndsAtISO(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + PREMIUM_TRIAL_DAYS);
-  return d.toISOString();
-}
-
-/** If Premium trial ended, persist revert and return the updated row shape. */
+/** Legacy trials are disabled — clear trial fields and revert unpaid Premium access. */
 async function expirePremiumTrialIfNeeded(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
   data: ProfileRow
 ): Promise<ProfileRow> {
-  if (data.plan !== "premium" || data.premium_trial_ends_at == null) return data;
-  const ends = new Date(String(data.premium_trial_ends_at)).getTime();
-  if (Number.isNaN(ends) || Date.now() <= ends) return data;
-  const revert = data.premium_trial_revert_plan === "pro" ? "pro" : "free";
+  if (data.premium_trial_ends_at == null) return data;
+  const revert =
+    data.premium_trial_revert_plan === "pro"
+      ? "pro"
+      : data.premium_trial_revert_plan === "free"
+        ? "free"
+        : data.plan === "premium"
+          ? "free"
+          : normalizePlan(data.plan);
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -189,78 +188,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (body.startPremiumTrial === true) {
-    const { data: row, error: fetchErr } = await supabase
-      .from("profiles")
-      .select("plan, premium_trial_used, premium_trial_ends_at, premium_trial_revert_plan")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (fetchErr) {
-      return NextResponse.json({ error: fetchErr.message }, { status: 400 });
-    }
-
-    const used = row?.premium_trial_used === true;
-    if (used) {
-      return NextResponse.json(
-        { error: "You already used your Premium free trial." },
-        { status: 400 }
-      );
-    }
-
-    const currentPlan = normalizePlan(row?.plan);
-    if (currentPlan === "premium") {
-      return NextResponse.json({ error: "Already on Premium." }, { status: 400 });
-    }
-
-    const revert: "free" | "pro" = currentPlan === "pro" ? "pro" : "free";
-    const billing =
-      typeof body.planBilling === "string" && ["monthly", "yearly"].includes(body.planBilling)
-        ? body.planBilling
-        : "monthly";
-
-    const trialUpdates: Record<string, unknown> = {
-      plan: "premium",
-      plan_billing: billing,
-      premium_trial_ends_at: premiumTrialEndsAtISO(),
-      premium_trial_used: true,
-      premium_trial_revert_plan: revert,
-      grace_day_balance: TRIAL_STREAK_SHIELD_BALANCE,
-      grace_day_cycle_anchor: new Date().toISOString(),
-      strict_ai_verification: false,
-      trial_expired_needs_review: false,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data: updatedRows, error: upError } = await supabase
-      .from("profiles")
-      .update(trialUpdates)
-      .eq("id", user.id)
-      .select("id");
-
-    if (upError) {
-      return NextResponse.json({ error: upError.message }, { status: 400 });
-    }
-
-    if (!updatedRows?.length) {
-      const { error: insError } = await supabase.from("profiles").insert({
-        id: user.id,
-        email: user.email ?? "",
-        ...trialUpdates,
-      });
-      if (insError) {
-        return NextResponse.json({ error: insError.message }, { status: 400 });
-      }
-    }
-
-    const { data: fresh } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    const finalRow = fresh
-      ? await expirePremiumTrialIfNeeded(supabase, user.id, fresh as ProfileRow)
-      : ({ ...row, ...trialUpdates, id: user.id } as ProfileRow);
-
-    return NextResponse.json({
-      ok: true,
-      profile: profileJsonFromRow(finalRow),
-    });
+    return NextResponse.json({ error: "Free trials are not available." }, { status: 400 });
   }
 
   const plan = body.plan;
@@ -284,7 +212,25 @@ export async function PATCH(request: NextRequest) {
   const prevPlan = normalizePlan(currentRow?.plan);
 
   if (typeof plan === "string" && ["free", "pro", "premium"].includes(plan)) {
-    updates.plan = plan;
+    const targetPlan = plan as "free" | "pro" | "premium";
+    const { data: contactRow } = await supabase
+      .from("profiles")
+      .select("contact_email")
+      .eq("id", user.id)
+      .maybeSingle();
+    const isCreator = hasCreatorAccess(
+      user.email,
+      typeof contactRow?.contact_email === "string" ? contactRow.contact_email : null
+    );
+    if (!canSelfAssignPlan(targetPlan, isCreator)) {
+      return NextResponse.json(
+        {
+          error: "Pro and Premium require a subscription. Open Pricing to checkout when billing is ready.",
+        },
+        { status: 403 }
+      );
+    }
+    updates.plan = targetPlan;
     updates.grace_day_balance = getGraceDayResetBalance(plan as "free" | "pro" | "premium");
     updates.grace_day_cycle_anchor = new Date().toISOString();
     updates.trial_expired_needs_review = false;
