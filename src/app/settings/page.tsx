@@ -61,7 +61,7 @@ function SettingsDisclosure({
   danger?: boolean;
 }) {
   return (
-    <details className={`group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10 ${danger ? "bg-red-50/80 ring-red-200 dark:bg-red-950/20 dark:ring-red-900/50" : ""}`}>
+    <details className={`motion-disclosure group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10 ${danger ? "bg-red-50/80 ring-red-200 dark:bg-red-950/20 dark:ring-red-900/50" : ""}`}>
       <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 marker:hidden">
         <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${danger ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" : "bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300"}`}>
           {icon}
@@ -78,8 +78,10 @@ function SettingsDisclosure({
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition-transform group-open:rotate-90" />
       </summary>
-      <div className="border-t border-slate-100 dark:border-white/10">
-        {children}
+      <div className="motion-disclosure-panel border-t border-slate-100 dark:border-white/10">
+        <div className="motion-disclosure-inner">
+          {children}
+        </div>
       </div>
     </details>
   );
@@ -408,7 +410,7 @@ export default function SettingsPage() {
                 description="Theme colors and app style."
                 icon={<Palette className="h-5 w-5" />}
               >
-                <div className="grid gap-2 p-3">
+                <div className="motion-stagger-grid grid gap-2 p-3">
             {ACCENT_THEME_OPTIONS.map((option) => {
               const selected = accentTheme === option.id;
               const locked = !canUseAccentTheme(user?.plan, option.id);
