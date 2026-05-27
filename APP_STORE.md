@@ -10,6 +10,7 @@ Use this when submitting Proveit to the Apple App Store. The app already include
 - **Account deletion** – Settings → Delete account (required when app has accounts)
 - **Consent before signup** – “By creating an account you agree to our Privacy Policy and Terms of Use”
 - **iOS permission strings** – Camera and Photo Library usage descriptions in `ios/App/App/Info.plist`
+- **Home screen widgets** – Streak, today's goals, and garden widgets (see [IOS_WIDGETS.md](./IOS_WIDGETS.md))
 
 ## App Store Connect
 
