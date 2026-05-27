@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Flame,
@@ -19,7 +19,9 @@ import { DashboardTour } from "@/components/DashboardTour";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { PlanDowngradeReview } from "@/components/PlanDowngradeReview";
 import { getPlan } from "@/lib/store";
+import { PLANS, normalizePlanId } from "@/types";
 import { clearPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
@@ -45,6 +47,7 @@ import { getWeeklyPlantState, plantWateringLevelForState } from "@/lib/plantStat
 
 function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     user,
     authReady,
@@ -56,15 +59,43 @@ function DashboardContent() {
     checkAndAwardItems,
     markGoalDone,
     getGoalPlantVariant,
+    setUser,
   } = useApp();
   const [creatorActionBusy, setCreatorActionBusy] = useState(false);
   const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(DEFAULT_DEVELOPER_MODE_SETTINGS);
   const [streakCardExpanded, setStreakCardExpanded] = useState(false);
+  const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
 
   useEffect(() => {
     clearPostPlanWelcomeFlag();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+    const planParam = normalizePlanId(searchParams.get("plan"));
+    const planName = PLANS.find((p) => p.id === planParam)?.name ?? "Pro";
+    setCheckoutBanner(`Welcome to ${planName}! Your subscription is active.`);
+
+    fetch("/api/profile", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data: { profile?: Record<string, unknown> }) => {
+        const p = data.profile;
+        if (!p || !user) return;
+        setUser({
+          ...user,
+          plan: normalizePlanId(p.plan),
+          planBilling:
+            typeof p.planBilling === "string" ? (p.planBilling as "monthly" | "yearly") : user.planBilling,
+          trialExpiredNeedsReview: p.trialExpiredNeedsReview === true,
+        });
+      })
+      .catch(() => {
+        /* profile refresh is best-effort after checkout */
+      });
+
+    router.replace("/dashboard");
+  }, [router, searchParams, setUser, user?.id]);
 
   const thisWeekVerified = submissions.filter((s) => {
     if (s.status !== "verified") return false;
@@ -191,6 +222,15 @@ function DashboardContent() {
     <PullToRefresh>
       <DashboardTour />
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+        {checkoutBanner && (
+          <div
+            className="rounded-2xl border border-prove-200/90 bg-prove-50/90 px-4 py-3 text-sm text-prove-900 dark:border-prove-700/60 dark:bg-prove-950/35 dark:text-prove-100"
+            role="status"
+          >
+            <span className="font-semibold">{checkoutBanner}</span>
+          </div>
+        )}
+        <PlanDowngradeReview />
         <div className="mb-5">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Dashboard

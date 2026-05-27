@@ -6,7 +6,7 @@ import {
   proofSuggestionsForStorage,
 } from "@/lib/proofSuggestions";
 import { normalizeProBreakUsageByMonth } from "@/lib/goalBreak";
-import { getActiveReminderLimit } from "@/lib/subscriptionLimits";
+import { getActiveReminderLimit, getMaxGoalsForPlan } from "@/lib/subscriptionLimits";
 import { normalizePlanId } from "@/types";
 
 function normalizeCompletedDates(value: unknown): string[] {
@@ -422,6 +422,30 @@ export async function PATCH(request: NextRequest) {
     }
     return NextResponse.json({ error: msg }, { status: 500 });
   }
+
+  if ("archivedAt" in updates && updates.archivedAt) {
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("plan, trial_expired_needs_review")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileRow?.trial_expired_needs_review === true) {
+      const { count } = await supabase
+        .from("goals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .is("archived_at", null);
+      const plan =
+        profileRow.plan === "premium" ? "premium" : profileRow.plan === "pro" ? "pro" : "free";
+      if ((count ?? 0) <= getMaxGoalsForPlan(plan)) {
+        await supabase
+          .from("profiles")
+          .update({ trial_expired_needs_review: false, updated_at: new Date().toISOString() })
+          .eq("id", user.id);
+      }
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }
 

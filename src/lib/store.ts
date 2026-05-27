@@ -124,9 +124,14 @@ export function getPlan(planId: PlanId) {
   return PLANS.find((p) => p.id === planId) ?? PLANS[0];
 }
 
+export function getMaxGoalsForPlan(plan: PlanId): number {
+  const match = PLANS.find((p) => p.id === plan);
+  if (!match || match.maxGoals === -1) return 999;
+  return match.maxGoals;
+}
+
 export function getGoalsLimit(planId: PlanId): number {
-  const plan = getPlan(planId);
-  return plan.maxGoals === -1 ? 999 : plan.maxGoals;
+  return getMaxGoalsForPlan(planId);
 }
 
 export function canAddGoal(planId: PlanId, currentTotalCount: number): boolean {

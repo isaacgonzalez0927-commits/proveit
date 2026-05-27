@@ -1,4 +1,5 @@
 import type { Goal, PlanId, User } from "@/types";
+import { PLANS } from "@/types";
 
 export const FREE_ACTIVE_REMINDER_LIMIT = 2;
 export const PAID_ACTIVE_REMINDER_LIMIT = 5;
@@ -7,6 +8,12 @@ export const PREMIUM_STREAK_SHIELD_BALANCE = 7;
 export const FREE_AI_VERIFICATIONS_PER_WEEK = 3;
 export const PRO_AI_VERIFICATIONS_PER_MONTH = 100;
 export const PREMIUM_AI_VERIFICATIONS_PER_MONTH = 500;
+
+export function getMaxGoalsForPlan(plan: PlanId): number {
+  const match = PLANS.find((p) => p.id === plan);
+  if (!match || match.maxGoals === -1) return 999;
+  return match.maxGoals;
+}
 
 export function isPaidLikePlan(userOrPlan: Pick<User, "plan"> | PlanId): boolean {
   const plan = typeof userOrPlan === "string" ? userOrPlan : userOrPlan.plan;

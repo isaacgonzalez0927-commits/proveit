@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  CreditCard,
   ChevronLeft,
   ChevronRight,
   HelpCircle,
@@ -46,6 +47,8 @@ import {
   type AccentTheme,
 } from "@/lib/theme";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
+import { openStripeBillingPortal } from "@/lib/checkoutClient";
+import { PLANS } from "@/types";
 
 function SettingsDisclosure({
   title,
@@ -143,6 +146,7 @@ export default function SettingsPage() {
   const [contactDraft, setContactDraft] = useState("");
   const [contactSaving, setContactSaving] = useState(false);
   const [contactResendLoading, setContactResendLoading] = useState(false);
+  const [billingPortalLoading, setBillingPortalLoading] = useState(false);
   const [strictAiEnabled, setStrictAiEnabled] = useState(false);
   const [settingsQuery, setSettingsQuery] = useState("");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
@@ -481,6 +485,51 @@ export default function SettingsPage() {
                   <span className="rounded-full bg-prove-100 px-3 py-1 text-xs font-bold capitalize text-prove-700 dark:bg-prove-950 dark:text-prove-300">
                     {user.plan}
                   </span>
+                </div>
+                <div className="space-y-2 border-t border-slate-100 px-4 py-4 dark:border-white/10">
+                  {user.plan === "free" ? (
+                    <Link
+                      href="/pricing"
+                      className="block w-full rounded-2xl bg-prove-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
+                    >
+                      View plans
+                    </Link>
+                  ) : (
+                    <>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {PLANS.find((p) => p.id === user.plan)?.name ?? user.plan}
+                        {user.planBilling ? ` · ${user.planBilling}` : ""}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={billingPortalLoading}
+                        onClick={async () => {
+                          setBillingPortalLoading(true);
+                          setSettingsMessage(null);
+                          try {
+                            const result = await openStripeBillingPortal();
+                            if (result.ok) {
+                              window.location.href = result.url;
+                              return;
+                            }
+                            setSettingsMessage(result.error);
+                          } finally {
+                            setBillingPortalLoading(false);
+                          }
+                        }}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-70 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        {billingPortalLoading ? "Opening…" : "Manage subscription"}
+                      </button>
+                      <Link
+                        href="/pricing"
+                        className="block text-center text-xs text-prove-600 hover:underline dark:text-prove-400"
+                      >
+                        Compare plans
+                      </Link>
+                    </>
+                  )}
                 </div>
               </SettingsDisclosure>
             </section>

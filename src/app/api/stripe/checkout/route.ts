@@ -37,8 +37,11 @@ export async function POST(request: NextRequest) {
 
   const planDef = PLANS.find((p) => p.id === plan);
   const priceId = planDef ? stripePriceIdForBilling(planDef, billing) : undefined;
-  if (!priceId) {
-    return NextResponse.json({ error: "Price not configured for this plan." }, { status: 501 });
+  if (!priceId || priceId.startsWith("price_pro_") || priceId.startsWith("price_premium_")) {
+    return NextResponse.json(
+      { error: "Replace placeholder Stripe price IDs in PLANS before checkout." },
+      { status: 501 }
+    );
   }
 
   const origin =
@@ -48,13 +51,25 @@ export async function POST(request: NextRequest) {
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("stripe_customer_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const existingCustomerId =
+    typeof profile?.stripe_customer_id === "string" ? profile.stripe_customer_id : undefined;
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer_email: user.email,
+      ...(existingCustomerId
+        ? { customer: existingCustomerId }
+        : { customer_email: user.email }),
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/dashboard?checkout=success`,
+      success_url: `${origin}/dashboard?checkout=success&plan=${plan}`,
       cancel_url: `${origin}/pricing?checkout=cancelled`,
+      client_reference_id: user.id,
       metadata: {
         userId: user.id,
         plan,
@@ -71,6 +86,16 @@ export async function POST(request: NextRequest) {
 
     if (!session.url) {
       return NextResponse.json({ error: "Could not start checkout." }, { status: 500 });
+    }
+
+    if (!existingCustomerId && typeof session.customer === "string") {
+      await supabase
+        .from("profiles")
+        .update({
+          stripe_customer_id: session.customer,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
     }
 
     return NextResponse.json({ url: session.url });

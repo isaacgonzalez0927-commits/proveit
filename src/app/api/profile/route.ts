@@ -31,7 +31,7 @@ function isOptionalProfileSchemaError(message: string): boolean {
     lower.includes("not find") ||
     lower.includes("schema cache");
   if (!soundsMissing) return false;
-  return /grace_day_|strict_ai_verification|trial_expired_needs_review|ai_verification_|premium_trial_|contact_email_pending|contact_email_verified|contact_email_verify_/i.test(
+  return /grace_day_|strict_ai_verification|trial_expired_needs_review|ai_verification_|premium_trial_|contact_email_pending|contact_email_verified|contact_email_verify_|stripe_customer|stripe_subscription/i.test(
     message
   );
 }

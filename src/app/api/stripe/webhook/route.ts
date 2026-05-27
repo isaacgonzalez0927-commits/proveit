@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { normalizePlanId, type PlanId } from "@/types";
-import { getGraceDayResetBalance } from "@/lib/subscriptionLimits";
+import {
+  freezeRemindersBeyondLimit,
+  getActiveReminderLimit,
+  getGraceDayResetBalance,
+  getMaxGoalsForPlan,
+} from "@/lib/subscriptionLimits";
 import { isStripeConfigured } from "@/lib/billing";
 
 export const runtime = "nodejs";
@@ -16,34 +21,87 @@ async function adminClient() {
   });
 }
 
+async function countActiveGoals(admin: NonNullable<Awaited<ReturnType<typeof adminClient>>>, userId: string) {
+  const { count, error } = await admin
+    .from("goals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .is("archived_at", null);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+async function freezeExcessReminders(
+  admin: NonNullable<Awaited<ReturnType<typeof adminClient>>>,
+  userId: string,
+  plan: PlanId
+) {
+  const limit = getActiveReminderLimit(plan);
+  const { data } = await admin
+    .from("goals")
+    .select("id, reminder_time, reminder_is_active, created_at, archived_at")
+    .eq("user_id", userId)
+    .is("archived_at", null)
+    .order("created_at", { ascending: true });
+  const rows = (data ?? []) as Array<Record<string, unknown>>;
+  const frozen = freezeRemindersBeyondLimit(
+    rows.map((row) => ({
+      reminderTime: typeof row.reminder_time === "string" ? row.reminder_time : undefined,
+      reminderIsActive: row.reminder_is_active !== false,
+      createdAt: String(row.created_at ?? ""),
+      archivedAt: undefined,
+    })),
+    limit
+  );
+  let activeSeen = 0;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    if (!row.reminder_time) continue;
+    const shouldBeActive = frozen[i]?.reminderIsActive !== false;
+    const currentlyActive = row.reminder_is_active !== false;
+    if (shouldBeActive) activeSeen += 1;
+    if (shouldBeActive !== currentlyActive && typeof row.id === "string") {
+      await admin.from("goals").update({ reminder_is_active: shouldBeActive }).eq("id", row.id);
+    }
+  }
+}
+
 async function applyPaidPlan(
   userId: string,
   plan: PlanId,
-  billing: "monthly" | "yearly"
+  billing: "monthly" | "yearly",
+  stripeCustomerId?: string | null,
+  stripeSubscriptionId?: string | null
 ) {
   if (plan !== "pro" && plan !== "premium") return;
 
   const admin = await adminClient();
   if (!admin) return;
 
-  await admin
-    .from("profiles")
-    .update({
-      plan,
-      plan_billing: billing,
-      grace_day_balance: getGraceDayResetBalance(plan),
-      grace_day_cycle_anchor: new Date().toISOString(),
-      premium_trial_ends_at: null,
-      premium_trial_revert_plan: null,
-      trial_expired_needs_review: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
+  const updates: Record<string, unknown> = {
+    plan,
+    plan_billing: billing,
+    grace_day_balance: getGraceDayResetBalance(plan),
+    grace_day_cycle_anchor: new Date().toISOString(),
+    premium_trial_ends_at: null,
+    premium_trial_revert_plan: null,
+    trial_expired_needs_review: false,
+    updated_at: new Date().toISOString(),
+  };
+  if (stripeCustomerId) updates.stripe_customer_id = stripeCustomerId;
+  if (stripeSubscriptionId) updates.stripe_subscription_id = stripeSubscriptionId;
+
+  await admin.from("profiles").update(updates).eq("id", userId);
+  await freezeExcessReminders(admin, userId, plan);
 }
 
 async function revertToFree(userId: string) {
   const admin = await adminClient();
   if (!admin) return;
+
+  const activeGoals = await countActiveGoals(admin, userId);
+  const freeLimit = getMaxGoalsForPlan("free");
+  const needsReview = activeGoals > freeLimit;
 
   await admin
     .from("profiles")
@@ -55,9 +113,13 @@ async function revertToFree(userId: string) {
       strict_ai_verification: false,
       premium_trial_ends_at: null,
       premium_trial_revert_plan: null,
+      stripe_subscription_id: null,
+      trial_expired_needs_review: needsReview,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
+
+  await freezeExcessReminders(admin, userId, "free");
 }
 
 function billingFromMetadata(metadata: Stripe.Metadata | null | undefined): "monthly" | "yearly" {
@@ -96,8 +158,20 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
         const plan = normalizePlanId(session.metadata?.plan);
+        const customerId =
+          typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+        const subscriptionId =
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id ?? null;
         if (userId && (plan === "pro" || plan === "premium")) {
-          await applyPaidPlan(userId, plan, billingFromMetadata(session.metadata));
+          await applyPaidPlan(
+            userId,
+            plan,
+            billingFromMetadata(session.metadata),
+            customerId,
+            subscriptionId
+          );
         }
         break;
       }
@@ -105,12 +179,19 @@ export async function POST(request: NextRequest) {
         const sub = event.data.object as Stripe.Subscription;
         const userId = sub.metadata?.userId;
         const plan = normalizePlanId(sub.metadata?.plan);
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
         if (!userId) break;
         if (sub.status === "active" || sub.status === "trialing") {
           if (plan === "pro" || plan === "premium") {
-            await applyPaidPlan(userId, plan, billingFromMetadata(sub.metadata));
+            await applyPaidPlan(userId, plan, billingFromMetadata(sub.metadata), customerId, sub.id);
           }
-        } else if (sub.status === "canceled" || sub.status === "unpaid" || sub.status === "past_due") {
+        } else if (
+          sub.status === "canceled" ||
+          sub.status === "unpaid" ||
+          sub.status === "past_due" ||
+          sub.status === "incomplete_expired"
+        ) {
           await revertToFree(userId);
         }
         break;

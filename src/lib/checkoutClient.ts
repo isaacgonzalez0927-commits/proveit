@@ -19,3 +19,23 @@ export async function startStripeCheckout(
     error: typeof data.error === "string" ? data.error : "Checkout is unavailable right now.",
   };
 }
+
+export async function openStripeBillingPortal(): Promise<
+  { ok: true; url: string } | { ok: false; error: string }
+> {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const res = await fetch("/api/stripe/portal", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ origin }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+  if (res.ok && typeof data.url === "string") {
+    return { ok: true, url: data.url };
+  }
+  return {
+    ok: false,
+    error: typeof data.error === "string" ? data.error : "Billing portal is unavailable.",
+  };
+}
