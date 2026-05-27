@@ -33,6 +33,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/goals/history")) return "Gallery";
   if (pathname.startsWith("/goals/submit")) return "Prove It";
   if (pathname.startsWith("/goals")) return "Goal Garden";
+  if (pathname.startsWith("/achievements")) return "Achievements";
   if (pathname.startsWith("/settings/change-email")) return "Change email";
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/pricing")) return "Pricing";
