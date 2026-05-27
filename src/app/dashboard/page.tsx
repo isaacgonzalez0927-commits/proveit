@@ -22,7 +22,6 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { getPlan } from "@/lib/store";
 import { clearPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { hasCreatorAccess } from "@/lib/accountAccess";
-import { accountDisplayLabel } from "@/lib/usernameAuth";
 import {
   applyDeveloperModeNumbers,
   applyGoalStreakOverride,
@@ -91,6 +90,7 @@ function DashboardContent() {
   const plan = user ? getPlan(user.plan) : null;
   const dailyGoals = goals.filter((g) => g.frequency === "daily");
   const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
+  const streakUnit = weeklyGoals.length > 0 && dailyGoals.length === 0 ? "week" : "day";
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
   const effectiveDeveloperSettings = isCreatorAccount
@@ -213,7 +213,6 @@ function DashboardContent() {
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
             Dashboard
           </h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">{accountDisplayLabel(user)}</p>
         </div>
 
         <section className="rounded-2xl border border-emerald-200/70 p-4 dark:border-emerald-800/45 glass-card">
@@ -341,7 +340,7 @@ function DashboardContent() {
                 />
               </button>
               <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-                {displayMaxStreak} {displayMaxStreak === 1 ? "day" : "days"}
+                {displayMaxStreak} {displayMaxStreak === 1 ? streakUnit : `${streakUnit}s`}
               </p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {isCreatorAccount && effectiveDeveloperSettings.enabled
@@ -505,7 +504,6 @@ function DashboardContent() {
                 const due = isGoalDue(goal, new Date(), subs);
                 const dueLabel = getNextDueLabel(goal);
                 const canSubmitNow = isWithinSubmissionWindow(goal, new Date(), subs);
-                const windowMessage = getSubmissionWindowMessage(goal, new Date(), subs);
                 return (
                   <li
                     key={goal.id}
@@ -573,7 +571,7 @@ function DashboardContent() {
                       </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
-                        {windowMessage ?? dueLabel ?? "No open check-in slot today"}
+                        {`${weekVerifiedCount}/${tw} proofs this week`}
                       </span>
                     )}
                   </li>

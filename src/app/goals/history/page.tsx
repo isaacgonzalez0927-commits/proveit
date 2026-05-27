@@ -12,11 +12,9 @@ import {
   Lock,
   Flame,
   Trash2,
-  SlidersHorizontal,
   Grid3X3,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { getPlan } from "@/lib/store";
 import { safeParseISO } from "@/lib/dateUtils";
 import { addMonths, format, getDay, getDaysInMonth, isSameMonth, isThisWeek, startOfMonth } from "date-fns";
 import { getGoalStreak } from "@/lib/goalProgress";
@@ -48,8 +46,6 @@ function GalleryContent() {
     setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
   }, []);
 
-  const plan = user ? getPlan(user.plan) : getPlan("free");
-  const hasGalleryAccess = user ? user.plan === "pro" || user.plan === "premium" : false;
   const isPro = user ? user.plan === "pro" || user.plan === "premium" : false;
 
   // Build gallery source: verified submissions grouped by goal, sorted by date
@@ -101,12 +97,6 @@ function GalleryContent() {
     return map;
   }, [selectedGoalId, verifiedSubs]);
 
-  const enabledSettingCount = [
-    historySettings.showProofPhotos,
-    historySettings.showStreak,
-    historySettings.showVerifiedCount,
-    historySettings.showThisWeekBadge,
-  ].filter(Boolean).length;
   const calendarGridDays = useMemo(() => {
     const first = startOfMonth(calendarMonth);
     const firstWeekDay = getDay(first);
@@ -160,19 +150,6 @@ function GalleryContent() {
             <Images className="h-7 w-7 text-prove-600 dark:text-prove-400" />
             Goal gallery
           </h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
-            {plan.name} plan · Browse your verified proofs goal by goal
-          </p>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 glass-card">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            {enabledSettingCount}/4 gallery display options enabled
-            <Link
-              href="/settings"
-              className="font-medium text-prove-600 hover:underline dark:text-prove-400"
-            >
-              Edit in Settings
-            </Link>
-          </div>
         </div>
 
         {!isPro ? (

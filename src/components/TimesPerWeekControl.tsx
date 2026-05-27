@@ -18,9 +18,10 @@ type Props = {
   onChange: (n: TimesPerWeek) => void;
   /** Larger touch targets and typography (create goal form). */
   size?: "default" | "compact";
+  showDetail?: boolean;
 };
 
-export function TimesPerWeekControl({ value, onChange, size = "default" }: Props) {
+export function TimesPerWeekControl({ value, onChange, size = "default", showDetail = true }: Props) {
   const rangeId = useId();
   const v = clampTw(value);
   const { headline, detailLine } = timesPerWeekSummary(v);
@@ -40,9 +41,11 @@ export function TimesPerWeekControl({ value, onChange, size = "default" }: Props
           >
             {headline}
           </p>
-          <p className={clsx("mt-1 text-slate-600 dark:text-slate-400", compact ? "text-[10px] leading-snug" : "text-xs leading-snug")}>
-            {detailLine}
-          </p>
+          {showDetail && (
+            <p className={clsx("mt-1 text-slate-600 dark:text-slate-400", compact ? "text-[10px] leading-snug" : "text-xs leading-snug")}>
+              {detailLine}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-950">
           <button

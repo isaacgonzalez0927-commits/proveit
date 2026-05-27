@@ -74,9 +74,6 @@ function PricingContent() {
           ))}
         </div>
 
-        <p className="mx-auto max-w-2xl rounded-2xl px-4 py-4 text-center text-sm text-slate-600 dark:text-slate-400 glass-card">
-          <strong>Free:</strong> 2 goals, full plant growth, streak tracking, dashboard. &bull; <strong>Pro:</strong> 5 goals, 6 accent themes, Goal Gallery, Goal Break (7 break-days per goal per calendar month). &bull; <strong>Premium:</strong> Unlimited goals, all 10 accent themes, 8 plant styles, weekly photo collages, Goal Break any duration.
-        </p>
       </main>
     </>
   );

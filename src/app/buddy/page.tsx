@@ -40,7 +40,6 @@ import {
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { PLANT_GROWTH_STAGES, getPlantStageForStreak } from "@/lib/plantGrowth";
-import { getPlan } from "@/lib/store";
 import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
@@ -365,7 +364,6 @@ export default function BuddyPage() {
     setDeveloperMessage("Cleared all goal streak overrides.");
   };
 
-  const plan = getPlan(user.plan);
   const canAddMoreGoals = canAddGoal();
   const proofIdeasReadyForCreate = newTitle.trim().length >= 2;
   const canSubmitCreateGoalForm = canAddMoreGoals && proofIdeasReadyForCreate;
@@ -573,8 +571,6 @@ export default function BuddyPage() {
     setGoalManagerMessage(`"${goal.title}" is now on break${breakLimitMsg}. Streak and growth are frozen.`);
   };
 
-  const hydratedNow = garden.filter((g) => g.doneInCurrentWindow).length;
-  const goalsDueNow = garden.filter((g) => g.due).length;
   const snapshotPlants = [...garden]
     .sort((a, b) => b.streak - a.streak)
     .map((entry) => ({
@@ -609,13 +605,6 @@ export default function BuddyPage() {
           <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Goal Garden
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            Each goal is a plant. Prove it on your schedule (daily reminders, weekly targets), and watch it grow to the final stage.
-          </p>
-          <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-500">
-            {goals.length} active · {plan.name} ({plan.maxGoals === -1 ? "unlimited" : plan.maxGoals} goal
-            {plan.maxGoals === 1 ? "" : "s"})
-          </p>
           {showGardenTourHint && !tourSpotlight && (
             <div className="mt-3 rounded-2xl border border-prove-200 bg-prove-50 px-3 py-3 text-xs text-slate-700 dark:border-prove-800 dark:bg-prove-950/40 dark:text-slate-200">
               {gardenTourHintStep === "manage" ? (
@@ -678,24 +667,6 @@ export default function BuddyPage() {
           </div>
         </div>
 
-        <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
-          <div className="rounded-2xl border border-slate-200/70 bg-white/50 px-2 py-3 text-center shadow-soft dark:border-slate-700/70 dark:bg-slate-900/40 sm:px-3 glass-card">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Active</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{goals.length}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white/50 px-2 py-3 text-center shadow-soft dark:border-slate-700/70 dark:bg-slate-900/40 sm:px-3 glass-card">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Watered today</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{hydratedNow}</p>
-            <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-500">
-              {goalsDueNow > 0 ? `${goalsDueNow} due` : "—"}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white/50 px-2 py-3 text-center shadow-soft dark:border-slate-700/70 dark:bg-slate-900/40 sm:px-3 glass-card">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fully grown</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{fullyGrownCount}</p>
-          </div>
-        </div>
-
         {goalManagerMessage && (
           <p className="mb-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
             {goalManagerMessage}
@@ -711,9 +682,6 @@ export default function BuddyPage() {
               <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
                 New goal
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Proof, weekly target, daily reminder — then add to your garden.
-              </p>
             </div>
             {!canAddMoreGoals && (
               <p className="mt-4 text-sm text-amber-800 dark:text-amber-200">
@@ -746,12 +714,10 @@ export default function BuddyPage() {
             <div className="mt-6 space-y-4" data-tour="goal-schedule">
               <div>
                 <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Times per week</p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Use the slider or + / −. You get a daily reminder; check-ins are any day of the week (once per day, up to your target per Sun–Sat week).
-                </p>
                 <div className="mt-3">
                   <TimesPerWeekControl
                     value={newTimesPerWeek}
+                    showDetail={false}
                     onChange={(n) => {
                       setNewTimesPerWeek(n);
                       setScheduleTourAck(true);
@@ -759,8 +725,8 @@ export default function BuddyPage() {
                   />
                 </div>
               </div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                Daily reminder time
+              <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                <span>Daily reminder time</span>
                 <input
                   type="time"
                   value={newReminderTime}
@@ -768,7 +734,7 @@ export default function BuddyPage() {
                     setNewReminderTime(e.target.value);
                     setScheduleTourAck(true);
                   }}
-                  className="mt-1.5 w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                  className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                   required
                 />
               </label>
@@ -1135,6 +1101,7 @@ export default function BuddyPage() {
                       <div className="mt-2">
                         <TimesPerWeekControl
                           size="compact"
+                          showDetail={false}
                           value={editDraft.timesPerWeek}
                           onChange={(n) => setEditDraft((prev) => ({ ...prev, timesPerWeek: n }))}
                         />
