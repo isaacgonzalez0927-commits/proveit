@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -125,6 +125,7 @@ const HISTORY_SETTING_ITEMS: Array<{
 
 export default function SettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, goals, submissions, signOut, useSupabase, supabase, clearPlanSelectionForNewUser, restoreActualAccount, setUser } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
@@ -141,6 +142,7 @@ export default function SettingsPage() {
   const [confirmEmailMessage, setConfirmEmailMessage] = useState<string | null>(null);
   const [contactDraft, setContactDraft] = useState("");
   const [contactSaving, setContactSaving] = useState(false);
+  const [contactResendLoading, setContactResendLoading] = useState(false);
   const [strictAiEnabled, setStrictAiEnabled] = useState(false);
   const [settingsQuery, setSettingsQuery] = useState("");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
@@ -153,9 +155,29 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    setContactDraft(user?.contactEmail ?? "");
+    setContactDraft(user?.contactEmailPending ?? user?.contactEmail ?? "");
     setStrictAiEnabled(user?.strictAiVerification === true);
-  }, [user?.contactEmail, user?.strictAiVerification]);
+  }, [user?.contactEmail, user?.contactEmailPending, user?.strictAiVerification]);
+
+  useEffect(() => {
+    const verified = searchParams.get("contactVerified");
+    const verifyStatus = searchParams.get("contactVerify");
+    if (verified === "1") {
+      setSettingsMessage("Contact email verified. You can use it for password reset.");
+      router.replace("/settings");
+      return;
+    }
+    if (verifyStatus === "expired") {
+      setSettingsMessage("That verification link expired. Save your email again to get a new link.");
+      router.replace("/settings");
+    } else if (verifyStatus === "invalid" || verifyStatus === "missing") {
+      setSettingsMessage("That verification link is invalid. Request a new one from Settings.");
+      router.replace("/settings");
+    } else if (verifyStatus === "error" || verifyStatus === "unconfigured") {
+      setSettingsMessage("Could not verify your email. Try again or contact support.");
+      router.replace("/settings");
+    }
+  }, [router, searchParams]);
 
   const handleStrictAiToggle = async (checked: boolean) => {
     if (!user || (user.plan !== "pro" && user.plan !== "premium")) {
@@ -259,48 +281,103 @@ export default function SettingsPage() {
     setSettingsMessage(`Restored "${goalTitle}" in gallery.`);
   };
 
+  const applyProfileToUser = (p: Record<string, unknown>) => {
+    if (!user) return;
+    setUser({
+      ...user,
+      email: typeof p.email === "string" ? p.email : user.email,
+      username: typeof p.username === "string" ? p.username : user.username,
+      contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
+      contactEmailPending: typeof p.contactEmailPending === "string" ? p.contactEmailPending : undefined,
+      contactEmailVerified: p.contactEmailVerified === true,
+      name: typeof p.name === "string" ? p.name : user.name,
+      plan: normalizePlanId(p.plan),
+      planBilling: typeof p.planBilling === "string" ? (p.planBilling as "monthly" | "yearly") : user.planBilling,
+      createdAt: typeof p.createdAt === "string" ? p.createdAt : user.createdAt,
+      premiumTrialEndsAt:
+        typeof p.premiumTrialEndsAt === "string"
+          ? p.premiumTrialEndsAt
+          : p.premiumTrialEndsAt === null
+            ? null
+            : undefined,
+      premiumTrialUsed: p.premiumTrialUsed === true,
+    });
+  };
+
   const handleSaveContactEmail = async () => {
     if (contactSaving || !useSupabase) return;
     setContactSaving(true);
     setSettingsMessage(null);
     try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       const res = await fetch("/api/profile", {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contact_email: contactDraft.trim() === "" ? null : contactDraft.trim().toLowerCase(),
+          origin,
         }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+        verificationEmailSent?: boolean;
+        verificationEmailError?: string;
+        profile?: Record<string, unknown>;
+      };
       if (!res.ok) {
         setSettingsMessage(typeof data.error === "string" ? data.error : "Could not save email.");
         return;
       }
-      const pr = await fetch("/api/profile", { credentials: "include" }).then((r) => r.json());
-      const p = pr.profile;
-      if (p && user) {
-        setUser({
-          ...user,
-          email: p.email ?? user.email,
-          username: p.username ?? user.username,
-          contactEmail: p.contactEmail,
-          name: p.name ?? user.name,
-          plan: normalizePlanId(p.plan),
-          planBilling: p.planBilling ?? user.planBilling,
-          createdAt: typeof p.createdAt === "string" ? p.createdAt : user.createdAt,
-          premiumTrialEndsAt:
-            typeof p.premiumTrialEndsAt === "string"
-              ? p.premiumTrialEndsAt
-              : p.premiumTrialEndsAt === null
-                ? null
-                : undefined,
-          premiumTrialUsed: p.premiumTrialUsed === true,
-        });
+      if (data.profile && typeof data.profile === "object") {
+        applyProfileToUser(data.profile);
+      } else {
+        const pr = await fetch("/api/profile", { credentials: "include" }).then((r) => r.json());
+        if (pr.profile) applyProfileToUser(pr.profile as Record<string, unknown>);
       }
-      setSettingsMessage("Contact email saved.");
+      if (contactDraft.trim() === "") {
+        setSettingsMessage("Contact email removed.");
+        return;
+      }
+      if (data.verificationEmailSent) {
+        setSettingsMessage(data.message ?? "Verification email sent. Check your inbox and spam folder.");
+        return;
+      }
+      if (data.verificationEmailError) {
+        setSettingsMessage(data.verificationEmailError);
+        return;
+      }
+      if (user?.contactEmailVerified && contactDraft.trim().toLowerCase() === user.contactEmail?.toLowerCase()) {
+        setSettingsMessage("This email is already verified.");
+        return;
+      }
+      setSettingsMessage("Saved. Check your inbox for a verification link.");
     } finally {
       setContactSaving(false);
+    }
+  };
+
+  const handleResendContactVerification = async () => {
+    if (contactResendLoading || !useSupabase || !user?.contactEmailPending) return;
+    setContactResendLoading(true);
+    setSettingsMessage(null);
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch("/api/auth/resend-contact-email-verification", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+      if (res.ok) {
+        setSettingsMessage(data.message ?? "Verification email sent.");
+        return;
+      }
+      setSettingsMessage(typeof data.error === "string" ? data.error : "Could not resend verification email.");
+    } finally {
+      setContactResendLoading(false);
     }
   };
 
@@ -521,10 +598,20 @@ export default function SettingsPage() {
             </p>
             <SettingsDisclosure
               title="Contact email"
-              description="Used for password reset links and account recovery."
+              description="Used for password reset. We send a verification link before it is saved."
               icon={<Mail className="h-5 w-5" />}
             >
               <div className="space-y-2 p-4">
+              {user?.contactEmailVerified && user.contactEmail && (
+                <p className="text-xs text-prove-700 dark:text-prove-300">
+                  Verified: <span className="font-medium">{user.contactEmail}</span>
+                </p>
+              )}
+              {user?.contactEmailPending && (
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  Pending verification: <span className="font-medium">{user.contactEmailPending}</span>
+                </p>
+              )}
               <input
                 type="email"
                 value={contactDraft}
@@ -539,8 +626,22 @@ export default function SettingsPage() {
                 disabled={contactSaving}
                   className="w-full rounded-2xl bg-prove-600 px-4 py-3 text-sm font-semibold text-white hover:bg-prove-700 disabled:opacity-70 btn-glass-primary"
               >
-                {contactSaving ? "Saving…" : "Save email"}
+                {contactSaving
+                  ? "Sending…"
+                  : contactDraft.trim() === ""
+                    ? "Remove email"
+                    : "Save & send verification"}
               </button>
+              {user?.contactEmailPending && (
+                <button
+                  type="button"
+                  onClick={handleResendContactVerification}
+                  disabled={contactResendLoading}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-70 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  {contactResendLoading ? "Sending…" : "Resend verification email"}
+                </button>
+              )}
               </div>
             </SettingsDisclosure>
           </section>

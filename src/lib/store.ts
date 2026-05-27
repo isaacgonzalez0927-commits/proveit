@@ -26,6 +26,9 @@ export interface StoredUser {
   username?: string;
   /** Optional real email for password reset and notices (profiles.contact_email). */
   contactEmail?: string;
+  /** Awaiting verification before it becomes contactEmail. */
+  contactEmailPending?: string;
+  contactEmailVerified?: boolean;
   /** ISO end time for active Premium trial (Supabase + local demo). */
   premiumTrialEndsAt?: string | null;
   /** True after the one-time Premium trial was started (never reset). */

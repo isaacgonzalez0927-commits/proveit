@@ -170,6 +170,8 @@ type ApiProfileLike = {
   name?: string;
   username?: string;
   contactEmail?: string;
+  contactEmailPending?: string;
+  contactEmailVerified?: boolean;
   premiumTrialEndsAt?: string | null;
   premiumTrialUsed?: boolean;
   graceDayBalance?: number;
@@ -260,6 +262,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           name?: string;
           username?: unknown;
           contactEmail?: unknown;
+          contactEmailPending?: unknown;
+          contactEmailVerified?: unknown;
           premiumTrialEndsAt?: string | null;
           premiumTrialUsed?: boolean;
           graceDayBalance?: unknown;
@@ -294,6 +298,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               name: p.name ?? storedName,
               username: typeof p.username === "string" ? p.username : undefined,
               contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
+              contactEmailPending:
+                typeof p.contactEmailPending === "string" ? p.contactEmailPending : undefined,
+              contactEmailVerified: p.contactEmailVerified === true,
               premiumTrialEndsAt:
                 typeof p.premiumTrialEndsAt === "string"
                   ? p.premiumTrialEndsAt
@@ -321,6 +328,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               name: storedName,
               username: undefined as string | undefined,
               contactEmail: undefined as string | undefined,
+              contactEmailPending: undefined as string | undefined,
+              contactEmailVerified: false,
               premiumTrialEndsAt: undefined,
               premiumTrialUsed: false,
               graceDayBalance: 0,
@@ -606,6 +615,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               username: typeof pr.username === "string" ? pr.username : user.username,
               contactEmail:
                 typeof pr.contactEmail === "string" ? pr.contactEmail : user.contactEmail,
+              contactEmailPending:
+                typeof pr.contactEmailPending === "string"
+                  ? pr.contactEmailPending
+                  : user.contactEmailPending,
+              contactEmailVerified:
+                pr.contactEmailVerified === true
+                  ? true
+                  : pr.contactEmailVerified === false
+                    ? false
+                    : user.contactEmailVerified,
               premiumTrialEndsAt:
                 typeof pr.premiumTrialEndsAt === "string"
                   ? pr.premiumTrialEndsAt

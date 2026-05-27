@@ -7,6 +7,13 @@ import {
   getActiveReminderLimit,
   getGraceDayResetBalance,
 } from "@/lib/subscriptionLimits";
+import {
+  buildContactEmailVerifyUrl,
+  contactEmailVerifyExpiresAtISO,
+  createContactEmailVerifyToken,
+  isContactEmailVerified,
+  sendContactEmailVerification,
+} from "@/lib/contactEmailVerification";
 
 function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
   if (plan === "premium") return "premium";
@@ -24,7 +31,7 @@ function isOptionalProfileSchemaError(message: string): boolean {
     lower.includes("not find") ||
     lower.includes("schema cache");
   if (!soundsMissing) return false;
-  return /grace_day_|strict_ai_verification|trial_expired_needs_review|ai_verification_|premium_trial_/i.test(
+  return /grace_day_|strict_ai_verification|trial_expired_needs_review|ai_verification_|premium_trial_|contact_email_pending|contact_email_verified|contact_email_verify_/i.test(
     message
   );
 }
@@ -114,6 +121,12 @@ function profileJsonFromRow(data: ProfileRow) {
     createdAt: data.created_at as string,
     username: typeof data.username === "string" ? data.username : undefined,
     contactEmail: typeof data.contact_email === "string" ? data.contact_email : undefined,
+    contactEmailPending:
+      typeof data.contact_email_pending === "string" ? data.contact_email_pending : undefined,
+    contactEmailVerified: isContactEmailVerified({
+      contact_email: data.contact_email,
+      contact_email_verified_at: data.contact_email_verified_at,
+    }),
     name: typeof data.name === "string" ? data.name : undefined,
     premiumTrialEndsAt:
       data.premium_trial_ends_at != null ? String(data.premium_trial_ends_at) : null,
@@ -154,6 +167,8 @@ export async function GET() {
         createdAt: user.created_at,
         username: undefined as string | undefined,
         contactEmail: undefined as string | undefined,
+        contactEmailPending: undefined as string | undefined,
+        contactEmailVerified: false,
         name: undefined as string | undefined,
         premiumTrialEndsAt: null,
         premiumTrialUsed: false,
@@ -193,8 +208,18 @@ export async function PATCH(request: NextRequest) {
 
   const plan = body.plan;
   const planBilling = body.planBilling;
+  let contactEmailOrigin = "";
+  if (typeof body.origin === "string" && body.origin.trim()) {
+    const raw = body.origin.trim();
+    contactEmailOrigin = raw.startsWith("http") ? raw : `https://${raw}`;
+  } else {
+    const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
+    contactEmailOrigin = host ? (host.startsWith("http") ? host : `https://${host}`) : "";
+  }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  let pendingContactEmailToVerify: string | null = null;
+  let pendingContactVerifyToken: string | null = null;
 
   const needsCurrentRow =
     typeof plan === "string" && ["free", "pro", "premium"].includes(plan) ||
@@ -273,12 +298,51 @@ export async function PATCH(request: NextRequest) {
   if (body.contact_email !== undefined) {
     if (body.contact_email === null || body.contact_email === "") {
       updates.contact_email = null;
+      updates.contact_email_pending = null;
+      updates.contact_email_verified_at = null;
+      updates.contact_email_verify_token = null;
+      updates.contact_email_verify_expires_at = null;
     } else if (typeof body.contact_email === "string") {
       const c = body.contact_email.trim().toLowerCase();
       if (!EMAIL_FORMAT.test(c)) {
         return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
       }
-      updates.contact_email = c;
+
+      const { data: contactState } = await supabase
+        .from("profiles")
+        .select("contact_email, contact_email_pending, contact_email_verified_at")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const verifiedEmail =
+        typeof contactState?.contact_email === "string" &&
+        isContactEmailVerified({
+          contact_email: contactState.contact_email,
+          contact_email_verified_at: contactState.contact_email_verified_at,
+        })
+          ? contactState.contact_email.trim().toLowerCase()
+          : "";
+      const existingPending =
+        typeof contactState?.contact_email_pending === "string"
+          ? contactState.contact_email_pending.trim().toLowerCase()
+          : "";
+
+      if (c === verifiedEmail) {
+        // Already verified — no change.
+      } else if (c === existingPending) {
+        const token = createContactEmailVerifyToken();
+        updates.contact_email_verify_token = token;
+        updates.contact_email_verify_expires_at = contactEmailVerifyExpiresAtISO();
+        pendingContactEmailToVerify = c;
+        pendingContactVerifyToken = token;
+      } else {
+        const token = createContactEmailVerifyToken();
+        updates.contact_email_pending = c;
+        updates.contact_email_verify_token = token;
+        updates.contact_email_verify_expires_at = contactEmailVerifyExpiresAtISO();
+        pendingContactEmailToVerify = c;
+        pendingContactVerifyToken = token;
+      }
     } else {
       return NextResponse.json({ error: "Invalid contact email." }, { status: 400 });
     }
@@ -312,6 +376,8 @@ export async function PATCH(request: NextRequest) {
           createdAt: user.created_at,
           username: undefined as string | undefined,
           contactEmail: undefined as string | undefined,
+          contactEmailPending: undefined as string | undefined,
+          contactEmailVerified: false,
           name: undefined as string | undefined,
           premiumTrialEndsAt: null,
           premiumTrialUsed: false,
@@ -419,6 +485,14 @@ export async function PATCH(request: NextRequest) {
             : typeof appliedUpdates.contact_email === "string"
               ? appliedUpdates.contact_email
               : undefined,
+        contactEmailPending:
+          typeof appliedUpdates.contact_email_pending === "string"
+            ? appliedUpdates.contact_email_pending
+            : undefined,
+        contactEmailVerified: isContactEmailVerified({
+          contact_email: appliedUpdates.contact_email,
+          contact_email_verified_at: appliedUpdates.contact_email_verified_at,
+        }),
         name: typeof appliedUpdates.name === "string" ? appliedUpdates.name : undefined,
         premiumTrialEndsAt:
           appliedUpdates.premium_trial_ends_at != null ? String(appliedUpdates.premium_trial_ends_at) : null,
@@ -437,8 +511,27 @@ export async function PATCH(request: NextRequest) {
     });
   }
 
+  let verificationEmailSent = false;
+  let verificationEmailError: string | undefined;
+  if (pendingContactEmailToVerify && pendingContactVerifyToken && contactEmailOrigin) {
+    const sent = await sendContactEmailVerification({
+      to: pendingContactEmailToVerify,
+      verifyUrl: buildContactEmailVerifyUrl(contactEmailOrigin, pendingContactVerifyToken),
+    });
+    if (sent.ok) {
+      verificationEmailSent = true;
+    } else {
+      verificationEmailError = sent.error;
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     profile: profileJsonFromRow(finalRow),
+    ...(verificationEmailSent
+      ? { verificationEmailSent: true, message: "Verification email sent. Check your inbox and spam folder." }
+      : verificationEmailError
+        ? { verificationEmailSent: false, verificationEmailError }
+        : {}),
   });
 }

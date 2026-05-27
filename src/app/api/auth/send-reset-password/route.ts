@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   if (username) {
     const { data: profile, error: profErr } = await admin
       .from("profiles")
-      .select("id, contact_email")
+      .select("id, contact_email, contact_email_verified_at")
       .eq("username", username)
       .maybeSingle();
 
@@ -65,18 +65,20 @@ export async function POST(request: NextRequest) {
 
     authEmailForLink = userData.user.email;
     const contact = typeof profile.contact_email === "string" ? profile.contact_email.trim() : "";
+    const contactVerified = profile.contact_email_verified_at != null && contact.length > 0;
 
-    if (isInternalAuthEmail(authEmailForLink) && !contact) {
+    if (isInternalAuthEmail(authEmailForLink) && !contactVerified) {
       return NextResponse.json(
         {
-          error:
-            "Add an email in Settings first so we can send a reset link. (Sign-in is still your username.)",
+          error: contact
+            ? "Verify your contact email in Settings before using password reset."
+            : "Add and verify an email in Settings first so we can send a reset link. (Sign-in is still your username.)",
         },
         { status: 400 }
       );
     }
 
-    email = contact || authEmailForLink;
+    email = contactVerified ? contact : authEmailForLink;
   } else {
     if (!email || !EMAIL_FORMAT.test(email)) {
       return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
