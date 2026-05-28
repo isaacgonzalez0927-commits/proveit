@@ -202,6 +202,11 @@ export default function BuddyPage() {
   const activeReminderLimit = getActiveReminderLimit(user?.plan ?? "free");
   const activeReminderCount = countActiveReminders(goals);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradePromptPlan, setUpgradePromptPlan] = useState<"pro" | "premium">("pro");
+  const openUpgradePrompt = (plan: "pro" | "premium" = "pro") => {
+    setUpgradePromptPlan(plan);
+    setShowUpgradePrompt(true);
+  };
   const [showFirstGoalCongrats, setShowFirstGoalCongrats] = useState(false);
   const [showFirstFullGrownCongrats, setShowFirstFullGrownCongrats] = useState(false);
 
@@ -430,7 +435,7 @@ export default function BuddyPage() {
       if (!result.created) {
         const err = result.error?.trim() || "Something went wrong. Please try again.";
         setGoalManagerMessage(err.startsWith("Could not") ? err : `Could not create goal: ${err}`);
-        if (err && /limit|upgrade|pro|premium/i.test(err)) setShowUpgradePrompt(true);
+        if (err && /limit|upgrade|pro|premium/i.test(err)) openUpgradePrompt("pro");
         return;
       }
       const maxVariant = getMaxPlantVariantForPlan(user?.plan ?? "free");
@@ -646,7 +651,7 @@ export default function BuddyPage() {
               onClick={() => {
                 setGoalManagerMessage(null);
                 if (!canAddMoreGoals) {
-                  setShowUpgradePrompt(true);
+                  openUpgradePrompt("pro");
                   return;
                 }
                 if (typeof window !== "undefined" && window.localStorage.getItem(TOUR_SPOTLIGHT_KEY) === "add-goal-button") {
@@ -872,7 +877,7 @@ export default function BuddyPage() {
               type="button"
               onClick={() => {
                 if (!canAddMoreGoals) {
-                  setShowUpgradePrompt(true);
+                  openUpgradePrompt("pro");
                 } else {
                   if (typeof window !== "undefined" && window.localStorage.getItem(TOUR_SPOTLIGHT_KEY) === "add-goal-button") {
                     window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
@@ -927,7 +932,7 @@ export default function BuddyPage() {
                         if (canUseGoalBreak) {
                           void toggleGoalBreak(entry.goal, entry.streak);
                         } else {
-                          setShowUpgradePrompt(true);
+                          openUpgradePrompt("pro");
                         }
                       }}
                       className={`inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold dark:bg-slate-900/50 ${
@@ -1064,7 +1069,7 @@ export default function BuddyPage() {
                             if (canEditExistingGoalStyle) {
                               setGoalPlantVariant(entry.goal.id, variant);
                             } else if (!selected) {
-                              setShowUpgradePrompt(true);
+                              openUpgradePrompt("pro");
                             }
                           }}
                           className={`rounded-md border p-1 transition ${
@@ -1216,8 +1221,7 @@ export default function BuddyPage() {
       <UpgradePromptModal
         open={showUpgradePrompt}
         onClose={() => setShowUpgradePrompt(false)}
-        title="Pro or Premium feature"
-        message="Upgrade to Pro or Premium to use Goal Break and change plant styles."
+        requiredPlan={upgradePromptPlan}
       />
     </>
   );
