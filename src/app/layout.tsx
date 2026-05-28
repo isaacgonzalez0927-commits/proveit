@@ -70,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} ${dmSans.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${outfit.variable} ${dmSans.variable}`} suppressHydrationWarning>
       <body className="font-body min-h-screen flex flex-col antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <a

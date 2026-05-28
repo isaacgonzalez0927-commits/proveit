@@ -106,7 +106,7 @@ export function saveAndApplyAccentTheme(accent: AccentTheme) {
 }
 
 export function getEffectiveIsDark(theme: ThemeMode): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return theme !== "light";
   const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return theme === "dark" || (theme === "system" && systemPrefersDark);
 }

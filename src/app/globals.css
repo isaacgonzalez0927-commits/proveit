@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default to light - .dark on html overrides when user/system prefers dark */
+/* Default to dark — .dark on html; light mode when user opts in */
 :root {
   --prove-50-rgb: 240 253 246;
   --prove-100-rgb: 220 252 235;
