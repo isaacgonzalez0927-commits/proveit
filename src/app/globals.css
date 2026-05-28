@@ -957,12 +957,9 @@ input[type="file"] {
   width: 7px;
   height: 9px;
   border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: linear-gradient(
-    180deg,
-    rgb(var(--prove-300-rgb)) 0%,
-    rgb(var(--prove-600-rgb)) 100%
-  );
-  animation: water-drop-fall 0.5s ease-in forwards;
+  opacity: 0;
+  background: linear-gradient(180deg, #7dd3fc 0%, #2563eb 100%);
+  animation: water-drop-fall 0.5s ease-in both;
 }
 
 @keyframes plant-water-bounce {
