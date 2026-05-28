@@ -90,7 +90,7 @@ function SettingsDisclosure({
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition-transform group-open:rotate-90" />
       </summary>
-      <div className="motion-disclosure-panel border-t border-slate-100 dark:border-white/10">
+      <div className="motion-disclosure-panel border-t border-slate-200/50 dark:border-white/10">
         <div className="motion-disclosure-inner" key={openSeq}>
           {children}
         </div>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
             <h1 className="text-center text-lg font-semibold text-slate-950 dark:text-white">Settings</h1>
             <div />
           </div>
-          <label className="mt-4 flex h-14 items-center gap-3 rounded-2xl bg-white px-4 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:ring-white/10">
+          <label className="mt-4 flex h-14 items-center gap-3 rounded-2xl px-4 glass-card">
             <Search className="h-6 w-6 text-slate-900 dark:text-white" />
             <span className="sr-only">Search settings</span>
             <input
@@ -949,7 +949,7 @@ export default function SettingsPage() {
         )}
 
         {settingsMessage && (
-          <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <p className="rounded-2xl px-4 py-3 text-xs text-slate-700 glass-card dark:text-slate-200">
             {settingsMessage}
           </p>
         )}
