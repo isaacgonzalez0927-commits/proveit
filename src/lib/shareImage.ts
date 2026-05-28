@@ -15,8 +15,8 @@ export async function shareOrDownloadBlob(
   title: string,
   text: string
 ): Promise<"shared" | "downloaded"> {
-  const file = new File([blob], filename, { type: "image/png" });
-  if (typeof navigator !== "undefined" && navigator.share) {
+  if (typeof window !== "undefined" && window.isSecureContext && navigator.share) {
+    const file = new File([blob], filename, { type: "image/png" });
     try {
       if (!navigator.canShare || navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title, text });
@@ -32,13 +32,62 @@ export async function shareOrDownloadBlob(
   return "downloaded";
 }
 
-export function loadImage(src: string): Promise<HTMLImageElement> {
+function loadImageElement(src: string, crossOrigin = false): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    if (crossOrigin) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("Could not load image."));
     img.src = src;
   });
+}
+
+async function loadImageFromBlobResponse(response: Response): Promise<HTMLImageElement> {
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    return await loadImageElement(objectUrl);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function isSameOriginUrl(src: string): boolean {
+  if (src.startsWith("/")) return true;
+  if (typeof window === "undefined") return false;
+  try {
+    return new URL(src, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/** Load an image safely for canvas export (avoids tainted canvas SecurityError). */
+export async function loadImage(src: string): Promise<HTMLImageElement> {
+  if (!src) throw new Error("Could not load image.");
+  if (src.startsWith("data:") || src.startsWith("blob:") || isSameOriginUrl(src)) {
+    return loadImageElement(src);
+  }
+
+  const sources = [
+    src,
+    `/api/share/image?url=${encodeURIComponent(src)}`,
+  ];
+
+  for (const source of sources) {
+    try {
+      const response = await fetch(source, {
+        mode: source.startsWith("/") ? "same-origin" : "cors",
+        credentials: "omit",
+      });
+      if (!response.ok) continue;
+      return await loadImageFromBlobResponse(response);
+    } catch {
+      /* try next source */
+    }
+  }
+
+  return loadImageElement(src, true);
 }
 
 export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
