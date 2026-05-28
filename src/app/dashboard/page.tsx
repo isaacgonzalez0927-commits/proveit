@@ -20,7 +20,6 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PlanDowngradeReview } from "@/components/PlanDowngradeReview";
-import { VerifiedProofThumbnail } from "@/components/VerifiedProofThumbnail";
 import { ShareImageButton } from "@/components/ShareImageButton";
 import { getPlan } from "@/lib/store";
 import { PLANS, normalizePlanId } from "@/types";
