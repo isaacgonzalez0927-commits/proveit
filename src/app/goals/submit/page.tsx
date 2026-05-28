@@ -176,6 +176,7 @@ function SubmitProofContent() {
   const [verified, setVerified] = useState<boolean | null>(null);
   /** Shown on the result overlay (CLIP / save messaging). */
   const [resultSummary, setResultSummary] = useState<string | null>(null);
+  const [resultProofImage, setResultProofImage] = useState<string | null>(null);
   const [showFirstProofCelebration, setShowFirstProofCelebration] = useState(false);
   /** Bumps `AIVerificationWidget` key after a denied flow so the widget doesn’t keep the old verdict UI. */
   const [aiWidgetSession, setAiWidgetSession] = useState(0);
@@ -319,6 +320,12 @@ function SubmitProofContent() {
     setVerified(true);
     setStep("result");
     setResultSummary((prev) => (prev && prev.trim().length > 0 ? prev : "You're all set for today."));
+    const verifiedToday = goalSubs.find(
+      (s) => s.date === todayStr && s.status === "verified" && s.imageDataUrl
+    );
+    if (verifiedToday?.imageDataUrl) {
+      setResultProofImage(verifiedToday.imageDataUrl);
+    }
     setDeferCameraAutostart(true);
     setResumeAfterProofGate(true);
     stopCamera();
@@ -343,6 +350,7 @@ function SubmitProofContent() {
     setStep("capture");
     setVerified(null);
     setResultSummary(null);
+    setResultProofImage(null);
     setAiWidgetSession((n) => n + 1);
     autoStartCameraAttemptedRef.current = false;
     setCameraError(null);
@@ -445,10 +453,13 @@ function SubmitProofContent() {
 
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
-      const finish = (ok: boolean, summary: string | null) => {
+      const finish = (ok: boolean, summary: string | null, proofImage?: string | null) => {
         if (ok) {
           hapticSuccess();
           if (goal) setWateredGoalFlash(goal.id);
+          setResultProofImage(proofImage ?? null);
+        } else {
+          setResultProofImage(null);
         }
         setVerified(ok);
         setResultSummary(summary);
@@ -510,7 +521,7 @@ function SubmitProofContent() {
             }
           }
         }
-        finish(passed, msg);
+        finish(passed, msg, passed ? imageToStore : null);
       } catch {
         finish(false, "Something went wrong saving your proof. You can try again.");
       }
@@ -746,23 +757,38 @@ function SubmitProofContent() {
             }`}
           >
             {verified ? (
-              <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600 dark:text-emerald-400 animate-success-pop" />
+              <>
+                {resultProofImage ? (
+                  <div className="relative mx-auto mt-1 h-44 w-44 animate-success-pop">
+                    <img
+                      src={resultProofImage}
+                      alt=""
+                      className="h-full w-full rounded-2xl object-cover ring-2 ring-emerald-400/90 shadow-md dark:ring-emerald-500/70"
+                    />
+                    <span className="absolute -bottom-2 -right-2 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500 shadow-lg ring-4 ring-white dark:ring-slate-900">
+                      <CheckCircle2 className="h-7 w-7 text-white" aria-hidden />
+                    </span>
+                  </div>
+                ) : (
+                  <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600 dark:text-emerald-400 animate-success-pop" />
+                )}
+                {wateringCelebration && (
+                  <div className="mt-4">
+                    <PlantWateringCelebration
+                      stage={wateringCelebration.stage}
+                      variant={wateringCelebration.variant}
+                    />
+                    <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      Plant watered!
+                    </p>
+                  </div>
+                )}
+              </>
             ) : (
               <XCircle className="mx-auto h-14 w-14 text-red-600 dark:text-red-400" />
             )}
-            {verified && wateringCelebration && (
-              <div className="mt-4">
-                <PlantWateringCelebration
-                  stage={wateringCelebration.stage}
-                  variant={wateringCelebration.variant}
-                />
-                <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  Plant watered!
-                </p>
-              </div>
-            )}
             <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
-              {verified ? "Approved" : "Denied"}
+              {verified ? "Done for today!" : "Denied"}
             </h2>
             {resultSummary ? (
               <p className="mt-4 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
