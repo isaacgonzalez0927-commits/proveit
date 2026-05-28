@@ -17,6 +17,7 @@ interface GardenSnapshotProps {
   className?: string;
   maxPlants?: number;
   emptyLabel?: string;
+  highlightGoalId?: string | null;
 }
 
 export function GardenSnapshot({
@@ -24,6 +25,7 @@ export function GardenSnapshot({
   className = "",
   maxPlants = 12,
   emptyLabel = "No plants yet. Add a goal to start your garden.",
+  highlightGoalId = null,
 }: GardenSnapshotProps) {
   const visiblePlants = plants.slice(0, maxPlants);
 
@@ -38,7 +40,9 @@ export function GardenSnapshot({
           {visiblePlants.map((plant) => (
             <div
               key={plant.id}
-              className="flex h-[96px] w-[74px] shrink-0 items-end justify-center"
+              className={`flex h-[96px] w-[74px] shrink-0 items-end justify-center ${
+                highlightGoalId === plant.id ? "animate-plant-water-pulse" : ""
+              }`}
             >
               <PlantIllustration
                 key={`${plant.id}-${plant.stage}-${plant.variant}`}

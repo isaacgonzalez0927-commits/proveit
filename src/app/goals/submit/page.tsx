@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,7 +14,11 @@ import {
   hasVerifiedSubmissionOnDate,
 } from "@/lib/goalDue";
 import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
-import { lightImpact } from "@/lib/haptics";
+import { lightImpact, success as hapticSuccess } from "@/lib/haptics";
+import { getGoalStreak } from "@/lib/goalProgress";
+import { getPlantStageForStreak } from "@/lib/plantGrowth";
+import { setWateredGoalFlash } from "@/lib/wateredGoalFlash";
+import { PlantWateringCelebration } from "@/components/PlantWateringCelebration";
 import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
@@ -96,6 +100,8 @@ function SubmitProofContent() {
     authReady,
     getSubmissionsForGoal,
     submissions,
+    graceDayEvents,
+    getGoalPlantVariant,
   } = useApp();
   // Fallback: fetch directly when context doesn't have data (handles direct nav / context race)
   const [localUser, setLocalUser] = useState<StoredUser | null>(null);
@@ -232,6 +238,15 @@ function SubmitProofContent() {
   const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
   const alreadyVerifiedToday =
     !!goal && hasVerifiedSubmissionOnDate(goalSubs, todayStr);
+
+  const wateringCelebration = useMemo(() => {
+    if (!goal || verified !== true) return null;
+    const streak = getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents);
+    return {
+      stage: getPlantStageForStreak(streak).stage,
+      variant: getGoalPlantVariant(goal.id),
+    };
+  }, [goal, verified, getSubmissionsForGoal, graceDayEvents, getGoalPlantVariant, submissions]);
 
   const [, setHideHeader] = useHideHeader();
   const showStartingCameraForHeader =
@@ -431,6 +446,10 @@ function SubmitProofContent() {
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
       const finish = (ok: boolean, summary: string | null) => {
+        if (ok) {
+          hapticSuccess();
+          if (goal) setWateredGoalFlash(goal.id);
+        }
         setVerified(ok);
         setResultSummary(summary);
         setStep("result");
@@ -727,9 +746,20 @@ function SubmitProofContent() {
             }`}
           >
             {verified ? (
-              <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600 dark:text-emerald-400" />
+              <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600 dark:text-emerald-400 animate-success-pop" />
             ) : (
               <XCircle className="mx-auto h-14 w-14 text-red-600 dark:text-red-400" />
+            )}
+            {verified && wateringCelebration && (
+              <div className="mt-4">
+                <PlantWateringCelebration
+                  stage={wateringCelebration.stage}
+                  variant={wateringCelebration.variant}
+                />
+                <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  Plant watered!
+                </p>
+              </div>
             )}
             <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
               {verified ? "Approved" : "Denied"}

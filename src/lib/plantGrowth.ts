@@ -16,6 +16,14 @@ export const PLANT_GROWTH_STAGES: PlantGrowthStage[] = [
   { minStreak: 12, stage: "flowering", name: "Fully grown" },
 ];
 
+/** Minimum streak on any goal to reach the final plant stage. */
+export const FULLY_GROWN_MIN_STREAK =
+  PLANT_GROWTH_STAGES[PLANT_GROWTH_STAGES.length - 1]!.minStreak;
+
+export function isFullyGrownStreak(streak: number): boolean {
+  return streak >= FULLY_GROWN_MIN_STREAK;
+}
+
 export function getPlantStageForStreak(streak: number): PlantGrowthStage {
   let result = PLANT_GROWTH_STAGES[0];
   for (const s of PLANT_GROWTH_STAGES) {

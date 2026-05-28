@@ -916,6 +916,84 @@ input[type="file"] {
   animation: plant-final-glow 1.8s ease-in-out 1;
 }
 
+@keyframes watering-can-tilt {
+  0% {
+    transform: rotate(-12deg) translate(0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  38% {
+    transform: rotate(32deg) translate(-6px, 4px);
+  }
+  62% {
+    transform: rotate(28deg) translate(-6px, 4px);
+  }
+  100% {
+    transform: rotate(-8deg) translate(2px, -2px);
+    opacity: 0;
+  }
+}
+.animate-watering-can-tilt {
+  animation: watering-can-tilt 1.35s ease-in-out 1;
+}
+
+@keyframes water-drop-fall {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(42px) scale(0.85);
+    opacity: 0;
+  }
+}
+.water-drop {
+  display: block;
+  width: 7px;
+  height: 9px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: linear-gradient(180deg, #7dd3fc 0%, #0ea5e9 100%);
+  animation: water-drop-fall 0.5s ease-in forwards;
+}
+
+@keyframes plant-water-bounce {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+  40% {
+    transform: translateX(-50%) scale(1.07);
+  }
+  62% {
+    transform: translateX(-50%) scale(0.98);
+  }
+}
+.animate-plant-water-bounce {
+  animation: plant-water-bounce 0.85s ease-out 1;
+  animation-delay: 0.3s;
+}
+
+@keyframes plant-water-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  62% {
+    transform: scale(0.98);
+  }
+}
+.animate-plant-water-pulse {
+  animation: plant-water-pulse 0.85s ease-out 1;
+}
+
 /* Success checkmark pop when proof is verified */
 @keyframes success-pop {
   0% { transform: scale(0.4); opacity: 0; }

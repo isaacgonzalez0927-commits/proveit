@@ -20,9 +20,13 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PlanDowngradeReview } from "@/components/PlanDowngradeReview";
+import { ShareImageButton } from "@/components/ShareImageButton";
 import { getPlan } from "@/lib/store";
 import { PLANS, normalizePlanId } from "@/types";
 import { clearPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
+import { consumeWateredGoalFlash } from "@/lib/wateredGoalFlash";
+import { progressShareFilename, renderProgressShareImage } from "@/lib/shareProgressImage";
+import { shareOrDownloadBlob } from "@/lib/shareImage";
 import { hasCreatorAccess } from "@/lib/accountAccess";
 import {
   applyDeveloperModeNumbers,
@@ -65,7 +69,17 @@ function DashboardContent() {
   const [creatorActionResult, setCreatorActionResult] = useState<string | null>(null);
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(DEFAULT_DEVELOPER_MODE_SETTINGS);
   const [streakCardExpanded, setStreakCardExpanded] = useState(false);
+  const [progressShareNotice, setProgressShareNotice] = useState<string | null>(null);
+  const [wateredFlashGoalId, setWateredFlashGoalId] = useState<string | null>(null);
   const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
+
+  useEffect(() => {
+    const goalId = consumeWateredGoalFlash();
+    if (!goalId) return;
+    setWateredFlashGoalId(goalId);
+    const timer = window.setTimeout(() => setWateredFlashGoalId(null), 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     clearPostPlanWelcomeFlag();
@@ -255,7 +269,11 @@ function DashboardContent() {
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <GardenSnapshot plants={gardenSnapshotPlants} className="mt-3" />
+          <GardenSnapshot
+            plants={gardenSnapshotPlants}
+            className="mt-3"
+            highlightGoalId={wateredFlashGoalId}
+          />
           <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-200">
             {goals.length === 0 ? (
               "Add goals in the Garden to start tracking streaks and watering."
@@ -371,6 +389,39 @@ function DashboardContent() {
                     ? "Complete a goal to start your streak."
                     : "Keep submitting verified proofs to grow your streak."}
               </p>
+              {displayMaxStreak > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <ShareImageButton
+                    label="Share progress"
+                    onShare={async () => {
+                      const blob = await renderProgressShareImage({
+                        maxStreak: displayMaxStreak,
+                        streakUnit,
+                        goalsDoneToday: displayGoalsDoneToday,
+                        totalDueToday: displayTotalDueToday,
+                        activeGoals: goals.length,
+                      });
+                      return shareOrDownloadBlob(
+                        blob,
+                        progressShareFilename(),
+                        "Proveit progress",
+                        `I'm on a ${displayMaxStreak} ${streakUnit} streak on Proveit`
+                      );
+                    }}
+                    onDone={(result) =>
+                      setProgressShareNotice(
+                        result === "shared" ? "Progress shared!" : "Progress image saved."
+                      )
+                    }
+                    onError={setProgressShareNotice}
+                  />
+                  {progressShareNotice && (
+                    <span className="text-xs text-prove-700 dark:text-prove-300" role="status">
+                      {progressShareNotice}
+                    </span>
+                  )}
+                </div>
+              )}
               {streakCardExpanded && (
                 <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
                   <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">This week</p>

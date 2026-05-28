@@ -2,17 +2,34 @@ import { startOfWeek } from "date-fns";
 import type { Goal, GraceDayEvent, ProofSubmission, User } from "@/types";
 import { safeParseISO } from "@/lib/dateUtils";
 import { getGoalStreak } from "@/lib/goalProgress";
+import { FULLY_GROWN_MIN_STREAK } from "@/lib/plantGrowth";
 import { weekStartKey, weeklyQuotaMetWithGrace } from "@/lib/graceDays";
 
-export type AchievementTier = "standard" | "premium";
+export type AchievementTier = "free" | "pro" | "premium";
+
+export function isProMember(user: Pick<User, "plan"> | null | undefined): boolean {
+  if (!user) return false;
+  return user.plan === "pro" || user.plan === "premium";
+}
 
 export function isPremiumMember(user: Pick<User, "plan"> | null | undefined): boolean {
   if (!user) return false;
   return user.plan === "premium";
 }
 
+export function isAchievementLockedByPlan(
+  tier: AchievementTier,
+  plan: User["plan"] | undefined
+): boolean {
+  if (tier === "free") return false;
+  if (tier === "pro") return plan !== "pro" && plan !== "premium";
+  return plan !== "premium";
+}
+
 export type AchievementId =
+  | "first_goal"
   | "first_proof"
+  | "first_full_grown"
   | "proof_10"
   | "proof_50"
   | "proof_100"
@@ -42,6 +59,7 @@ export interface AchievementProgress {
 }
 
 export interface AchievementStats {
+  totalGoals: number;
   totalProofs: number;
   maxStreak: number;
   activeGoals: number;
@@ -52,67 +70,81 @@ export interface AchievementStats {
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
+    id: "first_goal",
+    title: "First goal",
+    description: "Plant your first goal in the Garden.",
+    emoji: "🎯",
+    tier: "free",
+  },
+  {
     id: "first_proof",
     title: "First proof",
     description: "Verify your first goal with a photo.",
     emoji: "📸",
-    tier: "standard",
+    tier: "free",
+  },
+  {
+    id: "first_full_grown",
+    title: "Fully grown",
+    description: "Grow a plant to its final stage.",
+    emoji: "🌸",
+    tier: "free",
   },
   {
     id: "proof_10",
     title: "Getting started",
     description: "Complete 10 verified proofs.",
     emoji: "🌱",
-    tier: "standard",
+    tier: "pro",
   },
   {
     id: "proof_50",
     title: "Committed",
     description: "Complete 50 verified proofs.",
     emoji: "🔥",
-    tier: "standard",
+    tier: "pro",
   },
   {
     id: "proof_100",
     title: "Century club",
     description: "Complete 100 verified proofs.",
     emoji: "💯",
-    tier: "standard",
+    tier: "premium",
   },
   {
     id: "streak_7",
     title: "Week warrior",
     description: "Reach a 7-day or 7-week streak on any goal.",
     emoji: "⚡",
-    tier: "standard",
+    tier: "pro",
   },
   {
     id: "streak_30",
     title: "Unstoppable",
     description: "Reach a 30-day or 30-week streak on any goal.",
     emoji: "🏆",
-    tier: "standard",
+    tier: "premium",
   },
   {
     id: "perfect_week",
     title: "Perfect week",
     description: "Hit every active goal's weekly quota in one calendar week.",
     emoji: "✨",
-    tier: "standard",
+    tier: "pro",
   },
   {
     id: "garden_5",
     title: "Green thumb",
     description: "Keep 5 active goals in your garden at once.",
     emoji: "🌿",
-    tier: "standard",
+    tier: "premium",
   },
   {
     id: "shield_saver",
     title: "Shield saver",
     description: "Use a Streak Shield to protect a missed week.",
     emoji: "🛡️",
-    tier: "standard",
+    tier: "pro",
   },
   {
     id: "premium_collector",
@@ -203,6 +235,7 @@ export function computeAchievementStats(
   }, 0);
 
   return {
+    totalGoals: goals.length,
     totalProofs: verified.length,
     maxStreak,
     activeGoals: goals.filter((g) => !g.archivedAt).length,
@@ -227,13 +260,15 @@ function maxProofsInAnyWeek(submissions: ProofSubmission[]): number {
 export function evaluateAchievement(
   id: AchievementId,
   stats: AchievementStats,
-  isPremium: boolean
+  plan: User["plan"] | undefined
 ): { unlocked: boolean; progress: number; target: number; lockedByPlan: boolean } {
   const def = ACHIEVEMENTS.find((a) => a.id === id);
-  const lockedByPlan = def?.tier === "premium" && !isPremium;
+  const lockedByPlan = def ? isAchievementLockedByPlan(def.tier, plan) : false;
 
   const targets: Record<AchievementId, number> = {
+    first_goal: 1,
     first_proof: 1,
+    first_full_grown: FULLY_GROWN_MIN_STREAK,
     proof_10: 10,
     proof_50: 50,
     proof_100: 100,
@@ -251,6 +286,9 @@ export function evaluateAchievement(
   let progress = 0;
 
   switch (id) {
+    case "first_goal":
+      progress = stats.totalGoals;
+      break;
     case "first_proof":
     case "proof_10":
     case "proof_50":
@@ -258,6 +296,7 @@ export function evaluateAchievement(
     case "premium_milestone":
       progress = stats.totalProofs;
       break;
+    case "first_full_grown":
     case "streak_7":
     case "streak_30":
     case "premium_legend":
@@ -282,13 +321,14 @@ export function evaluateAchievement(
 
 export function evaluateAllAchievements(
   stats: AchievementStats,
-  isPremium: boolean,
+  plan: User["plan"] | undefined,
   submissions: ProofSubmission[]
 ): AchievementProgress[] {
+  const isPremium = plan === "premium";
   const maxWeekProofs = maxProofsInAnyWeek(submissions);
 
   return ACHIEVEMENTS.map((def) => {
-    const base = evaluateAchievement(def.id, stats, isPremium);
+    const base = evaluateAchievement(def.id, stats, plan);
     if (def.id === "premium_collector") {
       const progress = Math.min(maxWeekProofs, 7);
       return {

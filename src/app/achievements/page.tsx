@@ -9,6 +9,7 @@ import {
   Crown,
   Lock,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import {
@@ -17,6 +18,7 @@ import {
   countUnlockedAchievements,
   evaluateAllAchievements,
   isPremiumMember,
+  isProMember,
   PREMIUM_ACHIEVEMENT_REWARDS,
   type AchievementProgress,
 } from "@/lib/achievements";
@@ -48,6 +50,12 @@ function AchievementCard({ item, progress }: { item: (typeof ACHIEVEMENTS)[numbe
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold text-slate-900 dark:text-white">{item.title}</h2>
+            {item.tier === "pro" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-prove-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-prove-800 dark:bg-prove-950/60 dark:text-prove-300">
+                <Zap className="h-3 w-3" />
+                Pro
+              </span>
+            )}
             {item.tier === "premium" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                 <Crown className="h-3 w-3" />
@@ -71,7 +79,9 @@ function AchievementCard({ item, progress }: { item: (typeof ACHIEVEMENTS)[numbe
               {progress.lockedByPlan ? (
                 <p className="inline-flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
                   <Lock className="h-3.5 w-3.5" />
-                  Upgrade to Premium to earn this achievement
+                  {item.tier === "premium"
+                    ? "Upgrade to Premium to earn this achievement"
+                    : "Upgrade to Pro to earn this achievement"}
                 </p>
               ) : (
                 <>
@@ -98,17 +108,19 @@ export default function AchievementsPage() {
   const { user, goals, submissions, graceDayEvents, getSubmissionsForGoal } = useApp();
 
   const isPremium = isPremiumMember(user);
+  const isPro = isProMember(user);
   const stats = useMemo(
     () => computeAchievementStats(goals, submissions, graceDayEvents, getSubmissionsForGoal),
     [goals, submissions, graceDayEvents, getSubmissionsForGoal]
   );
   const progressList = useMemo(
-    () => evaluateAllAchievements(stats, isPremium, submissions),
-    [stats, isPremium, submissions]
+    () => evaluateAllAchievements(stats, user?.plan, submissions),
+    [stats, user?.plan, submissions]
   );
   const unlockedCount = countUnlockedAchievements(progressList);
-  const standard = ACHIEVEMENTS.filter((a) => a.tier === "standard");
-  const premium = ACHIEVEMENTS.filter((a) => a.tier === "premium");
+  const freeAchievements = ACHIEVEMENTS.filter((a) => a.tier === "free");
+  const proAchievements = ACHIEVEMENTS.filter((a) => a.tier === "pro");
+  const premiumAchievements = ACHIEVEMENTS.filter((a) => a.tier === "premium");
 
   if (!user) {
     return (
@@ -163,6 +175,25 @@ export default function AchievementsPage() {
         </div>
       </section>
 
+      {!isPro && (
+        <div className="rounded-2xl border border-prove-200/80 bg-prove-50/80 p-4 dark:border-prove-900/50 dark:bg-prove-950/20">
+          <p className="flex items-center gap-2 text-sm font-semibold text-prove-900 dark:text-prove-200">
+            <Zap className="h-4 w-4" />
+            Pro achievements
+          </p>
+          <p className="mt-1 text-sm text-prove-800/90 dark:text-prove-200/80">
+            Upgrade to Pro to unlock more badges for proofs, streaks, and shields.
+          </p>
+          <Link
+            href="/pricing"
+            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-prove-900 hover:underline dark:text-prove-200"
+          >
+            View Pro
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
+
       {!isPremium && (
         <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
           <p className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
@@ -183,8 +214,19 @@ export default function AchievementsPage() {
       )}
 
       <section className="space-y-3">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Standard</h2>
-        {standard.map((item) => (
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Free</h2>
+        {freeAchievements.map((item) => (
+          <AchievementCard
+            key={item.id}
+            item={item}
+            progress={progressList.find((p) => p.id === item.id)!}
+          />
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Pro</h2>
+        {proAchievements.map((item) => (
           <AchievementCard
             key={item.id}
             item={item}
@@ -197,7 +239,7 @@ export default function AchievementsPage() {
         <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
           Premium exclusive
         </h2>
-        {premium.map((item) => (
+        {premiumAchievements.map((item) => (
           <AchievementCard
             key={item.id}
             item={item}
