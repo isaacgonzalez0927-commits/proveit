@@ -86,6 +86,7 @@ export function Header() {
 
   const showBottomTabs = !pathname.startsWith("/goals/submit");
   const pageTitle = getPageTitle(pathname);
+  const isSettingsPage = pathname.startsWith("/settings");
 
   const handleSignOut = async () => {
     setAccountOpen(false);
@@ -99,7 +100,14 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-slate-200/60 pt-[env(safe-area-inset-top)] shadow-soft dark:border-slate-800/50 dark:shadow-none glass-surface">
+      <header
+        className={clsx(
+          "sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] shadow-soft dark:shadow-none glass-surface",
+          isSettingsPage
+            ? "border-slate-200/50 dark:border-white/[0.06] dark:bg-gradient-to-b dark:from-[#0a2e2a]/90 dark:via-[#061527]/95 dark:to-[#061527]"
+            : "border-slate-200/60 dark:border-slate-800/50"
+        )}
+      >
         <div className="mx-auto flex h-[3.5rem] max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="min-w-0">
             <Link
@@ -109,7 +117,14 @@ export function Header() {
               <span className="proveit-mark h-7 w-7 shrink-0" role="img" aria-hidden="true" />
               <span>Proveit</span>
             </Link>
-            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <p
+              className={clsx(
+                "truncate text-[10px] font-semibold uppercase tracking-[0.2em]",
+                isSettingsPage
+                  ? "text-slate-500 dark:text-white/50"
+                  : "text-slate-500 dark:text-slate-400"
+              )}
+            >
               {pageTitle}
             </p>
           </div>

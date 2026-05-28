@@ -443,36 +443,35 @@ export default function SettingsPage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-md flex-1 px-4 py-4 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <header className="sticky top-0 z-10 -mx-4 bg-slate-50/85 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl dark:bg-[#061527]/85">
-          <div className="grid grid-cols-3 items-center">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
+        <header className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-slate-200/60 bg-[var(--bg-app)]/92 px-4 pb-4 pt-1 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#061527]/92">
+          <div className="relative flex items-center justify-center py-1.5">
             <Link
               href="/dashboard"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-900 active:bg-slate-200/70 dark:text-white dark:active:bg-white/10"
+              className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full text-slate-800 active:bg-slate-200/70 dark:text-white dark:active:bg-white/10"
               aria-label="Back to dashboard"
             >
               <ChevronLeft className="h-6 w-6" />
             </Link>
-            <h1 className="text-center text-lg font-semibold text-slate-950 dark:text-white">Settings</h1>
-            <div />
+            <h1 className="text-lg font-semibold text-slate-950 dark:text-white">Settings</h1>
           </div>
-          <label className="mt-4 flex h-14 items-center gap-3 rounded-2xl px-4 glass-card">
-            <Search className="h-6 w-6 text-slate-900 dark:text-white" />
+          <label className="mt-3 flex h-[3.25rem] items-center gap-3 rounded-2xl px-4 glass-card">
+            <Search className="h-5 w-5 shrink-0 text-slate-400 dark:text-slate-500" />
             <span className="sr-only">Search settings</span>
             <input
               type="search"
               value={settingsQuery}
               onChange={(event) => setSettingsQuery(event.target.value)}
               placeholder="Search for a setting..."
-              className="min-w-0 flex-1 bg-transparent text-[17px] text-slate-900 placeholder:text-slate-300 focus:outline-none dark:text-white dark:placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-[17px] text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500"
             />
           </label>
         </header>
 
-        <div className="motion-stagger-rise space-y-5 pt-3">
+        <div className="motion-stagger-rise space-y-5 pt-4">
           {matchesSettingsQuery("account profile plan") && (
             <section>
-              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                 Account
               </p>
               <SettingsDisclosure
