@@ -39,7 +39,7 @@ const themeScript = `
     var themeKey = 'proveit-theme';
     var accentKey = 'proveit-accent-theme';
     var stored = localStorage.getItem(themeKey);
-    var theme = stored === 'light' || stored === 'dark' ? stored : 'system';
+    var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
     var storedAccent = localStorage.getItem(accentKey);
     var accentTheme =
       storedAccent === 'green' ||

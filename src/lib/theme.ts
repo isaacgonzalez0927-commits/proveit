@@ -18,7 +18,7 @@ export type AccentTheme =
 
 export const THEME_STORAGE_KEY = "proveit-theme";
 export const ACCENT_THEME_STORAGE_KEY = "proveit-accent-theme";
-export const DEFAULT_THEME_MODE: ThemeMode = "system";
+export const DEFAULT_THEME_MODE: ThemeMode = "dark";
 export const DEFAULT_ACCENT_THEME: AccentTheme = "green";
 
 /** Themes included in Pro (6). Premium gets all colors. */
