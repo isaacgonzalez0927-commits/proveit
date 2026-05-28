@@ -190,23 +190,54 @@ function GalleryContent() {
         </div>
 
         {!isPro ? (
-          <div className="rounded-2xl p-8 text-center glass-card">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-prove-300/70 bg-prove-100/80 dark:border-prove-700/70 dark:bg-prove-900/50">
-              <Lock className="h-7 w-7 text-prove-600 dark:text-prove-400" />
+          <div className="relative overflow-hidden rounded-2xl border border-emerald-200/85 bg-gradient-to-br from-emerald-50/95 via-white to-prove-50/75 p-6 dark:border-emerald-800/45 dark:from-emerald-950/40 dark:via-slate-900 dark:to-prove-950/25 sm:p-8">
+            <div
+              className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-200/45 blur-3xl dark:bg-emerald-800/25"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-prove-200/40 blur-2xl dark:bg-prove-800/20"
+              aria-hidden
+            />
+            <div className="relative text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-prove-500 to-emerald-500 shadow-lg shadow-prove-600/25">
+                <Images className="h-8 w-8 text-white" />
+              </div>
+              <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+                <Lock className="h-3 w-3" />
+                Pro & Premium
+              </span>
+              <h2 className="mt-4 font-display text-xl font-bold text-slate-900 dark:text-white">
+                Your proof gallery is waiting
+              </h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                Every verified photo, streak timeline, and week-by-week win — all in one place when you upgrade.
+              </p>
+              <ul className="mx-auto mt-5 max-w-xs space-y-2 text-left text-sm text-slate-700 dark:text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                  Browse proof photos by goal
+                </li>
+                <li className="flex items-start gap-2">
+                  <Flame className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                  Streak timelines & calendar view
+                </li>
+                <li className="flex items-start gap-2">
+                  <Award className="mt-0.5 h-4 w-4 shrink-0 text-prove-500" />
+                  Achievements tied to your gallery
+                </li>
+              </ul>
+              <Link
+                href="/pricing"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-prove-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-prove-600/20 transition hover:from-prove-700 hover:to-emerald-700 btn-glass-primary"
+              >
+                Unlock with Pro
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-500">
+                Free plan still includes dashboard, plants, and weekly growth.
+              </p>
             </div>
-            <h2 className="mt-4 font-display text-lg font-semibold text-slate-900 dark:text-white">
-              Goal gallery is a paid plan feature
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Upgrade to Pro or Premium to browse your proof gallery and streak timelines.
-            </p>
-            <Link
-              href="/pricing"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-prove-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
-            >
-              View plans
-              <ChevronRight className="h-4 w-4" />
-            </Link>
           </div>
         ) : (
           <>

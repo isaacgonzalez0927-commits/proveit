@@ -681,15 +681,24 @@ function LandingContent() {
                     key={plan.id}
                     type="button"
                     onClick={() => handleChoosePlan(plan.id as PlanId)}
-                    className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] glass-card ${
+                    className={`relative w-full overflow-hidden rounded-2xl border-2 text-left transition active:scale-[0.99] glass-card ${
                       plan.id === "pro"
                         ? "border-prove-400 dark:border-prove-500 shadow-md shadow-prove-600/10 dark:shadow-prove-900/25"
-                        : "border-slate-200/85 dark:border-slate-700/65 hover:border-slate-300 dark:hover:border-slate-600"
+                        : plan.id === "free"
+                          ? "border-emerald-300/90 bg-gradient-to-br from-emerald-50/90 via-white to-prove-50/70 shadow-md shadow-emerald-600/10 dark:border-emerald-700/55 dark:from-emerald-950/35 dark:via-slate-900 dark:to-prove-950/20"
+                          : plan.id === "premium"
+                            ? "border-amber-300/90 shadow-md shadow-amber-600/10 dark:border-amber-700/55"
+                            : "border-slate-200/85 dark:border-slate-700/65 hover:border-slate-300 dark:hover:border-slate-600"
                     }`}
                   >
                     <div className="px-4 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
+                          {plan.id === "free" && (
+                            <span className="mb-1.5 inline-block rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-emerald-500">
+                              Start here
+                            </span>
+                          )}
                           {plan.id === "pro" && (
                             <span className="inline-block rounded-full bg-prove-200 dark:bg-prove-800/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-prove-700 dark:text-prove-300 mb-1.5">
                               Popular
@@ -698,9 +707,18 @@ function LandingContent() {
                           <p className="text-[16px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
                           <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
                             {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{(plan.maxGoals ?? 0) !== 1 ? "s" : ""}
+                            {plan.id === "free" ? " · forever free" : ""}
                           </p>
                         </div>
-                        <span className={`shrink-0 text-[14px] font-bold ${plan.id === "free" ? "text-slate-700 dark:text-slate-300" : "text-prove-600 dark:text-prove-400"}`}>
+                        <span
+                          className={`shrink-0 text-[14px] font-bold ${
+                            plan.id === "free"
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : plan.id === "premium"
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-prove-600 dark:text-prove-400"
+                          }`}
+                        >
                           {plan.id === "free"
                             ? "Free"
                             : `${formatUsd(plan.priceMonthly)}/mo`}
@@ -714,7 +732,13 @@ function LandingContent() {
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-2 text-[12px] font-semibold text-prove-600 dark:text-prove-400">
+                      <p
+                        className={`mt-2 text-[12px] font-semibold ${
+                          plan.id === "free"
+                            ? "text-emerald-700 dark:text-emerald-300"
+                            : "text-prove-600 dark:text-prove-400"
+                        }`}
+                      >
                         {plan.id === "free"
                           ? "Continue with Free →"
                           : `Subscribe to ${plan.name} →`}

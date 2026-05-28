@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Zap, Crown } from "lucide-react";
+import { Check, Sprout, Zap, Crown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { startStripeCheckout } from "@/lib/checkoutClient";
@@ -181,20 +181,37 @@ function PricingCard({
   const isPro = plan.id === "pro";
   const isPremium = plan.id === "premium";
 
-  const Icon = isPro ? Zap : isPremium ? Crown : null;
+  const Icon = isFree ? Sprout : isPro ? Zap : Crown;
   const price = planPriceForBilling(plan, billing);
   const yearlySave = yearlySavingsPercent(plan);
 
   return (
     <div
-      className={`relative rounded-2xl border p-6 glass-card ${
+      className={`relative overflow-hidden rounded-2xl border p-6 glass-card ${
         isPremium
           ? "border-amber-300/90 shadow-lg dark:border-amber-600/50"
           : isPro
             ? "border-prove-400/80 shadow-lg dark:border-prove-600/45"
-            : "border-slate-200/80 dark:border-slate-700/60"
+            : "border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-white to-prove-50/60 shadow-md shadow-emerald-600/5 dark:border-emerald-700/45 dark:from-emerald-950/35 dark:via-slate-900 dark:to-prove-950/20 dark:shadow-emerald-900/20"
       }`}
     >
+      {isFree && (
+        <>
+          <div
+            className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-emerald-200/50 blur-3xl dark:bg-emerald-800/25"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-prove-200/40 blur-2xl dark:bg-prove-800/20"
+            aria-hidden
+          />
+        </>
+      )}
+      {isFree && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-medium text-white dark:bg-emerald-500">
+          Start here
+        </span>
+      )}
       {isPro && (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-prove-600 px-3 py-0.5 text-xs font-medium text-white">
           Popular
@@ -205,17 +222,40 @@ function PricingCard({
           Best value
         </span>
       )}
-      <div className="flex items-center gap-2">
-        {Icon && (
-          <Icon className={`h-5 w-5 ${isPremium ? "text-amber-600 dark:text-amber-400" : "text-prove-600 dark:text-prove-400"}`} />
-        )}
-        <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">
-          {plan.name}
-        </h2>
+      <div className="relative flex items-center gap-2">
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+            isPremium
+              ? "bg-amber-100 dark:bg-amber-950/50"
+              : isPro
+                ? "bg-prove-100 dark:bg-prove-950/50"
+                : "bg-emerald-100 dark:bg-emerald-950/50"
+          }`}
+        >
+          <Icon
+            className={`h-5 w-5 ${
+              isPremium
+                ? "text-amber-600 dark:text-amber-400"
+                : isPro
+                  ? "text-prove-600 dark:text-prove-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+            }`}
+          />
+        </span>
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+            {plan.name}
+          </h2>
+          {isFree && (
+            <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90">
+              Forever free · no card needed
+            </p>
+          )}
+        </div>
       </div>
-      <div className="mt-4 flex items-baseline gap-1">
+      <div className="relative mt-4 flex items-baseline gap-1">
         <span className="text-3xl font-bold text-slate-900 dark:text-white">
-          {formatUsd(price)}
+          {isFree ? "Free" : formatUsd(price)}
         </span>
         {!isFree && (
           <span className="text-slate-500 dark:text-slate-400">
@@ -228,17 +268,27 @@ function PricingCard({
           Save {yearlySave}% vs monthly
         </p>
       )}
-      <ul className="mt-6 space-y-3">
+      <ul className="relative mt-6 space-y-3">
         {plan.features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <Check className={`h-5 w-5 shrink-0 ${isPremium ? "text-amber-500" : "text-prove-500"}`} />
+            <Check
+              className={`h-5 w-5 shrink-0 ${
+                isPremium ? "text-amber-500" : isPro ? "text-prove-500" : "text-emerald-500"
+              }`}
+            />
             {f}
           </li>
         ))}
       </ul>
-      <div className="mt-8">
+      <div className="relative mt-8">
         {isCurrent ? (
-          <div className="rounded-lg border border-prove-300 bg-prove-100 py-2.5 text-center text-sm font-medium text-prove-800 dark:border-prove-700 dark:bg-prove-900/50 dark:text-prove-200">
+          <div
+            className={`rounded-xl py-2.5 text-center text-sm font-semibold ${
+              isFree
+                ? "border border-emerald-300/80 bg-emerald-100/90 text-emerald-900 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200"
+                : "border border-prove-300 bg-prove-100 text-prove-800 dark:border-prove-700 dark:bg-prove-900/50 dark:text-prove-200"
+            }`}
+          >
             Current plan
           </div>
         ) : (
@@ -250,13 +300,13 @@ function PricingCard({
                 onSelect();
               }
             }}
-            className={`block rounded-lg py-2.5 text-center text-sm font-medium ${
+            className={`block rounded-xl py-2.5 text-center text-sm font-semibold transition ${
               isPremium
                 ? "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
                 : isPro
                   ? "bg-prove-600 text-white hover:bg-prove-700 btn-glass-primary"
                   : isFree
-                    ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    ? "bg-gradient-to-r from-emerald-600 to-prove-600 text-white shadow-md shadow-emerald-600/20 hover:from-emerald-700 hover:to-prove-700 dark:from-emerald-500 dark:to-prove-500"
                     : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
             }`}
           >
