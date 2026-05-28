@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PlantIllustration, type PlantStageKey } from "@/components/PlantIllustration";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
+import { getThemedWateringCanFilter } from "@/lib/wateringCanTheme";
 
 interface PlantWateringCelebrationProps {
   stage: PlantStageKey;
@@ -17,10 +18,12 @@ export function PlantWateringCelebration({
 }: PlantWateringCelebrationProps) {
   const [wateringLevel, setWateringLevel] = useState(0.35);
   const [active, setActive] = useState(true);
+  const [canFilter, setCanFilter] = useState("none");
 
   useEffect(() => {
+    setCanFilter(getThemedWateringCanFilter());
     const levelTimer = window.setTimeout(() => setWateringLevel(1), 420);
-    const endTimer = window.setTimeout(() => setActive(false), 1500);
+    const endTimer = window.setTimeout(() => setActive(false), 1400);
     return () => {
       window.clearTimeout(levelTimer);
       window.clearTimeout(endTimer);
@@ -56,13 +59,20 @@ export function PlantWateringCelebration({
         </div>
       )}
 
-      <div
-        className={`pointer-events-none absolute left-[-6px] top-[-2px] z-10 origin-[72%_88%] ${
-          active ? "animate-watering-can-tilt" : "opacity-0"
-        }`}
-      >
-        <div className="h-[72px] w-[72px] drop-shadow-md watering-can-themed" />
-      </div>
+      {active && (
+        <div className="pointer-events-none absolute left-[-6px] top-[-2px] z-10 origin-[72%_88%] animate-watering-can-tilt">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/watering-can.png"
+            alt=""
+            width={72}
+            height={72}
+            className="h-[72px] w-[72px] object-contain"
+            style={{ filter: canFilter }}
+            draggable={false}
+          />
+        </div>
+      )}
     </div>
   );
 }
