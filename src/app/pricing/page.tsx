@@ -113,46 +113,6 @@ function PricingContent() {
           ))}
         </div>
 
-        <section className="overflow-hidden rounded-2xl border border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-prove-50/80 p-6 dark:border-amber-700/50 dark:from-amber-950/30 dark:via-slate-900 dark:to-prove-950/20">
-          <div className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">
-              Premium extras
-            </h2>
-          </div>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Premium is for power users who want unlimited goals, richer AI, and shareable proof collages
-            built automatically from your gallery each week.
-          </p>
-          <div className="mt-6 grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                Weekly photo collages from your verified proofs
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                One-tap share or download as a PNG for Stories and messages
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                Share your streak progress card from the dashboard
-              </li>
-            </ul>
-            <div
-              className="grid grid-cols-3 gap-1.5 rounded-2xl border border-amber-200/80 bg-white/70 p-3 shadow-sm dark:border-amber-800/50 dark:bg-slate-900/60"
-              aria-hidden
-            >
-              {Array.from({ length: 9 }, (_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg bg-gradient-to-br from-prove-200 via-emerald-200 to-amber-200 dark:from-prove-900 dark:via-emerald-900 dark:to-amber-900"
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
       </main>
     </>
   );
