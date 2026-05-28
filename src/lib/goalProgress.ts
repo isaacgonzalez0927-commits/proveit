@@ -1,4 +1,4 @@
-import { addDays, format, subDays, startOfWeek, subWeeks } from "date-fns";
+import { addDays, format, startOfWeek, subWeeks } from "date-fns";
 import type { Goal, GraceDayEvent, ProofSubmission } from "@/types";
 import { extractCalendarDateKey, safeParseISO } from "@/lib/dateUtils";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
@@ -18,36 +18,6 @@ type GoalProgressGoal = Pick<
 >;
 type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
 type GoalProgressGraceDay = Pick<GraceDayEvent, "goalId" | "weekStart">;
-
-/** Consecutive calendar days (including today) with a verified submission. */
-function getDailyCalendarStreak(
-  goalId: string,
-  getSubmissionsForGoal: (id: string) => GoalProgressSubmission[],
-  minDateInclusive?: string
-): number {
-  const subs = getSubmissionsForGoal(goalId).filter((s) => {
-    if (s.status !== "verified") return false;
-    if (!minDateInclusive) return true;
-    const key = extractCalendarDateKey(s.date);
-    return key != null && key >= minDateInclusive;
-  });
-  const submittedDates = new Set(
-    subs
-      .map((s) => extractCalendarDateKey(s.date))
-      .filter((k): k is string => k != null)
-  );
-  let streak = 0;
-  let cursor = new Date();
-  while (true) {
-    const dateStr = format(cursor, "yyyy-MM-dd");
-    if (!submittedDates.has(dateStr)) break;
-    streak += 1;
-    cursor = subDays(cursor, 1);
-    if (cursor.getTime() < (minDateInclusive ? safeParseISO(minDateInclusive)?.getTime() ?? 0 : 0)) break;
-    if (streak > 2000) break;
-  }
-  return streak;
-}
 
 /**
  * Streak for weekly goals.
@@ -101,10 +71,6 @@ function getBaseGoalStreak(
   graceDays: GoalProgressGraceDay[] = [],
   minDateInclusive?: string
 ): number {
-  const tw = effectiveTimesPerWeek(goal as Goal);
-  if (tw >= 7 || goal.frequency === "daily") {
-    return getDailyCalendarStreak(goal.id, getSubmissionsForGoal, minDateInclusive);
-  }
   return getWeeklyQuotaStreak(goal, getSubmissionsForGoal, graceDays, minDateInclusive);
 }
 

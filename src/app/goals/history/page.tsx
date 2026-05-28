@@ -400,7 +400,7 @@ function GalleryContent() {
                               )}
                               {[
                                 historySettings.showStreak
-                                  ? `${streak} ${goal.frequency === "daily" ? "day" : "week"} streak`
+                                  ? `${streak} week streak`
                                   : null,
                                 historySettings.showVerifiedCount ? `${completedDates.length} verified` : null,
                               ]

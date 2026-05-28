@@ -134,7 +134,7 @@ function DashboardContent() {
   const plan = user ? getPlan(user.plan) : null;
   const dailyGoals = goals.filter((g) => g.frequency === "daily");
   const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
-  const streakUnit = weeklyGoals.length > 0 && dailyGoals.length === 0 ? "week" : "day";
+  const streakUnit = "week";
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
   const effectiveDeveloperSettings = isCreatorAccount
@@ -509,7 +509,7 @@ function DashboardContent() {
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           Daily · Streak: {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
-                            ? `${displayStreakByGoalId.get(goal.id)} days`
+                            ? `${displayStreakByGoalId.get(goal.id)} weeks`
                             : "—"}
                           {goal.isOnBreak ? " · On break" : ""}
                         </p>

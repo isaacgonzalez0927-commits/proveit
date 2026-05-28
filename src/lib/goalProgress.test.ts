@@ -24,7 +24,7 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
     vi.useRealTimers();
   });
 
-  it("counts today for streak when submission date is ISO timestamptz string", () => {
+  it("does not count a partial daily week toward streak until the full quota is met", () => {
     const today = "2026-04-15";
     const subs: ProofSubmission[] = [
       {
@@ -37,25 +37,28 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
       },
     ];
     const getSubmissionsForGoal = () => subs;
-    expect(getGoalStreak(goal(), getSubmissionsForGoal)).toBeGreaterThanOrEqual(1);
+    expect(getGoalStreak(goal(), getSubmissionsForGoal)).toBe(0);
     expect(isGoalDoneInCurrentWindow(goal(), getSubmissionsForGoal, today)).toBe(true);
   });
 
-  it("counts calendar day when submission date is plain yyyy-MM-dd", () => {
-    const today = "2026-04-15";
+  it("counts a full daily week toward streak when all 7 proofs are in the same week", () => {
     const subs: ProofSubmission[] = [
-      {
-        id: "s1",
-        goalId: "g1",
-        date: today,
-        imageDataUrl: "x",
-        status: "verified",
-        createdAt: "2026-04-15T12:00:00.000Z",
-      },
-    ];
-    const getSubmissionsForGoal = () => subs;
-    expect(getGoalStreak(goal(), getSubmissionsForGoal)).toBeGreaterThanOrEqual(1);
-    expect(isGoalDoneInCurrentWindow(goal(), getSubmissionsForGoal, today)).toBe(true);
+      "2026-04-12",
+      "2026-04-13",
+      "2026-04-14",
+      "2026-04-15",
+      "2026-04-16",
+      "2026-04-17",
+      "2026-04-18",
+    ].map((date, i) => ({
+      id: `s${i}`,
+      goalId: "g1",
+      date,
+      imageDataUrl: "x",
+      status: "verified" as const,
+      createdAt: `${date}T12:00:00.000Z`,
+    }));
+    expect(getGoalStreak(goal(), () => subs)).toBe(1);
   });
 
   it("does not increment the current weekly streak until the full quota is met", () => {

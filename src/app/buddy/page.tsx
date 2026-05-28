@@ -1204,7 +1204,7 @@ export default function BuddyPage() {
           <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
             {PLANT_GROWTH_STAGES.map((stage) => (
               <li key={stage.stage}>
-                • {stage.minStreak} {stage.minStreak === 1 ? "day" : "days"}: {stage.name}
+                • {stage.minStreak} {stage.minStreak === 1 ? "week" : "weeks"}: {stage.name}
               </li>
             ))}
             <li>• Final stage varies by plant style (flowers, cactus, etc.)</li>

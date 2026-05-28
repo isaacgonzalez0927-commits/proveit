@@ -103,7 +103,7 @@ export function AccountabilityBuddy({
           </p>
           {maxStreak > 0 && (
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
-              {maxStreak} day{maxStreak !== 1 ? "s" : ""} streak · Keep going!
+              {maxStreak} week{maxStreak !== 1 ? "s" : ""} streak · Keep going!
             </p>
           )}
           <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">

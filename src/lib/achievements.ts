@@ -129,14 +129,14 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: "streak_7",
     title: "Week warrior",
-    description: "Reach a 7-day or 7-week streak on any goal.",
+    description: "Reach a 7-week streak on any goal.",
     emoji: "⚡",
     tier: "pro",
   },
   {
     id: "streak_30",
     title: "Unstoppable",
-    description: "Reach a 30-day or 30-week streak on any goal.",
+    description: "Reach a 30-week streak on any goal.",
     emoji: "🏆",
     tier: "premium",
   },

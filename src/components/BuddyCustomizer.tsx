@@ -154,13 +154,13 @@ export function BuddyCustomizer({
             <p className="text-xs font-medium text-slate-600 dark:text-slate-400">How to earn</p>
             <ul className="mt-1 space-y-1 text-xs text-slate-500 dark:text-slate-500">
               <li>• First goal: Baseball cap</li>
-              <li>• 7-day streak: Glasses</li>
-              <li>• 14-day streak: Crown</li>
+              <li>• 7-week streak: Glasses</li>
+              <li>• 14-week streak: Crown</li>
               <li>• 5 goals total: Bow</li>
-              <li>• 30-day streak: Grad cap</li>
+              <li>• 30-week streak: Grad cap</li>
               <li>• 10 goals: Star badge</li>
               <li>• 20 goals: Helmet</li>
-              <li>• 100-day streak: Top hat</li>
+              <li>• 100-week streak: Top hat</li>
             </ul>
           </div>
         </div>
@@ -172,7 +172,7 @@ export function BuddyCustomizer({
 function getUnlockLabel(item: (typeof BUDDY_ITEMS)[0]): string {
   const { type, value } = item.unlock;
   if (type === "first_goal") return "Complete your first goal";
-  if (type === "streak") return `${value}-day streak`;
+  if (type === "streak") return `${value}-week streak`;
   if (type === "total_goals") return `${value} goals completed`;
   return "";
 }

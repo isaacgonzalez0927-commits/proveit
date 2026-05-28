@@ -32,7 +32,7 @@ export function buildWidgetSnapshot(input: {
       goalsDueToday: 0,
       gardenWatered: 0,
       gardenTotal: 0,
-      streakUnit: "day",
+      streakUnit: "week",
     };
   }
 
@@ -42,8 +42,7 @@ export function buildWidgetSnapshot(input: {
   }));
   const top = streakEntries.sort((a, b) => b.streak - a.streak)[0];
   const maxStreak = top?.streak ?? 0;
-  const streakUnit: WidgetSnapshot["streakUnit"] =
-    top?.goal.frequency === "weekly" ? "week" : "day";
+  const streakUnit: WidgetSnapshot["streakUnit"] = "week";
 
   const goalsDueToday = activeGoals.filter((goal) =>
     isGoalDue(goal, now, getSubmissionsForGoal(goal.id))
