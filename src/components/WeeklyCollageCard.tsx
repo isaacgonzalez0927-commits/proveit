@@ -33,7 +33,7 @@ export function WeeklyCollageCard({
       blob,
       collageShareFilename(collage),
       "Proveit weekly collage",
-      `My proof collage for ${collage.label}`
+      `My proof collage for ${collage.label}! 🌱`
     );
   };
 

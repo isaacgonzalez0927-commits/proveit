@@ -409,7 +409,7 @@ function DashboardContent() {
                         blob,
                         progressShareFilename(),
                         "Proveit progress",
-                        `I'm on a ${displayMaxStreak} ${streakUnit} streak on Proveit`
+                        `I'm on a ${displayMaxStreak} ${streakUnit} streak on Proveit! 🌱`
                       );
                     }}
                     onDone={(result) =>
