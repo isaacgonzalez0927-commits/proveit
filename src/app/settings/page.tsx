@@ -67,7 +67,7 @@ function SettingsDisclosure({
 
   return (
     <details
-      className={`motion-disclosure group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/75 dark:bg-slate-900 dark:ring-white/10 ${danger ? "bg-red-50/80 ring-red-200 dark:bg-red-950/20 dark:ring-red-900/50" : ""}`}
+      className={`motion-disclosure group overflow-hidden rounded-2xl glass-card ${danger ? "border-red-300/70 dark:border-red-800/50" : ""}`}
       onToggle={(event) => {
         if ((event.currentTarget as HTMLDetailsElement).open) {
           setOpenSeq((seq) => seq + 1);
