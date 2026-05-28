@@ -20,6 +20,7 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { GardenSnapshot } from "@/components/GardenSnapshot";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PlanDowngradeReview } from "@/components/PlanDowngradeReview";
+import { VerifiedProofThumbnail } from "@/components/VerifiedProofThumbnail";
 import { ShareImageButton } from "@/components/ShareImageButton";
 import { getPlan } from "@/lib/store";
 import { PLANS, normalizePlanId } from "@/types";
@@ -497,8 +498,14 @@ function DashboardContent() {
                     key={goal.id}
                     className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
-                    <div className="flex items-center gap-3">
-                      {verified ? (
+                    <div className="flex items-center gap-3 min-w-0">
+                      {verified && todayProof?.imageDataUrl ? (
+                        <VerifiedProofThumbnail
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          src={todayProof.imageDataUrl}
+                          ariaLabel={`View today's proof for ${goal.title}`}
+                        />
+                      ) : verified ? (
                         <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
                       ) : (
                         <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
@@ -519,21 +526,8 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
-                    ) : verified && todayProof?.imageDataUrl ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
-                        aria-label="View today's proof"
-                      >
-                        <img
-                          src={todayProof.imageDataUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </Link>
                     ) : verified ? (
-                      <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
-                        <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
                         Done
                       </span>
                     ) : isWithinSubmissionWindow(goal, new Date(), subs) && todayProof?.imageDataUrl ? (
@@ -586,8 +580,14 @@ function DashboardContent() {
                     key={goal.id}
                     className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
-                    <div className="flex items-center gap-3">
-                      {thisWeekProof ? (
+                    <div className="flex items-center gap-3 min-w-0">
+                      {thisWeekProof && thisWeekVerifiedSub?.imageDataUrl ? (
+                        <VerifiedProofThumbnail
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          src={thisWeekVerifiedSub.imageDataUrl}
+                          ariaLabel={`View this week's proof for ${goal.title}`}
+                        />
+                      ) : thisWeekProof ? (
                         <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
                       ) : (
                         <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
@@ -609,21 +609,8 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
-                    ) : thisWeekProof && thisWeekVerifiedSub?.imageDataUrl ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
-                        aria-label="View this week's proof"
-                      >
-                        <img
-                          src={thisWeekVerifiedSub.imageDataUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </Link>
                     ) : thisWeekProof ? (
-                      <span className="flex items-center gap-1 text-sm text-prove-600 dark:text-prove-400">
-                        <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
                         Done
                       </span>
                     ) : canSubmitNow && thisWeekSub?.imageDataUrl ? (
