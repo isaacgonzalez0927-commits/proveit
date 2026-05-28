@@ -2,7 +2,13 @@ import { startOfWeek } from "date-fns";
 import type { Goal, GraceDayEvent, ProofSubmission, User } from "@/types";
 import { safeParseISO } from "@/lib/dateUtils";
 import { getGoalStreak } from "@/lib/goalProgress";
-import { FULLY_GROWN_MIN_STREAK } from "@/lib/plantGrowth";
+import {
+  getDefaultGoalPlantVariant,
+  getStoredGoalPlantSelections,
+  isFinalStage,
+  type GoalPlantVariant,
+} from "@/lib/goalPlants";
+import { FULLY_GROWN_MIN_STREAK, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { weekStartKey, weeklyQuotaMetWithGrace } from "@/lib/graceDays";
 
 export type AchievementTier = "free" | "pro" | "premium";
@@ -30,6 +36,7 @@ export type AchievementId =
   | "first_goal"
   | "first_proof"
   | "first_full_grown"
+  | "garden_3"
   | "proof_10"
   | "proof_50"
   | "proof_100"
@@ -63,6 +70,7 @@ export interface AchievementStats {
   totalProofs: number;
   maxStreak: number;
   activeGoals: number;
+  fullyGrownPlants: number;
   perfectWeeks: number;
   shieldsUsed: number;
   weeksWithProofs: number;
@@ -88,6 +96,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     title: "Fully grown",
     description: "Grow a plant to its final stage.",
     emoji: "🌸",
+    tier: "free",
+  },
+  {
+    id: "garden_3",
+    title: "Garden",
+    description: "Have 3 fully grown plants.",
+    emoji: "🌳",
     tier: "free",
   },
   {
@@ -211,6 +226,22 @@ function countPerfectWeeks(
   return perfect;
 }
 
+function countFullyGrownPlants(
+  goals: Goal[],
+  getSubmissionsForGoal: StreakLookup,
+  graceDayEvents: GraceDayEvent[],
+  getPlantVariant: (goalId: string) => GoalPlantVariant
+): number {
+  let count = 0;
+  for (const goal of goals) {
+    const streak = getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents);
+    const stage = getPlantStageForStreak(streak);
+    const variant = getPlantVariant(goal.id);
+    if (isFinalStage(stage.stage, variant)) count += 1;
+  }
+  return count;
+}
+
 function countWeeksWithProofs(submissions: ProofSubmission[]): number {
   const weeks = new Set<string>();
   for (const sub of submissions) {
@@ -226,7 +257,11 @@ export function computeAchievementStats(
   goals: Goal[],
   submissions: ProofSubmission[],
   graceDayEvents: GraceDayEvent[],
-  getSubmissionsForGoal: StreakLookup
+  getSubmissionsForGoal: StreakLookup,
+  getPlantVariant: (goalId: string) => GoalPlantVariant = (goalId) => {
+    const stored = getStoredGoalPlantSelections()[goalId];
+    return stored ?? getDefaultGoalPlantVariant(goalId);
+  }
 ): AchievementStats {
   const verified = submissions.filter((s) => s.status === "verified");
   const maxStreak = goals.reduce((max, goal) => {
@@ -239,6 +274,12 @@ export function computeAchievementStats(
     totalProofs: verified.length,
     maxStreak,
     activeGoals: goals.filter((g) => !g.archivedAt).length,
+    fullyGrownPlants: countFullyGrownPlants(
+      goals,
+      getSubmissionsForGoal,
+      graceDayEvents,
+      getPlantVariant
+    ),
     perfectWeeks: countPerfectWeeks(goals, getSubmissionsForGoal, graceDayEvents),
     shieldsUsed: graceDayEvents.length,
     weeksWithProofs: countWeeksWithProofs(submissions),
@@ -269,6 +310,7 @@ export function evaluateAchievement(
     first_goal: 1,
     first_proof: 1,
     first_full_grown: FULLY_GROWN_MIN_STREAK,
+    garden_3: 3,
     proof_10: 10,
     proof_50: 50,
     proof_100: 100,
@@ -304,6 +346,9 @@ export function evaluateAchievement(
       break;
     case "perfect_week":
       progress = stats.perfectWeeks;
+      break;
+    case "garden_3":
+      progress = stats.fullyGrownPlants;
       break;
     case "garden_5":
       progress = stats.activeGoals;

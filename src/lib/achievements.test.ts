@@ -52,6 +52,7 @@ describe("achievements", () => {
     expect(progress.find((p) => p.id === "first_goal")?.unlocked).toBe(true);
     expect(progress.find((p) => p.id === "first_proof")?.unlocked).toBe(true);
     expect(progress.find((p) => p.id === "first_full_grown")?.lockedByPlan).toBe(false);
+    expect(progress.find((p) => p.id === "garden_3")?.lockedByPlan).toBe(false);
   });
 
   it("locks pro achievements for free users", () => {
@@ -83,12 +84,29 @@ describe("achievements", () => {
       totalProofs: 12,
       maxStreak: FULLY_GROWN_MIN_STREAK,
       activeGoals: 1,
+      fullyGrownPlants: 1,
       perfectWeeks: 0,
       shieldsUsed: 0,
       weeksWithProofs: 1,
     };
     const progress = evaluateAllAchievements(stats, "free", []);
     expect(progress.find((p) => p.id === "first_full_grown")?.unlocked).toBe(true);
+  });
+
+  it("unlocks garden when three plants are fully grown on free", () => {
+    const stats = {
+      totalGoals: 3,
+      totalProofs: 36,
+      maxStreak: FULLY_GROWN_MIN_STREAK,
+      activeGoals: 3,
+      fullyGrownPlants: 3,
+      perfectWeeks: 0,
+      shieldsUsed: 0,
+      weeksWithProofs: 12,
+    };
+    const progress = evaluateAllAchievements(stats, "free", []);
+    expect(progress.find((p) => p.id === "garden_3")?.lockedByPlan).toBe(false);
+    expect(progress.find((p) => p.id === "garden_3")?.unlocked).toBe(true);
   });
 
   it("unlocks shield saver when a grace day was used on pro", () => {
