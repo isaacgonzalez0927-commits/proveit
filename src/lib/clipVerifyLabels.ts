@@ -327,11 +327,10 @@ export function makeLabels(goalText: string): {
 
   const positive = [
     `a photo of ${g}`,
-    `a person ${g}`,
     `a scene or environment for ${g}`,
     `equipment, tools, or items used for ${g}`,
     `a casual real-life photo related to ${g}`,
-    `someone completing or doing: ${g}`,
+    `the result or outcome of ${g}`,
     ...terms.flatMap((t) => [`a photo of a ${t}`, `a photo showing ${t}`]),
     ...laptopBoost,
     ...expansions.map((e) => `a photo of ${e}`),

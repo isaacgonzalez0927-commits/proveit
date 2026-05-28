@@ -6,7 +6,7 @@ export function getProofPhotoSuggestions(goalText: string): string[] {
   const g = goalText.trim();
   if (!g) return [];
   return [
-    `Take a selfie while ${g}`,
+    `Take a photo of something that shows you ${g}`,
     `Take a photo of the place or setup for ${g}`,
     `Take a photo of any equipment or items you're using for ${g}`,
   ];

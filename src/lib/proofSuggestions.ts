@@ -117,7 +117,7 @@ async function fetchOpenAiProofSuggestionsForTitle(goalTitle: string): Promise<s
   if (!apiKey) return null;
 
   const system =
-    "You help habit apps. Reply with one JSON object only, no markdown. Keys: suggestions (array of 2 or 3 short strings). Each string tells the user exactly what photo to take to prove they did the goal that day — concrete, verifiable, different angles (e.g. person in frame, environment, mid-action). No numbering inside strings.";
+    "You help habit apps. Reply with one JSON object only, no markdown. Keys: suggestions (array of 2 or 3 short strings). Each string tells the user exactly what photo to take to prove they did the goal that day — concrete, verifiable, different angles (e.g. the result, the environment, tools or objects in use). A person in frame is optional. No numbering inside strings.";
 
   const user = `Goal title: "${goalTitle}"\n\nReturn: {"suggestions":["...","...","..."]}`;
 

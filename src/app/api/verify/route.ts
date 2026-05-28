@@ -177,16 +177,11 @@ async function verifyWithOpenAI(
   options: { plan: "free" | "pro" | "premium"; strictMode: boolean }
 ) {
   const hasProof = Boolean(proofRequirement.trim());
-  const sharedPersonRules = `STEP 1 — Decide silently whether this goal requires a visible person in the photo:
-- REQUIRES a person: action goals where the act itself is the proof (e.g. "go on a walk", "go to the gym", "run", "do push-ups", "meditate", "shower"). For these, a photo of just an object is NOT enough.
-- DOES NOT require a person: object/state goals where the photo can prove the activity without showing the user (e.g. "read a book" → photo of an open book; "make the bed" → photo of a made bed; "do the dishes" → photo of clean dishes; "drink water" → photo of a water bottle being used; "journal" → photo of a journal page).
-- Use common sense for ambiguous cases. If a person is clearly required and there is none, mark not verified.
-
-STEP 2 — Judge the photo:
-- If the goal requires a person, check that a real person (or at least their hands/body) is visible doing the activity, not a stock photo or meme.
-- If the goal does NOT require a person, just check that the depicted object/scene clearly matches the goal.
-- The scene must match the stated goal, not just share keywords. (E.g. a photo of a treadmill at a store is NOT proof of "go to the gym".)
-- Memes, screenshots, drawings, and reused stock photos do NOT count as proof.`;
+  const sharedPhotoRules = `PHOTO RULES:
+- A person in the photo is optional. Accept clear proof from objects, environments, results, or scenes (e.g. an open book, a made bed, gym equipment, clean dishes, a journal page, a walking path, a water bottle).
+- Hands or partial body in frame are fine but never required unless the proof instruction explicitly asks for them.
+- The image must plausibly match the stated goal or proof instruction — not just share a keyword.
+- Reject memes, unrelated stock photos, random screenshots, drawings, and photos that could belong to any unrelated activity.`;
   const strictRules = options.strictMode
     ? `
 
@@ -208,7 +203,7 @@ PRIMARY TASK: The user must submit a photo that satisfies this exact proof instr
 Goal title (background only, do not pass a photo that ignores the instruction just because it loosely matches the title):
 "${goalTitle}"${goalDescription ? ` — ${goalDescription}` : ""}
 
-${sharedPersonRules}
+${sharedPhotoRules}
 ${strictRules}
 
 Respond with JSON only, no markdown:
@@ -217,7 +212,7 @@ Respond with JSON only, no markdown:
 
 The user claims they did this goal: "${goalTitle}"${goalDescription ? ` (Details: ${goalDescription})` : ""}.
 
-${sharedPersonRules}
+${sharedPhotoRules}
 ${strictRules}
 
 Respond with JSON only, no markdown:
