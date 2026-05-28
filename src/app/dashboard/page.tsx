@@ -498,13 +498,7 @@ function DashboardContent() {
                     className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {verified && todayProof?.imageDataUrl ? (
-                        <VerifiedProofThumbnail
-                          href={`/goals/submit?goalId=${goal.id}`}
-                          src={todayProof.imageDataUrl}
-                          ariaLabel={`View today's proof for ${goal.title}`}
-                        />
-                      ) : verified ? (
+                      {verified ? (
                         <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
                       ) : (
                         <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
@@ -525,6 +519,18 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
+                    ) : verified && todayProof?.imageDataUrl ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="block h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
+                        aria-label={`View today's proof for ${goal.title}`}
+                      >
+                        <img
+                          src={todayProof.imageDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </Link>
                     ) : verified ? (
                       <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
                         Done
@@ -580,13 +586,7 @@ function DashboardContent() {
                     className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {thisWeekProof && thisWeekVerifiedSub?.imageDataUrl ? (
-                        <VerifiedProofThumbnail
-                          href={`/goals/submit?goalId=${goal.id}`}
-                          src={thisWeekVerifiedSub.imageDataUrl}
-                          ariaLabel={`View this week's proof for ${goal.title}`}
-                        />
-                      ) : thisWeekProof ? (
+                      {thisWeekProof ? (
                         <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
                       ) : (
                         <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
@@ -608,6 +608,18 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
+                    ) : thisWeekProof && thisWeekVerifiedSub?.imageDataUrl ? (
+                      <Link
+                        href={`/goals/submit?goalId=${goal.id}`}
+                        className="block h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
+                        aria-label={`View this week's proof for ${goal.title}`}
+                      >
+                        <img
+                          src={thisWeekVerifiedSub.imageDataUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </Link>
                     ) : thisWeekProof ? (
                       <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
                         Done
