@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { WeeklyCollage } from "@/lib/weeklyCollage";
 import { collageShareFilename, renderCollageShareImage } from "@/lib/shareCollageImage";
+import type { ShareGardenPlant } from "@/lib/shareGardenSnapshot";
 import { shareOrDownloadBlob } from "@/lib/shareImage";
 import { ShareImageButton } from "@/components/ShareImageButton";
 
@@ -10,12 +11,14 @@ interface WeeklyCollageCardProps {
   collage: WeeklyCollage;
   compact?: boolean;
   showShare?: boolean;
+  gardenPlants?: ShareGardenPlant[];
 }
 
 export function WeeklyCollageCard({
   collage,
   compact = false,
   showShare = true,
+  gardenPlants = [],
 }: WeeklyCollageCardProps) {
   const [shareNotice, setShareNotice] = useState<string | null>(null);
   const displayPhotos = collage.photos.slice(0, compact ? 4 : 9);
@@ -25,7 +28,7 @@ export function WeeklyCollageCard({
     : "grid grid-cols-3 gap-1.5 sm:gap-2";
 
   const handleShare = async () => {
-    const blob = await renderCollageShareImage(collage);
+    const blob = await renderCollageShareImage(collage, gardenPlants);
     return shareOrDownloadBlob(
       blob,
       collageShareFilename(collage),

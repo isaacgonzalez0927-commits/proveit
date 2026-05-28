@@ -45,7 +45,7 @@ export function PlantWateringCelebration({
       </div>
 
       {active && (
-        <div className="pointer-events-none absolute left-[58%] top-[18px] z-20 flex flex-col items-center gap-1">
+        <div className="pointer-events-none absolute left-[46%] top-[22px] z-20 flex flex-col items-center gap-1">
           {[0, 1, 2, 3].map((i) => (
             <span
               key={i}
@@ -57,19 +57,11 @@ export function PlantWateringCelebration({
       )}
 
       <div
-        className={`pointer-events-none absolute right-[-4px] top-[-2px] z-10 origin-[20%_85%] ${
+        className={`pointer-events-none absolute left-[-6px] top-[-2px] z-10 origin-[72%_88%] ${
           active ? "animate-watering-can-tilt" : "opacity-0"
         }`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/watering-can.png"
-          alt=""
-          width={72}
-          height={72}
-          className="h-[72px] w-[72px] object-contain drop-shadow-md"
-          draggable={false}
-        />
+        <div className="h-[72px] w-[72px] drop-shadow-md watering-can-themed" />
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import { useApp } from "@/context/AppContext";
 import { safeParseISO } from "@/lib/dateUtils";
 import { addMonths, format, getDay, getDaysInMonth, isSameMonth, isThisWeek, startOfMonth } from "date-fns";
 import { getGoalStreak } from "@/lib/goalProgress";
+import { getPlantStageForStreak } from "@/lib/plantGrowth";
 import { isPremiumMember } from "@/lib/achievements";
 import { buildWeeklyCollages } from "@/lib/weeklyCollage";
 import { WeeklyCollageCard } from "@/components/WeeklyCollageCard";
@@ -36,7 +37,7 @@ import {
 } from "@/lib/historyVisibility";
 
 function GalleryContent() {
-  const { user, goals, submissions, graceDayEvents, getSubmissionsForGoal } = useApp();
+  const { user, goals, submissions, graceDayEvents, getSubmissionsForGoal, getGoalPlantVariant } = useApp();
   const [historySettings, setHistorySettings] = useState<HistoryDisplaySettings>(
     DEFAULT_HISTORY_DISPLAY_SETTINGS
   );
@@ -66,6 +67,19 @@ function GalleryContent() {
   const weeklyCollages = useMemo(
     () => (isPremium ? buildWeeklyCollages(verifiedSubs, goals, { maxWeeks: 8 }) : []),
     [isPremium, verifiedSubs, goals]
+  );
+
+  const gardenSharePlants = useMemo(
+    () =>
+      goals
+        .filter((goal) => !goal.archivedAt)
+        .map((goal) => ({
+          stage: getPlantStageForStreak(
+            getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
+          ).stage,
+          variant: getGoalPlantVariant(goal.id),
+        })),
+    [goals, graceDayEvents, getSubmissionsForGoal, getGoalPlantVariant, submissions]
   );
 
   const byGoal = useMemo(
@@ -231,7 +245,7 @@ function GalleryContent() {
                         View all
                       </button>
                     </div>
-                    <WeeklyCollageCard collage={weeklyCollages[0]!} compact />
+                    <WeeklyCollageCard collage={weeklyCollages[0]!} compact gardenPlants={gardenSharePlants} />
                   </section>
                 )}
 
@@ -324,7 +338,11 @@ function GalleryContent() {
                       </div>
                     ) : (
                       weeklyCollages.map((collage) => (
-                        <WeeklyCollageCard key={collage.weekStart} collage={collage} />
+                        <WeeklyCollageCard
+                          key={collage.weekStart}
+                          collage={collage}
+                          gardenPlants={gardenSharePlants}
+                        />
                       ))
                     )}
                   </div>

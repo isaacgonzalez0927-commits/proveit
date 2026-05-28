@@ -918,20 +918,20 @@ input[type="file"] {
 
 @keyframes watering-can-tilt {
   0% {
-    transform: rotate(-12deg) translate(0, 0);
+    transform: rotate(-10deg) translate(0, 0);
     opacity: 0;
   }
   12% {
     opacity: 1;
   }
   38% {
-    transform: rotate(32deg) translate(-6px, 4px);
+    transform: rotate(38deg) translate(4px, 6px);
   }
   62% {
-    transform: rotate(28deg) translate(-6px, 4px);
+    transform: rotate(34deg) translate(4px, 6px);
   }
   100% {
-    transform: rotate(-8deg) translate(2px, -2px);
+    transform: rotate(-6deg) translate(0, 0);
     opacity: 0;
   }
 }
@@ -957,8 +957,29 @@ input[type="file"] {
   width: 7px;
   height: 9px;
   border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: linear-gradient(180deg, #7dd3fc 0%, #0ea5e9 100%);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--prove-300-rgb)) 0%,
+    rgb(var(--prove-600-rgb)) 100%
+  );
   animation: water-drop-fall 0.5s ease-in forwards;
+}
+
+.watering-can-themed {
+  -webkit-mask-image: url(/watering-can.png);
+  mask-image: url(/watering-can.png);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background: linear-gradient(
+    155deg,
+    rgb(var(--prove-300-rgb)) 0%,
+    rgb(var(--prove-500-rgb)) 42%,
+    rgb(var(--prove-700-rgb)) 100%
+  );
 }
 
 @keyframes plant-water-bounce {

@@ -1,4 +1,5 @@
 import { canvasToBlob, drawBrandFooter } from "@/lib/shareImage";
+import { drawGardenSnapshotRow, type ShareGardenPlant } from "@/lib/shareGardenSnapshot";
 
 export interface ProgressShareStats {
   maxStreak: number;
@@ -6,6 +7,7 @@ export interface ProgressShareStats {
   goalsDoneToday: number;
   totalDueToday: number;
   activeGoals: number;
+  gardenPlants?: ShareGardenPlant[];
 }
 
 export function progressShareFilename(): string {
@@ -17,6 +19,7 @@ export function progressShareFilename(): string {
 export async function renderProgressShareImage(stats: ProgressShareStats): Promise<Blob> {
   const width = 1080;
   const height = 1080;
+  const hasGarden = (stats.gardenPlants?.length ?? 0) > 0;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -47,14 +50,14 @@ export async function renderProgressShareImage(stats: ProgressShareStats): Promi
   ctx.font = "800 180px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
-  ctx.fillText(String(stats.maxStreak), width / 2, 430);
+  ctx.fillText(String(stats.maxStreak), width / 2, hasGarden ? 390 : 430);
 
   ctx.font = "600 42px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.95)";
   ctx.fillText(
     `${stats.streakUnit} streak${stats.maxStreak === 1 ? "" : "s"}`,
     width / 2,
-    500
+    hasGarden ? 458 : 500
   );
 
   const provedLine =
@@ -64,11 +67,20 @@ export async function renderProgressShareImage(stats: ProgressShareStats): Promi
 
   ctx.font = "500 36px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.fillText(provedLine, width / 2, 580);
+  ctx.fillText(provedLine, width / 2, hasGarden ? 518 : 580);
 
-  ctx.font = "500 30px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.fillText("Set goals. Take a photo. Prove it.", width / 2, 640);
+  if (hasGarden) {
+    await drawGardenSnapshotRow(ctx, stats.gardenPlants!, {
+      x: 72,
+      y: 580,
+      width: width - 144,
+      height: 300,
+    }, { label: "My garden" });
+  } else {
+    ctx.font = "500 30px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fillText("Set goals. Take a photo. Prove it.", width / 2, 640);
+  }
 
   ctx.fillStyle = "rgba(255,255,255,0.9)";
   drawBrandFooter(ctx, width, height - 48);

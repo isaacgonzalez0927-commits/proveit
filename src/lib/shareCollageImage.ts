@@ -6,6 +6,7 @@ import {
   loadImage,
   roundRect,
 } from "@/lib/shareImage";
+import { drawGardenSnapshotRow, type ShareGardenPlant } from "@/lib/shareGardenSnapshot";
 
 const WIDTH = 1080;
 const PAD = 36;
@@ -13,19 +14,25 @@ const COLS = 3;
 const GAP = 12;
 const HEADER = 120;
 const FOOTER = 56;
+const GARDEN_PANEL = 220;
 
 export function collageShareFilename(collage: WeeklyCollage): string {
   return `proveit-collage-${collage.weekStart}.png`;
 }
 
 /** Build a shareable PNG grid from a weekly collage (browser only). */
-export async function renderCollageShareImage(collage: WeeklyCollage): Promise<Blob> {
+export async function renderCollageShareImage(
+  collage: WeeklyCollage,
+  gardenPlants: ShareGardenPlant[] = []
+): Promise<Blob> {
   const photos = collage.photos.slice(0, 9);
   const rows = Math.max(1, Math.ceil(photos.length / COLS));
   const gridW = WIDTH - PAD * 2;
   const cell = (gridW - GAP * (COLS - 1)) / COLS;
   const gridH = rows * cell + (rows - 1) * GAP;
-  const height = HEADER + gridH + FOOTER + PAD;
+  const hasGarden = gardenPlants.length > 0;
+  const gardenBlock = hasGarden ? GARDEN_PANEL + 16 : 0;
+  const height = HEADER + gridH + gardenBlock + FOOTER + PAD;
 
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
@@ -82,6 +89,20 @@ export async function renderCollageShareImage(collage: WeeklyCollage): Promise<B
         ? `${photos[i]!.goalTitle.slice(0, 17)}…`
         : photos[i]!.goalTitle;
     ctx.fillText(title, x + 10, y + cell - 16);
+  }
+
+  if (hasGarden) {
+    await drawGardenSnapshotRow(
+      ctx,
+      gardenPlants,
+      {
+        x: PAD,
+        y: HEADER + gridH + 16,
+        width: WIDTH - PAD * 2,
+        height: GARDEN_PANEL,
+      },
+      { label: "My garden", lightPanel: false }
+    );
   }
 
   drawBrandFooter(ctx, WIDTH, height - 18);

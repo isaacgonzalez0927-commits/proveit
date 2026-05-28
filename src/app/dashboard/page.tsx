@@ -400,6 +400,10 @@ function DashboardContent() {
                         goalsDoneToday: displayGoalsDoneToday,
                         totalDueToday: displayTotalDueToday,
                         activeGoals: goals.length,
+                        gardenPlants: gardenSnapshotPlants.map(({ stage, variant }) => ({
+                          stage,
+                          variant,
+                        })),
                       });
                       return shareOrDownloadBlob(
                         blob,
