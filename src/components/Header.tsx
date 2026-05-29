@@ -12,6 +12,7 @@ import {
   Sprout,
   UserCircle2,
   SlidersHorizontal,
+  Users,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
@@ -36,7 +37,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/achievements")) return "Achievements";
   if (pathname.startsWith("/settings/change-email")) return "Change email";
   if (pathname.startsWith("/settings")) return "Settings";
-  if (pathname.startsWith("/friends")) return "Friend goals";
+  if (pathname.startsWith("/friends")) return "Buddy goals";
   if (pathname.startsWith("/join")) return "Join goal";
   if (pathname.startsWith("/pricing")) return "Pricing";
   if (pathname.startsWith("/privacy")) return "Privacy";
@@ -168,6 +169,15 @@ export function Header() {
                 >
                   <SlidersHorizontal className="h-4 w-4 shrink-0" />
                   Settings
+                </Link>
+                <Link
+                  href="/friends"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  role="menuitem"
+                >
+                  <Users className="h-4 w-4 shrink-0 text-sky-500" />
+                  Buddy goals
                 </Link>
                 <Link
                   href="/privacy"

@@ -43,14 +43,27 @@ ALTER TABLE shared_goal_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Members can view shared goals" ON shared_goals;
 DROP POLICY IF EXISTS "Users can create shared goals" ON shared_goals;
 DROP POLICY IF EXISTS shared_goals_select_members ON shared_goals;
+
+CREATE OR REPLACE FUNCTION public.is_member_of_shared_goal(p_shared_goal_id text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM shared_goal_members m
+    WHERE m.shared_goal_id = p_shared_goal_id
+      AND m.user_id = auth.uid()
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_member_of_shared_goal(text) TO authenticated;
+
 CREATE POLICY shared_goals_select_members ON shared_goals
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM shared_goal_members m
-      WHERE m.shared_goal_id = shared_goals.id AND m.user_id = auth.uid()
-    )
-  );
+  USING (public.is_member_of_shared_goal(id));
 
 DROP POLICY IF EXISTS shared_goals_insert_owner ON shared_goals;
 CREATE POLICY shared_goals_insert_owner ON shared_goals
@@ -62,11 +75,7 @@ DROP POLICY IF EXISTS "Users can join as themselves" ON shared_goal_members;
 DROP POLICY IF EXISTS shared_goal_members_select ON shared_goal_members;
 CREATE POLICY shared_goal_members_select ON shared_goal_members
   FOR SELECT
-  USING (
-    shared_goal_id IN (
-      SELECT m.shared_goal_id FROM shared_goal_members m WHERE m.user_id = auth.uid()
-    )
-  );
+  USING (public.is_member_of_shared_goal(shared_goal_id));
 
 DROP POLICY IF EXISTS shared_goal_members_insert_self ON shared_goal_members;
 CREATE POLICY shared_goal_members_insert_self ON shared_goal_members

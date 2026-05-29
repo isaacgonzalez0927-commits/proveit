@@ -99,7 +99,7 @@ export default function JoinFriendGoalPage() {
       <div className="rounded-2xl border border-slate-200/70 p-6 shadow-soft glass-card dark:border-slate-700/60">
         <div className="flex items-center gap-2 text-prove-600 dark:text-prove-400">
           <Users className="h-5 w-5" />
-          <span className="text-xs font-semibold uppercase tracking-wide">Friend goal</span>
+          <span className="text-xs font-extrabold uppercase tracking-wide">Buddy goal</span>
         </div>
 
         {loading && <p className="mt-6 text-sm text-slate-500">Loading invite…</p>}

@@ -44,7 +44,10 @@ import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
 import { TimesPerWeekControl } from "@/components/TimesPerWeekControl";
+import { FriendGoalBuddyToggle } from "@/components/FriendGoalBuddyToggle";
 import { FriendGoalInviteButton } from "@/components/FriendGoalInviteButton";
+import { FriendGoalShareSheet } from "@/components/FriendGoalShareSheet";
+import { fetchOrCreateFriendInvite } from "@/lib/friendGoalClient";
 import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/proofSuggestions";
 import type { Goal, TimesPerWeek } from "@/types";
@@ -97,6 +100,12 @@ export default function BuddyPage() {
   const [newPlantVariant, setNewPlantVariant] = useState<GoalPlantVariant>(
     () => getStoredAppSettings().defaultGoalPlantVariant
   );
+  const [newGoalWithBuddy, setNewGoalWithBuddy] = useState(false);
+  const [buddyShareOpen, setBuddyShareOpen] = useState(false);
+  const [buddyShareTitle, setBuddyShareTitle] = useState("");
+  const [buddyShareUrl, setBuddyShareUrl] = useState<string | null>(null);
+  const [buddyShareLoading, setBuddyShareLoading] = useState(false);
+  const [buddyShareError, setBuddyShareError] = useState<string | null>(null);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editDraft, setEditDraft] = useState<{
@@ -390,6 +399,7 @@ export default function BuddyPage() {
     setNewTimesPerWeek(3);
     setScheduleTourAck(false);
     setNewPlantVariant(appSettings.defaultGoalPlantVariant);
+    setNewGoalWithBuddy(false);
   };
 
   const handleCreateGoal = async (e: React.FormEvent) => {
@@ -442,9 +452,27 @@ export default function BuddyPage() {
       }
       const maxVariant = getMaxPlantVariantForPlan(user?.plan ?? "free");
       setGoalPlantVariant(result.created.id, Math.min(newPlantVariant, maxVariant) as GoalPlantVariant);
+      const createdTitle = titleTrim;
+      const createdId = result.created.id;
+      const inviteBuddy = newGoalWithBuddy && useSupabase;
       setShowCreateForm(false);
       resetCreateGoalForm();
-      setGoalManagerMessage("Goal added to your garden.");
+      setGoalManagerMessage(
+        inviteBuddy ? "Goal added — invite your buddy next!" : "Goal added to your garden."
+      );
+      if (inviteBuddy) {
+        setBuddyShareTitle(createdTitle);
+        setBuddyShareUrl(null);
+        setBuddyShareError(null);
+        setBuddyShareLoading(true);
+        setBuddyShareOpen(true);
+        void fetchOrCreateFriendInvite(createdId)
+          .then((url) => setBuddyShareUrl(url))
+          .catch((err) =>
+            setBuddyShareError(err instanceof Error ? err.message : "Could not create invite.")
+          )
+          .finally(() => setBuddyShareLoading(false));
+      }
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(TOUR_GARDEN_HINT_KEY);
         window.localStorage.setItem(TOUR_START_KEY, "1");
@@ -746,6 +774,16 @@ export default function BuddyPage() {
                 />
               </label>
             </div>
+
+            {useSupabase && (
+              <div className="mt-6">
+                <FriendGoalBuddyToggle
+                  checked={newGoalWithBuddy}
+                  onChange={setNewGoalWithBuddy}
+                  disabled={isAddingGoal}
+                />
+              </div>
+            )}
 
             <div className="mt-6" data-tour="goal-submit">
               <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Plant</p>
@@ -1228,6 +1266,14 @@ export default function BuddyPage() {
           ← Back to dashboard
         </Link>
       </main>
+      <FriendGoalShareSheet
+        open={buddyShareOpen}
+        goalTitle={buddyShareTitle}
+        inviteUrl={buddyShareUrl}
+        loading={buddyShareLoading}
+        error={buddyShareError}
+        onClose={() => setBuddyShareOpen(false)}
+      />
       <UpgradePromptModal
         open={showUpgradePrompt}
         onClose={() => setShowUpgradePrompt(false)}

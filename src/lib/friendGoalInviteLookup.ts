@@ -22,7 +22,7 @@ export function isFriendGoalsSchemaMissing(message: string): boolean {
 }
 
 export const FRIEND_GOALS_SCHEMA_HINT =
-  "Friend goals database is not set up yet. In Supabase SQL Editor, run migrations 018_friend_goals.sql and 019_friend_goals_partner_access.sql.";
+  "Friend goals database is not set up yet. In Supabase SQL Editor, run migrations 018, 019, and 020_friend_goals_rls_recursion_fix.sql.";
 
 export async function lookupFriendGoalInvite(
   client: SupabaseClient,
