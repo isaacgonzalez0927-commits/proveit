@@ -44,6 +44,7 @@ import { getStoredAppSettings } from "@/lib/appSettings";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { CongratulationsModal } from "@/components/CongratulationsModal";
 import { TimesPerWeekControl } from "@/components/TimesPerWeekControl";
+import { FriendGoalInviteButton } from "@/components/FriendGoalInviteButton";
 import { verificationTextFromGoal } from "@/lib/goalVerificationText";
 import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/proofSuggestions";
 import type { Goal, TimesPerWeek } from "@/types";
@@ -78,6 +79,7 @@ export default function BuddyPage() {
     setGoalPlantVariant,
     clearPlanSelectionForNewUser,
     restoreActualAccount,
+    useSupabase,
   } = useApp();
   const [developerSettings, setDeveloperSettings] = useState<DeveloperModeSettings>(
     DEFAULT_DEVELOPER_MODE_SETTINGS
@@ -1051,6 +1053,14 @@ export default function BuddyPage() {
                     >
                       Water now
                     </Link>
+                  )}
+                  {useSupabase && user && (
+                    <FriendGoalInviteButton
+                      goalId={entry.goal.id}
+                      goalTitle={entry.goal.title}
+                      compact
+                      className="pt-1"
+                    />
                   )}
                 </div>
 

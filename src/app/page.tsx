@@ -19,6 +19,7 @@ import {
   TOUR_DONE_VERSION,
   TOUR_START_KEY,
 } from "@/lib/tourStorage";
+import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 
 type Slide = 0 | 1 | 2 | 3 | 4;
 type AuthMode = "signin" | "signup";
@@ -68,7 +69,8 @@ function LandingContent() {
       }
       setSessionSettled(true);
       if (hasSelectedPlan) {
-        router.replace("/dashboard");
+        const redirect = consumePostAuthRedirect();
+        router.replace(redirect ?? "/dashboard");
         return;
       }
       if (requestedStep === "plan") {

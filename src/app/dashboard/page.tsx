@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Camera,
   ChevronDown,
+  Users,
 } from "lucide-react";
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
@@ -287,6 +288,26 @@ function DashboardContent() {
               </>
             )}
           </p>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200/70 p-4 dark:border-slate-700/60 glass-card">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
+                Friend goals
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Invite someone to the same goal and see each other&apos;s weekly progress.
+              </p>
+            </div>
+            <Link
+              href="/friends"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-200/90 bg-emerald-50/80 px-4 py-2.5 text-sm font-semibold text-emerald-900 hover:bg-emerald-100/90 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-100"
+            >
+              <Users className="h-4 w-4" />
+              View friends
+            </Link>
+          </div>
         </section>
 
         {isCreatorAccount && effectiveDeveloperSettings.enabled && (
