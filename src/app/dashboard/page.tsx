@@ -35,11 +35,13 @@ import {
   getStoredDeveloperModeSettings,
   type DeveloperModeSettings,
 } from "@/lib/developerMode";
-import { safeParseISO } from "@/lib/dateUtils";
+import { extractCalendarDateKey, safeParseISO } from "@/lib/dateUtils";
 import {
   countVerifiedInCalendarWeek,
   getNextDueLabel,
   getSubmissionWindowMessage,
+  hasVerifiedSubmissionOnDate,
+  isDashboardGoalComplete,
   isGoalDue,
   isWithinSubmissionWindow,
 } from "@/lib/goalDue";
@@ -132,8 +134,8 @@ function DashboardContent() {
   })();
 
   const plan = user ? getPlan(user.plan) : null;
-  const dailyGoals = goals.filter((g) => g.frequency === "daily");
-  const weeklyGoals = goals.filter((g) => g.frequency === "weekly");
+  const dailyRhythmGoals = goals.filter((g) => effectiveTimesPerWeek(g) >= 7);
+  const weeklyRhythmGoals = goals.filter((g) => effectiveTimesPerWeek(g) < 7);
   const streakUnit = "week";
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
@@ -488,105 +490,48 @@ function DashboardContent() {
             </div>
           ) : (
             <ul className="mt-4 space-y-3">
-              {dailyGoals.map((goal) => {
+              {[...dailyRhythmGoals, ...weeklyRhythmGoals].map((goal) => {
                 const subs = getSubmissionsForGoal(goal.id);
-                const todayProof = subs.find((s) => s.date === todayStr);
-                const verified = todayProof?.status === "verified";
-                return (
-                  <li
-                    key={goal.id}
-                    className="flex items-center justify-between rounded-xl p-4 glass-card"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {verified ? (
-                        <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
-                      ) : (
-                        <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                      )}
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {goal.title}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Daily · Streak: {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
-                            ? `${displayStreakByGoalId.get(goal.id)} weeks`
-                            : "—"}
-                          {goal.isOnBreak ? " · On break" : ""}
-                        </p>
-                      </div>
-                    </div>
-                    {goal.isOnBreak ? (
-                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                        On break
-                      </span>
-                    ) : verified && todayProof?.imageDataUrl ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="block h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
-                        aria-label={`View today's proof for ${goal.title}`}
-                      >
-                        <img
-                          src={todayProof.imageDataUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </Link>
-                    ) : verified ? (
-                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
-                        Done
-                      </span>
-                    ) : isWithinSubmissionWindow(goal, new Date(), subs) && todayProof?.imageDataUrl ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
-                        aria-label="View or change proof"
-                      >
-                        <img
-                          src={todayProof.imageDataUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </Link>
-                    ) : isWithinSubmissionWindow(goal, new Date(), subs) ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
-                      >
-                        <Camera className="h-4 w-4" />
-                        Prove it
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[140px]">
-                        {getSubmissionWindowMessage(goal, new Date(), subs) ?? "Not available"}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-              {weeklyGoals.map((goal) => {
-                const subs = getSubmissionsForGoal(goal.id);
+                const now = new Date();
                 const tw = effectiveTimesPerWeek(goal);
-                const weekVerifiedCount = countVerifiedInCalendarWeek(subs, new Date());
+                const weekVerifiedCount = countVerifiedInCalendarWeek(subs, now);
+                const doneToday = hasVerifiedSubmissionOnDate(subs, todayStr);
                 const weekMet = weekVerifiedCount >= tw;
-                const thisWeekProof = weekMet;
-                const thisWeekSub = subs.find((s) => {
+                const showComplete = isDashboardGoalComplete(goal, subs, now);
+                const todayVerifiedSub = subs.find(
+                  (s) =>
+                    s.status === "verified" &&
+                    extractCalendarDateKey(s.date) === todayStr &&
+                    s.imageDataUrl
+                );
+                const weekVerifiedSub = subs.find((s) => {
+                  const d = safeParseISO(s.date);
+                  return (
+                    !!d &&
+                    isThisWeek(d, { weekStartsOn: 0 }) &&
+                    s.status === "verified" &&
+                    !!s.imageDataUrl
+                  );
+                });
+                const displayProofSub = todayVerifiedSub ?? weekVerifiedSub;
+                const pendingSub = subs.find((s) => {
                   const d = safeParseISO(s.date);
                   return !!d && isThisWeek(d, { weekStartsOn: 0 }) && s.imageDataUrl;
                 });
-                const thisWeekVerifiedSub = subs.find((s) => {
-                  const d = safeParseISO(s.date);
-                  return !!d && isThisWeek(d, { weekStartsOn: 0 }) && s.status === "verified" && !!s.imageDataUrl;
-                });
-                const due = isGoalDue(goal, new Date(), subs);
+                const canSubmitNow = isWithinSubmissionWindow(goal, now, subs);
+                const due = isGoalDue(goal, now, subs);
                 const dueLabel = getNextDueLabel(goal);
-                const canSubmitNow = isWithinSubmissionWindow(goal, new Date(), subs);
+                const cadenceLabel =
+                  tw >= 7
+                    ? "Daily"
+                    : `Weekly · ${weekVerifiedCount}/${tw} this week${weekMet ? " · Done for the week" : doneToday ? " · Done today" : ""}`;
                 return (
                   <li
                     key={goal.id}
                     className="flex items-center justify-between rounded-xl p-4 glass-card"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {thisWeekProof ? (
+                      {showComplete ? (
                         <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
                       ) : (
                         <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
@@ -596,11 +541,13 @@ function DashboardContent() {
                           {goal.title}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Weekly · Streak: {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
+                          {cadenceLabel}
+                          {" · Streak: "}
+                          {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
                             ? `${displayStreakByGoalId.get(goal.id)} weeks`
                             : "—"}
                           {goal.isOnBreak ? " · On break" : ""}
-                          {!due && dueLabel && ` · ${dueLabel}`}
+                          {tw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
                         </p>
                       </div>
                     </div>
@@ -608,30 +555,34 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
-                    ) : thisWeekProof && thisWeekVerifiedSub?.imageDataUrl ? (
+                    ) : showComplete && displayProofSub?.imageDataUrl ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
                         className="block h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
-                        aria-label={`View this week's proof for ${goal.title}`}
+                        aria-label={
+                          doneToday
+                            ? `View today's proof for ${goal.title}`
+                            : `View this week's proof for ${goal.title}`
+                        }
                       >
                         <img
-                          src={thisWeekVerifiedSub.imageDataUrl}
+                          src={displayProofSub.imageDataUrl}
                           alt=""
                           className="h-full w-full object-cover"
                         />
                       </Link>
-                    ) : thisWeekProof ? (
+                    ) : showComplete ? (
                       <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
                         Done
                       </span>
-                    ) : canSubmitNow && thisWeekSub?.imageDataUrl ? (
+                    ) : canSubmitNow && pendingSub?.imageDataUrl ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
                         className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
                         aria-label="View or change proof"
                       >
                         <img
-                          src={thisWeekSub.imageDataUrl}
+                          src={pendingSub.imageDataUrl}
                           alt=""
                           className="h-full w-full object-cover"
                         />
@@ -646,7 +597,8 @@ function DashboardContent() {
                       </Link>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
-                        {`${weekVerifiedCount}/${tw} proofs this week`}
+                        {getSubmissionWindowMessage(goal, now, subs) ??
+                          (tw < 7 ? `${weekVerifiedCount}/${tw} proofs this week` : "Not available")}
                       </span>
                     )}
                   </li>

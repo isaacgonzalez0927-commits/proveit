@@ -80,6 +80,34 @@ export function isWithinSubmissionWindow(
   return weekCount < tw;
 }
 
+/** True when the goal hit its weekly proof quota (Sun–Sat). */
+export function isWeeklyQuotaMet(
+  goal: Pick<Goal, "timesPerWeek" | "reminderDays" | "frequency">,
+  submissions: Pick<ProofSubmission, "date" | "status">[],
+  now: Date = new Date()
+): boolean {
+  const tw = effectiveTimesPerWeek(goal);
+  return countVerifiedInCalendarWeek(submissions, now) >= tw;
+}
+
+/**
+ * Dashboard “done” state: checkmark + proof thumbnail.
+ * Daily rhythm (7×/week): today’s verified proof only.
+ * N×/week: today’s proof OR full weekly quota.
+ */
+export function isDashboardGoalComplete(
+  goal: Goal,
+  submissions: Pick<ProofSubmission, "date" | "status">[],
+  now: Date = new Date()
+): boolean {
+  if (goal.isOnBreak) return false;
+  const todayStr = format(now, "yyyy-MM-dd");
+  const doneToday = hasVerifiedSubmissionOnDate(submissions, todayStr);
+  const tw = effectiveTimesPerWeek(goal);
+  if (tw >= 7) return doneToday;
+  return doneToday || isWeeklyQuotaMet(goal, submissions, now);
+}
+
 /** True when a check-in is still available today (same rules as `isWithinSubmissionWindow`). */
 export function isGoalDue(
   goal: Goal,

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   countVerifiedInCalendarWeek,
   hasVerifiedSubmissionOnDate,
+  isDashboardGoalComplete,
+  isWeeklyQuotaMet,
   isWithinSubmissionWindow,
   weeklyCheckInProgressLine,
 } from "@/lib/goalDue";
@@ -59,6 +61,36 @@ describe("isWithinSubmissionWindow", () => {
       sub({ date: "2026-04-14", status: "verified" }),
     ];
     expect(isWithinSubmissionWindow(goal, now, subs)).toBe(false);
+  });
+});
+
+describe("isDashboardGoalComplete", () => {
+  it("shows complete for N×/week goal after one verified proof today", () => {
+    const goal = { ...baseWeeklyGoal, timesPerWeek: 4 as const } as Goal;
+    const now = new Date(2026, 3, 14, 12, 0, 0);
+    const subs = [sub({ date: "2026-04-14T18:00:00.000Z", status: "verified" })];
+    expect(isDashboardGoalComplete(goal, subs, now)).toBe(true);
+    expect(isWeeklyQuotaMet(goal, subs, now)).toBe(false);
+  });
+
+  it("shows complete for N×/week goal when weekly quota is met", () => {
+    const goal = { ...baseWeeklyGoal, timesPerWeek: 4 as const } as Goal;
+    const now = new Date(2026, 3, 14, 12, 0, 0);
+    const subs = [
+      sub({ date: "2026-04-12", status: "verified" }),
+      sub({ date: "2026-04-13", status: "verified" }),
+      sub({ date: "2026-04-14", status: "verified" }),
+      sub({ date: "2026-04-15", status: "verified" }),
+    ];
+    expect(isDashboardGoalComplete(goal, subs, now)).toBe(true);
+    expect(isWeeklyQuotaMet(goal, subs, now)).toBe(true);
+  });
+
+  it("does not show complete for N×/week goal with no proofs today or full week", () => {
+    const goal = { ...baseWeeklyGoal, timesPerWeek: 4 as const } as Goal;
+    const now = new Date(2026, 3, 14, 12, 0, 0);
+    const subs = [sub({ date: "2026-04-12", status: "verified" })];
+    expect(isDashboardGoalComplete(goal, subs, now)).toBe(false);
   });
 });
 
