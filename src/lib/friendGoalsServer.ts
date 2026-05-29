@@ -22,11 +22,11 @@ function mapGoalFrequency(row: Record<string, unknown>) {
 }
 
 export async function buildFriendGoalGroupsForUser(
-  admin: SupabaseClient,
+  client: SupabaseClient,
   userId: string,
   origin: string
 ): Promise<FriendGoalGroup[]> {
-  const { data: memberships, error: memErr } = await admin
+  const { data: memberships, error: memErr } = await client
     .from("shared_goal_members")
     .select("shared_goal_id, goal_id, role")
     .eq("user_id", userId);
@@ -34,7 +34,7 @@ export async function buildFriendGoalGroupsForUser(
   if (memErr || !memberships?.length) return [];
 
   const sharedIds = [...new Set(memberships.map((m) => m.shared_goal_id as string))];
-  const { data: sharedRows, error: sharedErr } = await admin
+  const { data: sharedRows, error: sharedErr } = await client
     .from("shared_goals")
     .select("*")
     .in("id", sharedIds);
@@ -44,7 +44,7 @@ export async function buildFriendGoalGroupsForUser(
   const groups: FriendGoalGroup[] = [];
 
   for (const shared of sharedRows) {
-    const group = await buildFriendGoalGroup(admin, shared as Record<string, unknown>, userId, origin);
+    const group = await buildFriendGoalGroup(client, shared as Record<string, unknown>, userId, origin);
     if (group) groups.push(group);
   }
 
@@ -53,7 +53,7 @@ export async function buildFriendGoalGroupsForUser(
 }
 
 export async function buildFriendGoalGroup(
-  admin: SupabaseClient,
+  client: SupabaseClient,
   shared: Record<string, unknown>,
   viewerUserId: string,
   origin: string
@@ -61,7 +61,7 @@ export async function buildFriendGoalGroup(
   const sharedId = shared.id as string;
   const inviteCode = shared.invite_code as string;
 
-  const { data: memberRows } = await admin
+  const { data: memberRows } = await client
     .from("shared_goal_members")
     .select("id, user_id, goal_id, role")
     .eq("shared_goal_id", sharedId);
@@ -72,9 +72,9 @@ export async function buildFriendGoalGroup(
   const goalIds = memberRows.map((m) => m.goal_id as string);
 
   const [{ data: profiles }, { data: goals }, { data: submissions }] = await Promise.all([
-    admin.from("profiles").select("id, username, name, email").in("id", userIds),
-    admin.from("goals").select("id, frequency, times_per_week, is_on_break").in("id", goalIds),
-    admin
+    client.from("profiles").select("id, username, name, email").in("id", userIds),
+    client.from("goals").select("id, frequency, times_per_week, is_on_break").in("id", goalIds),
+    client
       .from("submissions")
       .select("goal_id, date, status")
       .in("goal_id", goalIds)

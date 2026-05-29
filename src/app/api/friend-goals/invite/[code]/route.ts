@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { buildFriendGoalInviteUrl, displayNameFromProfile, FRIEND_GOAL_MAX_MEMBERS } from "@/lib/friendGoals";
+import { lookupFriendGoalInvite } from "@/lib/friendGoalInviteLookup";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /** Public invite preview (auth optional). */
 export async function GET(
@@ -14,64 +15,59 @@ export async function GET(
     return NextResponse.json({ error: "Invalid invite." }, { status: 400 });
   }
 
-  const admin = createAdminClient();
-  if (!admin) {
-    return NextResponse.json(
-      { error: "Friend goals are not configured on this server." },
-      { status: 503 }
-    );
+  const supabase = await createClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "Supabase not configured." }, { status: 503 });
   }
 
-  const { data: shared, error } = await admin
-    .from("shared_goals")
-    .select("*")
-    .eq("invite_code", code)
-    .maybeSingle();
+  try {
+    const row = await lookupFriendGoalInvite(supabase, code);
+    if (!row) return NextResponse.json({ error: "Invite not found." }, { status: 404 });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!shared) return NextResponse.json({ error: "Invite not found." }, { status: 404 });
+    const memberCount = row.member_count ?? 0;
+    const isFull = memberCount >= FRIEND_GOAL_MAX_MEMBERS;
 
-  const { data: members } = await admin
-    .from("shared_goal_members")
-    .select("user_id, role")
-    .eq("shared_goal_id", shared.id);
+    let ownerName = "Someone";
+    const admin = createAdminClient();
+    const profileClient = admin ?? supabase;
+    const { data: ownerProfile } = await profileClient
+      .from("profiles")
+      .select("username, name, email")
+      .eq("id", row.created_by)
+      .maybeSingle();
+    if (ownerProfile) ownerName = displayNameFromProfile(ownerProfile);
 
-  const memberCount = members?.length ?? 0;
-  const isFull = memberCount >= FRIEND_GOAL_MAX_MEMBERS;
-
-  const { data: ownerProfile } = await admin
-    .from("profiles")
-    .select("username, name, email")
-    .eq("id", shared.created_by)
-    .maybeSingle();
-
-  let alreadyJoined = false;
-  const supabase = await createClient();
-  if (supabase) {
+    let alreadyJoined = false;
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
+      const { data: members } = await supabase
+        .from("shared_goal_members")
+        .select("user_id")
+        .eq("shared_goal_id", row.id);
       alreadyJoined = Boolean(members?.some((m) => m.user_id === user.id));
     }
+
+    const timesPerWeek =
+      typeof row.times_per_week === "number" ? row.times_per_week : row.frequency === "daily" ? 7 : 1;
+
+    return NextResponse.json({
+      invite: {
+        code,
+        title: row.title,
+        description: row.description ?? undefined,
+        timesPerWeek,
+        ownerName,
+        memberCount,
+        maxMembers: FRIEND_GOAL_MAX_MEMBERS,
+        isFull,
+        alreadyJoined,
+        inviteUrl: buildFriendGoalInviteUrl(request.nextUrl.origin, code),
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not load invite.";
+    return NextResponse.json({ error: message }, { status: 503 });
   }
-
-  const timesPerWeek =
-    typeof shared.times_per_week === "number" ? shared.times_per_week : shared.frequency === "daily" ? 7 : 1;
-
-  return NextResponse.json({
-    invite: {
-      code,
-      title: shared.title,
-      description: shared.description ?? undefined,
-      timesPerWeek,
-      frequency: shared.frequency,
-      ownerName: ownerProfile ? displayNameFromProfile(ownerProfile) : "Someone",
-      memberCount,
-      maxMembers: FRIEND_GOAL_MAX_MEMBERS,
-      isFull,
-      alreadyJoined,
-      inviteUrl: buildFriendGoalInviteUrl(request.nextUrl.origin, code),
-    },
-  });
 }

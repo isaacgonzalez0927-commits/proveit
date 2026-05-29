@@ -21,11 +21,16 @@ export function FriendGoalInviteButton({
   const [message, setMessage] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 
-  const ensureInvite = useCallback(async (): Promise<string | null> => {
+  const ensureInvite = useCallback(async (): Promise<string> => {
     const existing = await fetch(`/api/friend-goals?goalId=${encodeURIComponent(goalId)}`, {
       credentials: "same-origin",
     });
     const existingData = await existing.json().catch(() => ({}));
+    if (!existing.ok) {
+      throw new Error(
+        typeof existingData.error === "string" ? existingData.error : "Could not load invite."
+      );
+    }
     if (existingData?.invite?.inviteUrl) return existingData.invite.inviteUrl as string;
 
     const res = await fetch("/api/friend-goals", {
@@ -38,7 +43,9 @@ export function FriendGoalInviteButton({
     if (!res.ok) {
       throw new Error(typeof data.error === "string" ? data.error : "Could not create invite.");
     }
-    return (data.invite?.inviteUrl as string) ?? null;
+    const url = data.invite?.inviteUrl as string | undefined;
+    if (!url) throw new Error("Server did not return an invite link.");
+    return url;
   }, [goalId]);
 
   const shareInvite = async () => {
@@ -116,7 +123,13 @@ export function FriendGoalInviteButton({
         </button>
       </div>
       {message && (
-        <p className={`mt-1 text-emerald-800 dark:text-emerald-200 ${compact ? "text-[10px]" : "text-xs"}`}>
+        <p
+          className={`mt-1 ${compact ? "text-[10px]" : "text-xs"} ${
+            /could not|not set up|migration|unauthorized/i.test(message)
+              ? "text-red-700 dark:text-red-300"
+              : "text-emerald-800 dark:text-emerald-200"
+          }`}
+        >
           {message}
         </p>
       )}
