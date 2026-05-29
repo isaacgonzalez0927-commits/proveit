@@ -136,9 +136,202 @@ export function drawCoverImage(
   ctx.restore();
 }
 
-export function drawBrandFooter(ctx: CanvasRenderingContext2D, width: number, y: number) {
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
-  ctx.font = "500 22px system-ui, -apple-system, sans-serif";
+export const SHARE_FONT =
+  'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+export const SHARE_COLORS = {
+  emerald950: "#052e16",
+  emerald900: "#064e3b",
+  emerald800: "#065f46",
+  emerald700: "#047857",
+  emerald600: "#059669",
+  emerald500: "#10b981",
+  emerald400: "#34d399",
+  emerald100: "#d1fae5",
+  emerald50: "#ecfdf5",
+  slate900: "#0f172a",
+  slate600: "#475569",
+  slate500: "#64748b",
+  white: "#ffffff",
+} as const;
+
+export function fillHeroGradient(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  const g = ctx.createLinearGradient(0, 0, width, height);
+  g.addColorStop(0, SHARE_COLORS.emerald950);
+  g.addColorStop(0.45, SHARE_COLORS.emerald800);
+  g.addColorStop(1, SHARE_COLORS.emerald600);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, width, height);
+}
+
+export function fillLightGradient(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  const g = ctx.createLinearGradient(0, 0, 0, height);
+  g.addColorStop(0, "#f8fafc");
+  g.addColorStop(0.55, SHARE_COLORS.emerald50);
+  g.addColorStop(1, SHARE_COLORS.emerald100);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, width, height);
+}
+
+/** Soft decorative circles for hero backgrounds. */
+export function drawHeroOrbs(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const orbs = [
+    { x: width * 0.88, y: height * 0.12, r: 200, a: 0.08 },
+    { x: width * 0.1, y: height * 0.72, r: 160, a: 0.06 },
+    { x: width * 0.55, y: height * 0.95, r: 120, a: 0.05 },
+  ];
+  for (const orb of orbs) {
+    const radial = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+    radial.addColorStop(0, `rgba(255,255,255,${orb.a + 0.06})`);
+    radial.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = radial;
+    ctx.beginPath();
+    ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+export function drawFrostedPanel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number,
+  options?: { fill?: string; stroke?: string; lineWidth?: number }
+): void {
+  roundRect(ctx, x, y, w, h, radius);
+  ctx.fillStyle = options?.fill ?? "rgba(255,255,255,0.14)";
+  ctx.fill();
+  if (options?.stroke !== undefined) {
+    ctx.strokeStyle = options.stroke;
+    ctx.lineWidth = options?.lineWidth ?? 1.5;
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+export function drawLightCard(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number
+): void {
+  ctx.save();
+  ctx.shadowColor = "rgba(15,23,42,0.08)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 8;
+  roundRect(ctx, x, y, w, h, radius);
+  ctx.fillStyle = SHARE_COLORS.white;
+  ctx.fill();
+  ctx.restore();
+  roundRect(ctx, x, y, w, h, radius);
+  ctx.strokeStyle = "rgba(5,46,22,0.08)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+export function drawProveitWordmark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  options?: { light?: boolean; size?: "lg" | "sm" }
+): void {
+  const light = options?.light ?? true;
+  const lg = options?.size !== "sm";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = light ? SHARE_COLORS.white : SHARE_COLORS.emerald900;
+  ctx.font = `${lg ? 700 : 700} ${lg ? 44 : 36}px ${SHARE_FONT}`;
+  ctx.fillText("Proveit", x, y);
+}
+
+export function drawBrandFooter(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  y: number,
+  options?: { light?: boolean }
+): void {
+  const light = options?.light ?? true;
+  const lineY = y - 36;
+  ctx.strokeStyle = light ? "rgba(255,255,255,0.2)" : "rgba(5,46,22,0.1)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.2, lineY);
+  ctx.lineTo(width * 0.8, lineY);
+  ctx.stroke();
+
+  ctx.fillStyle = light ? "rgba(255,255,255,0.72)" : SHARE_COLORS.slate500;
+  ctx.font = `500 20px ${SHARE_FONT}`;
   ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
   ctx.fillText("proveit-goals.com", width / 2, y);
+}
+
+export function drawPhotoTile(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  size: number,
+  options?: { radius?: number; label?: string }
+): void {
+  const radius = options?.radius ?? 20;
+  const pad = 3;
+
+  ctx.save();
+  ctx.shadowColor = "rgba(15,23,42,0.14)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  roundRect(ctx, x, y, size, size, radius + 2);
+  ctx.fillStyle = SHARE_COLORS.white;
+  ctx.fill();
+  ctx.restore();
+
+  drawCoverImage(ctx, img, x + pad, y + pad, size - pad * 2, size - pad * 2, radius);
+
+  if (options?.label) {
+    const inner = size - pad * 2;
+    const lx = x + pad;
+    const ly = y + pad;
+    const labelH = 48;
+    const grad = ctx.createLinearGradient(0, ly + inner - labelH, 0, ly + inner);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(0.35, "rgba(0,0,0,0.45)");
+    grad.addColorStop(1, "rgba(0,0,0,0.72)");
+    ctx.save();
+    roundRect(ctx, lx, ly, inner, inner, radius);
+    ctx.clip();
+    ctx.fillStyle = grad;
+    ctx.fillRect(lx, ly + inner - labelH, inner, labelH);
+    ctx.restore();
+
+    ctx.fillStyle = SHARE_COLORS.white;
+    ctx.font = `600 19px ${SHARE_FONT}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    const title =
+      options.label.length > 20 ? `${options.label.slice(0, 19)}…` : options.label;
+    ctx.fillText(title, lx + 14, ly + inner - 16);
+  }
 }

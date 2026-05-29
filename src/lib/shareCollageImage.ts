@@ -2,22 +2,49 @@ import type { WeeklyCollage } from "@/lib/weeklyCollage";
 import {
   canvasToBlob,
   drawBrandFooter,
-  drawCoverImage,
+  drawLightCard,
+  drawPhotoTile,
+  drawProveitWordmark,
+  fillLightGradient,
   loadImage,
   roundRect,
+  SHARE_COLORS,
+  SHARE_FONT,
 } from "@/lib/shareImage";
 import { drawGardenSnapshotRow, type ShareGardenPlant } from "@/lib/shareGardenSnapshot";
 
 const WIDTH = 1080;
-const PAD = 36;
+const PAD = 48;
 const COLS = 3;
-const GAP = 12;
-const HEADER = 120;
-const FOOTER = 56;
-const GARDEN_PANEL = 220;
+const GAP = 14;
+const HEADER = 132;
+const FOOTER = 64;
+const GARDEN_PANEL = 228;
 
 export function collageShareFilename(collage: WeeklyCollage): string {
   return `proveit-collage-${collage.weekStart}.png`;
+}
+
+function drawWeekPill(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  x: number,
+  y: number
+): number {
+  ctx.font = `600 22px ${SHARE_FONT}`;
+  const textW = ctx.measureText(label).width;
+  const pillW = textW + 32;
+  const pillH = 40;
+  const pillX = x - pillW;
+
+  roundRect(ctx, pillX, y - pillH + 8, pillW, pillH, 20);
+  ctx.fillStyle = SHARE_COLORS.emerald100;
+  ctx.fill();
+  ctx.fillStyle = SHARE_COLORS.emerald800;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x - 16, y - pillH / 2 + 8);
+  return pillW;
 }
 
 /** Build a shareable PNG grid from a weekly collage (browser only). */
@@ -31,7 +58,7 @@ export async function renderCollageShareImage(
   const cell = (gridW - GAP * (COLS - 1)) / COLS;
   const gridH = rows * cell + (rows - 1) * GAP;
   const hasGarden = gardenPlants.length > 0;
-  const gardenBlock = hasGarden ? GARDEN_PANEL + 16 : 0;
+  const gardenBlock = hasGarden ? GARDEN_PANEL + 20 : 0;
   const height = HEADER + gridH + gardenBlock + FOOTER + PAD;
 
   const canvas = document.createElement("canvas");
@@ -40,32 +67,25 @@ export async function renderCollageShareImage(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas not supported.");
 
-  const gradient = ctx.createLinearGradient(0, 0, WIDTH, height);
-  gradient.addColorStop(0, "#ecfdf5");
-  gradient.addColorStop(1, "#d1fae5");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, WIDTH, height);
+  fillLightGradient(ctx, WIDTH, height);
 
-  ctx.fillStyle = "#065f46";
-  ctx.font = "700 42px system-ui, -apple-system, sans-serif";
+  drawProveitWordmark(ctx, PAD, 64, { light: false, size: "sm" });
+
+  ctx.fillStyle = SHARE_COLORS.slate600;
+  ctx.font = `500 24px ${SHARE_FONT}`;
   ctx.textAlign = "left";
-  ctx.fillText("Proveit", PAD, 52);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("Weekly collage", PAD, 100);
 
-  ctx.fillStyle = "#047857";
-  ctx.font = "600 28px system-ui, -apple-system, sans-serif";
-  ctx.fillText("Weekly collage", PAD, 88);
+  drawWeekPill(ctx, collage.label, WIDTH - PAD, 78);
 
-  ctx.textAlign = "right";
-  ctx.font = "600 24px system-ui, -apple-system, sans-serif";
-  ctx.fillText(collage.label, WIDTH - PAD, 88);
-
+  ctx.fillStyle = SHARE_COLORS.emerald700;
+  ctx.font = `600 22px ${SHARE_FONT}`;
   ctx.textAlign = "left";
-  ctx.font = "500 22px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "#059669";
   ctx.fillText(
     `${collage.proofCount} proof${collage.proofCount === 1 ? "" : "s"}`,
     PAD,
-    118
+    124
   );
 
   const images = await Promise.all(photos.map((p) => loadImage(p.imageDataUrl)));
@@ -75,36 +95,29 @@ export async function renderCollageShareImage(
     const row = Math.floor(i / COLS);
     const x = PAD + col * (cell + GAP);
     const y = HEADER + row * (cell + GAP);
-    drawCoverImage(ctx, images[i]!, x, y, cell, cell, 18);
-
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    roundRect(ctx, x, y + cell - 44, cell, 44, 18);
-    ctx.fill();
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "600 18px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "left";
-    const title =
-      photos[i]!.goalTitle.length > 18
-        ? `${photos[i]!.goalTitle.slice(0, 17)}…`
-        : photos[i]!.goalTitle;
-    ctx.fillText(title, x + 10, y + cell - 16);
+    drawPhotoTile(ctx, images[i]!, x, y, cell, {
+      radius: 18,
+      label: photos[i]!.goalTitle,
+    });
   }
 
   if (hasGarden) {
+    const gardenY = HEADER + gridH + 20;
+    drawLightCard(ctx, PAD, gardenY, WIDTH - PAD * 2, GARDEN_PANEL, 24);
     await drawGardenSnapshotRow(
       ctx,
       gardenPlants,
       {
-        x: PAD,
-        y: HEADER + gridH + 16,
-        width: WIDTH - PAD * 2,
-        height: GARDEN_PANEL,
+        x: PAD + 8,
+        y: gardenY + 8,
+        width: WIDTH - PAD * 2 - 16,
+        height: GARDEN_PANEL - 16,
       },
-      { label: "My garden", lightPanel: false }
+      { label: "My garden", lightPanel: true, onLightBackground: true }
     );
   }
 
-  drawBrandFooter(ctx, WIDTH, height - 18);
+  drawBrandFooter(ctx, WIDTH, height - 28, { light: false });
+
   return canvasToBlob(canvas);
 }

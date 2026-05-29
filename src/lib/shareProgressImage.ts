@@ -1,4 +1,12 @@
-import { canvasToBlob, drawBrandFooter } from "@/lib/shareImage";
+import {
+  canvasToBlob,
+  drawBrandFooter,
+  drawFrostedPanel,
+  drawHeroOrbs,
+  drawProveitWordmark,
+  fillHeroGradient,
+  SHARE_FONT,
+} from "@/lib/shareImage";
 import { drawGardenSnapshotRow, type ShareGardenPlant } from "@/lib/shareGardenSnapshot";
 
 export interface ProgressShareStats {
@@ -26,64 +34,68 @@ export async function renderProgressShareImage(stats: ProgressShareStats): Promi
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas not supported.");
 
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#059669");
-  gradient.addColorStop(0.55, "#10b981");
-  gradient.addColorStop(1, "#34d399");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
+  fillHeroGradient(ctx, width, height);
+  drawHeroOrbs(ctx, width, height);
 
-  ctx.fillStyle = "rgba(255,255,255,0.15)";
-  ctx.beginPath();
-  ctx.arc(width * 0.82, height * 0.22, 180, 0, Math.PI * 2);
-  ctx.fill();
+  drawProveitWordmark(ctx, 64, 88);
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 52px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.font = `500 28px ${SHARE_FONT}`;
   ctx.textAlign = "left";
-  ctx.fillText("Proveit", 72, 96);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("My progress", 64, 132);
 
-  ctx.font = "600 34px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.fillText("My garden progress", 72, 148);
+  const cardX = 64;
+  const cardW = width - 128;
+  const cardY = hasGarden ? 168 : 188;
+  const cardH = hasGarden ? 360 : 420;
+  drawFrostedPanel(ctx, cardX, cardY, cardW, cardH, 32);
 
-  ctx.font = "800 180px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "#ffffff";
+  const streakY = cardY + (hasGarden ? 118 : 148);
   ctx.textAlign = "center";
-  ctx.fillText(String(stats.maxStreak), width / 2, hasGarden ? 390 : 430);
+  ctx.textBaseline = "alphabetic";
+  ctx.font = `800 168px ${SHARE_FONT}`;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(String(stats.maxStreak), width / 2, streakY);
 
-  ctx.font = "600 42px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = `600 38px ${SHARE_FONT}`;
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
   ctx.fillText(
     `${stats.streakUnit} streak${stats.maxStreak === 1 ? "" : "s"}`,
     width / 2,
-    hasGarden ? 458 : 500
+    streakY + 52
   );
 
   const provedLine =
     stats.totalDueToday > 0
-      ? `Proved today: ${stats.goalsDoneToday}/${stats.totalDueToday}`
+      ? `Proved today · ${stats.goalsDoneToday}/${stats.totalDueToday}`
       : `${stats.activeGoals} active goal${stats.activeGoals === 1 ? "" : "s"}`;
 
-  ctx.font = "500 36px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.fillText(provedLine, width / 2, hasGarden ? 518 : 580);
+  ctx.font = `500 30px ${SHARE_FONT}`;
+  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  ctx.fillText(provedLine, width / 2, streakY + 108);
 
-  if (hasGarden) {
-    await drawGardenSnapshotRow(ctx, stats.gardenPlants!, {
-      x: 72,
-      y: 580,
-      width: width - 144,
-      height: 300,
-    }, { label: "My garden" });
-  } else {
-    ctx.font = "500 30px system-ui, -apple-system, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.fillText("Set goals. Take a photo. Prove it.", width / 2, 640);
+  if (!hasGarden) {
+    ctx.font = `500 26px ${SHARE_FONT}`;
+    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.fillText("Set goals · Take a photo · Prove it", width / 2, streakY + 168);
   }
 
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
-  drawBrandFooter(ctx, width, height - 48);
+  if (hasGarden) {
+    await drawGardenSnapshotRow(
+      ctx,
+      stats.gardenPlants!,
+      {
+        x: 64,
+        y: 568,
+        width: width - 128,
+        height: 312,
+      },
+      { label: "My garden" }
+    );
+  }
+
+  drawBrandFooter(ctx, width, height - 44, { light: true });
 
   return canvasToBlob(canvas);
 }
