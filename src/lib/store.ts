@@ -7,6 +7,9 @@ import {
   PLANS,
   normalizePlanId,
 } from "@/types";
+import { generateId } from "@/lib/generateId";
+
+export { generateId };
 
 const STORAGE_KEYS = {
   user: "proveit_user",
@@ -136,10 +139,6 @@ export function getGoalsLimit(planId: PlanId): number {
 
 export function canAddGoal(planId: PlanId, currentTotalCount: number): boolean {
   return currentTotalCount < getGoalsLimit(planId);
-}
-
-export function generateId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 function getPlanSelectionKey(userId: string) {

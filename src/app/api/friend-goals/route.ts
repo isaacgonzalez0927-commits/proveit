@@ -7,7 +7,7 @@ import {
   FRIEND_GOALS_SCHEMA_HINT,
   isFriendGoalsSchemaMissing,
 } from "@/lib/friendGoalInviteLookup";
-import { generateId } from "@/lib/store";
+import { generateId } from "@/lib/generateId";
 
 /** GET — list friend goal groups; ?goalId= returns invite for that goal if any. */
 export async function GET(request: NextRequest) {

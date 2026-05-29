@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FRIEND_GOAL_MAX_MEMBERS } from "@/lib/friendGoals";
 import { buildFriendGoalGroup } from "@/lib/friendGoalsServer";
 import { lookupFriendGoalInvite } from "@/lib/friendGoalInviteLookup";
-import { generateId } from "@/lib/store";
+import { generateId } from "@/lib/generateId";
 import { getMaxGoalsForPlan } from "@/lib/subscriptionLimits";
 import { normalizePlanId } from "@/types";
 import { proofSuggestionsForStorage } from "@/lib/proofSuggestions";
