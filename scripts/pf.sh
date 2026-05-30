@@ -4,6 +4,8 @@
 # that sometimes doesn't get the same env vars and breaks sign-in.
 set -e
 MSG="${1:-pf}"
+echo "Running production build..."
+npm run build
 git add -A
 if git diff --cached --quiet; then
   echo "No changes to commit, pushing..."

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Sprout } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BuddyHubAchievements } from "@/components/buddies/BuddyHubAchievements";
+import { BuddyHubProfileCard } from "@/components/buddies/BuddyHubProfileCard";
 import { BuddySection } from "@/components/buddies/BuddySection";
 import { FriendGoalCard } from "@/components/FriendGoalCard";
 import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
