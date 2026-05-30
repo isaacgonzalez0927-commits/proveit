@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
 import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
@@ -10,11 +9,16 @@ import { getPlantVariantsForPlan } from "@/lib/goalPlants";
 import { getStoredAccentTheme } from "@/lib/theme";
 import { normalizePlanId } from "@/types";
 
-export function BuddyProfileEditor() {
+interface BuddyProfileEditorProps {
+  /** Inline on profile page — hides duplicate preview and preview link. */
+  embedded?: boolean;
+  onSettingsSaved?: (settings: BuddyProfileSettings) => void;
+}
+
+export function BuddyProfileEditor({ embedded = false, onSettingsSaved }: BuddyProfileEditorProps) {
   const { user } = useApp();
   const plan = normalizePlanId(user?.plan);
   const plantOptions = getPlantVariantsForPlan(plan);
-  const profileHref = user?.id ? `/profile/${user.id}` : "/friends";
 
   const [settings, setSettings] = useState<BuddyProfileSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +61,9 @@ export function BuddyProfileEditor() {
       if (!res.ok) {
         throw new Error(typeof data.error === "string" ? data.error : "Could not save.");
       }
-      setSettings(data.settings as BuddyProfileSettings);
+      const next = data.settings as BuddyProfileSettings;
+      setSettings(next);
+      onSettingsSaved?.(next);
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Could not save.");
     } finally {
@@ -92,6 +98,72 @@ export function BuddyProfileEditor() {
 
   const previewGlow = buddyProfileBackgroundStyle(settings.accentTheme);
 
+  const plantPicker = (
+    <>
+      <p className="text-sm font-semibold text-slate-900 dark:text-white">Profile plant</p>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        Fully grown — unlocked by your plan.
+      </p>
+      <div className="mt-4 flex flex-wrap justify-center gap-3">
+        {plantOptions.map((variant) => {
+          const selected = settings.avatarPlant === variant;
+          return (
+            <button
+              key={variant}
+              type="button"
+              disabled={saving}
+              onClick={() => void save({ avatarPlant: variant })}
+              className={clsx(
+                "rounded-full transition active:scale-95",
+                selected
+                  ? "ring-2 ring-prove-500 ring-offset-2 ring-offset-[var(--bg-app)]"
+                  : "opacity-75 hover:opacity-100"
+              )}
+              aria-label={`Plant ${variant}`}
+              aria-pressed={selected}
+            >
+              <BuddyProfileAvatar
+                variant={variant}
+                accentTheme={settings.accentTheme}
+                size="sm"
+                ringClassName="ring-2 ring-white/80 dark:ring-slate-800/80"
+              />
+            </button>
+          );
+        })}
+      </div>
+      {saving && (
+        <p className="mt-3 text-center text-xs text-slate-500" role="status">
+          Saving…
+        </p>
+      )}
+      {notice && !saving && (
+        <p
+          className={clsx(
+            "mt-3 text-center text-xs font-medium",
+            /could not|error/i.test(notice)
+              ? "text-red-700 dark:text-red-300"
+              : "text-emerald-700 dark:text-emerald-300"
+          )}
+        >
+          {notice}
+        </p>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="overflow-hidden rounded-2xl glass-card px-4 py-4">
+        {plantPicker}
+        <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Profile glow follows your theme in{" "}
+          <span className="font-medium text-slate-700 dark:text-slate-300">Settings → Appearance</span>.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl glass-card">
       <div className="relative px-4 pb-5 pt-6">
@@ -109,69 +181,13 @@ export function BuddyProfileEditor() {
         </div>
       </div>
 
-      <div className="border-t border-slate-200/70 px-4 py-4 dark:border-slate-700/60">
-        <p className="text-sm font-semibold text-slate-900 dark:text-white">Profile plant</p>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-          Fully grown — unlocked by your plan.
-        </p>
-        <div className="mt-4 flex flex-wrap justify-center gap-3">
-          {plantOptions.map((variant) => {
-            const selected = settings.avatarPlant === variant;
-            return (
-              <button
-                key={variant}
-                type="button"
-                disabled={saving}
-                onClick={() => void save({ avatarPlant: variant })}
-                className={clsx(
-                  "rounded-full transition active:scale-95",
-                  selected
-                    ? "ring-2 ring-prove-500 ring-offset-2 ring-offset-[var(--bg-app)]"
-                    : "opacity-75 hover:opacity-100"
-                )}
-                aria-label={`Plant ${variant}`}
-                aria-pressed={selected}
-              >
-                <BuddyProfileAvatar
-                  variant={variant}
-                  accentTheme={settings.accentTheme}
-                  size="sm"
-                  ringClassName="ring-2 ring-white/80 dark:ring-slate-800/80"
-                />
-              </button>
-            );
-          })}
-        </div>
-        {saving && (
-          <p className="mt-3 text-center text-xs text-slate-500" role="status">
-            Saving…
-          </p>
-        )}
-        {notice && !saving && (
-          <p
-            className={clsx(
-              "mt-3 text-center text-xs font-medium",
-              /could not|error/i.test(notice)
-                ? "text-red-700 dark:text-red-300"
-                : "text-emerald-700 dark:text-emerald-300"
-            )}
-          >
-            {notice}
-          </p>
-        )}
-      </div>
+      <div className="border-t border-slate-200/70 px-4 py-4 dark:border-slate-700/60">{plantPicker}</div>
 
       <div className="border-t border-slate-200/70 px-4 py-4 dark:border-slate-700/60">
         <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
           Header glow follows your theme in{" "}
           <span className="font-medium text-slate-700 dark:text-slate-300">Appearance</span> below.
         </p>
-        <Link
-          href={profileHref}
-          className="mt-3 flex w-full items-center justify-center rounded-xl bg-prove-600 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
-        >
-          Preview buddy profile
-        </Link>
       </div>
     </div>
   );

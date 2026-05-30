@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { Award, Flame, Sprout, Target } from "lucide-react";
 import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
 import { buddyProfileBackgroundStyle, type BuddyProfilePublic } from "@/lib/buddyProfile";
@@ -82,17 +81,6 @@ export function BuddyProfileHero({ profile, compact = false, fullScreen = false 
       </div>
     ) : null;
 
-  const editLink = profile.isYou ? (
-    <div className="border-t border-slate-200/70 px-4 py-3 dark:border-slate-700/60">
-      <Link
-        href="/settings"
-        className="flex w-full items-center justify-center rounded-xl bg-prove-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-prove-700 btn-glass-primary"
-      >
-        Edit profile
-      </Link>
-    </div>
-  ) : null;
-
   if (fullScreen) {
     return (
       <div className="mx-auto w-full max-w-lg space-y-4 px-4 pb-6">
@@ -100,7 +88,6 @@ export function BuddyProfileHero({ profile, compact = false, fullScreen = false 
         <article className="overflow-hidden rounded-2xl glass-card">
           {stats}
           {sharedGoals}
-          {editLink}
         </article>
       </div>
     );
@@ -111,7 +98,6 @@ export function BuddyProfileHero({ profile, compact = false, fullScreen = false 
       <div className={compact ? "pt-4" : "pt-6"}>{header}</div>
       <div className="border-t border-slate-200/70 dark:border-slate-700/60">{stats}</div>
       {sharedGoals}
-      {editLink}
     </article>
   );
 }

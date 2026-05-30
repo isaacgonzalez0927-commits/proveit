@@ -17,9 +17,7 @@ import {
   Sparkles,
   Trash2,
   User,
-  Users,
 } from "lucide-react";
-import { BuddyProfileEditor } from "@/components/BuddyProfileEditor";
 import { useApp } from "@/context/AppContext";
 import { normalizePlanId } from "@/types";
 import { isInternalAuthEmail } from "@/lib/usernameAuth";
@@ -538,21 +536,6 @@ export default function SettingsPage() {
                     </>
                   )}
                 </div>
-              </SettingsDisclosure>
-            </section>
-          )}
-
-          {useSupabase && matchesSettingsQuery("buddy profile plant friend link") && user?.id && (
-            <section>
-              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Buddies
-              </p>
-              <SettingsDisclosure
-                title="Buddy profile"
-                description="Plant avatar for people on your buddy goals."
-                icon={<Users className="h-5 w-5" />}
-              >
-                <BuddyProfileEditor />
               </SettingsDisclosure>
             </section>
           )}

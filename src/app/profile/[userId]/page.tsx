@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { BuddyProfileEditor } from "@/components/BuddyProfileEditor";
 import { BuddyProfileHero } from "@/components/BuddyProfileHero";
-import { buddyProfileBackgroundStyle } from "@/lib/buddyProfile";
+import { buddyProfileBackgroundStyle, type BuddyProfilePublic, type BuddyProfileSettings } from "@/lib/buddyProfile";
 import { useHideHeader } from "@/context/HideHeaderContext";
-import type { BuddyProfilePublic } from "@/lib/buddyProfile";
 
 export default function BuddyProfilePage() {
   const params = useParams();
@@ -48,6 +48,18 @@ export default function BuddyProfilePage() {
       }
     })();
   }, [userId]);
+
+  const handleSettingsSaved = useCallback((settings: BuddyProfileSettings) => {
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            avatarPlant: settings.avatarPlant,
+            accentTheme: settings.accentTheme,
+          }
+        : prev
+    );
+  }, []);
 
   const pageGlow = profile ? buddyProfileBackgroundStyle(profile.accentTheme) : undefined;
 
@@ -90,8 +102,13 @@ export default function BuddyProfilePage() {
       )}
 
       {profile && (
-        <div className="pt-2">
+        <div className="relative z-10 space-y-4 pt-2">
           <BuddyProfileHero profile={profile} fullScreen />
+          {profile.isYou && (
+            <div className="mx-auto w-full max-w-lg px-4">
+              <BuddyProfileEditor embedded onSettingsSaved={handleSettingsSaved} />
+            </div>
+          )}
         </div>
       )}
     </main>
