@@ -21,7 +21,8 @@ import {
 } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 
-type Slide = 0 | 1 | 2 | 3 | 4;
+const INTRO_SLIDE_COUNT = 6;
+type Slide = 0 | 1 | 2 | 3 | 4 | 5;
 type AuthMode = "signin" | "signup";
 
 // Format-only check for real-looking email (password reset by email)
@@ -52,7 +53,7 @@ function LandingContent() {
   useEffect(() => {
     if (authError === "auth") {
       setSessionSettled(true);
-      setSlide(3);
+      setSlide(4);
       setLoginError("Sign-in failed. Try again.");
       setAuthMode("signin");
       router.replace("/?step=login", { scroll: false });
@@ -74,21 +75,21 @@ function LandingContent() {
         return;
       }
       if (requestedStep === "plan") {
-        setSlide(4);
+        setSlide(5);
         return;
       }
-      setSlide(4);
+      setSlide(5);
       return;
     }
 
     if (requestedStep === "plan") {
       setSessionSettled(true);
-      setSlide(4);
+      setSlide(5);
       return;
     }
     if (requestedStep === "login") {
       setSessionSettled(true);
-      setSlide(3);
+      setSlide(4);
       return;
     }
 
@@ -132,7 +133,7 @@ function LandingContent() {
     const threshold = 50; // px
     if (delta > threshold && slide > 0) {
       setSlide((prev) => (prev - 1) as Slide);
-    } else if (delta < -threshold && slide < 4) {
+    } else if (delta < -threshold && slide < INTRO_SLIDE_COUNT - 1) {
       setSlide((prev) => (prev + 1) as Slide);
     }
   };
@@ -367,7 +368,7 @@ function LandingContent() {
       if (!user) {
         setAuthMode("signup");
         setLoginError("");
-        setSlide(3);
+        setSlide(4);
         return;
       }
       if (planId === "free") {
@@ -429,11 +430,11 @@ function LandingContent() {
       >
         {/* Slides container */}
         <div
-          className="flex min-h-0 flex-1 w-[500%] transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${slide * (100 / 5)}%)` }}
+          className="flex min-h-0 flex-1 w-[600%] transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${slide * (100 / INTRO_SLIDE_COUNT)}%)` }}
         >
           {/* Slide 0 – Welcome */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
+          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
             <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
               <div className="text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-prove-600 dark:text-prove-300">
@@ -468,7 +469,7 @@ function LandingContent() {
                   onClick={() => {
                     setAuthMode("signin");
                     setLoginError("");
-                    goTo(3);
+                    goTo(4);
                   }}
                   className="rounded-2xl border border-slate-200 bg-white/70 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-white dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
                 >
@@ -479,7 +480,7 @@ function LandingContent() {
           </section>
 
           {/* Slide 1 – AI verification */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-slate-950 shadow-2xl shadow-slate-900/25 dark:border-white/10">
                 <img
                   src="/onboarding/book-proof.png"
@@ -518,7 +519,7 @@ function LandingContent() {
           </section>
 
           {/* Slide 2 – Plants */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-[#061527] shadow-2xl shadow-emerald-950/35 dark:border-white/10">
               <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
               <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
@@ -551,12 +552,55 @@ function LandingContent() {
                 </div>
                 <button
                   type="button"
+                  onClick={() => goTo(3)}
+                  className="rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Slide 3 – Buddies */}
+          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-[#0c1a2e] shadow-2xl shadow-slate-900/25 dark:border-white/10">
+              <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-sky-500/25 to-transparent" />
+              <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-prove-500/15 blur-3xl" />
+              <div className="relative flex h-full w-full flex-col justify-between p-6 text-white">
+                <button
+                  type="button"
+                  onClick={() => goTo(2)}
+                  className="w-fit rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur-md active:bg-white/25"
+                >
+                  Back
+                </button>
+                <div className="flex flex-1 flex-col items-center justify-center py-2">
+                  <img
+                    src="/onboarding/buddies.png"
+                    alt="Two friends cheering each other on"
+                    className="h-[min(38vh,14rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
+                    Buddy goals
+                  </p>
+                  <h2 className="mt-3 max-w-[12ch] text-5xl font-bold leading-[0.95] tracking-tight">
+                    Prove it together.
+                  </h2>
+                  <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-white/75">
+                    Share a goal with a friend, see each other&apos;s progress, and show off a plant profile
+                    only your buddies can view.
+                  </p>
+                </div>
+                <button
+                  type="button"
                   onClick={() => {
                     setAuthMode("signup");
                     setLoginError("");
-                    goTo(3);
+                    goTo(4);
                   }}
-                  className="rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                  className="mt-5 rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
                 >
                   Start
                 </button>
@@ -564,10 +608,10 @@ function LandingContent() {
             </div>
           </section>
 
-          {/* Slide 3 – Sign in: form centered in the screen */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          {/* Slide 4 – Sign in */}
+          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
             <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full justify-center">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 4 of 5</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 6</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
                 {authMode === "signin" ? "Sign in" : "Create account"}
               </h2>
@@ -662,10 +706,10 @@ function LandingContent() {
             </div>
           </section>
 
-          {/* Slide 4 – Choose plan: clean, appetizing cards */}
-          <section className="flex h-full w-1/5 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          {/* Slide 5 – Choose plan */}
+          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
             <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1 justify-center">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 5</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 6 of 6</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
                 Choose your plan
               </h2>
@@ -736,7 +780,7 @@ function LandingContent() {
         <div
           className="flex shrink-0 items-center justify-center gap-[clamp(0.375rem,1.5vw,0.5rem)] px-4 py-[clamp(0.375rem,1.5vh,0.5rem)] pb-[max(0.5rem,env(safe-area-inset-bottom))] animate-welcome-dots [animation-fill-mode:forwards]"
         >
-          {[0, 1, 2, 3, 4].map((i) => (
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <button
               key={i}
               type="button"
