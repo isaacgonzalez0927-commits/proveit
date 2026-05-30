@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Sprout, Users } from "lucide-react";
+import { Sprout } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BuddyHubAchievements } from "@/components/buddies/BuddyHubAchievements";
 import { BuddyHubProfileCard } from "@/components/buddies/BuddyHubProfileCard";
@@ -92,20 +92,6 @@ export default function BuddiesPage() {
 
   return (
     <main className="mx-auto max-w-lg space-y-8 px-4 pb-28 pt-6">
-      <header className="rounded-2xl p-5 glass-card">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-prove-100 text-prove-700 dark:bg-prove-950/60 dark:text-prove-300">
-            <Users className="h-5 w-5" strokeWidth={2.25} />
-          </span>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Buddies</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Your profile, shared goals, and badges in one place.
-            </p>
-          </div>
-        </div>
-      </header>
-
       <BuddyHubProfileCard />
 
       {loading && (
