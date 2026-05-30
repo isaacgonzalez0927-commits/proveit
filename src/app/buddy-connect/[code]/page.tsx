@@ -103,17 +103,22 @@ export default function BuddyConnectPage() {
 
       {preview && !profile && (
         <div className="overflow-hidden rounded-2xl glass-card">
-          <div className="relative px-4 py-8" style={buddyProfileBackgroundStyle(previewAccent)}>
-            <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-800/80 dark:text-white/80">
+          <div className="relative px-4 py-8">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-36"
+              style={buddyProfileBackgroundStyle(previewAccent)}
+              aria-hidden
+            />
+            <p className="relative text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
               Buddy invite
             </p>
-            <div className="mx-auto mt-4 flex justify-center">
+            <div className="relative mx-auto mt-4 flex justify-center">
               <BuddyProfileAvatar variant={previewPlant} accentTheme={previewAccent} size="lg" />
             </div>
-            <h1 className="mt-4 text-center font-display text-xl font-bold text-slate-900 dark:text-white">
+            <h1 className="relative mt-4 text-center font-display text-xl font-bold text-slate-900 dark:text-white">
               {preview.displayName}
             </h1>
-            <p className="mt-1 text-center text-sm text-slate-700 dark:text-slate-200">
+            <p className="relative mt-1 text-center text-sm text-slate-600 dark:text-slate-400">
               wants to connect on Proveit
             </p>
           </div>

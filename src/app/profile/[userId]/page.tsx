@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { BuddyProfileHero } from "@/components/BuddyProfileHero";
+import { buddyProfileBackgroundStyle } from "@/lib/buddyProfile";
 import { useHideHeader } from "@/context/HideHeaderContext";
 import type { BuddyProfilePublic } from "@/lib/buddyProfile";
 
@@ -48,28 +49,40 @@ export default function BuddyProfilePage() {
     })();
   }, [userId]);
 
+  const pageGlow = profile ? buddyProfileBackgroundStyle(profile.accentTheme) : undefined;
+
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-[var(--bg-app)]">
-      <div className="flex shrink-0 items-center gap-2 px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+    <main className="relative min-h-[100dvh] bg-[var(--bg-app)] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      {pageGlow && (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-0 h-56"
+          style={pageGlow}
+          aria-hidden
+        />
+      )}
+
+      <div className="relative z-10 flex items-center gap-2 px-4 pb-1 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Link
           href="/friends"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-800 active:bg-slate-200/70 dark:text-white dark:active:bg-white/10"
+          className="flex h-10 w-10 items-center justify-center rounded-full glass-card text-slate-800 active:scale-95 dark:text-white"
           aria-label="Back to buddies"
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5" />
         </Link>
       </div>
 
       {loading && (
-        <p className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading profile…</p>
+        <p className="px-6 py-16 text-center text-sm text-slate-500">Loading profile…</p>
       )}
 
       {error && (
-        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        <div className="mx-auto max-w-lg px-6 py-16 text-center">
+          <p className="rounded-2xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+            {error}
+          </p>
           <Link
             href="/friends"
-            className="mt-4 text-sm font-semibold text-prove-600 hover:underline dark:text-prove-400"
+            className="mt-4 inline-block text-sm font-semibold text-prove-600 hover:underline dark:text-prove-400"
           >
             Back to buddies
           </Link>
@@ -77,7 +90,7 @@ export default function BuddyProfilePage() {
       )}
 
       {profile && (
-        <div className="flex min-h-0 flex-1 flex-col pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="pt-2">
           <BuddyProfileHero profile={profile} fullScreen />
         </div>
       )}

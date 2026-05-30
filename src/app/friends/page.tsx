@@ -8,6 +8,7 @@ import { BuddyHubAchievements } from "@/components/buddies/BuddyHubAchievements"
 import { BuddySection } from "@/components/buddies/BuddySection";
 import { FriendGoalCard } from "@/components/FriendGoalCard";
 import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
+import { buddyProfileAccentBorderStyle } from "@/lib/buddyProfile";
 import type { FriendGoalGroup } from "@/lib/friendGoals";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
 import type { AccentTheme } from "@/lib/theme";
@@ -144,15 +145,18 @@ export default function BuddiesPage() {
               <li key={buddy.userId}>
                 <Link
                   href={`/profile/${buddy.userId}`}
-                  className="flex items-center gap-3 rounded-2xl glass-card p-3 transition hover:ring-1 hover:ring-prove-400/35"
+                  className="flex items-center gap-3 rounded-2xl border-l-[3px] glass-card p-3 transition hover:ring-1 hover:ring-prove-400/30"
+                  style={buddyProfileAccentBorderStyle(buddy.accentTheme)}
                 >
                   <BuddyProfileAvatar
                     variant={buddy.avatarPlant}
                     accentTheme={buddy.accentTheme}
                     size="md"
-                    ringClassName="ring-2 ring-white/80 dark:ring-slate-900/80"
+                    ringClassName="ring-2 ring-white/90 dark:ring-slate-800/90"
                   />
-                  <span className="font-semibold text-slate-900 dark:text-white">{buddy.displayName}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-900 dark:text-white">
+                    {buddy.displayName}
+                  </span>
                 </Link>
               </li>
             ))}

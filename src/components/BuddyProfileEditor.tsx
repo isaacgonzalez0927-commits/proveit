@@ -65,7 +65,6 @@ export function BuddyProfileEditor() {
     }
   };
 
-  // Keep profile header color in sync with the app theme (Appearance section).
   useEffect(() => {
     if (!settings || saving) return;
     const appAccent = getStoredAccentTheme();
@@ -91,26 +90,27 @@ export function BuddyProfileEditor() {
     );
   }
 
-  const previewBg = buddyProfileBackgroundStyle(settings.accentTheme);
+  const previewGlow = buddyProfileBackgroundStyle(settings.accentTheme);
 
   return (
-    <div className="space-y-0">
-      <div className="relative overflow-hidden px-4 pb-5 pt-6" style={previewBg}>
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/15 to-transparent dark:from-black/15" />
+    <div className="overflow-hidden rounded-2xl glass-card">
+      <div className="relative px-4 pb-5 pt-6">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-36" style={previewGlow} aria-hidden />
         <div className="relative flex flex-col items-center">
           <BuddyProfileAvatar
             variant={settings.avatarPlant}
             accentTheme={settings.accentTheme}
             size="lg"
           />
-          <p className="mt-3 text-center text-xs text-slate-800/90 dark:text-white/90">
-            Only buddies on a <span className="font-semibold">shared goal</span> see this.
+          <p className="mt-4 max-w-[28ch] text-center text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            Buddies on a <span className="font-semibold text-slate-800 dark:text-slate-200">shared goal</span>{" "}
+            see this plant and your stats.
           </p>
         </div>
       </div>
 
-      <div className="border-t border-slate-200/80 px-4 py-4 dark:border-slate-700/60">
-        <p className="text-sm font-medium text-slate-900 dark:text-white">Profile plant</p>
+      <div className="border-t border-slate-200/70 px-4 py-4 dark:border-slate-700/60">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">Profile plant</p>
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
           Fully grown — unlocked by your plan.
         </p>
@@ -124,10 +124,10 @@ export function BuddyProfileEditor() {
                 disabled={saving}
                 onClick={() => void save({ avatarPlant: variant })}
                 className={clsx(
-                  "rounded-full transition",
+                  "rounded-full transition active:scale-95",
                   selected
-                    ? "ring-2 ring-prove-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
-                    : "opacity-80 hover:opacity-100"
+                    ? "ring-2 ring-prove-500 ring-offset-2 ring-offset-[var(--bg-app)]"
+                    : "opacity-75 hover:opacity-100"
                 )}
                 aria-label={`Plant ${variant}`}
                 aria-pressed={selected}
@@ -136,7 +136,7 @@ export function BuddyProfileEditor() {
                   variant={variant}
                   accentTheme={settings.accentTheme}
                   size="sm"
-                  ringClassName="ring-2 ring-white/70 dark:ring-slate-900/70"
+                  ringClassName="ring-2 ring-white/80 dark:ring-slate-800/80"
                 />
               </button>
             );
@@ -161,14 +161,14 @@ export function BuddyProfileEditor() {
         )}
       </div>
 
-      <div className="border-t border-slate-200/80 px-4 py-3 dark:border-slate-700/60">
+      <div className="border-t border-slate-200/70 px-4 py-4 dark:border-slate-700/60">
         <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-          Header color follows your theme in{" "}
+          Header glow follows your theme in{" "}
           <span className="font-medium text-slate-700 dark:text-slate-300">Appearance</span> below.
         </p>
         <Link
           href={profileHref}
-          className="mt-3 flex w-full items-center justify-center rounded-xl border border-prove-200/90 bg-prove-50/80 py-2.5 text-sm font-semibold text-prove-800 transition hover:bg-prove-100 dark:border-prove-800/60 dark:bg-prove-950/40 dark:text-prove-200 dark:hover:bg-prove-950/60"
+          className="mt-3 flex w-full items-center justify-center rounded-xl bg-prove-600 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
         >
           Preview buddy profile
         </Link>

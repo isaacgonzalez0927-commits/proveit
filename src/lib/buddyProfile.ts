@@ -89,18 +89,21 @@ export function normalizeBuddyVisibility(raw: unknown): BuddyProfileVisibility {
   return raw === "friend_link" ? "friend_link" : "shared_goals_only";
 }
 
-function accentSwatchColor(accent: AccentTheme): string {
+export function accentSwatchColor(accent: AccentTheme): string {
   const option = ACCENT_THEME_OPTIONS.find((o) => o.id === accent) ?? ACCENT_THEME_OPTIONS[0];
   return option.swatchColor;
 }
 
-/** CSS gradient for profile page header bands. */
+/** Soft page backdrop wash from the buddy’s accent theme. */
 export function buddyProfileBackgroundStyle(accent: AccentTheme): {
   background: string;
 } {
   const c = accentSwatchColor(accent);
   return {
-    background: `linear-gradient(145deg, ${c}33 0%, ${c}66 45%, ${c}99 100%)`,
+    background: [
+      `radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in srgb, ${c} 28%, transparent) 0%, transparent 72%)`,
+      `radial-gradient(ellipse 70% 40% at 50% 0%, color-mix(in srgb, ${c} 12%, transparent) 0%, transparent 55%)`,
+    ].join(", "),
   };
 }
 
@@ -110,8 +113,15 @@ export function buddyProfileAvatarBackgroundStyle(accent: AccentTheme): {
 } {
   const c = accentSwatchColor(accent);
   return {
-    background: `radial-gradient(circle at 50% 88%, color-mix(in srgb, ${c} 92%, white) 0%, ${c} 52%, color-mix(in srgb, ${c} 75%, #0f172a) 100%)`,
+    background: `radial-gradient(circle at 50% 92%, color-mix(in srgb, ${c} 55%, white) 0%, color-mix(in srgb, ${c} 88%, #1e293b) 58%, color-mix(in srgb, ${c} 70%, #0f172a) 100%)`,
   };
+}
+
+/** Left accent stripe on buddy list rows. */
+export function buddyProfileAccentBorderStyle(accent: AccentTheme): {
+  borderLeftColor: string;
+} {
+  return { borderLeftColor: accentSwatchColor(accent) };
 }
 
 export function displayNameFromBuddyRow(row: {
