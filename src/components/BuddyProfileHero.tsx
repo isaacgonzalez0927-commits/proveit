@@ -22,7 +22,11 @@ export function BuddyProfileHero({ profile, compact = false }: BuddyProfileHeroP
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 to-transparent dark:from-black/10" />
         <div className="relative flex flex-col items-center text-center">
-          <BuddyProfileAvatar variant={profile.avatarPlant} size="lg" />
+          <BuddyProfileAvatar
+            variant={profile.avatarPlant}
+            accentTheme={profile.accentTheme}
+            size="lg"
+          />
           <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">
             {profile.displayName}
           </h1>

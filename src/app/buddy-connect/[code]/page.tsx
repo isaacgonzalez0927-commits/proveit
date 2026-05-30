@@ -108,7 +108,7 @@ export default function BuddyConnectPage() {
               Buddy invite
             </p>
             <div className="mx-auto mt-4 flex justify-center">
-              <BuddyProfileAvatar variant={previewPlant} size="lg" />
+              <BuddyProfileAvatar variant={previewPlant} accentTheme={previewAccent} size="lg" />
             </div>
             <h1 className="mt-4 text-center font-display text-xl font-bold text-slate-900 dark:text-white">
               {preview.displayName}

@@ -98,7 +98,11 @@ export function BuddyProfileEditor() {
       <div className="relative overflow-hidden px-4 pb-5 pt-6" style={previewBg}>
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/15 to-transparent dark:from-black/15" />
         <div className="relative flex flex-col items-center">
-          <BuddyProfileAvatar variant={settings.avatarPlant} size="lg" />
+          <BuddyProfileAvatar
+            variant={settings.avatarPlant}
+            accentTheme={settings.accentTheme}
+            size="lg"
+          />
           <p className="mt-3 text-center text-xs text-slate-800/90 dark:text-white/90">
             Only buddies on a <span className="font-semibold">shared goal</span> see this.
           </p>
@@ -128,7 +132,12 @@ export function BuddyProfileEditor() {
                 aria-label={`Plant ${variant}`}
                 aria-pressed={selected}
               >
-                <BuddyProfileAvatar variant={variant} size="sm" ringClassName="ring-0 shadow-md" />
+                <BuddyProfileAvatar
+                  variant={variant}
+                  accentTheme={settings.accentTheme}
+                  size="sm"
+                  ringClassName="ring-2 ring-white/70 dark:ring-slate-900/70"
+                />
               </button>
             );
           })}

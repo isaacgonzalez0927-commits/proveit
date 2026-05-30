@@ -89,14 +89,28 @@ export function normalizeBuddyVisibility(raw: unknown): BuddyProfileVisibility {
   return raw === "friend_link" ? "friend_link" : "shared_goals_only";
 }
 
-/** CSS gradient for profile header from accent theme swatch. */
+function accentSwatchColor(accent: AccentTheme): string {
+  const option = ACCENT_THEME_OPTIONS.find((o) => o.id === accent) ?? ACCENT_THEME_OPTIONS[0];
+  return option.swatchColor;
+}
+
+/** CSS gradient for profile page header bands. */
 export function buddyProfileBackgroundStyle(accent: AccentTheme): {
   background: string;
 } {
-  const option = ACCENT_THEME_OPTIONS.find((o) => o.id === accent) ?? ACCENT_THEME_OPTIONS[0];
-  const c = option.swatchColor;
+  const c = accentSwatchColor(accent);
   return {
     background: `linear-gradient(145deg, ${c}33 0%, ${c}66 45%, ${c}99 100%)`,
+  };
+}
+
+/** Fill for the circular profile photo — theme color behind the plant. */
+export function buddyProfileAvatarBackgroundStyle(accent: AccentTheme): {
+  background: string;
+} {
+  const c = accentSwatchColor(accent);
+  return {
+    background: `radial-gradient(circle at 50% 88%, color-mix(in srgb, ${c} 92%, white) 0%, ${c} 52%, color-mix(in srgb, ${c} 75%, #0f172a) 100%)`,
   };
 }
 

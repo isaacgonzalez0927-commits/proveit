@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
 import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
-import { buddyProfileBackgroundStyle, type BuddyProfileSettings } from "@/lib/buddyProfile";
+import type { BuddyProfileSettings } from "@/lib/buddyProfile";
 import { useApp } from "@/context/AppContext";
 import { accountDisplayLabel } from "@/lib/usernameAuth";
 
@@ -31,9 +31,12 @@ export function BuddyHubProfileCard() {
   return (
     <div className="flex items-center gap-4 overflow-hidden rounded-2xl glass-card p-4">
       <Link href={`/profile/${user.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-        <div className="shrink-0 rounded-full p-1" style={buddyProfileBackgroundStyle(accent)}>
-          <BuddyProfileAvatar variant={plant} size="md" ringClassName="ring-2 ring-white/95 dark:ring-slate-900/95" />
-        </div>
+        <BuddyProfileAvatar
+          variant={plant}
+          accentTheme={accent}
+          size="md"
+          ringClassName="ring-2 ring-white/80 dark:ring-slate-900/80"
+        />
         <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Your buddy profile
