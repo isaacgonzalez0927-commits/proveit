@@ -53,7 +53,7 @@ import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/pro
 import type { Goal, TimesPerWeek } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
 import { getActiveReminderLimit, countActiveReminders } from "@/lib/subscriptionLimits";
-import { getWeeklyPlantState, plantWateringLevelForState } from "@/lib/plantState";
+import { getWeeklyPlantState } from "@/lib/plantState";
 import {
   TOUR_CHANGED_EVENT,
   TOUR_GARDEN_HINT_KEY,
@@ -271,13 +271,7 @@ export default function BuddyPage() {
           ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
           : null;
       const plantHealthState = getWeeklyPlantState(goal, goalSubs, graceDayEvents);
-      const wateringLevel = isOnBreak
-        ? 0.62
-        : doneInCurrentWindow
-          ? 1
-          : due
-            ? plantWateringLevelForState(plantHealthState)
-            : 0.62;
+      const wateringLevel = 1;
       const isProPlan = user.plan === "pro";
       const monthKey = proBreakMonthKey(new Date());
       const proBreakDaysThisMonth = isProPlan

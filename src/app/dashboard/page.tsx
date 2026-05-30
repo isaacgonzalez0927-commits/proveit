@@ -49,7 +49,7 @@ import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
-import { getWeeklyPlantState, plantWateringLevelForState } from "@/lib/plantState";
+import { getWeeklyPlantState } from "@/lib/plantState";
 
 function DashboardContent() {
   const router = useRouter();
@@ -198,8 +198,6 @@ function DashboardContent() {
   const displayStreakByGoalId = new Map(goalStreaks.map((entry) => [entry.goal.id, entry.displayStreak]));
   const sortedGoalStreaks = [...goalStreaks].sort((a, b) => b.displayStreak - a.displayStreak);
   const gardenSnapshotPlants = sortedGoalStreaks.map((entry) => {
-    const due = isGoalDue(entry.goal, new Date(), getSubmissionsForGoal(entry.goal.id));
-    const watered = isGoalCompletedInCurrentWindow(entry.goal);
     const healthState = getWeeklyPlantState(
       entry.goal,
       getSubmissionsForGoal(entry.goal.id),
@@ -208,7 +206,7 @@ function DashboardContent() {
     return {
       id: entry.goal.id,
       stage: getPlantStageForStreak(entry.displayStreak).stage,
-      wateringLevel: watered ? 1 : due ? plantWateringLevelForState(healthState) : 0.62,
+      wateringLevel: 1,
       variant: getGoalPlantVariant(entry.goal.id),
       healthState,
     };
@@ -504,20 +502,7 @@ function DashboardContent() {
                     extractCalendarDateKey(s.date) === todayStr &&
                     s.imageDataUrl
                 );
-                const weekVerifiedSub = subs.find((s) => {
-                  const d = safeParseISO(s.date);
-                  return (
-                    !!d &&
-                    isThisWeek(d, { weekStartsOn: 0 }) &&
-                    s.status === "verified" &&
-                    !!s.imageDataUrl
-                  );
-                });
-                const displayProofSub = todayVerifiedSub ?? weekVerifiedSub;
-                const pendingSub = subs.find((s) => {
-                  const d = safeParseISO(s.date);
-                  return !!d && isThisWeek(d, { weekStartsOn: 0 }) && s.imageDataUrl;
-                });
+                const displayProofSub = todayVerifiedSub;
                 const canSubmitNow = isWithinSubmissionWindow(goal, now, subs);
                 const due = isGoalDue(goal, now, subs);
                 const dueLabel = getNextDueLabel(goal);
@@ -555,34 +540,14 @@ function DashboardContent() {
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
                       </span>
-                    ) : showComplete && displayProofSub?.imageDataUrl ? (
+                    ) : doneToday && displayProofSub?.imageDataUrl ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
                         className="block h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
-                        aria-label={
-                          doneToday
-                            ? `View today's proof for ${goal.title}`
-                            : `View this week's proof for ${goal.title}`
-                        }
+                        aria-label={`View today's proof for ${goal.title}`}
                       >
                         <img
                           src={displayProofSub.imageDataUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </Link>
-                    ) : showComplete ? (
-                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
-                        Done
-                      </span>
-                    ) : canSubmitNow && pendingSub?.imageDataUrl ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600"
-                        aria-label="View or change proof"
-                      >
-                        <img
-                          src={pendingSub.imageDataUrl}
                           alt=""
                           className="h-full w-full object-cover"
                         />
@@ -595,6 +560,10 @@ function DashboardContent() {
                         <Camera className="h-4 w-4" />
                         Prove it
                       </Link>
+                    ) : showComplete ? (
+                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
+                        Done
+                      </span>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
                         {getSubmissionWindowMessage(goal, now, subs) ??

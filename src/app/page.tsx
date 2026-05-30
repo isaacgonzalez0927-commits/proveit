@@ -574,14 +574,7 @@ function LandingContent() {
                 >
                   Back
                 </button>
-                <div className="flex flex-1 flex-col items-center justify-center py-2">
-                  <img
-                    src="/onboarding/buddies.png"
-                    alt="Two friends cheering each other on"
-                    className="h-[min(38vh,14rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
-                  />
-                </div>
-                <div>
+                <div className="flex flex-1 flex-col justify-center">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
                     Buddy goals
                   </p>
@@ -592,6 +585,13 @@ function LandingContent() {
                     Share a goal with a friend, see each other&apos;s progress, and show off a plant profile
                     only your buddies can view.
                   </p>
+                  <div className="mt-6 flex justify-center">
+                    <img
+                      src="/onboarding/buddies.png"
+                      alt="Two friends cheering each other on"
+                      className="h-[min(32vh,12rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
+                    />
+                  </div>
                 </div>
                 <button
                   type="button"
