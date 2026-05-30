@@ -13,12 +13,8 @@ import {
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { startStripeCheckout } from "@/lib/checkoutClient";
 import { formatUsd, planPriceForBilling } from "@/lib/billing";
-import {
-  PENDING_PLAN_AFTER_TOUR_KEY,
-  TOUR_DONE_KEY,
-  TOUR_DONE_VERSION,
-  TOUR_START_KEY,
-} from "@/lib/tourStorage";
+import { shouldShowOnboardingSlideshow } from "@/lib/onboardingStorage";
+import { startDashboardTourForNewUser } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 
 const INTRO_SLIDE_COUNT = 6;
@@ -31,7 +27,8 @@ const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}
 function LandingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, authReady, hasSelectedPlan, setUser, setPlan, useSupabase, supabase } = useApp();
+  const { user, authReady, hasSelectedPlan, isDevGuestMode, setUser, setPlan, useSupabase, supabase } =
+    useApp();
 
   const [slide, setSlide] = useState<Slide>(0);
   const [name, setName] = useState("");
@@ -74,6 +71,11 @@ function LandingContent() {
         router.replace(redirect ?? "/dashboard");
         return;
       }
+      if (isDevGuestMode || shouldShowOnboardingSlideshow()) {
+        setSessionSettled(true);
+        setSlide(0);
+        return;
+      }
       if (requestedStep === "plan") {
         setSlide(5);
         return;
@@ -112,7 +114,7 @@ function LandingContent() {
         welcomeDelayRef.current = null;
       }
     };
-  }, [authReady, user, hasSelectedPlan, requestedStep, router, sessionSettled]);
+  }, [authReady, user, hasSelectedPlan, isDevGuestMode, requestedStep, router, sessionSettled]);
 
   const goTo = (next: Slide) => {
     setSlide(next);
@@ -402,6 +404,7 @@ function LandingContent() {
         const ok = await setPlan(planId, "monthly");
         if (!ok) return;
         setPostPlanWelcomeFlag(planId);
+        startDashboardTourForNewUser();
         router.push("/dashboard");
         return;
       }
@@ -413,6 +416,7 @@ function LandingContent() {
       const ok = await setPlan(planId, "monthly");
       if (ok) {
         setPostPlanWelcomeFlag(planId);
+        startDashboardTourForNewUser();
         router.push("/dashboard");
       }
     },
@@ -633,13 +637,17 @@ function LandingContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMode("signup");
                     setLoginError("");
+                    if (user) {
+                      goTo(5);
+                      return;
+                    }
+                    setAuthMode("signup");
                     goTo(4);
                   }}
                   className="mt-5 rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
                 >
-                  Start
+                  {user ? "Choose plan" : "Start"}
                 </button>
               </div>
             </div>

@@ -63,6 +63,10 @@ import {
   TOUR_DONE_VERSION,
 } from "@/lib/tourStorage";
 import {
+  DEV_GUEST_MODE_KEY,
+  resetOnboardingForDevExperience,
+} from "@/lib/onboardingStorage";
+import {
   expireLocalPremiumTrialIfNeeded,
 } from "@/lib/premiumTrial";
 import { weekStartKey } from "@/lib/graceDays";
@@ -445,18 +449,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // Set hasSelectedPlan and goalPlantSelections in the same tick so no flash of wrong plant variants
         setGoalPlantSelections(getStoredGoalPlantSelections());
-        // A signed-in Supabase user is NOT a guest. Clear any stale guest flag
-        // left over from previous "Try as guest" sessions; otherwise the next
-        // bootstrap would wipe real goals/submissions to [].
-        if (typeof window !== "undefined") {
-          window.localStorage.removeItem("proveit_dev_guest_mode");
+        const devGuestActive =
+          typeof window !== "undefined" &&
+          window.localStorage.getItem(DEV_GUEST_MODE_KEY) === "1";
+        if (devGuestActive) {
+          setIsDevGuestMode(true);
+          setGoalsState([]);
+          setSubmissionsState([]);
+          setGraceDayEvents([]);
+          setHasSelectedPlan(hasStoredPlanSelection(profileUser.id));
+        } else {
+          if (typeof window !== "undefined") {
+            window.localStorage.removeItem(DEV_GUEST_MODE_KEY);
+          }
+          setIsDevGuestMode(false);
+          const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
+          const selectedByAccount = profileUser.plan !== "free";
+          const likelyExistingFreeUser =
+            mappedServerGoals.length > 0 || mappedSubs.length > 0;
+          setHasSelectedPlan(
+            selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser
+          );
         }
-        setIsDevGuestMode(false);
-        const selectedOnThisDevice = hasStoredPlanSelection(profileUser.id);
-        const selectedByAccount = profileUser.plan !== "free";
-        const likelyExistingFreeUser =
-          mappedServerGoals.length > 0 || mappedSubs.length > 0;
-        setHasSelectedPlan(selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser);
       }).finally(() => setDataLoaded(true));
       setHydrated(true);
       return;
@@ -481,12 +495,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Restore locally stored plant style selections for demo / no-Supabase mode
       setGoalPlantSelections(getStoredGoalPlantSelections());
       const devGuestMode =
-        typeof window !== "undefined" && window.localStorage.getItem("proveit_dev_guest_mode");
+        typeof window !== "undefined" &&
+        window.localStorage.getItem(DEV_GUEST_MODE_KEY) === "1";
       if (devGuestMode) {
         setGoalsState([]);
         setSubmissionsState([]);
         setGraceDayEvents([]);
-        setHasSelectedPlan(false);
+        setHasSelectedPlan(raw ? hasStoredPlanSelection(raw.id) : false);
         setIsDevGuestMode(true);
         setGoalPlantSelections({});
       } else {
@@ -538,6 +553,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setHasSelectedPlan(false);
       return;
     }
+    if (isDevGuestMode) {
+      setHasSelectedPlan(hasStoredPlanSelection(user.id));
+      return;
+    }
     const selectedOnThisDevice = hasStoredPlanSelection(user.id);
     const selectedByAccount = user.plan !== "free";
     const likelyExistingFreeUser = goals.length > 0 || submissions.length > 0;
@@ -551,7 +570,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setHasSelectedPlan(
       selectedOnThisDevice || selectedByAccount || likelyExistingFreeUser || allowPrePlanAccess
     );
-  }, [user, goals.length, submissions.length]);
+  }, [user, goals.length, submissions.length, isDevGuestMode]);
 
   const setUser = useCallback((u: StoredUser | null) => {
     if (!u) {
@@ -691,12 +710,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearPlanSelectionForNewUser = useCallback(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("proveit_dev_guest_mode", "1");
-      window.localStorage.removeItem("proveit_intro_seen");
+      window.localStorage.setItem(DEV_GUEST_MODE_KEY, "1");
     }
-    if (user?.id) {
-      clearStoredPlanSelection(user.id);
-    }
+    resetOnboardingForDevExperience(user?.id);
     setGoalsState([]);
     setSubmissionsState([]);
     setGraceDayEvents([]);
@@ -710,7 +726,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const restoreActualAccount = useCallback(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("proveit_dev_guest_mode");
+      window.localStorage.removeItem(DEV_GUEST_MODE_KEY);
     }
     window.location.reload();
   }, []);

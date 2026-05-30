@@ -879,7 +879,7 @@ export default function BuddyPage() {
                 type="button"
                 onClick={() => {
                   clearPlanSelectionForNewUser();
-                  router.push("/");
+                  window.location.assign("/");
                 }}
                 className="rounded-md border border-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
               >

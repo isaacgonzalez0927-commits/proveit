@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
-const INTRO_SEEN_KEY = "proveit_intro_seen";
+import { INTRO_SEEN_KEY } from "@/lib/onboardingStorage";
 const INTRO_DURATION_MS = 2200;
 const INTRO_OUT_MS = 450;
 

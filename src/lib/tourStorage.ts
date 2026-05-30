@@ -29,6 +29,26 @@ export function dispatchTourChanged(): void {
   }
 }
 
+/** Clears tour completion so the dashboard walkthrough can run again. */
+export function resetDashboardTour(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(TOUR_DONE_KEY);
+  window.localStorage.removeItem(TOUR_START_KEY);
+  window.localStorage.removeItem(TOUR_GARDEN_HINT_KEY);
+  window.localStorage.removeItem(TOUR_RESUME_KEY);
+  window.localStorage.removeItem(TOUR_SPOTLIGHT_KEY);
+  window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);
+}
+
+/** Starts the in-app dashboard tour for first-time users (skipped if already completed). */
+export function startDashboardTourForNewUser(): void {
+  if (typeof window === "undefined") return;
+  if (window.localStorage.getItem(TOUR_DONE_KEY) === TOUR_DONE_VERSION) return;
+  window.localStorage.setItem(TOUR_START_KEY, "1");
+  window.localStorage.removeItem(TOUR_RESUME_KEY);
+  dispatchTourChanged();
+}
+
 /** Marks the dashboard tour finished, clears spotlight keys, then sends pending users to the plan step on `/`. */
 export function completeDashboardTour(userId: string | undefined): void {
   if (typeof window === "undefined") return;

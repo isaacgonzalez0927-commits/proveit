@@ -801,14 +801,14 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => {
                       clearPlanSelectionForNewUser();
-                      router.push("/");
+                      window.location.assign("/");
                     }}
                     className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-50 dark:border-amber-600 dark:bg-amber-950/35 dark:text-amber-200 dark:hover:bg-amber-900/30"
                   >
                     Treat as new user
                   </button>
                   <p className="mt-1.5 text-xs text-amber-800/90 dark:text-amber-300/90">
-                    Shows the app as a new guest (empty goals, plan picker). Use the button below to restore your real account.
+                    Replays the intro slideshow from the start, then plan picker and the dashboard tour. Use the button below to restore your real account.
                   </p>
                 </div>
                 <div>
