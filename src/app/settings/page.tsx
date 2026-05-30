@@ -177,6 +177,9 @@ export default function SettingsPage() {
     } else if (verifyStatus === "invalid" || verifyStatus === "missing") {
       setSettingsMessage("That verification link is invalid. Request a new one from Settings.");
       router.replace("/settings");
+    } else if (verifyStatus === "taken") {
+      setSettingsMessage("That email is already linked to another account. Use a different address.");
+      router.replace("/settings");
     } else if (verifyStatus === "error" || verifyStatus === "unconfigured") {
       setSettingsMessage("Could not verify your email. Try again or contact support.");
       router.replace("/settings");

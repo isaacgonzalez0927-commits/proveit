@@ -8,12 +8,17 @@ import {
   getGraceDayResetBalance,
 } from "@/lib/subscriptionLimits";
 import {
+  DUPLICATE_EMAIL_MESSAGE,
+  isContactEmailTaken,
+} from "@/lib/accountEmailUniqueness";
+import {
   buildContactEmailVerifyUrl,
   contactEmailVerifyExpiresAtISO,
   createContactEmailVerifyToken,
   isContactEmailVerified,
   sendContactEmailVerification,
 } from "@/lib/contactEmailVerification";
+import { createServiceRoleClient } from "@/lib/supabaseAdmin";
 
 function normalizePlan(plan: unknown): "free" | "pro" | "premium" {
   if (plan === "premium") return "premium";
@@ -329,19 +334,28 @@ export async function PATCH(request: NextRequest) {
 
       if (c === verifiedEmail) {
         // Already verified — no change.
-      } else if (c === existingPending) {
-        const token = createContactEmailVerifyToken();
-        updates.contact_email_verify_token = token;
-        updates.contact_email_verify_expires_at = contactEmailVerifyExpiresAtISO();
-        pendingContactEmailToVerify = c;
-        pendingContactVerifyToken = token;
       } else {
-        const token = createContactEmailVerifyToken();
-        updates.contact_email_pending = c;
-        updates.contact_email_verify_token = token;
-        updates.contact_email_verify_expires_at = contactEmailVerifyExpiresAtISO();
-        pendingContactEmailToVerify = c;
-        pendingContactVerifyToken = token;
+        const admin = createServiceRoleClient();
+        if (admin) {
+          const taken = await isContactEmailTaken(admin, c, user.id);
+          if (taken) {
+            return NextResponse.json({ error: DUPLICATE_EMAIL_MESSAGE }, { status: 409 });
+          }
+        }
+        if (c === existingPending) {
+          const token = createContactEmailVerifyToken();
+          updates.contact_email_verify_token = token;
+          updates.contact_email_verify_expires_at = contactEmailVerifyExpiresAtISO();
+          pendingContactEmailToVerify = c;
+          pendingContactVerifyToken = token;
+        } else {
+          const token = createContactEmailVerifyToken();
+          updates.contact_email_pending = c;
+          updates.contact_email_verify_token = token;
+          updates.contact_email_verify_expires_at = contactEmailVerifyExpiresAtISO();
+          pendingContactEmailToVerify = c;
+          pendingContactVerifyToken = token;
+        }
       }
     } else {
       return NextResponse.json({ error: "Invalid contact email." }, { status: 400 });
@@ -424,6 +438,9 @@ export async function PATCH(request: NextRequest) {
     if (/profiles_username_unique|duplicate key|unique constraint/i.test(upError.message)) {
       return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
     }
+    if (/profiles_contact_email|contact_email_pending/i.test(upError.message)) {
+      return NextResponse.json({ error: DUPLICATE_EMAIL_MESSAGE }, { status: 409 });
+    }
     return NextResponse.json({ error: upError.message }, { status: 400 });
   }
 
@@ -436,6 +453,9 @@ export async function PATCH(request: NextRequest) {
     if (insError) {
       if (/profiles_username_unique|duplicate key|unique constraint/i.test(insError.message)) {
         return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+      }
+      if (/profiles_contact_email|contact_email_pending/i.test(insError.message)) {
+        return NextResponse.json({ error: DUPLICATE_EMAIL_MESSAGE }, { status: 409 });
       }
       return NextResponse.json({ error: insError.message }, { status: 400 });
     }

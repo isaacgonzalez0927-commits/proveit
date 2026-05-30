@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { isContactEmailTaken } from "@/lib/accountEmailUniqueness";
+import { createServiceRoleClient } from "@/lib/supabaseAdmin";
 
 function redirectToSettings(request: NextRequest, query: string) {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -18,15 +19,10 @@ export async function GET(request: NextRequest) {
     return redirectToSettings(request, "contactVerify=missing");
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const admin = createServiceRoleClient();
+  if (!admin) {
     return redirectToSettings(request, "contactVerify=unconfigured");
   }
-
-  const admin = createSupabaseClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
 
   const { data: row, error: fetchErr } = await admin
     .from("profiles")
@@ -65,6 +61,9 @@ export async function GET(request: NextRequest) {
     .eq("id", row.id);
 
   if (upErr) {
+    if (/profiles_contact_email|contact_email_pending|duplicate key|unique constraint/i.test(upErr.message)) {
+      return redirectToSettings(request, "contactVerify=taken");
+    }
     return redirectToSettings(request, "contactVerify=error");
   }
 

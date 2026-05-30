@@ -61,9 +61,29 @@ export default function ChangeEmailPage() {
     }
     setLoading(true);
     try {
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const checkData = await checkRes.json().catch(() => ({}));
+      if (!checkRes.ok || checkData.available === false) {
+        setError(
+          typeof checkData.error === "string"
+            ? checkData.error
+            : "That email is already linked to another account."
+        );
+        return;
+      }
+
       const { error: err } = await supabase.auth.updateUser({ email: trimmed });
       if (err) {
-        setError(err.message);
+        setError(
+          /already registered|already been registered|already exists/i.test(err.message)
+            ? "That email is already linked to another account."
+            : err.message
+        );
         return;
       }
       setSubmittedEmail(trimmed);

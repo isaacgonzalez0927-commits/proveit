@@ -194,6 +194,28 @@ function LandingContent() {
             return;
           }
         } else {
+          try {
+            const checkRes = await fetch("/api/auth/check-signup", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(
+                signupUsername ? { username: signupUsername } : { email: authEmail }
+              ),
+            });
+            const checkData = await checkRes.json().catch(() => ({}));
+            if (!checkRes.ok || checkData.available === false) {
+              setLoginError(
+                typeof checkData.error === "string"
+                  ? checkData.error
+                  : "That username is already taken."
+              );
+              return;
+            }
+          } catch {
+            setLoginError("Could not verify username. Try again.");
+            return;
+          }
+
           const { data, error } = await supabase.auth.signUp({
             email: authEmail,
             password,
@@ -208,6 +230,11 @@ function LandingContent() {
                 ? "That username is already taken."
                 : error.message
             );
+            return;
+          }
+
+          if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+            setLoginError("That username is already taken.");
             return;
           }
 
