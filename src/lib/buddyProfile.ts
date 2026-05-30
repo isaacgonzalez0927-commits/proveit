@@ -100,10 +100,7 @@ export function buddyProfileBackgroundStyle(accent: AccentTheme): {
 } {
   const c = accentSwatchColor(accent);
   return {
-    background: [
-      `radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in srgb, ${c} 28%, transparent) 0%, transparent 72%)`,
-      `radial-gradient(ellipse 70% 40% at 50% 0%, color-mix(in srgb, ${c} 12%, transparent) 0%, transparent 55%)`,
-    ].join(", "),
+    background: `radial-gradient(ellipse 110% 75% at 50% -20%, color-mix(in srgb, ${c} 20%, transparent) 0%, transparent 70%)`,
   };
 }
 

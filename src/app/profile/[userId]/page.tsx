@@ -64,25 +64,7 @@ export default function BuddyProfilePage() {
   const pageGlow = profile ? buddyProfileBackgroundStyle(profile.accentTheme) : undefined;
 
   return (
-    <main className="relative min-h-[100dvh] bg-[var(--bg-app)] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      {pageGlow && (
-        <div
-          className="pointer-events-none fixed inset-x-0 top-0 h-56"
-          style={pageGlow}
-          aria-hidden
-        />
-      )}
-
-      <div className="relative z-10 flex items-center gap-2 px-4 pb-1 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link
-          href="/friends"
-          className="flex h-10 w-10 items-center justify-center rounded-full glass-card text-slate-800 active:scale-95 dark:text-white"
-          aria-label="Back to buddies"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-      </div>
-
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-[var(--bg-app)] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       {loading && (
         <p className="px-6 py-16 text-center text-sm text-slate-500">Loading profile…</p>
       )}
@@ -101,11 +83,32 @@ export default function BuddyProfilePage() {
         </div>
       )}
 
-      {profile && (
-        <div className="relative z-10 space-y-4 pt-2">
-          <BuddyProfileHero profile={profile} fullScreen />
+      {profile && pageGlow && (
+        <div className="relative mx-auto w-full max-w-lg">
+          <section className="relative overflow-hidden bg-[var(--bg-app)]">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-[min(19rem,50vh)] [-webkit-mask-image:linear-gradient(to_bottom,black_50%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_50%,transparent_100%)]"
+              style={pageGlow}
+              aria-hidden
+            />
+
+            <div className="relative z-10">
+              <div className="flex items-center px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+                <Link
+                  href="/friends"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-slate-800 shadow-sm backdrop-blur-sm active:scale-95 dark:border-slate-700/60 dark:bg-slate-900/70 dark:text-white"
+                  aria-label="Back to buddies"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Link>
+              </div>
+
+              <BuddyProfileHero profile={profile} fullScreen omitHeaderGlow />
+            </div>
+          </section>
+
           {profile.isYou && (
-            <div className="mx-auto w-full max-w-lg px-4">
+            <div className="relative z-10 mt-4 px-4 pb-6">
               <BuddyProfileEditor embedded onSettingsSaved={handleSettingsSaved} />
             </div>
           )}

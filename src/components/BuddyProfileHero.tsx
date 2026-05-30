@@ -9,18 +9,31 @@ interface BuddyProfileHeroProps {
   profile: BuddyProfilePublic;
   compact?: boolean;
   fullScreen?: boolean;
+  /** Parent renders accent wash (full-screen profile page). */
+  omitHeaderGlow?: boolean;
 }
 
-export function BuddyProfileHero({ profile, compact = false, fullScreen = false }: BuddyProfileHeroProps) {
+export function BuddyProfileHero({
+  profile,
+  compact = false,
+  fullScreen = false,
+  omitHeaderGlow = false,
+}: BuddyProfileHeroProps) {
   const accentGlow = buddyProfileBackgroundStyle(profile.accentTheme);
 
   const header = (
-    <div className="relative flex flex-col items-center px-4 pb-1 pt-2 text-center">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-40"
-        style={accentGlow}
-        aria-hidden
-      />
+    <div
+      className={`relative flex flex-col items-center px-4 pb-1 text-center ${
+        omitHeaderGlow ? "pt-0" : "pt-2"
+      }`}
+    >
+      {!omitHeaderGlow && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 [-webkit-mask-image:linear-gradient(to_bottom,black_55%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_55%,transparent_100%)]"
+          style={accentGlow}
+          aria-hidden
+        />
+      )}
       <div className="relative">
         <BuddyProfileAvatar
           variant={profile.avatarPlant}
@@ -83,7 +96,7 @@ export function BuddyProfileHero({ profile, compact = false, fullScreen = false 
 
   if (fullScreen) {
     return (
-      <div className="mx-auto w-full max-w-lg space-y-4 px-4 pb-6">
+      <div className="mx-auto w-full max-w-lg space-y-4 px-4">
         {header}
         <article className="overflow-hidden rounded-2xl glass-card">
           {stats}
