@@ -1,38 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Link2, Share2, Users } from "lucide-react";
+import Link from "next/link";
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
-import { PlantIllustration } from "@/components/PlantIllustration";
-import {
-  buddyProfileBackgroundStyle,
-  type BuddyProfileSettings,
-  type BuddyProfileVisibility,
-} from "@/lib/buddyProfile";
+import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
+import { buddyProfileBackgroundStyle, type BuddyProfileSettings } from "@/lib/buddyProfile";
 import { getPlantVariantsForPlan } from "@/lib/goalPlants";
-import {
-  ACCENT_THEME_OPTIONS,
-  canUseAccentTheme,
-  getStoredAccentTheme,
-  type AccentTheme,
-} from "@/lib/theme";
+import { getStoredAccentTheme } from "@/lib/theme";
 import { normalizePlanId } from "@/types";
 
 export function BuddyProfileEditor() {
   const { user } = useApp();
   const plan = normalizePlanId(user?.plan);
   const plantOptions = getPlantVariantsForPlan(plan);
+  const profileHref = user?.id ? `/profile/${user.id}` : "/friends";
 
   const [settings, setSettings] = useState<BuddyProfileSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setNotice(null);
     try {
       const res = await fetch("/api/buddy-profile", { credentials: "same-origin" });
       const data = await res.json().catch(() => ({}));
@@ -41,7 +32,8 @@ export function BuddyProfileEditor() {
       }
       setSettings(data.settings as BuddyProfileSettings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load profile.");
+      setNotice(err instanceof Error ? err.message : "Could not load profile.");
+      setSettings(null);
     } finally {
       setLoading(false);
     }
@@ -53,8 +45,7 @@ export function BuddyProfileEditor() {
 
   const save = async (patch: Record<string, unknown>) => {
     setSaving(true);
-    setMessage(null);
-    setError(null);
+    setNotice(null);
     try {
       const res = await fetch("/api/buddy-profile", {
         method: "PATCH",
@@ -67,236 +58,112 @@ export function BuddyProfileEditor() {
         throw new Error(typeof data.error === "string" ? data.error : "Could not save.");
       }
       setSettings(data.settings as BuddyProfileSettings);
-      setMessage("Saved!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save.");
+      setNotice(err instanceof Error ? err.message : "Could not save.");
     } finally {
       setSaving(false);
     }
   };
 
-  const shareFriendLink = async () => {
-    if (!settings?.friendLinkUrl) return;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "Add me on Proveit",
-          text: "Connect with me on Proveit so we can cheer each other on.",
-          url: settings.friendLinkUrl,
-        });
-        setMessage("Link shared!");
-        return;
-      }
-      await navigator.clipboard.writeText(settings.friendLinkUrl);
-      setMessage("Friend link copied!");
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      setMessage("Could not share link.");
+  // Keep profile header color in sync with the app theme (Appearance section).
+  useEffect(() => {
+    if (!settings || saving) return;
+    const appAccent = getStoredAccentTheme();
+    if (settings.accentTheme !== appAccent) {
+      void save({ accentTheme: appAccent });
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync when settings load only
+  }, [settings?.accentTheme, loading]);
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Loading buddy profile…</p>;
+    return (
+      <p className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        Loading…
+      </p>
+    );
   }
 
-  if (error && !settings) {
-    return <p className="text-sm text-red-700 dark:text-red-300">{error}</p>;
+  if (!settings) {
+    return (
+      <p className="px-4 py-6 text-center text-sm text-red-700 dark:text-red-300">
+        {notice ?? "Could not load buddy profile."}
+      </p>
+    );
   }
-
-  if (!settings) return null;
 
   const previewBg = buddyProfileBackgroundStyle(settings.accentTheme);
 
   return (
-    <div className="space-y-5">
-      <div className="overflow-hidden rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
-        <div className="relative px-4 py-6" style={previewBg}>
-          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-800/80 dark:text-white/80">
-            Preview
+    <div className="space-y-0">
+      <div className="relative overflow-hidden px-4 pb-5 pt-6" style={previewBg}>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/15 to-transparent dark:from-black/15" />
+        <div className="relative flex flex-col items-center">
+          <BuddyProfileAvatar variant={settings.avatarPlant} size="lg" />
+          <p className="mt-3 text-center text-xs text-slate-800/90 dark:text-white/90">
+            Only buddies on a <span className="font-semibold">shared goal</span> see this.
           </p>
-          <div className="mx-auto mt-3 flex h-20 w-20 items-center justify-center rounded-full bg-white/90 shadow-md dark:bg-slate-900/90">
-            <PlantIllustration
-              stage="thriving"
-              wateringLevel={1}
-              wateredGoals={1}
-              variant={settings.avatarPlant}
-              className="h-16 w-16"
-              size="small"
-            />
-          </div>
         </div>
       </div>
 
-      <div>
-        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Profile plant</p>
-        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-          Buddies see this instead of a photo. Unlocked plants match your plan.
+      <div className="border-t border-slate-200/80 px-4 py-4 dark:border-slate-700/60">
+        <p className="text-sm font-medium text-slate-900 dark:text-white">Profile plant</p>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          Fully grown — unlocked by your plan.
         </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {plantOptions.map((variant) => (
-            <button
-              key={variant}
-              type="button"
-              disabled={saving}
-              onClick={() => void save({ avatarPlant: variant })}
-              className={clsx(
-                "rounded-xl border p-1.5 transition",
-                settings.avatarPlant === variant
-                  ? "border-prove-500 bg-prove-50 ring-1 ring-prove-500/30 dark:border-prove-400 dark:bg-prove-950/50"
-                  : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-              )}
-              aria-label={`Plant style ${variant}`}
-            >
-              <div className="flex h-11 w-11 items-center justify-center">
-                <PlantIllustration
-                  stage="leafy"
-                  wateringLevel={0.5}
-                  wateredGoals={0}
-                  variant={variant}
-                  size="small"
-                />
-              </div>
-            </button>
-          ))}
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
+          {plantOptions.map((variant) => {
+            const selected = settings.avatarPlant === variant;
+            return (
+              <button
+                key={variant}
+                type="button"
+                disabled={saving}
+                onClick={() => void save({ avatarPlant: variant })}
+                className={clsx(
+                  "rounded-full transition",
+                  selected
+                    ? "ring-2 ring-prove-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900"
+                    : "opacity-80 hover:opacity-100"
+                )}
+                aria-label={`Plant ${variant}`}
+                aria-pressed={selected}
+              >
+                <BuddyProfileAvatar variant={variant} size="sm" ringClassName="ring-0 shadow-md" />
+              </button>
+            );
+          })}
         </div>
+        {saving && (
+          <p className="mt-3 text-center text-xs text-slate-500" role="status">
+            Saving…
+          </p>
+        )}
+        {notice && !saving && (
+          <p
+            className={clsx(
+              "mt-3 text-center text-xs font-medium",
+              /could not|error/i.test(notice)
+                ? "text-red-700 dark:text-red-300"
+                : "text-emerald-700 dark:text-emerald-300"
+            )}
+          >
+            {notice}
+          </p>
+        )}
       </div>
 
-      <div>
-        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Profile background</p>
-        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-          Uses your accent theme colors — only buddies can see this.
+      <div className="border-t border-slate-200/80 px-4 py-3 dark:border-slate-700/60">
+        <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Header color follows your theme in{" "}
+          <span className="font-medium text-slate-700 dark:text-slate-300">Appearance</span> below.
         </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {ACCENT_THEME_OPTIONS.filter((o) => canUseAccentTheme(plan, o.id)).map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              disabled={saving}
-              onClick={() => void save({ accentTheme: option.id })}
-              className={clsx(
-                "flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition",
-                settings.accentTheme === option.id
-                  ? "border-prove-500 bg-prove-50 text-prove-900 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-100"
-                  : "border-slate-200 text-slate-700 dark:border-slate-600 dark:text-slate-300"
-              )}
-            >
-              <span className={`h-4 w-4 rounded-full ${option.swatchClassName}`} />
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => {
-            const accent = getStoredAccentTheme();
-            void save({ accentTheme: accent });
-          }}
-          className="mt-2 text-xs font-semibold text-prove-700 hover:underline dark:text-prove-300"
+        <Link
+          href={profileHref}
+          className="mt-3 flex w-full items-center justify-center rounded-xl border border-prove-200/90 bg-prove-50/80 py-2.5 text-sm font-semibold text-prove-800 transition hover:bg-prove-100 dark:border-prove-800/60 dark:bg-prove-950/40 dark:text-prove-200 dark:hover:bg-prove-950/60"
         >
-          Use my current app theme
-        </button>
+          Preview buddy profile
+        </Link>
       </div>
-
-      <div>
-        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Who can see your profile</p>
-        <div className="mt-2 space-y-2">
-          <VisibilityOption
-            selected={settings.visibility === "shared_goals_only"}
-            disabled={saving}
-            title="Buddy goals only"
-            description="Only people on a shared buddy goal with you."
-            onSelect={() => void save({ visibility: "shared_goals_only" satisfies BuddyProfileVisibility })}
-          />
-          <VisibilityOption
-            selected={settings.visibility === "friend_link"}
-            disabled={saving}
-            title="Friend link + buddy goals"
-            description="Share a link in messages so friends can connect and see your profile."
-            onSelect={() => void save({ visibility: "friend_link" satisfies BuddyProfileVisibility })}
-          />
-        </div>
-      </div>
-
-      {settings.visibility === "friend_link" && settings.friendLinkUrl && (
-        <div className="rounded-xl border border-dashed border-prove-300/80 bg-prove-50/50 p-3 dark:border-prove-700/60 dark:bg-prove-950/30">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-prove-800 dark:text-prove-200">
-            <Link2 className="h-3.5 w-3.5" />
-            Your friend link
-          </p>
-          <p className="mt-2 break-all font-mono text-[11px] text-slate-600 dark:text-slate-400">
-            {settings.friendLinkUrl}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void shareFriendLink()}
-              className="inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 btn-glass-primary"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              Share
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(settings.friendLinkUrl ?? "");
-                setMessage("Link copied!");
-              }}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200"
-            >
-              <Copy className="h-3.5 w-3.5" />
-              Copy
-            </button>
-          </div>
-        </div>
-      )}
-
-      {(message || error) && (
-        <p
-          className={clsx(
-            "text-xs font-medium",
-            error ? "text-red-700 dark:text-red-300" : "text-emerald-700 dark:text-emerald-300"
-          )}
-        >
-          {error ?? message}
-        </p>
-      )}
     </div>
-  );
-}
-
-function VisibilityOption({
-  selected,
-  disabled,
-  title,
-  description,
-  onSelect,
-}: {
-  selected: boolean;
-  disabled?: boolean;
-  title: string;
-  description: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onSelect}
-      className={clsx(
-        "w-full rounded-xl border p-3 text-left transition",
-        selected
-          ? "border-prove-400 bg-prove-50/80 ring-1 ring-prove-500/20 dark:border-prove-600 dark:bg-prove-950/40"
-          : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
-      )}
-    >
-      <div className="flex items-start gap-2">
-        <Users className="mt-0.5 h-4 w-4 shrink-0 text-prove-600 dark:text-prove-400" />
-        <div>
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">{title}</p>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
-        </div>
-      </div>
-    </button>
   );
 }

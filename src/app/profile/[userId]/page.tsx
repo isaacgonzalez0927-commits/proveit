@@ -62,7 +62,7 @@ export default function BuddyProfilePage() {
         href="/friends"
         className="mt-8 block text-center text-sm font-medium text-prove-600 hover:underline dark:text-prove-400"
       >
-        ← Buddy goals
+        ← Buddies
       </Link>
     </main>
   );

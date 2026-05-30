@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Award, Flame, Sprout, Target } from "lucide-react";
-import { PlantIllustration } from "@/components/PlantIllustration";
+import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
 import { buddyProfileBackgroundStyle, type BuddyProfilePublic } from "@/lib/buddyProfile";
 
 interface BuddyProfileHeroProps {
@@ -22,16 +22,7 @@ export function BuddyProfileHero({ profile, compact = false }: BuddyProfileHeroP
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 to-transparent dark:from-black/10" />
         <div className="relative flex flex-col items-center text-center">
-          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white/90 shadow-lg ring-4 ring-white/80 dark:bg-slate-900/90 dark:ring-slate-800/80">
-            <PlantIllustration
-              stage="thriving"
-              wateringLevel={1}
-              wateredGoals={1}
-              variant={profile.avatarPlant}
-              className="h-24 w-24"
-              size="large"
-            />
-          </div>
+          <BuddyProfileAvatar variant={profile.avatarPlant} size="lg" />
           <h1 className="mt-4 font-display text-2xl font-bold text-slate-900 dark:text-white">
             {profile.displayName}
           </h1>

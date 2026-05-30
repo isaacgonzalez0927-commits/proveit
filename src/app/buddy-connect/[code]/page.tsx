@@ -11,7 +11,7 @@ import type { BuddyProfilePublic } from "@/lib/buddyProfile";
 import { buddyProfileBackgroundStyle } from "@/lib/buddyProfile";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
 import type { AccentTheme } from "@/lib/theme";
-import { PlantIllustration } from "@/components/PlantIllustration";
+import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
 
 interface LinkPreview {
   userId: string;
@@ -107,14 +107,8 @@ export default function BuddyConnectPage() {
             <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-800/80 dark:text-white/80">
               Buddy invite
             </p>
-            <div className="mx-auto mt-4 flex h-24 w-24 items-center justify-center rounded-full bg-white/90 shadow-lg dark:bg-slate-900/90">
-              <PlantIllustration
-                stage="thriving"
-                wateringLevel={1}
-                wateredGoals={1}
-                variant={previewPlant}
-                className="h-20 w-20"
-              />
+            <div className="mx-auto mt-4 flex justify-center">
+              <BuddyProfileAvatar variant={previewPlant} size="lg" />
             </div>
             <h1 className="mt-4 text-center font-display text-xl font-bold text-slate-900 dark:text-white">
               {preview.displayName}

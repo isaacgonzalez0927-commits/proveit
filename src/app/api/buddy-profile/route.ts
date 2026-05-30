@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  ensureBuddyFriendCode,
-  getBuddyProfileSettings,
-} from "@/lib/buddyProfileServer";
-import {
-  normalizeBuddyVisibility,
-  sanitizeBuddyAvatarPlant,
-  sanitizeBuddyProfileAccent,
-} from "@/lib/buddyProfile";
+import { getBuddyProfileSettings } from "@/lib/buddyProfileServer";
+import { sanitizeBuddyAvatarPlant, sanitizeBuddyProfileAccent } from "@/lib/buddyProfile";
 import { normalizePlanId } from "@/types";
 
 function requestOrigin(request: NextRequest): string {
@@ -57,12 +50,15 @@ export async function PATCH(request: NextRequest) {
 
   const { data: current } = await supabase
     .from("profiles")
-    .select("plan, buddy_profile_visibility, buddy_friend_code")
+    .select("plan")
     .eq("id", user.id)
     .maybeSingle();
 
   const plan = normalizePlanId(current?.plan);
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+    buddy_profile_visibility: "shared_goals_only",
+  };
 
   if (body.avatarPlant !== undefined) {
     updates.buddy_avatar_plant = sanitizeBuddyAvatarPlant(body.avatarPlant, plan, user.id);
@@ -70,18 +66,6 @@ export async function PATCH(request: NextRequest) {
 
   if (body.accentTheme !== undefined) {
     updates.buddy_profile_accent = sanitizeBuddyProfileAccent(body.accentTheme, plan);
-  }
-
-  if (body.visibility !== undefined) {
-    const visibility = normalizeBuddyVisibility(body.visibility);
-    updates.buddy_profile_visibility = visibility;
-    if (visibility === "friend_link") {
-      const existing =
-        typeof current?.buddy_friend_code === "string" ? current.buddy_friend_code.trim() : "";
-      if (!existing) {
-        updates.buddy_friend_code = await ensureBuddyFriendCode(supabase, user.id);
-      }
-    }
   }
 
   const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);

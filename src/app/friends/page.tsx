@@ -4,8 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sprout, Users } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { BuddyHubAchievements } from "@/components/buddies/BuddyHubAchievements";
+import { BuddyHubProfileCard } from "@/components/buddies/BuddyHubProfileCard";
+import { BuddySection } from "@/components/buddies/BuddySection";
 import { FriendGoalCard } from "@/components/FriendGoalCard";
-import { PlantIllustration } from "@/components/PlantIllustration";
+import { BuddyProfileAvatar } from "@/components/BuddyProfileAvatar";
 import { buddyProfileBackgroundStyle } from "@/lib/buddyProfile";
 import type { FriendGoalGroup } from "@/lib/friendGoals";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
@@ -18,7 +21,7 @@ interface BuddyListItem {
   accentTheme: AccentTheme;
 }
 
-export default function FriendsPage() {
+export default function BuddiesPage() {
   const { user, authReady } = useApp();
   const [groups, setGroups] = useState<FriendGoalGroup[]>([]);
   const [buddies, setBuddies] = useState<BuddyListItem[]>([]);
@@ -36,12 +39,12 @@ export default function FriendsPage() {
       const goalsData = await goalsRes.json().catch(() => ({}));
       const buddiesData = await buddiesRes.json().catch(() => ({}));
       if (!goalsRes.ok) {
-        throw new Error(typeof goalsData.error === "string" ? goalsData.error : "Could not load buddy goals.");
+        throw new Error(typeof goalsData.error === "string" ? goalsData.error : "Could not load buddies.");
       }
       setGroups(Array.isArray(goalsData.groups) ? goalsData.groups : []);
       setBuddies(Array.isArray(buddiesData.buddies) ? buddiesData.buddies : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load buddy goals.");
+      setError(err instanceof Error ? err.message : "Could not load buddies.");
       setGroups([]);
       setBuddies([]);
     } finally {
@@ -58,116 +61,140 @@ export default function FriendsPage() {
     void load();
   }, [authReady, user, load]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.location.hash) return;
+    const id = window.location.hash.replace("#", "");
+    const el = document.getElementById(id);
+    if (el) {
+      window.setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+    }
+  }, [loading]);
+
+  if (!authReady) {
+    return (
+      <main className="mx-auto max-w-lg px-4 pb-28 pt-6">
+        <p className="text-center text-sm text-slate-500">Loading…</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="mx-auto max-w-lg px-4 pb-28 pt-6 text-center">
+        <p className="text-sm text-slate-600 dark:text-slate-400">Sign in to see your buddies.</p>
+        <Link href="/dashboard" className="mt-4 inline-block text-sm font-semibold text-prove-600 hover:underline">
+          Go to dashboard
+        </Link>
+      </main>
+    );
+  }
+
+  const showEmptyGardenCta = !loading && !error && groups.length === 0 && buddies.length === 0;
+
   return (
-    <main className="mx-auto max-w-lg px-4 pb-28 pt-6">
+    <main className="mx-auto max-w-lg space-y-8 px-4 pb-28 pt-6">
       <header className="rounded-2xl p-5 glass-card">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-prove-100 text-prove-700 dark:bg-prove-950/60 dark:text-prove-300">
             <Users className="h-5 w-5" strokeWidth={2.25} />
           </span>
           <div>
-            <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-              Buddy goals
-            </h1>
+            <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Buddies</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Same goal. Cheer each other on.
+              Your profile, shared goals, and badges in one place.
             </p>
           </div>
         </div>
       </header>
 
-      {user?.id && (
-        <Link
-          href={`/profile/${user.id}`}
-          className="mt-4 block rounded-2xl border border-prove-200/80 bg-prove-50/50 px-4 py-3 text-sm font-semibold text-prove-800 hover:bg-prove-50 dark:border-prove-800/50 dark:bg-prove-950/30 dark:text-prove-200"
-        >
-          View your buddy profile →
-        </Link>
-      )}
-
-      {buddies.length > 0 && (
-        <section className="mt-6">
-          <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Your buddies
-          </h2>
-          <ul className="mt-3 space-y-2">
-            {buddies.map((buddy) => (
-              <li key={buddy.userId}>
-                <Link
-                  href={`/profile/${buddy.userId}`}
-                  className="flex items-center gap-3 overflow-hidden rounded-2xl glass-card p-3 transition hover:ring-1 hover:ring-prove-400/40"
-                >
-                  <div
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl"
-                    style={buddyProfileBackgroundStyle(buddy.accentTheme)}
-                  >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 dark:bg-slate-900/90">
-                      <PlantIllustration
-                        stage="leafy"
-                        wateringLevel={0.6}
-                        wateredGoals={0}
-                        variant={buddy.avatarPlant}
-                        size="small"
-                      />
-                    </div>
-                  </div>
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {buddy.displayName}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <BuddyHubProfileCard />
 
       {loading && (
-        <p className="mt-8 text-center text-sm text-slate-500">Loading your duos…</p>
+        <p className="text-center text-sm text-slate-500" role="status">
+          Loading buddies…
+        </p>
       )}
 
       {error && (
-        <p className="mt-6 rounded-2xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <p className="rounded-2xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </p>
       )}
 
-      {!loading && !error && groups.length === 0 && (
-        <div className="mt-6 rounded-2xl p-6 text-center glass-card">
-          <Users className="mx-auto h-8 w-8 text-prove-500" />
-          <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
-            No buddy goals yet
-          </p>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            When you create a goal in the garden, turn on{" "}
-            <span className="font-medium text-prove-700 dark:text-prove-300">Goal with a buddy</span>{" "}
-            to get an invite link.
-          </p>
-          <Link
-            href="/buddy"
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
-          >
-            <Sprout className="h-4 w-4" />
-            Go to garden
-          </Link>
-        </div>
-      )}
-
-      {groups.length > 0 && (
-        <section className="mt-8">
-          <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Shared goals
-          </h2>
-          <div className="mt-3 space-y-4">
+      <BuddySection
+        id="shared-goals"
+        title="Shared goals"
+        description="Duos you are proving together this week."
+      >
+        {groups.length > 0 ? (
+          <div className="space-y-3">
             {groups.map((group) => (
               <FriendGoalCard key={group.id} group={group} />
             ))}
           </div>
-        </section>
+        ) : !loading ? (
+          <div className="rounded-2xl p-5 text-center glass-card">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-100">No shared goals yet</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              In the garden, turn on <span className="font-semibold text-prove-700 dark:text-prove-300">Goal with a buddy</span> when you add a goal.
+            </p>
+            <Link
+              href="/buddy"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-4 py-2 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
+            >
+              <Sprout className="h-4 w-4" />
+              Go to garden
+            </Link>
+          </div>
+        ) : null}
+      </BuddySection>
+
+      <BuddySection
+        id="buddies"
+        title="Your buddies"
+        description="Tap someone to see their buddy profile."
+      >
+        {buddies.length > 0 ? (
+          <ul className="space-y-2">
+            {buddies.map((buddy) => (
+              <li key={buddy.userId}>
+                <Link
+                  href={`/profile/${buddy.userId}`}
+                  className="flex items-center gap-3 rounded-2xl glass-card p-3 transition hover:ring-1 hover:ring-prove-400/35"
+                >
+                  <div
+                    className="shrink-0 rounded-full p-1"
+                    style={buddyProfileBackgroundStyle(buddy.accentTheme)}
+                  >
+                    <BuddyProfileAvatar
+                      variant={buddy.avatarPlant}
+                      size="md"
+                      ringClassName="ring-2 ring-white/95 dark:ring-slate-900/95"
+                    />
+                  </div>
+                  <span className="font-semibold text-slate-900 dark:text-white">{buddy.displayName}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : !loading ? (
+          <p className="rounded-2xl px-4 py-5 text-center text-sm text-slate-500 glass-card">
+            Buddies show up when you join a shared goal together.
+          </p>
+        ) : null}
+      </BuddySection>
+
+      <BuddyHubAchievements />
+
+      {showEmptyGardenCta && (
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          Start with a buddy goal in the garden — your list will fill in here.
+        </p>
       )}
 
       <Link
         href="/dashboard"
-        className="mt-10 block text-center text-sm font-medium text-prove-600 hover:underline dark:text-prove-400"
+        className="block text-center text-sm font-medium text-prove-600 hover:underline dark:text-prove-400"
       >
         ← Back home
       </Link>

@@ -34,10 +34,10 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/goals/history")) return "Gallery";
   if (pathname.startsWith("/goals/submit")) return "Prove It";
   if (pathname.startsWith("/goals")) return "Goal Garden";
-  if (pathname.startsWith("/achievements")) return "Achievements";
+  if (pathname.startsWith("/achievements")) return "Buddies";
   if (pathname.startsWith("/settings/change-email")) return "Change email";
   if (pathname.startsWith("/settings")) return "Settings";
-  if (pathname.startsWith("/friends")) return "Buddy goals";
+  if (pathname.startsWith("/friends")) return "Buddies";
   if (pathname.startsWith("/profile")) return "Buddy profile";
   if (pathname.startsWith("/buddy-connect")) return "Connect";
   if (pathname.startsWith("/join")) return "Join goal";
@@ -179,7 +179,7 @@ export function Header() {
                   role="menuitem"
                 >
                   <Users className="h-4 w-4 shrink-0 text-prove-500" />
-                  Buddy goals
+                  Buddies
                 </Link>
                 <Link
                   href="/privacy"

@@ -549,18 +549,10 @@ export default function SettingsPage() {
               </p>
               <SettingsDisclosure
                 title="Buddy profile"
-                description="Plant avatar and colors — only buddies can see this."
+                description="Plant avatar for people on your buddy goals."
                 icon={<Users className="h-5 w-5" />}
               >
-                <div className="p-3">
-                  <BuddyProfileEditor />
-                  <Link
-                    href={`/profile/${user.id}`}
-                    className="mt-4 inline-block text-xs font-semibold text-prove-700 hover:underline dark:text-prove-300"
-                  >
-                    Preview your buddy profile →
-                  </Link>
-                </div>
+                <BuddyProfileEditor />
               </SettingsDisclosure>
             </section>
           )}

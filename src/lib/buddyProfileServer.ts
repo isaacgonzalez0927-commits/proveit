@@ -243,20 +243,13 @@ export async function getBuddyProfileSettings(
 
   const row = data as ProfileBuddyRow;
   const plan = normalizePlanId(row.plan) as PlanId;
-  const visibility = normalizeBuddyVisibility(row.buddy_profile_visibility);
-  let friendCode =
-    typeof row.buddy_friend_code === "string" ? row.buddy_friend_code.trim() : null;
-  if (visibility === "friend_link" && !friendCode) {
-    friendCode = await ensureBuddyFriendCode(client, userId);
-  }
 
   return {
     avatarPlant: sanitizeBuddyAvatarPlant(row.buddy_avatar_plant, plan, userId),
     accentTheme: sanitizeBuddyProfileAccent(row.buddy_profile_accent, plan),
-    visibility,
-    friendCode: visibility === "friend_link" ? friendCode : null,
-    friendLinkUrl:
-      visibility === "friend_link" && friendCode ? buddyFriendLinkUrl(origin, friendCode) : null,
+    visibility: "shared_goals_only",
+    friendCode: null,
+    friendLinkUrl: null,
   };
 }
 
