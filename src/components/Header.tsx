@@ -38,6 +38,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/settings/change-email")) return "Change email";
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/friends")) return "Buddy goals";
+  if (pathname.startsWith("/profile")) return "Buddy profile";
+  if (pathname.startsWith("/buddy-connect")) return "Connect";
   if (pathname.startsWith("/join")) return "Join goal";
   if (pathname.startsWith("/pricing")) return "Pricing";
   if (pathname.startsWith("/privacy")) return "Privacy";
@@ -176,7 +178,7 @@ export function Header() {
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   role="menuitem"
                 >
-                  <Users className="h-4 w-4 shrink-0 text-sky-500" />
+                  <Users className="h-4 w-4 shrink-0 text-prove-500" />
                   Buddy goals
                 </Link>
                 <Link

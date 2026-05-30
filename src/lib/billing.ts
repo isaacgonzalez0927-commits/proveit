@@ -9,6 +9,18 @@ export function isStripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
 }
 
+/** `test` | `live` | `unknown` — from STRIPE_SECRET_KEY prefix (never expose the key). */
+export function stripeKeyMode(): "test" | "live" | "unknown" {
+  const key = process.env.STRIPE_SECRET_KEY?.trim() ?? "";
+  if (key.startsWith("sk_test_")) return "test";
+  if (key.startsWith("sk_live_")) return "live";
+  return "unknown";
+}
+
+export function isStripeLiveMode(): boolean {
+  return stripeKeyMode() === "live";
+}
+
 export function formatUsd(amount: number): string {
   if (amount === 0) return "Free";
   return new Intl.NumberFormat("en-US", {

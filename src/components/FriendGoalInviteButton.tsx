@@ -53,7 +53,7 @@ export function FriendGoalInviteButton({
         type="button"
         onClick={() => void inviteBuddy()}
         disabled={busy}
-        className={`inline-flex items-center gap-1 font-bold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60 dark:text-sky-300 ${
+        className={`inline-flex items-center gap-1 font-semibold text-prove-700 underline-offset-2 hover:underline disabled:opacity-60 dark:text-prove-300 ${
           compact ? "text-[10px]" : "text-xs"
         }`}
       >

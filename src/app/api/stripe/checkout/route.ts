@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      // Card only — avoids ACH "test bank account" confusion in Stripe test mode.
+      payment_method_types: ["card"],
       ...(existingCustomerId
         ? { customer: existingCustomerId }
         : { customer_email: user.email }),

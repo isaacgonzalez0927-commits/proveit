@@ -1,0 +1,94 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import {
+  ensureBuddyFriendCode,
+  getBuddyProfileSettings,
+} from "@/lib/buddyProfileServer";
+import {
+  normalizeBuddyVisibility,
+  sanitizeBuddyAvatarPlant,
+  sanitizeBuddyProfileAccent,
+} from "@/lib/buddyProfile";
+import { normalizePlanId } from "@/types";
+
+function requestOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  if (forwardedHost && forwardedProto) {
+    return `${forwardedProto === "https" ? "https" : "http"}://${forwardedHost}`;
+  }
+  const origin = request.headers.get("origin");
+  if (origin) return origin;
+  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+}
+
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const settings = await getBuddyProfileSettings(supabase, user.id, requestOrigin(request));
+  if (!settings) {
+    return NextResponse.json({ error: "Profile not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ settings });
+}
+
+export async function PATCH(request: NextRequest) {
+  const supabase = await createClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("plan, buddy_profile_visibility, buddy_friend_code")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const plan = normalizePlanId(current?.plan);
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (body.avatarPlant !== undefined) {
+    updates.buddy_avatar_plant = sanitizeBuddyAvatarPlant(body.avatarPlant, plan, user.id);
+  }
+
+  if (body.accentTheme !== undefined) {
+    updates.buddy_profile_accent = sanitizeBuddyProfileAccent(body.accentTheme, plan);
+  }
+
+  if (body.visibility !== undefined) {
+    const visibility = normalizeBuddyVisibility(body.visibility);
+    updates.buddy_profile_visibility = visibility;
+    if (visibility === "friend_link") {
+      const existing =
+        typeof current?.buddy_friend_code === "string" ? current.buddy_friend_code.trim() : "";
+      if (!existing) {
+        updates.buddy_friend_code = await ensureBuddyFriendCode(supabase, user.id);
+      }
+    }
+  }
+
+  const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  const settings = await getBuddyProfileSettings(supabase, user.id, requestOrigin(request));
+  return NextResponse.json({ ok: true, settings });
+}

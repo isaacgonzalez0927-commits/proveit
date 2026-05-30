@@ -17,7 +17,9 @@ import {
   Sparkles,
   Trash2,
   User,
+  Users,
 } from "lucide-react";
+import { BuddyProfileEditor } from "@/components/BuddyProfileEditor";
 import { useApp } from "@/context/AppContext";
 import { normalizePlanId } from "@/types";
 import { isInternalAuthEmail } from "@/lib/usernameAuth";
@@ -252,6 +254,12 @@ export default function SettingsPage() {
     const label = ACCENT_THEME_OPTIONS.find((option) => option.id === nextAccent)?.label ?? "Theme";
     setAccentTheme(nextAccent);
     saveAndApplyAccentTheme(nextAccent);
+    void fetch("/api/buddy-profile", {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accentTheme: nextAccent }),
+    }).catch(() => undefined);
     setSettingsMessage(`${label} theme enabled.`);
   };
 
@@ -529,6 +537,29 @@ export default function SettingsPage() {
                       </Link>
                     </>
                   )}
+                </div>
+              </SettingsDisclosure>
+            </section>
+          )}
+
+          {useSupabase && matchesSettingsQuery("buddy profile plant friend link") && user?.id && (
+            <section>
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Buddies
+              </p>
+              <SettingsDisclosure
+                title="Buddy profile"
+                description="Plant avatar and colors — only buddies can see this."
+                icon={<Users className="h-5 w-5" />}
+              >
+                <div className="p-3">
+                  <BuddyProfileEditor />
+                  <Link
+                    href={`/profile/${user.id}`}
+                    className="mt-4 inline-block text-xs font-semibold text-prove-700 hover:underline dark:text-prove-300"
+                  >
+                    Preview your buddy profile →
+                  </Link>
                 </div>
               </SettingsDisclosure>
             </section>

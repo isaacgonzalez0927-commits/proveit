@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PartyPopper, Share2, X } from "lucide-react";
+import { Share2, Users, X } from "lucide-react";
 import { friendGoalShareMessage } from "@/lib/friendGoals";
 
 interface FriendGoalShareSheetProps {
@@ -13,7 +13,7 @@ interface FriendGoalShareSheetProps {
   onClose: () => void;
 }
 
-/** Duolingo-style post-create sheet to send a buddy invite. */
+/** Post-create sheet to send a buddy invite. */
 export function FriendGoalShareSheet({
   open,
   goalTitle,
@@ -64,28 +64,28 @@ export function FriendGoalShareSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-900/50 p-4 sm:items-center"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-900/50 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="buddy-share-title"
     >
-      <div className="w-full max-w-md overflow-hidden rounded-3xl border-2 border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-2xl dark:border-sky-600 dark:from-slate-900 dark:to-slate-950">
-        <div className="flex items-start justify-between gap-2 border-b border-sky-100 bg-sky-100/80 px-5 py-4 dark:border-sky-900 dark:bg-sky-950/50">
-          <div className="flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-emerald-500 text-white shadow">
-              <PartyPopper className="h-5 w-5" />
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200/90 shadow-2xl dark:border-slate-600/60 glass-card">
+        <div className="flex items-start justify-between gap-2 border-b border-slate-200/70 px-5 py-4 dark:border-slate-700/60">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-prove-600 text-white">
+              <Users className="h-5 w-5" />
             </span>
             <div>
               <p id="buddy-share-title" className="font-display text-lg font-bold text-slate-900 dark:text-white">
-                Invite your buddy!
+                Invite your buddy
               </p>
-              <p className="text-xs font-medium text-sky-800 dark:text-sky-200">Almost a duo goal</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Share your goal link</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-slate-500 hover:bg-white/80 dark:hover:bg-slate-800"
+            className="rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -93,23 +93,21 @@ export function FriendGoalShareSheet({
         </div>
 
         <div className="px-5 py-4">
-          <p className="text-sm text-slate-700 dark:text-slate-300">
-            <span className="font-bold text-slate-900 dark:text-white">{goalTitle}</span> is ready.
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-semibold text-slate-900 dark:text-white">{goalTitle}</span> is ready.
             Send this link so you can cheer each other on.
           </p>
 
           {loading && (
-            <p className="mt-4 text-center text-sm font-medium text-sky-700 dark:text-sky-300">
-              Cooking up your invite link…
-            </p>
+            <p className="mt-4 text-center text-sm text-slate-500">Creating your invite link…</p>
           )}
           {error && (
-            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200">
+            <p className="mt-4 rounded-xl border border-red-200/80 bg-red-50/90 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-200">
               {error}
             </p>
           )}
           {inviteUrl && !loading && (
-            <p className="mt-3 break-all rounded-xl border-2 border-dashed border-sky-200 bg-white px-3 py-2 font-mono text-[11px] text-slate-600 dark:border-sky-800 dark:bg-slate-900 dark:text-slate-400">
+            <p className="mt-3 break-all rounded-xl border border-dashed border-slate-200 bg-white/60 px-3 py-2 font-mono text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
               {inviteUrl}
             </p>
           )}
@@ -119,7 +117,7 @@ export function FriendGoalShareSheet({
               type="button"
               disabled={!inviteUrl || loading}
               onClick={() => void share()}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-b-4 border-emerald-700 bg-emerald-500 py-3.5 text-sm font-extrabold uppercase tracking-wide text-white shadow active:translate-y-0.5 active:border-b-2 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-prove-600 py-3 text-sm font-semibold text-white hover:bg-prove-700 disabled:opacity-50 btn-glass-primary"
             >
               <Share2 className="h-4 w-4" />
               Send invite
@@ -128,20 +126,20 @@ export function FriendGoalShareSheet({
               type="button"
               disabled={!inviteUrl || loading}
               onClick={() => void copyLink()}
-              className="w-full rounded-2xl border-2 border-sky-200 bg-white py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-50 dark:border-sky-700 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-slate-800"
+              className="w-full rounded-xl border border-prove-200/90 bg-white/70 py-2.5 text-sm font-medium text-prove-800 transition hover:bg-prove-50 dark:border-prove-800/60 dark:bg-slate-900/50 dark:text-prove-200 dark:hover:bg-prove-950/50 btn-glass-outline"
             >
               Copy link
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400"
+              className="py-2 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
             >
               I&apos;ll invite them later
             </button>
           </div>
           {notice && (
-            <p className="mt-3 text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            <p className="mt-3 text-center text-xs font-medium text-emerald-700 dark:text-emerald-300">
               {notice}
             </p>
           )}

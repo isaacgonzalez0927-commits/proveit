@@ -24,6 +24,10 @@ Proveit is configured for iOS via Capacitor. The app loads your web app from a U
    },
    ```
 
+## Universal Links (buddy invites open the app)
+
+Buddy invite URLs like `https://proveit-goals.com/join/…` can open the installed app instead of Safari. See **[IOS_UNIVERSAL_LINKS.md](./IOS_UNIVERSAL_LINKS.md)** — set `APPLE_TEAM_ID` on Vercel, enable Associated Domains, and ship a new iOS build.
+
 ## Requirements
 
 - **Mac with Xcode** – iOS builds only run on macOS
