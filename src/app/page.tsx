@@ -613,11 +613,21 @@ function LandingContent() {
                     only your buddies can view.
                   </p>
                   <div className="mt-6 flex justify-center">
-                    <img
-                      src="/onboarding/buddies.png"
-                      alt="Two friends cheering each other on"
-                      className="h-[min(32vh,12rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
-                    />
+                    <div className="relative flex items-center justify-center">
+                      <div
+                        className="absolute h-[min(34vh,13rem)] w-[min(80vw,19rem)] rounded-full bg-emerald-400/35 blur-3xl"
+                        aria-hidden
+                      />
+                      <div
+                        className="absolute h-[min(28vh,10rem)] w-[min(64vw,16rem)] rounded-full bg-prove-500/30 blur-2xl"
+                        aria-hidden
+                      />
+                      <img
+                        src="/onboarding/buddies.png"
+                        alt="Two friends cheering each other on"
+                        className="relative h-[min(32vh,12rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
+                      />
+                    </div>
                   </div>
                 </div>
                 <button
