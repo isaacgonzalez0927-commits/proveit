@@ -27,6 +27,14 @@ interface PlantIllustrationProps {
   size?: "default" | "large" | "small";
 }
 
+/** Color filter for photo plants — wilting/dead keep full color; only watering level adjusts vividness. */
+function plantPhotoFilter(healthState: PlantHealthState, safeWater: number): string {
+  if (healthState === "shielded") {
+    return `saturate(${0.9 + safeWater * 0.24}) brightness(${1 + safeWater * 0.12}) drop-shadow(0 0 10px rgba(148,163,184,0.7))`;
+  }
+  return `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`;
+}
+
 const STAGE_TO_NUMBER: Record<PlantStageKey, number> = {
   seedling: 1,
   sprout: 2,
@@ -279,14 +287,7 @@ export function PlantIllustration({
           alt=""
           className="h-full w-full select-none object-contain"
           style={{
-            filter:
-              healthState === "dead"
-                ? "grayscale(1) saturate(0.25) brightness(0.72)"
-                : healthState === "wilting"
-                  ? `saturate(${0.55 + safeWater * 0.2}) brightness(0.84)`
-                  : healthState === "shielded"
-                    ? `saturate(${0.9 + safeWater * 0.24}) brightness(${1 + safeWater * 0.12}) drop-shadow(0 0 10px rgba(148,163,184,0.7))`
-                    : `saturate(${0.88 + safeWater * 0.32}) brightness(${0.92 + safeWater * 0.12})`,
+            filter: plantPhotoFilter(healthState, safeWater),
             transform: `scale(${variantSizeMultiplier})`,
             transformOrigin: "center bottom",
           }}
@@ -364,12 +365,12 @@ function SvgPlantIllustration({
       >
         <defs>
           <linearGradient id={`leafGrad-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={healthState === "dead" ? "#94a3b8" : healthState === "wilting" ? "#a3a047" : "#6ee7b7"} />
-            <stop offset="100%" stopColor={healthState === "dead" ? "#475569" : healthState === "wilting" ? "#78716c" : "#22c55e"} />
+            <stop offset="0%" stopColor="#6ee7b7" />
+            <stop offset="100%" stopColor="#22c55e" />
           </linearGradient>
           <linearGradient id={`stemGrad-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={healthState === "dead" ? "#64748b" : healthState === "wilting" ? "#a3a047" : "#34d399"} />
-            <stop offset="100%" stopColor={healthState === "dead" ? "#334155" : healthState === "wilting" ? "#57534e" : "#15803d"} />
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#15803d" />
           </linearGradient>
           <linearGradient id={`potGrad-${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#c26d4f" />
