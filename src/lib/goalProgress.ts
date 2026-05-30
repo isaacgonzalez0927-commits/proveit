@@ -20,7 +20,7 @@ type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
 type GoalProgressGraceDay = Pick<GraceDayEvent, "goalId" | "weekStart">;
 
 /**
- * Streak for weekly goals.
+ * Streak for all goals (daily and N×/week), counted in calendar weeks.
  *
  * - Current (in-progress) week only counts once the full weekly quota is met.
  * - Until then, completed past weeks remain visible so the streak does not

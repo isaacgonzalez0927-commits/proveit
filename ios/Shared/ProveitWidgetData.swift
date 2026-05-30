@@ -23,7 +23,7 @@ struct ProveitWidgetSnapshot: Codable {
         goalsDueToday: 0,
         gardenWatered: 0,
         gardenTotal: 0,
-        streakUnit: "day"
+        streakUnit: "week"
     )
 }
 

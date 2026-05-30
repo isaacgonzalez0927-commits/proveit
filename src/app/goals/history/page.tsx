@@ -400,7 +400,7 @@ function GalleryContent() {
                               )}
                               {[
                                 historySettings.showStreak
-                                  ? `${streak} week streak`
+                                  ? `${streak} ${streak === 1 ? "week" : "weeks"} streak`
                                   : null,
                                 historySettings.showVerifiedCount ? `${completedDates.length} verified` : null,
                               ]

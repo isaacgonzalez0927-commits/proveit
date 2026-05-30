@@ -528,9 +528,10 @@ function DashboardContent() {
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {cadenceLabel}
                           {" · Streak: "}
-                          {(displayStreakByGoalId.get(goal.id) ?? 0) > 0
-                            ? `${displayStreakByGoalId.get(goal.id)} weeks`
-                            : "—"}
+                          {(() => {
+                            const n = displayStreakByGoalId.get(goal.id) ?? 0;
+                            return n > 0 ? `${n} ${n === 1 ? "week" : "weeks"}` : "—";
+                          })()}
                           {goal.isOnBreak ? " · On break" : ""}
                           {tw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
                         </p>
@@ -552,6 +553,10 @@ function DashboardContent() {
                           className="h-full w-full object-cover"
                         />
                       </Link>
+                    ) : showComplete ? (
+                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
+                        Done
+                      </span>
                     ) : canSubmitNow ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
@@ -560,10 +565,6 @@ function DashboardContent() {
                         <Camera className="h-4 w-4" />
                         Prove it
                       </Link>
-                    ) : showComplete ? (
-                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
-                        Done
-                      </span>
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
                         {getSubmissionWindowMessage(goal, now, subs) ??

@@ -1044,7 +1044,7 @@ export default function BuddyPage() {
                       <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">
                         {entry.streak}
                       </span>{" "}
-                      {effectiveTimesPerWeek(entry.goal) >= 7 ? "days" : "weeks"}
+                      {entry.streak === 1 ? "week" : "weeks"}
                       {entry.hasStreakOverride && (
                         <span className="text-amber-700 dark:text-amber-300"> (real {entry.actualStreak})</span>
                       )}
