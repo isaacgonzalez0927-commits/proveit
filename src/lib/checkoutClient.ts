@@ -20,12 +20,16 @@ export async function startStripeCheckout(
   };
 }
 
-export async function syncStripeSubscription(): Promise<
+export async function syncStripeSubscription(checkoutEmail?: string): Promise<
   { ok: true; plan: string; billing: string } | { ok: false; error: string }
 > {
   const res = await fetch("/api/stripe/sync-subscription", {
     method: "POST",
     credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(
+      checkoutEmail?.trim() ? { checkoutEmail: checkoutEmail.trim() } : {}
+    ),
   });
   const data = (await res.json().catch(() => ({}))) as {
     ok?: boolean;

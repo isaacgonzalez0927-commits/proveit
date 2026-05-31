@@ -148,6 +148,7 @@ export default function SettingsPage() {
   const [contactResendLoading, setContactResendLoading] = useState(false);
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
   const [subscriptionSyncLoading, setSubscriptionSyncLoading] = useState(false);
+  const [restoreCheckoutEmail, setRestoreCheckoutEmail] = useState("");
   const [strictAiEnabled, setStrictAiEnabled] = useState(false);
   const [settingsQuery, setSettingsQuery] = useState("");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
@@ -504,6 +505,19 @@ export default function SettingsPage() {
                       >
                         View plans
                       </Link>
+                      <label className="block text-left">
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          Email on Stripe receipt (optional)
+                        </span>
+                        <input
+                          type="email"
+                          value={restoreCheckoutEmail}
+                          onChange={(e) => setRestoreCheckoutEmail(e.target.value)}
+                          placeholder={user.contactEmail || "you@example.com"}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                          autoComplete="email"
+                        />
+                      </label>
                       <button
                         type="button"
                         disabled={subscriptionSyncLoading}
@@ -511,7 +525,7 @@ export default function SettingsPage() {
                           setSubscriptionSyncLoading(true);
                           setSettingsMessage(null);
                           try {
-                            const result = await syncStripeSubscription();
+                            const result = await syncStripeSubscription(restoreCheckoutEmail);
                             if (!result.ok) {
                               setSettingsMessage(result.error);
                               return;
@@ -533,7 +547,8 @@ export default function SettingsPage() {
                         {subscriptionSyncLoading ? "Checking Stripe…" : "Already paid? Restore subscription"}
                       </button>
                       <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
-                        Use the same account you paid with. Sign out and back in if the plan still looks wrong.
+                        Use the same username you subscribed with. If restore fails, enter the email from your
+                        Stripe receipt above.
                       </p>
                     </>
                   ) : (

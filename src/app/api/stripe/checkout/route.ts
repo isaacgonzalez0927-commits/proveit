@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS, normalizePlanId, type PlanId } from "@/types";
 import { isStripeConfigured, stripePriceIdForBilling } from "@/lib/billing";
+import { ensureStripeCustomerForCheckout } from "@/lib/stripeSubscriptionSync";
 
 export async function POST(request: NextRequest) {
   if (!isStripeConfigured()) {
@@ -53,21 +54,42 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, contact_email, contact_email_verified_at")
     .eq("id", user.id)
     .maybeSingle();
 
   const existingCustomerId =
     typeof profile?.stripe_customer_id === "string" ? profile.stripe_customer_id : undefined;
+  const contactEmail =
+    profile?.contact_email_verified_at && typeof profile?.contact_email === "string"
+      ? profile.contact_email
+      : typeof profile?.contact_email === "string"
+        ? profile.contact_email
+        : null;
 
   try {
+    const customerId = await ensureStripeCustomerForCheckout(
+      stripe,
+      user.id,
+      user.email,
+      existingCustomerId,
+      contactEmail
+    );
+
+    if (customerId !== existingCustomerId) {
+      await supabase
+        .from("profiles")
+        .update({
+          stripe_customer_id: customerId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      // Card only — avoids ACH "test bank account" confusion in Stripe test mode.
       payment_method_types: ["card"],
-      ...(existingCustomerId
-        ? { customer: existingCustomerId }
-        : { customer_email: user.email }),
+      customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/dashboard?checkout=success&plan=${plan}`,
       cancel_url: `${origin}/pricing?checkout=cancelled`,
@@ -88,16 +110,6 @@ export async function POST(request: NextRequest) {
 
     if (!session.url) {
       return NextResponse.json({ error: "Could not start checkout." }, { status: 500 });
-    }
-
-    if (!existingCustomerId && typeof session.customer === "string") {
-      await supabase
-        .from("profiles")
-        .update({
-          stripe_customer_id: session.customer,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
     }
 
     return NextResponse.json({ url: session.url });

@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { isInternalAuthEmail } from "@/lib/usernameAuth";
 import { PLANS, normalizePlanId, type PlanId } from "@/types";
 import {
   freezeRemindersBeyondLimit,
@@ -188,11 +189,121 @@ export async function lookupUserIdByStripeCustomer(
   return typeof data?.id === "string" ? data.id : null;
 }
 
+function isPaidSubscriptionStatus(status: Stripe.Subscription.Status): boolean {
+  return status === "active" || status === "trialing";
+}
+
+async function retrievePaidSubscription(
+  stripe: Stripe,
+  subscriptionId: string
+): Promise<Stripe.Subscription | null> {
+  try {
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    return isPaidSubscriptionStatus(sub.status) ? sub : null;
+  } catch {
+    return null;
+  }
+}
+
+async function searchPaidSubscriptionByMetadata(
+  stripe: Stripe,
+  userId: string
+): Promise<Stripe.Subscription | null> {
+  try {
+    const result = await stripe.subscriptions.search({
+      query: `metadata['userId']:'${userId}'`,
+      limit: 10,
+    });
+    return result.data.find((s) => isPaidSubscriptionStatus(s.status)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function collectLookupEmails(
+  profile: Record<string, unknown> | null,
+  opts?: { authEmail?: string | null; checkoutEmail?: string | null }
+): string[] {
+  const emails = new Set<string>();
+  const add = (raw: unknown) => {
+    if (typeof raw !== "string") return;
+    const e = raw.trim().toLowerCase();
+    if (e.includes("@")) emails.add(e);
+  };
+  add(opts?.checkoutEmail);
+  add(opts?.authEmail);
+  add(profile?.email);
+  add(profile?.contact_email);
+  add(profile?.contact_email_pending);
+  return [...emails];
+}
+
+async function findActiveSubscriptionForUser(
+  stripe: Stripe,
+  userId: string,
+  profile: Record<string, unknown> | null,
+  opts?: { authEmail?: string | null; checkoutEmail?: string | null }
+): Promise<{ sub: Stripe.Subscription; customerId: string } | null> {
+  const storedSubId =
+    typeof profile?.stripe_subscription_id === "string" ? profile.stripe_subscription_id : null;
+  if (storedSubId) {
+    const sub = await retrievePaidSubscription(stripe, storedSubId);
+    if (sub) {
+      const customerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? "";
+      if (customerId) return { sub, customerId };
+    }
+  }
+
+  const byMeta = await searchPaidSubscriptionByMetadata(stripe, userId);
+  if (byMeta) {
+    const customerId =
+      typeof byMeta.customer === "string" ? byMeta.customer : byMeta.customer?.id ?? "";
+    if (customerId) return { sub: byMeta, customerId };
+  }
+
+  let customerId =
+    typeof profile?.stripe_customer_id === "string" ? profile.stripe_customer_id : null;
+
+  const emails = collectLookupEmails(profile, opts);
+  if (!customerId) {
+    for (const email of emails) {
+      const customers = await stripe.customers.list({ email, limit: 5 });
+      customerId = customers.data[0]?.id ?? null;
+      if (customerId) break;
+    }
+  }
+
+  if (!customerId) {
+    try {
+      const found = await stripe.customers.search({
+        query: `metadata['userId']:'${userId}'`,
+        limit: 1,
+      });
+      customerId = found.data[0]?.id ?? null;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (customerId) {
+    const list = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 20,
+    });
+    const sub = list.data.find((s) => isPaidSubscriptionStatus(s.status)) ?? null;
+    if (sub) return { sub, customerId };
+  }
+
+  return null;
+}
+
 /** Pull active subscription from Stripe and write plan to profiles (webhook recovery). */
 export async function syncStripeSubscriptionForUser(
   stripe: Stripe,
   userId: string,
-  opts?: { email?: string | null }
+  opts?: { authEmail?: string | null; checkoutEmail?: string | null }
 ): Promise<
   | { ok: true; plan: PlanId; billing: "monthly" | "yearly" }
   | { ok: false; error: string }
@@ -202,36 +313,31 @@ export async function syncStripeSubscriptionForUser(
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("stripe_customer_id, email")
+    .select(
+      "stripe_customer_id, stripe_subscription_id, email, contact_email, contact_email_pending"
+    )
     .eq("id", userId)
     .maybeSingle();
 
-  let customerId =
-    typeof profile?.stripe_customer_id === "string" ? profile.stripe_customer_id : null;
+  const found = await findActiveSubscriptionForUser(
+    stripe,
+    userId,
+    (profile as Record<string, unknown> | null) ?? null,
+    opts
+  );
 
-  const email = opts?.email ?? (typeof profile?.email === "string" ? profile.email : null);
-  if (!customerId && email) {
-    const customers = await stripe.customers.list({ email, limit: 5 });
-    customerId = customers.data[0]?.id ?? null;
+  if (!found) {
+    const authEmail = opts?.authEmail ?? (typeof profile?.email === "string" ? profile.email : null);
+    const hint = isInternalAuthEmail(authEmail)
+      ? " Sign in with the same username you used when paying. If you paid with a different email, add it under Settings → Contact email, or try restore again after checkout."
+      : " Make sure you're signed into the account that completed checkout.";
+    return {
+      ok: false,
+      error: `No active Stripe subscription found for this Proveit account.${hint}`,
+    };
   }
 
-  if (!customerId) {
-    return { ok: false, error: "No Stripe customer found for this account." };
-  }
-
-  const list = await stripe.subscriptions.list({
-    customer: customerId,
-    status: "all",
-    limit: 10,
-  });
-
-  const sub =
-    list.data.find((s) => s.status === "active" || s.status === "trialing") ?? null;
-
-  if (!sub) {
-    return { ok: false, error: "No active subscription found in Stripe for this account." };
-  }
-
+  const { sub, customerId } = found;
   const plan = resolvePlanFromSubscription(sub);
   if (plan !== "pro" && plan !== "premium") {
     return { ok: false, error: "Could not determine Pro or Premium from Stripe subscription." };
@@ -243,11 +349,34 @@ export async function syncStripeSubscriptionForUser(
       ? sub.metadata.billing
       : billingFromStripePriceId(priceId);
 
-  const customer =
-    typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? customerId;
-
-  const applied = await applyPaidPlan(userId, plan, billing, customer, sub.id);
+  const applied = await applyPaidPlan(userId, plan, billing, customerId, sub.id);
   if (!applied.ok) return applied;
 
   return { ok: true, plan, billing };
+}
+
+/** Ensure a Stripe customer exists and is linked before Checkout (metadata for later sync). */
+export async function ensureStripeCustomerForCheckout(
+  stripe: Stripe,
+  userId: string,
+  authEmail: string,
+  existingCustomerId?: string | null,
+  contactEmail?: string | null
+): Promise<string> {
+  const receiptEmail =
+    contactEmail && !isInternalAuthEmail(contactEmail) ? contactEmail.trim().toLowerCase() : null;
+
+  if (existingCustomerId) {
+    await stripe.customers.update(existingCustomerId, {
+      metadata: { userId },
+      ...(receiptEmail ? { email: receiptEmail } : {}),
+    });
+    return existingCustomerId;
+  }
+
+  const customer = await stripe.customers.create({
+    email: receiptEmail || authEmail,
+    metadata: { userId },
+  });
+  return customer.id;
 }
