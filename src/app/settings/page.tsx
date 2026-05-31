@@ -47,7 +47,7 @@ import {
   type AccentTheme,
 } from "@/lib/theme";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
-import { openStripeBillingPortal } from "@/lib/checkoutClient";
+import { openStripeBillingPortal, syncStripeSubscription } from "@/lib/checkoutClient";
 import { PLANS } from "@/types";
 
 function SettingsDisclosure({
@@ -147,6 +147,7 @@ export default function SettingsPage() {
   const [contactSaving, setContactSaving] = useState(false);
   const [contactResendLoading, setContactResendLoading] = useState(false);
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
+  const [subscriptionSyncLoading, setSubscriptionSyncLoading] = useState(false);
   const [strictAiEnabled, setStrictAiEnabled] = useState(false);
   const [settingsQuery, setSettingsQuery] = useState("");
   const isCreatorAccount = hasCreatorAccess(user?.email, user?.contactEmail);
@@ -496,12 +497,45 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2 border-t border-slate-100 px-4 py-4 dark:border-white/10">
                   {user.plan === "free" ? (
-                    <Link
-                      href="/pricing"
-                      className="block w-full rounded-2xl bg-prove-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
-                    >
-                      View plans
-                    </Link>
+                    <>
+                      <Link
+                        href="/pricing"
+                        className="block w-full rounded-2xl bg-prove-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
+                      >
+                        View plans
+                      </Link>
+                      <button
+                        type="button"
+                        disabled={subscriptionSyncLoading}
+                        onClick={async () => {
+                          setSubscriptionSyncLoading(true);
+                          setSettingsMessage(null);
+                          try {
+                            const result = await syncStripeSubscription();
+                            if (!result.ok) {
+                              setSettingsMessage(result.error);
+                              return;
+                            }
+                            const profileRes = await fetch("/api/profile", { credentials: "include" });
+                            const profileData = (await profileRes.json().catch(() => ({}))) as {
+                              profile?: Record<string, unknown>;
+                            };
+                            if (profileData.profile) applyProfileToUser(profileData.profile);
+                            setSettingsMessage(
+                              `Subscription restored — you're on ${result.plan === "premium" ? "Premium" : "Pro"}.`
+                            );
+                          } finally {
+                            setSubscriptionSyncLoading(false);
+                          }
+                        }}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-prove-200 px-4 py-3 text-sm font-semibold text-prove-700 hover:bg-prove-50 disabled:opacity-70 dark:border-prove-800 dark:text-prove-200 dark:hover:bg-prove-950/40"
+                      >
+                        {subscriptionSyncLoading ? "Checking Stripe…" : "Already paid? Restore subscription"}
+                      </button>
+                      <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
+                        Use the same account you paid with. Sign out and back in if the plan still looks wrong.
+                      </p>
+                    </>
                   ) : (
                     <>
                       <p className="text-xs text-slate-500 dark:text-slate-400">

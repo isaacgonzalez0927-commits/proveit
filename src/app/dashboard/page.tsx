@@ -24,6 +24,7 @@ import { ShareImageButton } from "@/components/ShareImageButton";
 import { getPlan } from "@/lib/store";
 import { PLANS, normalizePlanId } from "@/types";
 import { clearPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
+import { syncStripeSubscription } from "@/lib/checkoutClient";
 import { consumeWateredGoalFlash } from "@/lib/wateredGoalFlash";
 import { progressShareFilename, renderProgressShareImage } from "@/lib/shareProgressImage";
 import { shareOrDownloadBlob } from "@/lib/shareImage";
@@ -93,22 +94,21 @@ function DashboardContent() {
     const planName = PLANS.find((p) => p.id === planParam)?.name ?? "Pro";
     setCheckoutBanner(`Welcome to ${planName}! Your subscription is active.`);
 
-    fetch("/api/profile", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data: { profile?: Record<string, unknown> }) => {
-        const p = data.profile;
-        if (!p || !user) return;
-        setUser({
-          ...user,
-          plan: normalizePlanId(p.plan),
-          planBilling:
-            typeof p.planBilling === "string" ? (p.planBilling as "monthly" | "yearly") : user.planBilling,
-          trialExpiredNeedsReview: p.trialExpiredNeedsReview === true,
-        });
-      })
-      .catch(() => {
-        /* profile refresh is best-effort after checkout */
+    void (async () => {
+      await syncStripeSubscription().catch(() => null);
+      const r = await fetch("/api/profile", { credentials: "include" }).catch(() => null);
+      if (!r) return;
+      const data = (await r.json().catch(() => ({}))) as { profile?: Record<string, unknown> };
+      const p = data.profile;
+      if (!p || !user) return;
+      setUser({
+        ...user,
+        plan: normalizePlanId(p.plan),
+        planBilling:
+          typeof p.planBilling === "string" ? (p.planBilling as "monthly" | "yearly") : user.planBilling,
+        trialExpiredNeedsReview: p.trialExpiredNeedsReview === true,
       });
+    })();
 
     router.replace("/dashboard");
   }, [router, searchParams, setUser, user?.id]);
