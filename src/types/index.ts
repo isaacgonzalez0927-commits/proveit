@@ -137,8 +137,8 @@ export const PLANS: Plan[] = [
       "Pro achievements & badges",
       "Priority support",
     ],
-    stripePriceIdMonthly: "price_pro_monthly",
-    stripePriceIdYearly: "price_pro_yearly",
+    stripePriceIdMonthly: "price_1Td0HdEsZ4luO1iTdKLE8j4S",
+    stripePriceIdYearly: "price_1Td0MCEsZ4luO1iTQ2bGy5b1",
   },
   {
     id: "premium",
@@ -159,7 +159,7 @@ export const PLANS: Plan[] = [
       "Exclusive achievements & rewards",
       "Priority & dedicated support",
     ],
-    stripePriceIdMonthly: "price_premium_monthly",
-    stripePriceIdYearly: "price_premium_yearly",
+    stripePriceIdMonthly: "price_1Td0YHEsZ4luO1iTZfsq3xn0",
+    stripePriceIdYearly: "price_1Td0YHEsZ4luO1iTIxpajqsa",
   },
 ];
