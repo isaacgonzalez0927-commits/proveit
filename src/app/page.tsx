@@ -441,15 +441,13 @@ function LandingContent() {
   }
 
   return (
-    <main className="fixed inset-0 flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
-      {/* Decorative background shapes */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-prove-200/40 blur-3xl dark:bg-prove-900/30" />
-        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-prove-100/50 blur-3xl dark:bg-prove-900/20" />
-        <div className="absolute right-1/3 top-1/4 h-40 w-40 rounded-full bg-prove-300/20 blur-2xl dark:bg-prove-800/20" />
-      </div>
+    <main
+      data-intro-fullscreen
+      className="fixed inset-0 z-[200] flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-slate-950 touch-pan-y"
+      style={{ height: "100dvh", minHeight: "100dvh" }}
+    >
       <div
-        className="relative z-10 flex flex-1 flex-col overflow-hidden"
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
         onTouchStart={(e) => handleTouchStart(e.touches[0].clientX)}
         onTouchMove={(e) => handleTouchMove(e.touches[0].clientX)}
         onTouchEnd={handleTouchEnd}
@@ -465,8 +463,8 @@ function LandingContent() {
           style={{ transform: `translateX(-${slide * (100 / INTRO_SLIDE_COUNT)}%)` }}
         >
           {/* Slide 0 – Welcome */}
-          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[clamp(0.75rem,2vh,1.5rem)]">
-            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/40 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30">
+            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 pb-4">
               <div className="text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-prove-600 dark:text-prove-300">
                   Welcome to Proveit
@@ -484,7 +482,7 @@ function LandingContent() {
                 </div>
               </div>
             </div>
-            <div className="mt-5 flex w-full items-center justify-center">
+            <div className="mt-5 flex w-full items-center justify-center px-5 pb-[max(5rem,env(safe-area-inset-bottom))]">
               <div className="flex w-full max-w-sm flex-col gap-3">
                 <button
                   type="button"
@@ -511,15 +509,14 @@ function LandingContent() {
           </section>
 
           {/* Slide 1 – AI verification */}
-          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-slate-950 shadow-2xl shadow-slate-900/25 dark:border-white/10">
-                <img
-                  src="/onboarding/book-proof.png"
-                  alt="Book proof example"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
-              <div className="relative flex h-full w-full flex-col justify-between p-6 text-white">
+          <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#061527]">
+            <img
+              src="/onboarding/book-proof.png"
+              alt="Book proof example"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
+            <div className="relative flex h-full min-h-full w-full flex-col justify-between px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
                 <button
                   type="button"
                   onClick={() => goTo(0)}
@@ -546,15 +543,13 @@ function LandingContent() {
                   Next
                 </button>
               </div>
-            </div>
           </section>
 
           {/* Slide 2 – Plants */}
-          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-[#061527] shadow-2xl shadow-emerald-950/35 dark:border-white/10">
-              <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
-              <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
-              <div className="relative flex h-full w-full flex-col justify-between p-6 text-white">
+          <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#061527]">
+            <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
+            <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
+            <div className="relative flex h-full min-h-full w-full flex-col justify-between px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
                 <button
                   type="button"
                   onClick={() => goTo(1)}
@@ -589,15 +584,13 @@ function LandingContent() {
                   Next
                 </button>
               </div>
-            </div>
           </section>
 
           {/* Slide 3 – Buddies */}
-          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[2.25rem] border border-slate-950/10 bg-[#0c1a2e] shadow-2xl shadow-slate-900/25 dark:border-white/10">
-              <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-sky-500/25 to-transparent" />
-              <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-prove-500/15 blur-3xl" />
-              <div className="relative flex h-full w-full flex-col justify-between p-6 text-white">
+          <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#0c1a2e]">
+            <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-sky-500/25 to-transparent" />
+            <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-prove-500/15 blur-3xl" />
+            <div className="relative flex h-full min-h-full w-full flex-col justify-between px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
                 <button
                   type="button"
                   onClick={() => goTo(2)}
@@ -650,11 +643,10 @@ function LandingContent() {
                   {user ? "Choose plan" : "Start"}
                 </button>
               </div>
-            </div>
           </section>
 
           {/* Slide 4 – Sign in */}
-          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
             <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 6</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
@@ -745,14 +737,14 @@ function LandingContent() {
                 </form>
               </div>
             </div>
-            <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
+            <div className="mt-2 flex w-full max-w-sm mx-auto shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500 dark:text-slate-400">
               <button type="button" onClick={() => goTo(2)} className="active:opacity-70">Back</button>
               <span>Plan comes next</span>
             </div>
           </section>
 
           {/* Slide 5 – Choose plan */}
-          <section className="flex h-full w-1/6 shrink-0 flex-col overflow-hidden px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2">
+          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
             <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1 justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 6 of 6</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
@@ -815,38 +807,41 @@ function LandingContent() {
                 ))}
               </div>
             </div>
-            <div className="mt-2 flex w-full max-w-sm mx-auto items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 shrink-0">
+            <div className="mt-2 flex w-full max-w-sm mx-auto shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500 dark:text-slate-400">
               <button type="button" onClick={() => goTo(3)} className="active:opacity-70">Back</button>
               <span>Swipe ← back</span>
             </div>
           </section>
         </div>
-        {/* Dots indicator */}
-        <div
-          className="flex shrink-0 items-center justify-center gap-[clamp(0.375rem,1.5vw,0.5rem)] px-4 py-[clamp(0.375rem,1.5vh,0.5rem)] pb-[max(0.5rem,env(safe-area-inset-bottom))] animate-welcome-dots [animation-fill-mode:forwards]"
-        >
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goTo(i as Slide)}
-              className={`rounded-full transition-all duration-300 ${
-                slide === i
-                  ? "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(1rem,4vmin,1.5rem)] bg-prove-600 dark:bg-prove-400"
-                  : "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(0.375rem,1.5vmin,0.5rem)] bg-slate-300 dark:bg-slate-600"
-              }`}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
-        </div>
-        <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs text-slate-500 dark:text-slate-400">
-          <Link href="/privacy" className="hover:underline">
-            Privacy
-          </Link>
-          <span className="mx-2">·</span>
-          <Link href="/terms" className="hover:underline">
-            Terms
-          </Link>
+
+        {/* Dots + legal — overlay so slides stay edge-to-edge */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/55 via-black/25 to-transparent pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10 dark:from-black/70">
+          <div
+            className="pointer-events-auto flex items-center justify-center gap-[clamp(0.375rem,1.5vw,0.5rem)] px-4 animate-welcome-dots [animation-fill-mode:forwards]"
+          >
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goTo(i as Slide)}
+                className={`rounded-full transition-all duration-300 ${
+                  slide === i
+                    ? "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(1rem,4vmin,1.5rem)] bg-prove-400"
+                    : "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(0.375rem,1.5vmin,0.5rem)] bg-white/40"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
+          <p className="pointer-events-auto mt-2 text-center text-xs text-white/70">
+            <Link href="/privacy" className="hover:text-white hover:underline">
+              Privacy
+            </Link>
+            <span className="mx-2">·</span>
+            <Link href="/terms" className="hover:text-white hover:underline">
+              Terms
+            </Link>
+          </p>
         </div>
       </div>
     </main>

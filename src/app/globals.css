@@ -1168,6 +1168,14 @@ input[type="file"] {
   animation: tab-slide-left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Onboarding carousel: true fullscreen, no document scroll */
+html:has([data-intro-fullscreen]),
+html:has([data-intro-fullscreen]) body {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
 .animate-tab-slide-right {
   animation: tab-slide-right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
