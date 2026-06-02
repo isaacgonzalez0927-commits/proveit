@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { notificationsAreGranted } from "@/lib/notificationPermission";
+import { isNativeCapacitorShell } from "@/lib/nativeWidgetBridge";
 import {
   PENDING_PLAN_AFTER_TOUR_KEY,
   TOUR_DONE_KEY,
@@ -10,7 +12,7 @@ import {
 } from "@/lib/tourStorage";
 
 export function NotificationPrompt() {
-  const { requestNotificationPermission } = useApp();
+  const { requestNotificationPermission, goals } = useApp();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -21,17 +23,27 @@ export function NotificationPrompt() {
     if (wasDismissed) setDismissed(true);
     const pendingTourPlan = Boolean(localStorage.getItem(PENDING_PLAN_AFTER_TOUR_KEY));
     const tourFinished = localStorage.getItem(TOUR_DONE_KEY) === TOUR_DONE_VERSION;
-    if (pendingTourPlan && !tourFinished) {
-      return;
-    }
-    if ("Notification" in window && Notification.permission === "default" && !wasDismissed) {
-      const t = setTimeout(() => setShow(true), 2000);
-      return () => clearTimeout(t);
-    }
+    if (pendingTourPlan && !tourFinished) return;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void notificationsAreGranted().then((granted) => {
+      if (granted || wasDismissed) return;
+      const canPrompt =
+        isNativeCapacitorShell() ||
+        ("Notification" in window && Notification.permission === "default");
+      if (canPrompt) timer = setTimeout(() => setShow(true), 2000);
+    });
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const handleAllow = async () => {
     const ok = await requestNotificationPermission();
+    if (ok && isNativeCapacitorShell()) {
+      const { syncNativeGoalReminders } = await import("@/lib/nativeLocalNotifications");
+      await syncNativeGoalReminders(goals);
+    }
     if (ok) setShow(false);
     setDismissed(true);
     localStorage.setItem("proveit_notification_prompt_dismissed", "1");

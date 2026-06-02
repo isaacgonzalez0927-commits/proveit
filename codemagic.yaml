@@ -1,0 +1,64 @@
+# Proveit — iOS App Store / TestFlight without a local Mac.
+# Setup: https://docs.codemagic.io/yaml-quick-start/building-a-flutter-app/
+# 1. Connect this repo in Codemagic
+# 2. Add App Store Connect API key integration (App Manager role)
+# 3. Register bundle IDs com.proveit.app + com.proveit.app.ProveitWidget + App Group group.com.proveit.app
+# 4. Upload signing certificates / profiles OR enable automatic code signing
+# 5. Start workflow "ios-release"
+
+workflows:
+  ios-release:
+    name: Proveit iOS (TestFlight)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+
+    environment:
+      node: "20"
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.proveit.app
+      vars:
+        CAPACITOR_SERVER_URL: "https://proveit-goals.com"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      # Optional: group with APP_STORE_CONNECT_* if not using integration UI
+      # groups:
+      #   - app_store_credentials
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Sync Capacitor iOS (production URL)
+        script: |
+          export CAPACITOR_SERVER_URL="${CAPACITOR_SERVER_URL}"
+          npx cap sync ios
+
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        # Configure App Store Connect integration in Codemagic UI
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testers

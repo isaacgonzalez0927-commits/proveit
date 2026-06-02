@@ -16,15 +16,18 @@ export function PlantWateringCelebration({
   variant,
   className = "",
 }: PlantWateringCelebrationProps) {
-  const [wateringLevel, setWateringLevel] = useState(0.35);
+  const [wateringLevel, setWateringLevel] = useState(0.2);
+  const [burst, setBurst] = useState(false);
   const [active, setActive] = useState(true);
   const [canFilter, setCanFilter] = useState("none");
 
   useEffect(() => {
     setCanFilter(getThemedWateringCanFilter());
-    const levelTimer = window.setTimeout(() => setWateringLevel(1), 420);
-    const endTimer = window.setTimeout(() => setActive(false), 1400);
+    const burstTimer = window.setTimeout(() => setBurst(true), 180);
+    const levelTimer = window.setTimeout(() => setWateringLevel(1), 380);
+    const endTimer = window.setTimeout(() => setActive(false), 2200);
     return () => {
+      window.clearTimeout(burstTimer);
       window.clearTimeout(levelTimer);
       window.clearTimeout(endTimer);
     };
@@ -32,9 +35,26 @@ export function PlantWateringCelebration({
 
   return (
     <div
-      className={`relative mx-auto h-[148px] w-[168px] ${className}`}
+      className={`relative mx-auto h-[168px] w-[188px] ${className}`}
       aria-hidden
     >
+      {burst && active && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+          <span className="absolute h-28 w-28 animate-garden-water-burst rounded-full bg-emerald-400/35" />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <span
+              key={`spark-${i}`}
+              className="garden-sparkle absolute h-2 w-2 rounded-full bg-emerald-300"
+              style={{
+                animationDelay: `${0.05 + i * 0.07}s`,
+                left: `${20 + i * 11}%`,
+                top: `${18 + (i % 3) * 14}%`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <div
         className={`absolute bottom-0 left-1/2 z-0 -translate-x-1/2 ${active ? "animate-plant-water-bounce" : ""}`}
       >
@@ -43,31 +63,32 @@ export function PlantWateringCelebration({
           wateringLevel={wateringLevel}
           wateredGoals={1}
           variant={variant}
+          healthState="healthy"
           size="small"
         />
       </div>
 
       {active && (
-        <div className="pointer-events-none absolute left-[46%] top-[22px] z-20 flex flex-col items-center gap-1">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="pointer-events-none absolute left-[46%] top-[18px] z-20 flex flex-col items-center gap-0.5">
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
             <span
               key={i}
               className="water-drop"
-              style={{ animationDelay: `${0.32 + i * 0.12}s` }}
+              style={{ animationDelay: `${0.22 + i * 0.09}s` }}
             />
           ))}
         </div>
       )}
 
       {active && (
-        <div className="pointer-events-none absolute left-[-6px] top-[-2px] z-10 origin-[72%_88%] animate-watering-can-tilt">
+        <div className="pointer-events-none absolute left-[-6px] top-[-6px] z-10 origin-[72%_88%] animate-watering-can-tilt">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/watering-can.png"
             alt=""
-            width={72}
-            height={72}
-            className="h-[72px] w-[72px] object-contain"
+            width={80}
+            height={80}
+            className="h-[80px] w-[80px] object-contain"
             style={{ filter: canFilter }}
             draggable={false}
           />

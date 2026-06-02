@@ -1,6 +1,8 @@
 # App Store submission checklist (Proveit)
 
-Use this when submitting Proveit to the Apple App Store. The app already includes the in-app requirements below; use App Store Connect for metadata and build upload.
+**Publish steps (build, TestFlight, submit):** see **[APP_STORE_PUBLISH.md](./APP_STORE_PUBLISH.md)**.
+
+Use this page for in-app compliance and App Store Connect field reference.
 
 ## In-app (already done)
 
@@ -11,6 +13,8 @@ Use this when submitting Proveit to the Apple App Store. The app already include
 - **Consent before signup** – “By creating an account you agree to our Privacy Policy and Terms of Use”
 - **iOS permission strings** – Camera and Photo Library usage descriptions in `ios/App/App/Info.plist`
 - **Home screen widgets** – Streak, today's goals, and garden widgets (see [IOS_WIDGETS.md](./IOS_WIDGETS.md))
+- **Native daily reminders** – Local notifications on iOS when the app is closed (`@capacitor/local-notifications`)
+- **Export compliance** – Standard encryption only (`ITSAppUsesNonExemptEncryption` in Info.plist)
 
 ## App Store Connect
 
@@ -29,7 +33,7 @@ Use this when submitting Proveit to the Apple App Store. The app already include
    - Real app UI only; no placeholder or mockup text
 
 4. **Build**
-   - From Xcode/Capacitor: archive and upload, or use CI
+   - `npm run cap:ios:release` then Xcode Archive, **or** Codemagic workflow `ios-release` ([codemagic.yaml](./codemagic.yaml))
    - As of 2025: build with Xcode 16+ / iOS 18 SDK for new submissions
 
 5. **TestFlight (test before submitting)**

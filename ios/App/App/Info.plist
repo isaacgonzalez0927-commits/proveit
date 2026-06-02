@@ -51,6 +51,8 @@
 	<string>Proveit needs camera access to take photos as proof when you complete a goal.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Proveit can use a photo from your library as proof when you complete a goal.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

@@ -50,7 +50,7 @@ import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
-import { getWeeklyPlantState } from "@/lib/plantState";
+import { getPlantHydration, resolvePlantWateringLevel } from "@/lib/plantState";
 
 function DashboardContent() {
   const router = useRouter();
@@ -80,7 +80,7 @@ function DashboardContent() {
     const goalId = consumeWateredGoalFlash();
     if (!goalId) return;
     setWateredFlashGoalId(goalId);
-    const timer = window.setTimeout(() => setWateredFlashGoalId(null), 1200);
+    const timer = window.setTimeout(() => setWateredFlashGoalId(null), 2800);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -198,17 +198,15 @@ function DashboardContent() {
   const displayStreakByGoalId = new Map(goalStreaks.map((entry) => [entry.goal.id, entry.displayStreak]));
   const sortedGoalStreaks = [...goalStreaks].sort((a, b) => b.displayStreak - a.displayStreak);
   const gardenSnapshotPlants = sortedGoalStreaks.map((entry) => {
-    const healthState = getWeeklyPlantState(
-      entry.goal,
-      getSubmissionsForGoal(entry.goal.id),
-      graceDayEvents
-    );
+    const subs = getSubmissionsForGoal(entry.goal.id);
+    const hydration = getPlantHydration(entry.goal, subs, graceDayEvents);
+    const doneToday = hasVerifiedSubmissionOnDate(subs, format(new Date(), "yyyy-MM-dd"));
     return {
       id: entry.goal.id,
       stage: getPlantStageForStreak(entry.displayStreak).stage,
-      wateringLevel: 1,
+      wateringLevel: resolvePlantWateringLevel(hydration, doneToday),
       variant: getGoalPlantVariant(entry.goal.id),
-      healthState,
+      healthState: hydration.state,
     };
   });
 

@@ -1108,11 +1108,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const requestNotificationPermission = useCallback(async () => {
-    if (typeof window === "undefined" || !("Notification" in window)) return false;
-    if (Notification.permission === "granted") return true;
-    if (Notification.permission === "denied") return false;
-    const result = await Notification.requestPermission();
-    return result === "granted";
+    const { requestNotificationPermission: request } = await import(
+      "@/lib/notificationPermission"
+    );
+    return request();
   }, []);
 
   const setGoalPlantVariant = useCallback((goalId: string, variant: GoalPlantVariant) => {

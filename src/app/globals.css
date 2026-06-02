@@ -995,6 +995,87 @@ input[type="file"] {
   animation: plant-water-pulse 0.85s ease-out 1;
 }
 
+@keyframes garden-water-burst {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.animate-garden-water-burst {
+  animation: garden-water-burst 0.75s ease-out 1;
+}
+
+@keyframes garden-sparkle-pop {
+  0% {
+    transform: scale(0) translateY(6px);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2) translateY(-10px);
+    opacity: 0;
+  }
+}
+.garden-sparkle {
+  animation: garden-sparkle-pop 0.65s ease-out both;
+}
+
+@keyframes plant-sway {
+  0%,
+  100% {
+    transform: rotate(-1.2deg);
+  }
+  50% {
+    transform: rotate(1.4deg);
+  }
+}
+.animate-plant-sway {
+  animation: plant-sway 3.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes plant-wilt-shake {
+  0%,
+  100% {
+    transform: rotate(-3deg) scale(0.97);
+  }
+  50% {
+    transform: rotate(2deg) scale(0.96);
+  }
+}
+.animate-plant-wilt {
+  animation: plant-wilt-shake 4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.plant-health-dead img,
+.plant-health-dead svg {
+  filter: saturate(0.35) brightness(0.88) !important;
+  opacity: 0.82;
+}
+
+@keyframes garden-bloom-firefly {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.15);
+    opacity: 0.95;
+  }
+}
+.garden-bloom-firefly {
+  animation: garden-bloom-firefly 2.4s ease-in-out infinite;
+}
+
+
 /* Success checkmark pop when proof is verified */
 @keyframes success-pop {
   0% { transform: scale(0.4); opacity: 0; }

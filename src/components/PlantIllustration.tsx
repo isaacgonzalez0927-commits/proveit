@@ -275,11 +275,19 @@ export function PlantIllustration({
   }, [photoCandidates, stage, variant]);
 
   const safeWater = clamp(wateringLevel, 0, 1);
+  const healthMotion =
+    healthState === "wilting"
+      ? "animate-plant-wilt"
+      : healthState === "healthy" && safeWater >= 0.55
+        ? "animate-plant-sway"
+        : "";
+  const healthTone =
+    healthState === "dead" ? "plant-health-dead" : healthState === "wilting" ? "opacity-95" : "";
   const photoMatchesCurrent = loadedForRef.current?.stage === stage && loadedForRef.current?.variant === variant;
   if (photoResolved && photoSrc && photoMatchesCurrent) {
     return (
       <div
-        className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
+        className={`relative inline-flex items-center justify-center ${healthMotion} ${healthTone} ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
         style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", transformOrigin: "center bottom" }}
       >
         <img
@@ -317,16 +325,18 @@ export function PlantIllustration({
   }
 
   return (
-    <SvgPlantIllustration
-      stage={stage}
-      wateringLevel={wateringLevel}
-      wateredGoals={wateredGoals}
-      variant={variant}
-      healthState={healthState}
-      playFinalStageAnimation={playFinalStageAnimation}
-      className={className}
-      size={size}
-    />
+    <div className={`${healthMotion} ${healthTone}`}>
+      <SvgPlantIllustration
+        stage={stage}
+        wateringLevel={wateringLevel}
+        wateredGoals={wateredGoals}
+        variant={variant}
+        healthState={healthState}
+        playFinalStageAnimation={playFinalStageAnimation}
+        className={className}
+        size={size}
+      />
+    </div>
   );
 }
 

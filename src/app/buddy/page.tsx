@@ -53,7 +53,23 @@ import { isProofRequirementAllowed, proofSuggestionsForStorage } from "@/lib/pro
 import type { Goal, TimesPerWeek } from "@/types";
 import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
 import { getActiveReminderLimit, countActiveReminders } from "@/lib/subscriptionLimits";
-import { getWeeklyPlantState } from "@/lib/plantState";
+import {
+  getPlantHydration,
+  resolvePlantWateringLevel,
+} from "@/lib/plantState";
+import { consumeGardenProofFlash } from "@/lib/gardenProofFlash";
+import {
+  completeGardenRecovery,
+  getGardenersNote,
+  syncGardenWeekMeta,
+} from "@/lib/gardenMeta";
+import { GardenBloomOverlay } from "@/components/GardenBloomOverlay";
+import { GardenersNote } from "@/components/GardenersNote";
+import { PlantHydrationBar } from "@/components/PlantHydrationBar";
+import {
+  GardenHeaderSummary,
+  summarizeGardenHealth,
+} from "@/components/GardenHeaderSummary";
 import {
   TOUR_CHANGED_EVENT,
   TOUR_GARDEN_HINT_KEY,
@@ -122,11 +138,49 @@ export default function BuddyPage() {
   const [showGardenTourHint, setShowGardenTourHint] = useState(false);
   const [gardenTourHintStep, setGardenTourHintStep] = useState<"manage" | "create">("manage");
   const [tourSpotlight, setTourSpotlight] = useState<string | null>(null);
+  const [highlightGoalId, setHighlightGoalId] = useState<string | null>(null);
+  const [gardenProofToast, setGardenProofToast] = useState<string | null>(null);
+  const goalCardRefs = useRef<Record<string, HTMLElement | null>>({});
   const newTitleRef = useRef(newTitle);
   newTitleRef.current = newTitle;
 
   useEffect(() => {
     setDeveloperSettings(getStoredDeveloperModeSettings());
+  }, []);
+
+  useEffect(() => {
+    const flash = consumeGardenProofFlash();
+    if (!flash) return;
+    setHighlightGoalId(flash.goalId);
+    if (flash.verified) {
+      completeGardenRecovery(flash.goalId);
+      if (flash.stageUp) {
+        setGardenProofToast(
+          `${flash.goalTitle} grew to a new stage — verified proof counts!`
+        );
+      } else if (flash.healthBefore === "dead" || flash.healthAfter !== flash.healthBefore) {
+        setGardenProofToast(
+          `${flash.goalTitle} is coming back — recovery week helped your plant!`
+        );
+      } else {
+        setGardenProofToast(`${flash.goalTitle} was watered. Your garden is happier.`);
+      }
+    } else {
+      setGardenProofToast(
+        `${flash.goalTitle} stayed dry — the photo didn't pass verification. Try again when you're ready.`
+      );
+    }
+    const scrollTimer = window.setTimeout(() => {
+      const el = goalCardRefs.current[flash.goalId];
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    const clearHighlight = window.setTimeout(() => setHighlightGoalId(null), 4500);
+    const clearToast = window.setTimeout(() => setGardenProofToast(null), 6000);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearHighlight);
+      window.clearTimeout(clearToast);
+    };
   }, []);
 
   useEffect(() => {
@@ -270,8 +324,11 @@ export default function BuddyPage() {
         !doneInCurrentWindow && !canSubmitNow
           ? (getSubmissionWindowMessage(goal, new Date(), goalSubs) ?? "Submission window closed")
           : null;
-      const plantHealthState = getWeeklyPlantState(goal, goalSubs, graceDayEvents);
-      const wateringLevel = 1;
+      const gardenWeek = syncGardenWeekMeta(goal.id, goal, goalSubs, graceDayEvents);
+      const hydration = getPlantHydration(goal, goalSubs, graceDayEvents, new Date(), gardenWeek);
+      const plantHealthState = hydration.state;
+      const wateringLevel = resolvePlantWateringLevel(hydration, doneInCurrentWindow);
+      const gardenersNote = getGardenersNote(goal.id);
       const isProPlan = user.plan === "pro";
       const monthKey = proBreakMonthKey(new Date());
       const proBreakDaysThisMonth = isProPlan
@@ -291,6 +348,9 @@ export default function BuddyPage() {
         submissionWindowMessage,
         wateringLevel,
         plantHealthState,
+        hydration,
+        gardenWeek,
+        gardenersNote,
         plantVariant: getGoalPlantVariant(goal.id),
         canUseGraceDay:
           !doneInCurrentWindow &&
@@ -600,6 +660,18 @@ export default function BuddyPage() {
     setGoalManagerMessage(`"${goal.title}" is now on break${breakLimitMsg}. Streak and growth are frozen.`);
   };
 
+  const gardenSummary = summarizeGardenHealth(garden);
+
+  const scrollToNeedsWater = () => {
+    const target = garden.find(
+      (e) => e.plantHealthState === "wilting" || e.plantHealthState === "dead"
+    );
+    if (!target) return;
+    goalCardRefs.current[target.goal.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightGoalId(target.goal.id);
+    window.setTimeout(() => setHighlightGoalId(null), 3500);
+  };
+
   const snapshotPlants = [...garden]
     .sort((a, b) => b.streak - a.streak)
     .map((entry) => ({
@@ -634,6 +706,21 @@ export default function BuddyPage() {
           <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Goal Garden
           </h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Grow what you prove — verified photos water your plants each week.
+          </p>
+          <GardenHeaderSummary
+            counts={gardenSummary}
+            onScrollToNeedsWater={scrollToNeedsWater}
+          />
+          {gardenProofToast && (
+            <p
+              className="mt-3 rounded-xl border border-prove-200/90 bg-prove-50/90 px-3 py-2.5 text-xs leading-relaxed text-prove-900 dark:border-prove-800/60 dark:bg-prove-950/40 dark:text-prove-100"
+              role="status"
+            >
+              {gardenProofToast}
+            </p>
+          )}
           {showGardenTourHint && !tourSpotlight && (
             <div className="mt-3 rounded-2xl border border-prove-200 bg-prove-50 px-3 py-3 text-xs text-slate-700 dark:border-prove-800 dark:bg-prove-950/40 dark:text-slate-200">
               {gardenTourHintStep === "manage" ? (
@@ -935,7 +1022,14 @@ export default function BuddyPage() {
             {garden.map((entry) => (
               <article
                 key={entry.goal.id}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 shadow-soft dark:border-slate-700/60 glass-card"
+                ref={(el) => {
+                  goalCardRefs.current[entry.goal.id] = el;
+                }}
+                className={`group flex flex-col overflow-hidden rounded-2xl border shadow-soft dark:border-slate-700/60 glass-card transition-shadow duration-500 ${
+                  highlightGoalId === entry.goal.id
+                    ? "border-prove-400 ring-2 ring-prove-400/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-950 animate-plant-water-pulse"
+                    : "border-slate-200/70"
+                }`}
               >
                 <div className="flex flex-col gap-2 border-b border-slate-200/60 bg-white/35 px-4 py-3 dark:border-slate-700/50 dark:bg-slate-900/25 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
@@ -1037,7 +1131,28 @@ export default function BuddyPage() {
                   />
                 </div>
 
-                <div className="space-y-2 px-4 pb-4 pt-3">
+                {entry.gardenersNote && <GardenersNote text={entry.gardenersNote} />}
+
+                {entry.hydration.recoveryActive && entry.hydration.verified === 0 && (
+                  <p className="mx-4 mb-1 text-center text-[10px] font-medium text-amber-800 dark:text-amber-200">
+                    Recovery week — one verified photo brings your plant back.
+                  </p>
+                )}
+
+                <div className="px-4 pb-1">
+                  <PlantHydrationBar
+                    verified={entry.hydration.verified}
+                    needed={entry.hydration.needed}
+                    progress={entry.hydration.progress}
+                    healthState={entry.plantHealthState}
+                    onPace={entry.hydration.onPace}
+                    recoveryActive={entry.hydration.recoveryActive}
+                    inBloomSeason={entry.hydration.inBloomSeason}
+                    perfectWeekStreak={entry.hydration.perfectWeekStreak}
+                  />
+                </div>
+
+                <div className="space-y-2 px-4 pb-4 pt-2">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                     <span>
                       Streak{" "}

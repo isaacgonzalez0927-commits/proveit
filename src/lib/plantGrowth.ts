@@ -11,9 +11,9 @@ export const PLANT_GROWTH_STAGES: PlantGrowthStage[] = [
   { minStreak: 0, stage: "seedling", name: "Just planted" },
   { minStreak: 1, stage: "sprout", name: "Week 1 sprout" },
   { minStreak: 2, stage: "leafy", name: "Consistent" },
-  { minStreak: 4, stage: "blooming", name: "Month strong" },
-  { minStreak: 8, stage: "thriving", name: "Deep roots" },
-  { minStreak: 12, stage: "flowering", name: "Fully grown" },
+  { minStreak: 3, stage: "blooming", name: "Building momentum" },
+  { minStreak: 5, stage: "thriving", name: "Deep roots" },
+  { minStreak: 8, stage: "flowering", name: "Fully grown" },
 ];
 
 /** Minimum streak on any goal to reach the final plant stage. */

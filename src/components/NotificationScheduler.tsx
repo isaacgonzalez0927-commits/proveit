@@ -7,6 +7,7 @@ import { countVerifiedInCalendarWeek, isWithinSubmissionWindow } from "@/lib/goa
 import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
 import { format } from "date-fns";
 import type { Goal } from "@/types";
+import { isNativeCapacitorShell } from "@/lib/nativeWidgetBridge";
 
 const STORAGE_KEY_PREFIX = "proveit_notification_";
 
@@ -21,6 +22,7 @@ export function NotificationScheduler() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (isNativeCapacitorShell()) return;
     if (!user || typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 

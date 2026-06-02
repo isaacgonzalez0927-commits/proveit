@@ -17,8 +17,11 @@ import { compressImage, uploadProofToStorage } from "@/lib/imageUtils";
 import { lightImpact, success as hapticSuccess } from "@/lib/haptics";
 import { getGoalStreak } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
-import { setWateredGoalFlash } from "@/lib/wateredGoalFlash";
+import { setGardenProofFlash } from "@/lib/gardenProofFlash";
+import { completeGardenRecovery, setGardenersNote } from "@/lib/gardenMeta";
 import { PlantWateringCelebration } from "@/components/PlantWateringCelebration";
+import { PlantIllustration } from "@/components/PlantIllustration";
+import { getWeeklyPlantState } from "@/lib/plantState";
 import { format } from "date-fns";
 import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
@@ -446,9 +449,46 @@ function SubmitProofContent() {
   const persistCompressedProof = useCallback(
     async (compressed: string, clipSummary: string, aiPassed: boolean) => {
       const finish = (ok: boolean, summary: string | null) => {
-        if (ok) {
+        if (goal) {
+          const subsBefore = getSubmissionsForGoal(goal.id);
+          const stageBefore = getPlantStageForStreak(
+            getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
+          ).stage;
+          const healthBefore = getWeeklyPlantState(goal, subsBefore, graceDayEvents);
+          const subsAfter = [
+            ...subsBefore,
+            {
+              date: todayStr,
+              status: ok ? ("verified" as const) : ("rejected" as const),
+            },
+          ];
+          const streakAfter = getGoalStreak(
+            goal,
+            (gid) => (gid === goal.id ? subsAfter : getSubmissionsForGoal(gid)),
+            graceDayEvents
+          );
+          const stageAfter = getPlantStageForStreak(streakAfter).stage;
+          const healthAfter = ok
+            ? getWeeklyPlantState(goal, subsAfter, graceDayEvents)
+            : healthBefore;
+          setGardenProofFlash({
+            goalId: goal.id,
+            goalTitle: goal.title,
+            verified: ok,
+            stageBefore,
+            stageAfter,
+            healthBefore,
+            healthAfter,
+            stageUp: ok && stageAfter !== stageBefore,
+            aiFeedback: summary ?? undefined,
+          });
+        }
+        if (ok && goal) {
           hapticSuccess();
-          if (goal) setWateredGoalFlash(goal.id);
+          if (summary?.trim()) setGardenersNote(goal.id, summary);
+          completeGardenRecovery(goal.id);
+        } else if (ok) {
+          hapticSuccess();
         }
         setVerified(ok);
         setResultSummary(summary);
@@ -526,6 +566,7 @@ function SubmitProofContent() {
       useSupabase,
       supabase,
       getSubmissionsForGoal,
+      graceDayEvents,
     ]
   );
 
@@ -754,21 +795,45 @@ function SubmitProofContent() {
                       stage={wateringCelebration.stage}
                       variant={wateringCelebration.variant}
                     />
-                    <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                      Plant watered!
+                    <p className="mt-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                      Verified — your plant drank!
                     </p>
                   </div>
                 )}
               </>
             ) : (
-              <XCircle className="mx-auto h-14 w-14 text-red-600 dark:text-red-400" />
+              <>
+                <XCircle className="mx-auto h-14 w-14 text-red-600 dark:text-red-400" />
+                {goal && (
+                  <div className="mx-auto mt-4 flex h-[100px] w-[100px] items-end justify-center opacity-90">
+                    <PlantIllustration
+                      stage={getPlantStageForStreak(
+                        getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
+                      ).stage}
+                      variant={getGoalPlantVariant(goal.id)}
+                      wateringLevel={0.15}
+                      wateredGoals={0}
+                      healthState="wilting"
+                      size="small"
+                    />
+                  </div>
+                )}
+                <p className="mt-2 text-sm font-medium text-amber-900 dark:text-amber-200">
+                  Your plant stayed dry — photo didn&apos;t pass verification.
+                </p>
+              </>
             )}
             <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
-              {verified ? "Done for today!" : "Denied"}
+              {verified ? "Proof counted in your garden" : "Try another photo"}
             </h2>
             {resultSummary ? (
               <p className="mt-4 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
                 {resultSummary}
+              </p>
+            ) : null}
+            {verified && resultSummary ? (
+              <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-300">
+                Saved as a gardener&apos;s note on your plant (24h) in the Goal Garden.
               </p>
             ) : null}
             {verified && showFirstProofCelebration && (
@@ -786,15 +851,25 @@ function SubmitProofContent() {
                   Try another photo
                 </button>
               ) : null}
+              {verified ? (
+                <Link
+                  href="/buddy"
+                  className="rounded-xl bg-prove-600 py-3.5 text-center text-sm font-semibold text-white shadow-sm hover:bg-prove-700"
+                >
+                  View in garden
+                </Link>
+              ) : null}
               <Link
                 href="/dashboard"
                 className={`rounded-xl py-3.5 text-center text-sm font-semibold shadow-sm ${
-                  !verified && inWindow
+                  verified
                     ? "border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                    : "bg-prove-600 text-white hover:bg-prove-700"
+                    : !verified && inWindow
+                      ? "border-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                      : "bg-prove-600 text-white hover:bg-prove-700"
                 }`}
               >
-                Go to dashboard
+                {verified ? "Dashboard" : "Go to dashboard"}
               </Link>
               <button
                 type="button"
@@ -826,9 +901,8 @@ function SubmitProofContent() {
               Prove it: {goal.title}
             </h1>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Use the camera below for a quick check-in, or try the optional AI box — type your goal,
-              upload a photo, and verify with our AI. One check-in per calendar day (Sun–Sat week
-              for weekly targets). The X on the camera exits to your dashboard.
+              Snap a photo that matches your goal — when AI verifies it, your plant gets watered in
+              the garden. One check-in per calendar day (Sun–Sat week for weekly targets).
             </p>
             <div className="mt-6 rounded-2xl p-4 glass-card">
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI verifier (optional)</p>
