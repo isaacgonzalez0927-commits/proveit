@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { ensureDevAccountPremiumPlan, hasDevPremiumAccess } from "@/lib/accountAccess";
 import { isInternalAuthEmail } from "@/lib/usernameAuth";
 import { PLANS, normalizePlanId, type PlanId } from "@/types";
 import {
@@ -146,6 +147,23 @@ export async function applyPaidPlan(
 export async function revertToFree(userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = await adminClient();
   if (!admin) return { ok: false, error: "Server database not configured" };
+
+  const { data: profileRow } = await admin
+    .from("profiles")
+    .select("email, contact_email, username, plan")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (
+    profileRow &&
+    hasDevPremiumAccess(
+      typeof profileRow.email === "string" ? profileRow.email : null,
+      typeof profileRow.contact_email === "string" ? profileRow.contact_email : null
+    )
+  ) {
+    await ensureDevAccountPremiumPlan(admin, userId, profileRow);
+    return { ok: true };
+  }
 
   const activeGoals = await countActiveGoals(admin, userId);
   const freeLimit = getMaxGoalsForPlan("free");

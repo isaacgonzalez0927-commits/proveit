@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { hasCreatorAccess } from "@/lib/accountAccess";
+import { ensureDevAccountPremiumPlan, hasCreatorAccess } from "@/lib/accountAccess";
 import { canSelfAssignPlan } from "@/lib/billing";
 import { normalizeUsername } from "@/lib/usernameAuth";
 import {
@@ -187,7 +187,18 @@ export async function GET() {
     });
   }
 
-  const row = await expirePremiumTrialIfNeeded(supabase, user.id, data as ProfileRow);
+  let row = await expirePremiumTrialIfNeeded(supabase, user.id, data as ProfileRow);
+  const upgraded = await ensureDevAccountPremiumPlan(supabase, user.id, row as ProfileRow);
+  if (upgraded) {
+    const { data: refreshed } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    if (refreshed) {
+      row = await expirePremiumTrialIfNeeded(supabase, user.id, refreshed as ProfileRow);
+    }
+  }
   return NextResponse.json({ profile: profileJsonFromRow(row) });
 }
 
