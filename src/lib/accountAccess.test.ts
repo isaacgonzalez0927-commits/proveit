@@ -7,6 +7,10 @@ describe("hasDevPremiumAccess", () => {
     expect(hasDevPremiumAccess("ranchdressing971@gmail.com", null)).toBe(true);
   });
 
+  it("grants dev username internal auth email", () => {
+    expect(hasDevPremiumAccess("yily@proveit.account.internal", null)).toBe(true);
+  });
+
   it("denies regular users", () => {
     expect(hasDevPremiumAccess("stranger@example.com", null)).toBe(false);
   });

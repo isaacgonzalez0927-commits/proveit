@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizePlanId, type PlanId } from "@/types";
 import { getGraceDayResetBalance } from "@/lib/subscriptionLimits";
+import { authEmailToUsername } from "@/lib/usernameAuth";
 
 /** Complimentary plan for team / dev accounts (no Stripe required). */
 export const DEV_GRANTED_PLAN: PlanId = "premium";
@@ -8,6 +9,13 @@ export const DEV_GRANTED_PLAN: PlanId = "premium";
 const CREATOR_EMAILS = new Set([
   "isaacgonzalez0927@gmail.com",
   "ranchdressing971@gmail.com",
+]);
+
+/** Username logins (yily@proveit.account.internal → yily) with complimentary Premium. */
+const DEV_PREMIUM_USERNAMES = new Set(["yily"]);
+
+const DEV_PREMIUM_INTERNAL_EMAILS = new Set([
+  "yily@proveit.account.internal",
 ]);
 
 /** Optional extra dev emails via env: DEV_PREMIUM_EMAILS=a@x.com,b@y.com */
@@ -32,12 +40,23 @@ export function hasCreatorAccess(
   return false;
 }
 
+function hasDevPremiumUsername(email?: string | null): boolean {
+  if (!email) return false;
+  const lower = email.trim().toLowerCase();
+  if (DEV_PREMIUM_INTERNAL_EMAILS.has(lower)) return true;
+  const username = authEmailToUsername(lower);
+  return username !== null && DEV_PREMIUM_USERNAMES.has(username);
+}
+
 /** Dev / team accounts receive complimentary Premium. */
 export function hasDevPremiumAccess(
   email?: string | null,
   contactEmail?: string | null
 ): boolean {
-  return hasCreatorAccess(email, contactEmail);
+  if (hasCreatorAccess(email, contactEmail)) return true;
+  if (hasDevPremiumUsername(email)) return true;
+  if (hasDevPremiumUsername(contactEmail)) return true;
+  return false;
 }
 
 type ProfilePlanRow = {
