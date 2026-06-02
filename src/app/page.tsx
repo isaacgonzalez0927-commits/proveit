@@ -463,9 +463,10 @@ function LandingContent() {
           style={{ transform: `translateX(-${slide * (100 / INTRO_SLIDE_COUNT)}%)` }}
         >
           {/* Slide 0 – Welcome */}
-          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/40 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30">
-            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 pb-4">
-              <div className="text-center">
+          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30">
+            <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
+              <div className="h-10 shrink-0" aria-hidden />
+              <div className="shrink-0 text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-prove-600 dark:text-prove-300">
                   Welcome to Proveit
                 </p>
@@ -481,8 +482,9 @@ function LandingContent() {
                   <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Plants</div>
                 </div>
               </div>
+              <div className="min-h-0 flex-1" aria-hidden />
             </div>
-            <div className="mt-5 flex w-full items-center justify-center px-5 pb-[max(5rem,env(safe-area-inset-bottom))]">
+            <div className="flex w-full shrink-0 items-center justify-center px-5 pb-[max(5rem,env(safe-area-inset-bottom))]">
               <div className="flex w-full max-w-sm flex-col gap-3">
                 <button
                   type="button"
@@ -516,7 +518,8 @@ function LandingContent() {
               className="absolute inset-0 h-full w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
-            <div className="relative flex h-full min-h-full w-full flex-col justify-between px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+            <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+              <div className="flex h-10 shrink-0 items-start">
                 <button
                   type="button"
                   onClick={() => goTo(0)}
@@ -524,32 +527,37 @@ function LandingContent() {
                 >
                   Back
                 </button>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
-                    AI proof check
-                  </p>
-                  <h2 className="mt-3 max-w-[10ch] text-5xl font-bold leading-[0.95] tracking-tight">
-                    Snap fresh proof.
-                  </h2>
-                  <p className="mt-4 max-w-[28ch] text-sm leading-relaxed text-white/75">
-                    Proveit checks that your photo matches your goal, like reading a book or finishing a walk.
-                  </p>
-                </div>
+              </div>
+              <div className="shrink-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
+                  AI proof check
+                </p>
+                <h2 className="mt-3 max-w-[10ch] text-5xl font-bold leading-[0.95] tracking-tight">
+                  Snap fresh proof.
+                </h2>
+                <p className="mt-4 max-w-[28ch] text-sm leading-relaxed text-white/75">
+                  Proveit checks that your photo matches your goal, like reading a book or finishing a walk.
+                </p>
+              </div>
+              <div className="min-h-0 flex-1" aria-hidden />
+              <div className="shrink-0 pt-3">
                 <button
                   type="button"
                   onClick={() => goTo(2)}
-                  className="rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                  className="w-full rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
                 >
                   Next
                 </button>
               </div>
+            </div>
           </section>
 
           {/* Slide 2 – Plants */}
           <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#061527]">
             <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
             <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
-            <div className="relative flex h-full min-h-full w-full flex-col justify-between px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+            <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+              <div className="flex h-10 shrink-0 items-start">
                 <button
                   type="button"
                   onClick={() => goTo(1)}
@@ -557,18 +565,20 @@ function LandingContent() {
                 >
                   Back
                 </button>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
-                    Live garden
-                  </p>
-                  <h2 className="mt-3 max-w-[11ch] text-5xl font-bold leading-[0.95] tracking-tight">
-                    Grow what you prove.
-                  </h2>
-                  <p className="mt-4 max-w-[29ch] text-sm leading-relaxed text-white/75">
-                    Hit your proof goal to keep your plant healthy. Miss too much and it wilts.
-                  </p>
-                </div>
-                <div className="relative flex flex-1 items-center justify-center py-4">
+              </div>
+              <div className="shrink-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
+                  Live garden
+                </p>
+                <h2 className="mt-3 max-w-[11ch] text-5xl font-bold leading-[0.95] tracking-tight">
+                  Grow what you prove.
+                </h2>
+                <p className="mt-4 max-w-[29ch] text-sm leading-relaxed text-white/75">
+                  Hit your proof goal to keep your plant healthy. Miss too much and it wilts.
+                </p>
+              </div>
+              <div className="relative min-h-0 flex-1">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="absolute h-[min(46vh,18rem)] w-[min(72vw,18rem)] rounded-full bg-prove-400/10 blur-3xl" />
                   <img
                     src="/onboarding/plant-growth-transparent.png"
@@ -576,21 +586,25 @@ function LandingContent() {
                     className="relative h-[min(48vh,20rem)] w-[min(78vw,20rem)] object-contain drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
                   />
                 </div>
+              </div>
+              <div className="shrink-0 pt-3">
                 <button
                   type="button"
                   onClick={() => goTo(3)}
-                  className="rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                  className="w-full rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
                 >
                   Next
                 </button>
               </div>
+            </div>
           </section>
 
           {/* Slide 3 – Buddies */}
           <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#0c1a2e]">
             <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-sky-500/25 to-transparent" />
             <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-prove-500/15 blur-3xl" />
-            <div className="relative flex h-full min-h-full w-full flex-col justify-between px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+            <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
+              <div className="flex h-10 shrink-0 items-start">
                 <button
                   type="button"
                   onClick={() => goTo(2)}
@@ -598,35 +612,37 @@ function LandingContent() {
                 >
                   Back
                 </button>
-                <div className="flex flex-1 flex-col justify-center">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
-                    Buddy goals
-                  </p>
-                  <h2 className="mt-3 max-w-[12ch] text-5xl font-bold leading-[0.95] tracking-tight">
-                    Prove it together.
-                  </h2>
-                  <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-white/75">
-                    Share a goal with a friend, see each other&apos;s progress, and show off a plant profile
-                    only your buddies can view.
-                  </p>
-                  <div className="mt-6 flex justify-center">
-                    <div className="relative flex items-center justify-center">
-                      <div
-                        className="absolute h-[min(34vh,13rem)] w-[min(80vw,19rem)] rounded-full bg-emerald-400/35 blur-3xl"
-                        aria-hidden
-                      />
-                      <div
-                        className="absolute h-[min(28vh,10rem)] w-[min(64vw,16rem)] rounded-full bg-prove-500/30 blur-2xl"
-                        aria-hidden
-                      />
-                      <img
-                        src="/onboarding/buddies.png"
-                        alt="Two friends cheering each other on"
-                        className="relative h-[min(32vh,12rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
-                      />
-                    </div>
-                  </div>
+              </div>
+              <div className="shrink-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
+                  Buddy goals
+                </p>
+                <h2 className="mt-3 max-w-[12ch] text-5xl font-bold leading-[0.95] tracking-tight">
+                  Prove it together.
+                </h2>
+                <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-white/75">
+                  Share a goal with a friend, see each other&apos;s progress, and show off a plant profile
+                  only your buddies can view.
+                </p>
+              </div>
+              <div className="relative min-h-0 flex-1">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div
+                    className="absolute h-[min(34vh,13rem)] w-[min(80vw,19rem)] rounded-full bg-emerald-400/35 blur-3xl"
+                    aria-hidden
+                  />
+                  <div
+                    className="absolute h-[min(28vh,10rem)] w-[min(64vw,16rem)] rounded-full bg-prove-500/30 blur-2xl"
+                    aria-hidden
+                  />
+                  <img
+                    src="/onboarding/buddies.png"
+                    alt="Two friends cheering each other on"
+                    className="relative h-[min(32vh,12rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
+                  />
                 </div>
+              </div>
+              <div className="shrink-0 pt-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -638,11 +654,12 @@ function LandingContent() {
                     setAuthMode("signup");
                     goTo(4);
                   }}
-                  className="mt-5 rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
+                  className="w-full rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
                 >
                   {user ? "Choose plan" : "Start"}
                 </button>
               </div>
+            </div>
           </section>
 
           {/* Slide 4 – Sign in */}
