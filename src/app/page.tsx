@@ -579,11 +579,11 @@ function LandingContent() {
               </div>
               <div className="relative min-h-0 flex-1">
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="absolute h-[min(46vh,18rem)] w-[min(72vw,18rem)] rounded-full bg-prove-400/10 blur-3xl" />
+                  <div className="absolute h-[min(54vh,22rem)] w-[min(84vw,22rem)] rounded-full bg-prove-400/10 blur-3xl" />
                   <img
                     src="/onboarding/plant-growth-transparent.png"
                     alt="Plant growing from a hand"
-                    className="relative h-[min(48vh,20rem)] w-[min(78vw,20rem)] object-contain drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
+                    className="relative h-[min(58vh,26rem)] w-[min(92vw,26rem)] object-contain drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
                   />
                 </div>
               </div>
@@ -628,17 +628,17 @@ function LandingContent() {
               <div className="relative min-h-0 flex-1">
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div
-                    className="absolute h-[min(34vh,13rem)] w-[min(80vw,19rem)] rounded-full bg-emerald-400/35 blur-3xl"
+                    className="absolute h-[min(44vh,17rem)] w-[min(90vw,24rem)] rounded-full bg-emerald-400/35 blur-3xl"
                     aria-hidden
                   />
                   <div
-                    className="absolute h-[min(28vh,10rem)] w-[min(64vw,16rem)] rounded-full bg-prove-500/30 blur-2xl"
+                    className="absolute h-[min(38vh,14rem)] w-[min(76vw,20rem)] rounded-full bg-prove-500/30 blur-2xl"
                     aria-hidden
                   />
                   <img
                     src="/onboarding/buddies.png"
                     alt="Two friends cheering each other on"
-                    className="relative h-[min(32vh,12rem)] w-auto max-w-[min(88vw,20rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
+                    className="relative h-[min(46vh,18rem)] w-auto max-w-[min(96vw,26rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
                   />
                 </div>
               </div>
