@@ -93,9 +93,20 @@ describe("getExpectedVerifiedForWeek", () => {
 });
 
 describe("shortWeekLabel", () => {
-  it("returns signup-week copy with weekday", () => {
+  it("returns signup-week copy with weekday for prorated weeks only", () => {
     const g = goal({ timesPerWeek: 3, createdAt: "2026-05-21T10:00:00.000Z" });
     expect(shortWeekLabel(g, d("2026-05-22"))).toBe("Short week — started Thu · no penalty if you miss");
+    expect(shortWeekLabel(g, d("2026-05-28"))).toBeNull();
+  });
+
+  it("does not show short week when goal was created on Sunday (full week)", () => {
+    const g = goal({ timesPerWeek: 3, createdAt: "2026-05-24T10:00:00.000Z" });
+    expect(shortWeekLabel(g, d("2026-05-27"))).toBeNull();
+  });
+
+  it("does not show short week on first proof in a later calendar week", () => {
+    const g = goal({ timesPerWeek: 6, createdAt: "2026-05-21T10:00:00.000Z" }); // Thu signup week
+    expect(getEffectiveQuotaForWeek(g, d("2026-05-28"))).toBe(6);
     expect(shortWeekLabel(g, d("2026-05-28"))).toBeNull();
   });
 });

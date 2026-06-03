@@ -1,6 +1,7 @@
-import { getDay, isSameWeek, startOfWeek } from "date-fns";
+import { getDay } from "date-fns";
 import type { Goal, TimesPerWeek } from "@/types";
-import { safeParseISO } from "@/lib/dateUtils";
+import { extractCalendarDateKey, parseCalendarDateLocal, safeParseISO } from "@/lib/dateUtils";
+import { weekStartKey } from "@/lib/graceDays";
 
 export type GoalQuotaInput = Pick<
   Goal,
@@ -49,21 +50,29 @@ export function timesPerWeekSummary(n: number): { headline: string; detailLine: 
   return { headline, detailLine };
 }
 
+/** Local calendar date when the goal was created (not first proof date). */
+export function goalCreatedLocalDate(goal: GoalQuotaInput): Date | null {
+  if (typeof goal.createdAt !== "string" || goal.createdAt.trim().length === 0) return null;
+  const key = extractCalendarDateKey(goal.createdAt);
+  if (key) return parseCalendarDateLocal(key);
+  return safeParseISO(goal.createdAt);
+}
+
 /** Calendar days from goal creation through Saturday of that week (inclusive). */
 export function signupWeekDaysAvailable(
   goal: GoalQuotaInput,
   weekReference: Date
 ): number {
-  const created = safeParseISO(goal.createdAt);
+  const created = goalCreatedLocalDate(goal);
   if (!created || !isGoalSignupWeek(goal, weekReference)) return 7;
   return Math.max(1, 7 - getDay(created));
 }
 
 /** True when `weekReference` is the same Sun–Sat week the goal was created. */
 export function isGoalSignupWeek(goal: GoalQuotaInput, weekReference: Date): boolean {
-  const created = safeParseISO(goal.createdAt);
+  const created = goalCreatedLocalDate(goal);
   if (!created) return false;
-  return isSameWeek(created, weekReference, { weekStartsOn: 0 });
+  return weekStartKey(created) === weekStartKey(weekReference);
 }
 
 /**
@@ -91,7 +100,7 @@ export function getExpectedVerifiedForWeek(goal: GoalQuotaInput, date: Date): nu
   if (needed <= 0) return 0;
 
   if (isGoalSignupWeek(goal, date)) {
-    const created = safeParseISO(goal.createdAt);
+    const created = goalCreatedLocalDate(goal);
     if (created) {
       const createdDay = getDay(created);
       const dayOfWeek = getDay(date);
@@ -105,10 +114,10 @@ export function getExpectedVerifiedForWeek(goal: GoalQuotaInput, date: Date): nu
   return Math.floor(needed * weekElapsedFromSunday(getDay(date)));
 }
 
-/** UI copy for the prorated first calendar week. */
+/** UI copy for the prorated signup calendar week (goal creation week only). */
 export function shortWeekLabel(goal: GoalQuotaInput, date: Date = new Date()): string | null {
-  if (!isGoalSignupWeek(goal, date)) return null;
-  const created = safeParseISO(goal.createdAt);
+  if (!isProratedSignupWeek(goal, date)) return null;
+  const created = goalCreatedLocalDate(goal);
   if (!created) return null;
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
   return `Short week — started ${names[getDay(created)]} · no penalty if you miss`;
@@ -117,7 +126,7 @@ export function shortWeekLabel(goal: GoalQuotaInput, date: Date = new Date()): s
 /** Compact signup-week note for tight UI (dashboard cards). */
 export function signupWeekDashboardNote(goal: GoalQuotaInput, date: Date = new Date()): string | null {
   if (!isProratedSignupWeek(goal, date)) return null;
-  const created = safeParseISO(goal.createdAt);
+  const created = goalCreatedLocalDate(goal);
   if (!created) return null;
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
   return `Short week (from ${names[getDay(created)]}) · miss OK`;
@@ -152,9 +161,7 @@ export function isNeutralSignupWeekMiss(
 
 /** Streak walk-back stops before the week the goal did not exist yet. */
 export function isWeekBeforeGoalExisted(goal: GoalQuotaInput, weekReference: Date): boolean {
-  const created = safeParseISO(goal.createdAt);
+  const created = goalCreatedLocalDate(goal);
   if (!created) return false;
-  const createdWeekStart = startOfWeek(created, { weekStartsOn: 0 });
-  const refWeekStart = startOfWeek(weekReference, { weekStartsOn: 0 });
-  return refWeekStart < createdWeekStart;
+  return weekStartKey(weekReference) < weekStartKey(created);
 }

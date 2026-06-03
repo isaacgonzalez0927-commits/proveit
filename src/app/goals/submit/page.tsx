@@ -1018,14 +1018,47 @@ function SubmitProofContent() {
         )}
 
         {step === "uploading" && (
-          <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black px-6">
-            <Loader2 className="h-12 w-12 animate-spin text-white" />
-            <p className="mt-4 text-center text-sm font-medium text-white">
-              Verifying with AI…
-            </p>
-            <p className="mt-2 max-w-sm text-center text-xs text-white/70">
-              Asking GPT-4o vision to look at your photo.
-            </p>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-6 backdrop-blur-md dark:bg-black/60">
+            <div className="w-full max-w-sm rounded-3xl border border-white/20 p-8 text-center shadow-2xl ring-1 ring-black/5 glass-card dark:ring-white/10">
+              {goal && (
+                <div className="mx-auto mb-4 flex h-[88px] w-[88px] items-end justify-center">
+                  <PlantIllustration
+                    stage={getPlantStageForStreak(
+                      getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
+                    ).stage}
+                    variant={getGoalPlantVariant(goal.id)}
+                    wateringLevel={0.55}
+                    wateredGoals={0}
+                    healthState="healthy"
+                    size="small"
+                  />
+                </div>
+              )}
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-prove-100/80 dark:bg-prove-900/40">
+                <Loader2 className="h-6 w-6 animate-spin text-prove-600 dark:text-prove-400" />
+              </div>
+              <h2 className="mt-5 font-display text-xl font-bold text-slate-900 dark:text-white">
+                Verifying your proof
+              </h2>
+              {goal ? (
+                <p className="mt-2 text-sm font-medium text-prove-700 dark:text-prove-300">
+                  {goal.title}
+                </p>
+              ) : null}
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                Checking that your photo matches this goal. This usually takes a few seconds.
+              </p>
+              <div className="mt-6 space-y-2 text-left text-xs text-slate-500 dark:text-slate-400">
+                <p className="flex items-center gap-2">
+                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-prove-500 animate-pulse" />
+                  Reading your photo
+                </p>
+                <p className="flex items-center gap-2 opacity-80">
+                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
+                  Matching your goal
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </main>

@@ -11,7 +11,7 @@ import {
 import { FULLY_GROWN_MIN_STREAK, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { weekStartKey, weeklyQuotaMetWithGrace } from "@/lib/graceDays";
 import { hasWelcomeWeekCompleted } from "@/lib/gardenMeta";
-import { isProratedSignupWeek } from "@/lib/goalSchedule";
+import { goalCreatedLocalDate, isProratedSignupWeek } from "@/lib/goalSchedule";
 
 export type AchievementTier = "free" | "pro" | "premium";
 
@@ -274,12 +274,11 @@ function countWelcomeWeeksCompleted(
       count += 1;
       continue;
     }
-    const created = safeParseISO(goal.createdAt);
+    const created = goalCreatedLocalDate(goal);
     if (!created) continue;
-    const signupWeek = startOfWeek(created, { weekStartsOn: 0 });
-    if (!isProratedSignupWeek(goal, signupWeek)) continue;
+    if (!isProratedSignupWeek(goal, created)) continue;
     if (
-      weeklyQuotaMetWithGrace(goal, getSubmissionsForGoal(goal.id), [], signupWeek)
+      weeklyQuotaMetWithGrace(goal, getSubmissionsForGoal(goal.id), [], created)
     ) {
       count += 1;
     }
