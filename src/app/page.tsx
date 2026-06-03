@@ -41,7 +41,11 @@ function LandingContent() {
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
 
   const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
+  const dragOffsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [dragOffsetPx, setDragOffsetPx] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const requestedStep = searchParams.get("step");
   const authError = searchParams.get("error");
   const [sessionSettled, setSessionSettled] = useState(false);
@@ -117,28 +121,62 @@ function LandingContent() {
   }, [authReady, user, hasSelectedPlan, isDevGuestMode, requestedStep, router, sessionSettled]);
 
   const goTo = (next: Slide) => {
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = false;
+    setDragOffsetPx(0);
+    setIsDragging(false);
     setSlide(next);
   };
 
-  const handleTouchStart = (x: number) => {
+  const clampDragOffset = useCallback((raw: number, currentSlide: Slide) => {
+    let offset = raw;
+    if (currentSlide === 0 && offset > 0) offset *= 0.28;
+    if (currentSlide === INTRO_SLIDE_COUNT - 1 && offset < 0) offset *= 0.28;
+    return offset;
+  }, []);
+
+  const handleDragStart = useCallback((x: number) => {
     touchStartX.current = x;
-    touchEndX.current = null;
-  };
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = true;
+    setDragOffsetPx(0);
+    setIsDragging(true);
+  }, []);
 
-  const handleTouchMove = (x: number) => {
-    touchEndX.current = x;
-  };
+  const handleDragMove = useCallback(
+    (x: number) => {
+      if (touchStartX.current == null || !isDraggingRef.current) return;
+      const offset = clampDragOffset(x - touchStartX.current, slide);
+      dragOffsetRef.current = offset;
+      setDragOffsetPx(offset);
+    },
+    [clampDragOffset, slide]
+  );
 
-  const handleTouchEnd = () => {
-    if (touchStartX.current == null || touchEndX.current == null) return;
-    const delta = touchEndX.current - touchStartX.current;
-    const threshold = 50; // px
-    if (delta > threshold && slide > 0) {
+  const handleDragEnd = useCallback(() => {
+    if (touchStartX.current == null) return;
+    const width = viewportRef.current?.clientWidth ?? window.innerWidth;
+    const threshold = Math.min(72, width * 0.18);
+    const offset = dragOffsetRef.current;
+    touchStartX.current = null;
+    dragOffsetRef.current = 0;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setDragOffsetPx(0);
+
+    if (offset > threshold && slide > 0) {
       setSlide((prev) => (prev - 1) as Slide);
-    } else if (delta < -threshold && slide < INTRO_SLIDE_COUNT - 1) {
+    } else if (offset < -threshold && slide < INTRO_SLIDE_COUNT - 1) {
       setSlide((prev) => (prev + 1) as Slide);
     }
-  };
+  }, [slide]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMouseUp = () => handleDragEnd();
+    window.addEventListener("mouseup", onMouseUp);
+    return () => window.removeEventListener("mouseup", onMouseUp);
+  }, [isDragging, handleDragEnd]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -447,20 +485,28 @@ function LandingContent() {
       style={{ height: "100dvh", minHeight: "100dvh" }}
     >
       <div
+        ref={viewportRef}
         className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
-        onTouchStart={(e) => handleTouchStart(e.touches[0].clientX)}
-        onTouchMove={(e) => handleTouchMove(e.touches[0].clientX)}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={(e) => handleTouchStart(e.clientX)}
+        style={{ touchAction: isDragging ? "none" : "pan-y" }}
+        onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+        onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
+        onTouchEnd={handleDragEnd}
+        onTouchCancel={handleDragEnd}
+        onMouseDown={(e) => handleDragStart(e.clientX)}
         onMouseMove={(e) => {
-          if (e.buttons === 1) handleTouchMove(e.clientX);
+          if (e.buttons === 1) handleDragMove(e.clientX);
         }}
-        onMouseUp={handleTouchEnd}
+        onMouseUp={handleDragEnd}
       >
         {/* Slides container */}
         <div
-          className="flex min-h-0 flex-1 w-[600%] transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${slide * (100 / INTRO_SLIDE_COUNT)}%)` }}
+          className={`flex min-h-0 flex-1 w-[600%] ${
+            isDragging ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          }`}
+          style={{
+            transform: `translate3d(calc(-${slide * (100 / INTRO_SLIDE_COUNT)}% + ${dragOffsetPx}px), 0, 0)`,
+            willChange: isDragging ? "transform" : "auto",
+          }}
         >
           {/* Slide 0 – Welcome */}
           <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30">
