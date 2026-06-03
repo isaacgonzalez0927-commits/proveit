@@ -46,7 +46,7 @@ import {
   isGoalDue,
   isWithinSubmissionWindow,
 } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { effectiveTimesPerWeek, getEffectiveQuotaForWeek, shortWeekLabel } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
@@ -489,10 +489,12 @@ function DashboardContent() {
               {[...dailyRhythmGoals, ...weeklyRhythmGoals].map((goal) => {
                 const subs = getSubmissionsForGoal(goal.id);
                 const now = new Date();
-                const tw = effectiveTimesPerWeek(goal);
+                const fullTw = effectiveTimesPerWeek(goal);
+                const tw = getEffectiveQuotaForWeek(goal, now);
                 const weekVerifiedCount = countVerifiedInCalendarWeek(subs, now);
                 const doneToday = hasVerifiedSubmissionOnDate(subs, todayStr);
                 const weekMet = weekVerifiedCount >= tw;
+                const signupWeekNote = shortWeekLabel(goal, now);
                 const showComplete = isDashboardGoalComplete(goal, subs, now);
                 const todayVerifiedSub = subs.find(
                   (s) =>
@@ -505,9 +507,9 @@ function DashboardContent() {
                 const due = isGoalDue(goal, now, subs);
                 const dueLabel = getNextDueLabel(goal);
                 const cadenceLabel =
-                  tw >= 7
+                  effectiveTimesPerWeek(goal) >= 7
                     ? "Daily"
-                    : `Weekly · ${weekVerifiedCount}/${tw} this week${weekMet ? " · Done for the week" : doneToday ? " · Done today" : ""}`;
+                    : `Weekly · ${weekVerifiedCount}/${tw} this week${weekMet ? " · Done for the week" : doneToday ? " · Done today" : ""}${signupWeekNote ? ` · ${signupWeekNote}` : ""}`;
                 return (
                   <li
                     key={goal.id}
@@ -531,7 +533,7 @@ function DashboardContent() {
                             return n > 0 ? `${n} ${n === 1 ? "week" : "weeks"}` : "—";
                           })()}
                           {goal.isOnBreak ? " · On break" : ""}
-                          {tw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
+                          {fullTw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
                         </p>
                       </div>
                     </div>
@@ -566,7 +568,7 @@ function DashboardContent() {
                     ) : (
                       <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
                         {getSubmissionWindowMessage(goal, now, subs) ??
-                          (tw < 7 ? `${weekVerifiedCount}/${tw} proofs this week` : "Not available")}
+                          (fullTw < 7 ? `${weekVerifiedCount}/${tw} proofs this week` : "Not available")}
                       </span>
                     )}
                   </li>

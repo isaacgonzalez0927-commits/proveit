@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { startOfWeek, subWeeks, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { assertCronAuthorized } from "@/lib/cronAuth";
+import { getEffectiveQuotaForWeek } from "@/lib/goalSchedule";
+import type { Goal } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   const { data: goals, error } = await supabase
     .from("goals")
-    .select("id, user_id, title, times_per_week, frequency")
+    .select("id, user_id, title, times_per_week, frequency, created_at")
     .is("archived_at", null);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -28,12 +30,18 @@ export async function GET(request: NextRequest) {
   for (const goal of goals ?? []) {
     const row = goal as Record<string, unknown>;
     const goalId = String(row.id ?? "");
-    const needed =
-      typeof row.times_per_week === "number"
-        ? Math.max(1, Math.min(7, row.times_per_week))
-        : row.frequency === "daily"
-          ? 7
-          : 1;
+    const needed = getEffectiveQuotaForWeek(
+      {
+        timesPerWeek:
+          typeof row.times_per_week === "number"
+            ? (Math.max(1, Math.min(7, row.times_per_week)) as Goal["timesPerWeek"])
+            : undefined,
+        frequency: row.frequency === "daily" ? "daily" : "weekly",
+        reminderDays: undefined,
+        createdAt: String(row.created_at ?? new Date().toISOString()),
+      },
+      previousWeekStart
+    );
     const { count } = await supabase
       .from("submissions")
       .select("id", { count: "exact", head: true })

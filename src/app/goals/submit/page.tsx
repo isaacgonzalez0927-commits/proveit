@@ -19,6 +19,7 @@ import { getGoalStreak } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
 import { setGardenProofFlash } from "@/lib/gardenProofFlash";
 import { completeGardenRecovery, setGardenersNote } from "@/lib/gardenMeta";
+import { completeWelcomeWeekIfNeeded } from "@/lib/welcomeWeek";
 import { PlantWateringCelebration } from "@/components/PlantWateringCelebration";
 import { PlantIllustration } from "@/components/PlantIllustration";
 import { getWeeklyPlantState } from "@/lib/plantState";
@@ -482,11 +483,14 @@ function SubmitProofContent() {
             stageUp: ok && stageAfter !== stageBefore,
             aiFeedback: summary ?? undefined,
           });
+          if (ok) {
+            if (summary?.trim()) setGardenersNote(goal.id, summary);
+            completeGardenRecovery(goal.id);
+            completeWelcomeWeekIfNeeded(goal, subsBefore, subsAfter);
+          }
         }
         if (ok && goal) {
           hapticSuccess();
-          if (summary?.trim()) setGardenersNote(goal.id, summary);
-          completeGardenRecovery(goal.id);
         } else if (ok) {
           hapticSuccess();
         }

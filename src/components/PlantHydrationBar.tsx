@@ -12,6 +12,8 @@ interface PlantHydrationBarProps {
   recoveryActive?: boolean;
   inBloomSeason?: boolean;
   perfectWeekStreak?: number;
+  shortWeekLabel?: string | null;
+  signupWeekNoPenalty?: boolean;
   className?: string;
 }
 
@@ -24,6 +26,8 @@ export function PlantHydrationBar({
   recoveryActive = false,
   inBloomSeason = false,
   perfectWeekStreak = 0,
+  shortWeekLabel: shortWeekNote = null,
+  signupWeekNoPenalty = false,
   className = "",
 }: PlantHydrationBarProps) {
   const pct = Math.round(progress * 100);
@@ -51,7 +55,7 @@ export function PlantHydrationBar({
                 : "text-amber-900 dark:text-amber-200"
           }
         >
-          {gardenHealthLabel(healthState, recoveryActive)}
+          {gardenHealthLabel(healthState, recoveryActive, signupWeekNoPenalty)}
           {inBloomSeason ? " · Bloom season" : ""}
           {!inBloomSeason && perfectWeekStreak > 0
             ? ` · ${perfectWeekStreak}/4 perfect weeks`
@@ -72,6 +76,9 @@ export function PlantHydrationBar({
           style={{ width: `${Math.max(pct, healthState === "dead" ? 8 : 4)}%` }}
         />
       </div>
+      {shortWeekNote ? (
+        <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{shortWeekNote}</p>
+      ) : null}
     </div>
   );
 }

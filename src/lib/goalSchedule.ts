@@ -1,4 +1,11 @@
+import { getDay, isSameWeek, startOfWeek } from "date-fns";
 import type { Goal, TimesPerWeek } from "@/types";
+import { safeParseISO } from "@/lib/dateUtils";
+
+export type GoalQuotaInput = Pick<
+  Goal,
+  "timesPerWeek" | "reminderDays" | "frequency" | "createdAt"
+>;
 
 /**
  * Spread N reminder days across the week (0=Sun … 6=Sat) without asking the user which days.
@@ -40,4 +47,105 @@ export function timesPerWeekSummary(n: number): { headline: string; detailLine: 
       : `Daily reminder. Up to ${tw} check-ins per calendar week (Sun–Sat), any days you choose, one per day.`;
 
   return { headline, detailLine };
+}
+
+/** Calendar days from goal creation through Saturday of that week (inclusive). */
+export function signupWeekDaysAvailable(
+  goal: GoalQuotaInput,
+  weekReference: Date
+): number {
+  const created = safeParseISO(goal.createdAt);
+  if (!created || !isGoalSignupWeek(goal, weekReference)) return 7;
+  return Math.max(1, 7 - getDay(created));
+}
+
+/** True when `weekReference` is the same Sun–Sat week the goal was created. */
+export function isGoalSignupWeek(goal: GoalQuotaInput, weekReference: Date): boolean {
+  const created = safeParseISO(goal.createdAt);
+  if (!created) return false;
+  return isSameWeek(created, weekReference, { weekStartsOn: 0 });
+}
+
+/**
+ * Weekly proof quota for a calendar week. Prorates on the goal's signup week only:
+ * max(1, round(fullQuota × daysAvailable / 7)).
+ */
+export function getEffectiveQuotaForWeek(
+  goal: GoalQuotaInput,
+  weekReference: Date = new Date()
+): number {
+  const full = effectiveTimesPerWeek(goal);
+  if (!isGoalSignupWeek(goal, weekReference)) return full;
+  const daysAvailable = signupWeekDaysAvailable(goal, weekReference);
+  if (daysAvailable >= 7) return full;
+  return Math.max(1, Math.round((full * daysAvailable) / 7));
+}
+
+function weekElapsedFromSunday(dayOfWeek: number): number {
+  return Math.max(1, dayOfWeek + 1) / 7;
+}
+
+/** Minimum verified count expected by end of today to stay on pace (signup-week aware). */
+export function getExpectedVerifiedForWeek(goal: GoalQuotaInput, date: Date): number {
+  const needed = getEffectiveQuotaForWeek(goal, date);
+  if (needed <= 0) return 0;
+
+  if (isGoalSignupWeek(goal, date)) {
+    const created = safeParseISO(goal.createdAt);
+    if (created) {
+      const createdDay = getDay(created);
+      const dayOfWeek = getDay(date);
+      if (dayOfWeek < createdDay) return 0;
+      const daysAvailable = signupWeekDaysAvailable(goal, date);
+      const daysElapsed = Math.min(daysAvailable, dayOfWeek - createdDay + 1);
+      return Math.floor((needed * daysElapsed) / daysAvailable);
+    }
+  }
+
+  return Math.floor(needed * weekElapsedFromSunday(getDay(date)));
+}
+
+/** UI copy for the prorated first calendar week. */
+export function shortWeekLabel(goal: GoalQuotaInput, date: Date = new Date()): string | null {
+  if (!isGoalSignupWeek(goal, date)) return null;
+  const created = safeParseISO(goal.createdAt);
+  if (!created) return null;
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+  return `Short week — started ${names[getDay(created)]} · no penalty if you miss`;
+}
+
+/** True when signup week is shorter than a full Sun–Sat week (goal created mid-week). */
+export function isProratedSignupWeek(goal: GoalQuotaInput, weekReference: Date): boolean {
+  if (!isGoalSignupWeek(goal, weekReference)) return false;
+  return signupWeekDaysAvailable(goal, weekReference) < 7;
+}
+
+/** Whether verified submissions meet the effective quota for this week. */
+export function isSignupWeekQuotaMet(
+  goal: GoalQuotaInput,
+  verifiedCount: number,
+  weekReference: Date = new Date()
+): boolean {
+  return verifiedCount >= getEffectiveQuotaForWeek(goal, weekReference);
+}
+
+/** Ended prorated signup week with a miss — no streak/plant penalty (Phase 2). */
+export function isNeutralSignupWeekMiss(
+  goal: GoalQuotaInput,
+  weekReference: Date,
+  verifiedCount: number
+): boolean {
+  return (
+    isProratedSignupWeek(goal, weekReference) &&
+    !isSignupWeekQuotaMet(goal, verifiedCount, weekReference)
+  );
+}
+
+/** Streak walk-back stops before the week the goal did not exist yet. */
+export function isWeekBeforeGoalExisted(goal: GoalQuotaInput, weekReference: Date): boolean {
+  const created = safeParseISO(goal.createdAt);
+  if (!created) return false;
+  const createdWeekStart = startOfWeek(created, { weekStartsOn: 0 });
+  const refWeekStart = startOfWeek(weekReference, { weekStartsOn: 0 });
+  return refWeekStart < createdWeekStart;
 }

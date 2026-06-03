@@ -1,7 +1,7 @@
 import { addDays, format, parseISO } from "date-fns";
 import type { Goal, GraceDayEvent, ProofSubmission } from "@/types";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { getEffectiveQuotaForWeek, isNeutralSignupWeekMiss } from "@/lib/goalSchedule";
 import {
   hasGraceDayForGoalWeek,
   weekStartKey,
@@ -23,6 +23,8 @@ type GoalGardenMeta = {
   recoverySeasonKey: string;
   recoveryUsedInSeason: boolean;
   recoveryActiveWeekStart: string | null;
+  /** One-time: prorated signup week quota was completed. */
+  welcomeWeekCompleted?: boolean;
 };
 
 type GardenersNoteRecord = {
@@ -84,32 +86,35 @@ function verifiedInWeek(
 }
 
 function weekWasPerfect(
-  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek">,
+  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "createdAt">,
   submissions: SubmissionLike[],
   graceDays: GraceDayLike[],
   weekStart: string
 ): boolean {
   if (hasGraceDayForGoalWeek(graceDays, goal.id, weekStart)) return true;
-  const needed = effectiveTimesPerWeek(goal as Goal);
+  const needed = getEffectiveQuotaForWeek(goal as Goal, parseISO(weekStart));
   return verifiedInWeek(submissions, weekStart) >= needed;
 }
 
 function weekEndedDead(
-  goal: Pick<Goal, "frequency" | "timesPerWeek">,
+  goal: Pick<Goal, "frequency" | "timesPerWeek" | "createdAt">,
   submissions: SubmissionLike[],
   graceDays: GraceDayLike[],
   goalId: string,
   weekStart: string
 ): boolean {
   if (hasGraceDayForGoalWeek(graceDays, goalId, weekStart)) return false;
-  const needed = effectiveTimesPerWeek(goal as Goal);
-  return verifiedInWeek(submissions, weekStart) < needed;
+  const ref = parseISO(weekStart);
+  const verified = verifiedInWeek(submissions, weekStart);
+  if (isNeutralSignupWeekMiss(goal as Goal, ref, verified)) return false;
+  const needed = getEffectiveQuotaForWeek(goal as Goal, ref);
+  return verified < needed;
 }
 
 /** Sync week rollover: bloom streak, recovery eligibility, bloom display. */
 export function syncGardenWeekMeta(
   goalId: string,
-  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt">,
+  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt" | "createdAt">,
   submissions: SubmissionLike[],
   graceDays: GraceDayLike[] = [],
   now: Date = new Date()
@@ -148,7 +153,14 @@ export function syncGardenWeekMeta(
           meta.bloomThroughWeekStart = currentWeek;
           meta.perfectWeekStreak = 0;
         }
-      } else if (!hasGraceDayForGoalWeek(graceDays, goalId, prevWeek)) {
+      } else if (
+        !hasGraceDayForGoalWeek(graceDays, goalId, prevWeek) &&
+        !isNeutralSignupWeekMiss(
+          goal,
+          parseISO(prevWeek),
+          verifiedInWeek(submissions, prevWeek)
+        )
+      ) {
         meta.perfectWeekStreak = 0;
       }
     }
@@ -167,6 +179,21 @@ export function syncGardenWeekMeta(
     inBloomSeason,
     perfectWeekStreak: meta.perfectWeekStreak,
   };
+}
+
+export function hasWelcomeWeekCompleted(goalId: string): boolean {
+  return Boolean(readAllMeta()[goalId]?.welcomeWeekCompleted);
+}
+
+/** Mark welcome week complete when prorated signup quota is first met. Returns true if newly completed. */
+export function markWelcomeWeekCompleted(goalId: string): boolean {
+  if (typeof window === "undefined") return false;
+  const all = readAllMeta();
+  const meta = all[goalId] ?? defaultMeta(weekStartKey());
+  if (meta.welcomeWeekCompleted) return false;
+  all[goalId] = { ...meta, welcomeWeekCompleted: true };
+  writeAllMeta(all);
+  return true;
 }
 
 /** Call after first verified proof during a recovery week. */

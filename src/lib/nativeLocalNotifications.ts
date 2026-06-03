@@ -1,5 +1,5 @@
 import type { Goal } from "@/types";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { effectiveTimesPerWeek, getEffectiveQuotaForWeek } from "@/lib/goalSchedule";
 import { isNativeCapacitorShell } from "@/lib/nativeWidgetBridge";
 
 function parseReminderTime(value: string | undefined): { hour: number; minute: number } {
@@ -21,11 +21,13 @@ export function notificationIdForGoal(goalId: string): number {
 }
 
 function reminderBody(goal: Goal): string {
-  const tw = effectiveTimesPerWeek(goal);
-  if (tw >= 7) {
+  const fullTw = effectiveTimesPerWeek(goal);
+  const tw = getEffectiveQuotaForWeek(goal);
+  if (fullTw >= 7) {
     return "Daily check-in — snap a photo if you haven't verified yet today.";
   }
-  return `Weekly goal — you're aiming for ${tw} verified check-in${tw === 1 ? "" : "s"} this week (Sun–Sat).`;
+  const short = tw < fullTw ? ` (${tw} this short week)` : "";
+  return `Weekly goal — you're aiming for ${tw} verified check-in${tw === 1 ? "" : "s"} this week (Sun–Sat)${short}.`;
 }
 
 function activeReminderGoals(goals: Goal[]): Goal[] {

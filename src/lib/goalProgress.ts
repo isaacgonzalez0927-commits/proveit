@@ -2,7 +2,11 @@ import { addDays, format, startOfWeek, subWeeks } from "date-fns";
 import type { Goal, GraceDayEvent, ProofSubmission } from "@/types";
 import { extractCalendarDateKey, safeParseISO } from "@/lib/dateUtils";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import {
+  getEffectiveQuotaForWeek,
+  isNeutralSignupWeekMiss,
+  isWeekBeforeGoalExisted,
+} from "@/lib/goalSchedule";
 
 type GoalProgressGoal = Pick<
   Goal,
@@ -15,6 +19,7 @@ type GoalProgressGoal = Pick<
   | "breakStreakSnapshot"
   | "streakCarryover"
   | "breakStartedAt"
+  | "createdAt"
 >;
 type GoalProgressSubmission = Pick<ProofSubmission, "date" | "status">;
 type GoalProgressGraceDay = Pick<GraceDayEvent, "goalId" | "weekStart">;
@@ -26,7 +31,7 @@ type GoalProgressGraceDay = Pick<GraceDayEvent, "goalId" | "weekStart">;
  * - Until then, completed past weeks remain visible so the streak does not
  *   reset early before the week is over.
  * - Past weeks count toward the streak only if the full times-per-week
- *   quota was met.
+ * - Prorated signup weeks only count when quota is met; a miss is neutral (no penalty).
  */
 function getWeeklyQuotaStreak(
   goal: GoalProgressGoal,
@@ -34,7 +39,6 @@ function getWeeklyQuotaStreak(
   graceDays: GoalProgressGraceDay[] = [],
   minDateInclusive?: string
 ): number {
-  const tw = effectiveTimesPerWeek(goal as Goal);
   const subsAll = getSubmissionsForGoal(goal.id).filter((s) => {
     if (s.status !== "verified") return false;
     if (!minDateInclusive) return true;
@@ -46,17 +50,28 @@ function getWeeklyQuotaStreak(
   const now = new Date();
   let weekCursor = startOfWeek(now, { weekStartsOn: 0 });
 
+  const quotaForWeek = (ref: Date) => getEffectiveQuotaForWeek(goal as Goal, ref);
   const countForWeek = (ref: Date) => countVerifiedInCalendarWeek(subsAll, ref);
   const graceForWeek = (ref: Date) => {
     const key = format(startOfWeek(ref, { weekStartsOn: 0 }), "yyyy-MM-dd");
     return graceDays.filter((event) => event.goalId === goal.id && event.weekStart === key).length;
   };
 
-  if (countForWeek(weekCursor) + graceForWeek(weekCursor) >= tw) streak += 1;
+  const metForWeek = (ref: Date) =>
+    countForWeek(ref) + graceForWeek(ref) >= quotaForWeek(ref);
+
+  if (metForWeek(weekCursor)) streak += 1;
   weekCursor = subWeeks(weekCursor, 1);
 
   while (true) {
-    if (countForWeek(weekCursor) + graceForWeek(weekCursor) < tw) break;
+    if (isWeekBeforeGoalExisted(goal as Goal, weekCursor)) break;
+    const verified = countForWeek(weekCursor);
+    if (isNeutralSignupWeekMiss(goal as Goal, weekCursor, verified)) {
+      weekCursor = subWeeks(weekCursor, 1);
+      if (streak > 520) break;
+      continue;
+    }
+    if (verified + graceForWeek(weekCursor) < quotaForWeek(weekCursor)) break;
     streak += 1;
     weekCursor = subWeeks(weekCursor, 1);
     if (streak > 520) break;

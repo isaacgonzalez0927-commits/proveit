@@ -58,6 +58,7 @@ import {
   resolvePlantWateringLevel,
 } from "@/lib/plantState";
 import { consumeGardenProofFlash } from "@/lib/gardenProofFlash";
+import { consumeWelcomeWeekFlash } from "@/lib/welcomeWeekFlash";
 import {
   completeGardenRecovery,
   getGardenersNote,
@@ -150,32 +151,44 @@ export default function BuddyPage() {
 
   useEffect(() => {
     const flash = consumeGardenProofFlash();
-    if (!flash) return;
-    setHighlightGoalId(flash.goalId);
-    if (flash.verified) {
-      completeGardenRecovery(flash.goalId);
-      if (flash.stageUp) {
-        setGardenProofToast(
-          `${flash.goalTitle} grew to a new stage — verified proof counts!`
-        );
-      } else if (flash.healthBefore === "dead" || flash.healthAfter !== flash.healthBefore) {
-        setGardenProofToast(
-          `${flash.goalTitle} is coming back — recovery week helped your plant!`
-        );
-      } else {
-        setGardenProofToast(`${flash.goalTitle} was watered. Your garden is happier.`);
-      }
-    } else {
+    const welcomeFlash = consumeWelcomeWeekFlash();
+    const goalId = welcomeFlash?.goalId ?? flash?.goalId;
+    if (!flash && !welcomeFlash) return;
+
+    if (goalId) setHighlightGoalId(goalId);
+
+    if (welcomeFlash) {
       setGardenProofToast(
-        `${flash.goalTitle} stayed dry — the photo didn't pass verification. Try again when you're ready.`
+        `Welcome week complete for ${welcomeFlash.goalTitle}! Your first streak week is in the books.`
       );
+    } else if (flash) {
+      if (flash.verified) {
+        completeGardenRecovery(flash.goalId);
+        if (flash.stageUp) {
+          setGardenProofToast(
+            `${flash.goalTitle} grew to a new stage — verified proof counts!`
+          );
+        } else if (flash.healthBefore === "dead" || flash.healthAfter !== flash.healthBefore) {
+          setGardenProofToast(
+            `${flash.goalTitle} is coming back — recovery week helped your plant!`
+          );
+        } else {
+          setGardenProofToast(`${flash.goalTitle} was watered. Your garden is happier.`);
+        }
+      } else {
+        setGardenProofToast(
+          `${flash.goalTitle} stayed dry — the photo didn't pass verification. Try again when you're ready.`
+        );
+      }
     }
+
     const scrollTimer = window.setTimeout(() => {
-      const el = goalCardRefs.current[flash.goalId];
+      if (!goalId) return;
+      const el = goalCardRefs.current[goalId];
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 120);
     const clearHighlight = window.setTimeout(() => setHighlightGoalId(null), 4500);
-    const clearToast = window.setTimeout(() => setGardenProofToast(null), 6000);
+    const clearToast = window.setTimeout(() => setGardenProofToast(null), welcomeFlash ? 7000 : 6000);
     return () => {
       window.clearTimeout(scrollTimer);
       window.clearTimeout(clearHighlight);
@@ -1149,6 +1162,8 @@ export default function BuddyPage() {
                     recoveryActive={entry.hydration.recoveryActive}
                     inBloomSeason={entry.hydration.inBloomSeason}
                     perfectWeekStreak={entry.hydration.perfectWeekStreak}
+                    shortWeekLabel={entry.hydration.shortWeekLabel}
+                    signupWeekNoPenalty={entry.hydration.signupWeekNoPenalty}
                   />
                 </div>
 

@@ -109,12 +109,14 @@ export async function buildFriendGoalGroup(
           frequency: (goalRow.frequency === "weekly" ? "weekly" : "daily") as "daily" | "weekly",
           timesPerWeek: mapGoalFrequency(goalRow).timesPerWeek as 1 | 2 | 3 | 4 | 5 | 6 | 7,
           isOnBreak: goalRow.is_on_break === true,
+          createdAt: String(goalRow.created_at ?? new Date().toISOString()),
         }
       : {
           id: gid,
           frequency: freq.frequency,
           timesPerWeek: freq.timesPerWeek as 1 | 2 | 3 | 4 | 5 | 6 | 7,
           isOnBreak: false,
+          createdAt: new Date().toISOString(),
         };
     const progress = computeMemberProgress(goalForProgress, subs);
     return {

@@ -1,7 +1,7 @@
 import { format, startOfWeek } from "date-fns";
 import type { GraceDayEvent, Goal, ProofSubmission } from "@/types";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { getEffectiveQuotaForWeek } from "@/lib/goalSchedule";
 
 export type GraceDayLike = Pick<GraceDayEvent, "goalId" | "weekStart" | "missedDate">;
 type SubmissionLike = Pick<ProofSubmission, "date" | "status">;
@@ -27,12 +27,12 @@ export function hasGraceDayForGoalWeek(
 }
 
 export function weeklyQuotaMetWithGrace(
-  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek">,
+  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "createdAt">,
   submissions: SubmissionLike[],
   events: GraceDayLike[],
   date = new Date()
 ): boolean {
-  const needed = effectiveTimesPerWeek(goal as Goal);
+  const needed = getEffectiveQuotaForWeek(goal as Goal, date);
   const verified = countVerifiedInCalendarWeek(submissions, date);
   const grace = getGraceDaysForGoalWeek(events, goal.id, weekStartKey(date)).length;
   return verified + grace >= needed;

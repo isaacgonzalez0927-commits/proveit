@@ -1,6 +1,6 @@
 import type { Goal, ProofSubmission } from "@/types";
 import { extractCalendarDateKey, parseCalendarDateLocal } from "@/lib/dateUtils";
-import { effectiveTimesPerWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
+import { effectiveTimesPerWeek, getEffectiveQuotaForWeek, spreadReminderDaysForTimesPerWeek } from "@/lib/goalSchedule";
 import { format, isSameWeek } from "date-fns";
 
 /** HH:mm for <input type="time" /> (strips seconds / odd DB formats). */
@@ -36,8 +36,8 @@ export function weeklyCheckInProgressLine(
   now: Date = new Date()
 ): string | null {
   if (goal.isOnBreak) return null;
-  const tw = effectiveTimesPerWeek(goal);
-  if (tw >= 7) return null;
+  const tw = getEffectiveQuotaForWeek(goal, now);
+  if (effectiveTimesPerWeek(goal) >= 7) return null;
   const n = countVerifiedInCalendarWeek(submissions, now);
   return `This week: ${n}/${tw} verified check-ins (Sun–Sat — any day, once per day)`;
 }
@@ -75,18 +75,18 @@ export function isWithinSubmissionWindow(
   if (goal.isOnBreak) return false;
   const todayStr = format(now, "yyyy-MM-dd");
   if (hasVerifiedSubmissionOnDate(submissions, todayStr)) return false;
-  const tw = effectiveTimesPerWeek(goal);
+  const tw = getEffectiveQuotaForWeek(goal, now);
   const weekCount = countVerifiedInCalendarWeek(submissions, now);
   return weekCount < tw;
 }
 
 /** True when the goal hit its weekly proof quota (Sun–Sat). */
 export function isWeeklyQuotaMet(
-  goal: Pick<Goal, "timesPerWeek" | "reminderDays" | "frequency">,
+  goal: Pick<Goal, "timesPerWeek" | "reminderDays" | "frequency" | "createdAt">,
   submissions: Pick<ProofSubmission, "date" | "status">[],
   now: Date = new Date()
 ): boolean {
-  const tw = effectiveTimesPerWeek(goal);
+  const tw = getEffectiveQuotaForWeek(goal, now);
   return countVerifiedInCalendarWeek(submissions, now) >= tw;
 }
 
@@ -133,7 +133,7 @@ export function getSubmissionWindowMessage(
   if (hasVerifiedSubmissionOnDate(submissions, todayStr)) {
     return "You already proved it today. One check-in per day.";
   }
-  const tw = effectiveTimesPerWeek(goal);
+  const tw = getEffectiveQuotaForWeek(goal, now);
   const weekCount = countVerifiedInCalendarWeek(submissions, now);
   if (weekCount >= tw) {
     return "You've finished this week's check-ins. Daily reminders continue — you can prove it again next week.";

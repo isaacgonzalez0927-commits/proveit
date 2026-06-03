@@ -1,7 +1,7 @@
 import { getDay } from "date-fns";
 import type { Goal, GraceDayEvent, ProofSubmission } from "@/types";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { getEffectiveQuotaForWeek, getExpectedVerifiedForWeek, isProratedSignupWeek, shortWeekLabel } from "@/lib/goalSchedule";
 import { hasGraceDayForGoalWeek, weekStartKey } from "@/lib/graceDays";
 import type { GardenWeekContext } from "@/lib/gardenMeta";
 
@@ -26,20 +26,16 @@ export type PlantHydration = {
   recoveryActive: boolean;
   inBloomSeason: boolean;
   perfectWeekStreak: number;
+  /** Set on the goal's first calendar week when quota is prorated. */
+  shortWeekLabel: string | null;
+  /** Prorated signup week where quota was missed — capped wilt, no death. */
+  signupWeekNoPenalty: boolean;
 };
 
 export type PlantHealthOptions = {
   recoveryActive?: boolean;
 };
 
-function weekElapsedRatio(dayOfWeek: number): number {
-  return Math.max(1, dayOfWeek + 1) / 7;
-}
-
-function expectedVerifiedByToday(needed: number, dayOfWeek: number): number {
-  if (needed <= 0) return 0;
-  return Math.floor(needed * weekElapsedRatio(dayOfWeek));
-}
 
 /** Recovery week: no instant death; first verified proof restores normal pacing. */
 export function applyRecoveryWeekCap(
@@ -54,7 +50,7 @@ export function applyRecoveryWeekCap(
 }
 
 function computeBaseWeeklyPlantState(
-  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt">,
+  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt" | "createdAt">,
   submissions: SubmissionLike[],
   graceDays: GraceDayLike[],
   now: Date
@@ -63,14 +59,17 @@ function computeBaseWeeklyPlantState(
   const weekStart = weekStartKey(now);
   if (hasGraceDayForGoalWeek(graceDays, goal.id, weekStart)) return "shielded";
 
-  const needed = effectiveTimesPerWeek(goal as Goal);
+  const needed = getEffectiveQuotaForWeek(goal, now);
   const uploaded = countVerifiedInCalendarWeek(submissions, now);
   const dayOfWeek = getDay(now);
 
-  if (dayOfWeek === 6 && uploaded < needed) return "dead";
+  if (dayOfWeek === 6 && uploaded < needed) {
+    if (isProratedSignupWeek(goal, now)) return "wilting";
+    return "dead";
+  }
   if (uploaded >= needed) return "healthy";
 
-  const expected = expectedVerifiedByToday(needed, dayOfWeek);
+  const expected = getExpectedVerifiedForWeek(goal, now);
   if (uploaded >= expected) return "healthy";
 
   if (dayOfWeek >= 5 && uploaded === 0) return "wilting";
@@ -84,7 +83,7 @@ function computeBaseWeeklyPlantState(
  * Weekly plant health — softer than v1: early-week lag stays healthy; wilt appears later.
  */
 export function getWeeklyPlantState(
-  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt">,
+  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt" | "createdAt">,
   submissions: SubmissionLike[],
   graceDays: GraceDayLike[] = [],
   now: Date = new Date(),
@@ -96,22 +95,25 @@ export function getWeeklyPlantState(
 }
 
 export function getPlantHydration(
-  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt">,
+  goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt" | "createdAt">,
   submissions: SubmissionLike[],
   graceDays: GraceDayLike[] = [],
   now: Date = new Date(),
   gardenContext?: GardenWeekContext
 ): PlantHydration {
-  const needed = effectiveTimesPerWeek(goal as Goal);
+  const needed = getEffectiveQuotaForWeek(goal, now);
   const verified = countVerifiedInCalendarWeek(submissions, now);
   const dayOfWeek = getDay(now);
-  const weekElapsed = weekElapsedRatio(dayOfWeek);
+  const weekElapsed = Math.max(1, dayOfWeek + 1) / 7;
   const progress = needed <= 0 ? 1 : Math.min(1, verified / needed);
-  const expectedByToday = expectedVerifiedByToday(needed, dayOfWeek);
+  const expectedByToday = getExpectedVerifiedForWeek(goal, now);
   const onPace = needed <= 0 || verified >= needed || verified >= expectedByToday;
   const recoveryActive = gardenContext?.recoveryActive ?? false;
   const baseState = computeBaseWeeklyPlantState(goal, submissions, graceDays, now);
   const state = applyRecoveryWeekCap(baseState, recoveryActive, verified);
+
+  const signupWeekNoPenalty =
+    isProratedSignupWeek(goal, now) && state !== "healthy" && state !== "shielded" && verified < needed;
 
   return {
     needed,
@@ -125,6 +127,8 @@ export function getPlantHydration(
     recoveryActive,
     inBloomSeason: gardenContext?.inBloomSeason ?? false,
     perfectWeekStreak: gardenContext?.perfectWeekStreak ?? 0,
+    shortWeekLabel: shortWeekLabel(goal, now),
+    signupWeekNoPenalty,
   };
 }
 
@@ -146,7 +150,12 @@ export function resolvePlantWateringLevel(
   return Math.min(1, Math.max(stateFloor, paceLevel));
 }
 
-export function gardenHealthLabel(state: PlantHealthState, recoveryActive = false): string {
+export function gardenHealthLabel(
+  state: PlantHealthState,
+  recoveryActive = false,
+  signupWeekMiss = false
+): string {
+  if (signupWeekMiss && state === "wilting") return "Welcome week — no penalty";
   if (recoveryActive && state === "wilting") return "Recovery week";
   switch (state) {
     case "healthy":

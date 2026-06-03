@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { extractCalendarDateKey } from "@/lib/dateUtils";
 import { countVerifiedInCalendarWeek, isWithinSubmissionWindow } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { effectiveTimesPerWeek, getEffectiveQuotaForWeek, shortWeekLabel } from "@/lib/goalSchedule";
 import { format } from "date-fns";
 import type { Goal } from "@/types";
 import { isNativeCapacitorShell } from "@/lib/nativeWidgetBridge";
@@ -48,10 +48,12 @@ export function NotificationScheduler() {
       if (doneToday) return;
       if (!isWithinSubmissionWindow(goal, now, subs)) return;
 
-      const tw = effectiveTimesPerWeek(goal);
+      const fullTw = effectiveTimesPerWeek(goal);
+      const tw = getEffectiveQuotaForWeek(goal, now);
       const weekCount = countVerifiedInCalendarWeek(subs, now);
       const remainingProofs = Math.max(0, tw - weekCount);
       const remainingDays = Math.max(0, 6 - now.getDay());
+      const signupNote = shortWeekLabel(goal, now);
       const urgentPrefix =
         remainingProofs > 0 && remainingDays <= 1
           ? "Critical: "
@@ -59,9 +61,9 @@ export function NotificationScheduler() {
             ? "Heads up: "
             : "";
       const body =
-        tw >= 7
+        fullTw >= 7
           ? "Daily check-in — snap a photo if you haven’t verified yet today."
-          : `${urgentPrefix}You’re at ${weekCount}/${tw} verified check-ins this week (Sun–Sat). ${remainingProofs} left with ${remainingDays + 1} day${remainingDays === 0 ? "" : "s"} to go.`;
+          : `${urgentPrefix}You’re at ${weekCount}/${tw} verified check-ins this week (Sun–Sat). ${remainingProofs} left with ${remainingDays + 1} day${remainingDays === 0 ? "" : "s"} to go.${signupNote ? ` ${signupNote}.` : ""}`;
 
       const n = new Notification(`Reminder: ${goal.title}`, {
         body,

@@ -10,6 +10,8 @@ import {
 } from "@/lib/goalPlants";
 import { FULLY_GROWN_MIN_STREAK, getPlantStageForStreak } from "@/lib/plantGrowth";
 import { weekStartKey, weeklyQuotaMetWithGrace } from "@/lib/graceDays";
+import { hasWelcomeWeekCompleted } from "@/lib/gardenMeta";
+import { isProratedSignupWeek } from "@/lib/goalSchedule";
 
 export type AchievementTier = "free" | "pro" | "premium";
 
@@ -35,6 +37,7 @@ export function isAchievementLockedByPlan(
 export type AchievementId =
   | "first_goal"
   | "first_proof"
+  | "welcome_week"
   | "first_full_grown"
   | "garden_3"
   | "proof_10"
@@ -74,6 +77,7 @@ export interface AchievementStats {
   perfectWeeks: number;
   shieldsUsed: number;
   weeksWithProofs: number;
+  welcomeWeeksCompleted: number;
 }
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
@@ -89,6 +93,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     title: "First proof",
     description: "Verify your first goal with a photo.",
     emoji: "📸",
+    tier: "free",
+  },
+  {
+    id: "welcome_week",
+    title: "Welcome week",
+    description: "Complete your first short week after joining.",
+    emoji: "🌤️",
     tier: "free",
   },
   {
@@ -253,6 +264,29 @@ function countWeeksWithProofs(submissions: ProofSubmission[]): number {
   return weeks.size;
 }
 
+function countWelcomeWeeksCompleted(
+  goals: Goal[],
+  getSubmissionsForGoal: StreakLookup
+): number {
+  let count = 0;
+  for (const goal of goals) {
+    if (hasWelcomeWeekCompleted(goal.id)) {
+      count += 1;
+      continue;
+    }
+    const created = safeParseISO(goal.createdAt);
+    if (!created) continue;
+    const signupWeek = startOfWeek(created, { weekStartsOn: 0 });
+    if (!isProratedSignupWeek(goal, signupWeek)) continue;
+    if (
+      weeklyQuotaMetWithGrace(goal, getSubmissionsForGoal(goal.id), [], signupWeek)
+    ) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 export function computeAchievementStats(
   goals: Goal[],
   submissions: ProofSubmission[],
@@ -283,6 +317,7 @@ export function computeAchievementStats(
     perfectWeeks: countPerfectWeeks(goals, getSubmissionsForGoal, graceDayEvents),
     shieldsUsed: graceDayEvents.length,
     weeksWithProofs: countWeeksWithProofs(submissions),
+    welcomeWeeksCompleted: countWelcomeWeeksCompleted(goals, getSubmissionsForGoal),
   };
 }
 
@@ -309,6 +344,7 @@ export function evaluateAchievement(
   const targets: Record<AchievementId, number> = {
     first_goal: 1,
     first_proof: 1,
+    welcome_week: 1,
     first_full_grown: FULLY_GROWN_MIN_STREAK,
     garden_3: 3,
     proof_10: 10,
@@ -330,6 +366,9 @@ export function evaluateAchievement(
   switch (id) {
     case "first_goal":
       progress = stats.totalGoals;
+      break;
+    case "welcome_week":
+      progress = stats.welcomeWeeksCompleted;
       break;
     case "first_proof":
     case "proof_10":

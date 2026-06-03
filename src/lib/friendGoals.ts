@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { countVerifiedInCalendarWeek } from "@/lib/goalDue";
-import { effectiveTimesPerWeek } from "@/lib/goalSchedule";
+import { getEffectiveQuotaForWeek } from "@/lib/goalSchedule";
 import { extractCalendarDateKey } from "@/lib/dateUtils";
 import type { Goal, ProofSubmission } from "@/types";
 
@@ -65,14 +65,15 @@ export function displayNameFromProfile(row: {
   return local?.trim() || "Friend";
 }
 
-type GoalRow = Pick<Goal, "id" | "frequency" | "timesPerWeek" | "isOnBreak">;
+type GoalRow = Pick<Goal, "id" | "frequency" | "timesPerWeek" | "isOnBreak" | "createdAt">;
 
 export function computeMemberProgress(
   goal: GoalRow,
   submissions: Pick<ProofSubmission, "date" | "status">[],
   todayStr = format(new Date(), "yyyy-MM-dd")
 ): Pick<FriendGoalMemberProgress, "provedToday" | "weekDone" | "weekTarget"> {
-  const weekTarget = effectiveTimesPerWeek(goal as Goal);
+  const now = new Date();
+  const weekTarget = getEffectiveQuotaForWeek(goal as Goal, now);
   const verified = submissions.filter((s) => s.status === "verified");
   const provedToday = verified.some((s) => extractCalendarDateKey(s.date) === todayStr);
   const weekDone = countVerifiedInCalendarWeek(verified, new Date());

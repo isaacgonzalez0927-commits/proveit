@@ -145,4 +145,51 @@ describe("getGoalStreak / isGoalDoneInCurrentWindow with submission date formats
     ];
     expect(getGoalStreak(weekly, () => subs, [{ goalId: "g1", weekStart: "2026-04-05" }])).toBe(1);
   });
+
+  it("prorates signup week quota for streak and allows first streak mid-week", () => {
+    vi.setSystemTime(new Date("2026-05-23T18:00:00.000Z")); // Sat in signup week
+    const weekly = goal({
+      frequency: "weekly",
+      timesPerWeek: 6,
+      createdAt: "2026-05-21T10:00:00.000Z", // Thu
+    });
+    const subs: ProofSubmission[] = [
+      "2026-05-21",
+      "2026-05-22",
+      "2026-05-23",
+    ].map((date, i) => ({
+      id: `s${i}`,
+      goalId: "g1",
+      date,
+      imageDataUrl: "x",
+      status: "verified" as const,
+      createdAt: `${date}T12:00:00.000Z`,
+    }));
+    expect(getGoalStreak(weekly, () => subs)).toBe(1);
+  });
+
+  it("does not break streak on a missed prorated signup week", () => {
+    vi.setSystemTime(new Date("2026-05-29T18:00:00.000Z")); // Fri in the week after signup
+    const weekly = goal({
+      frequency: "weekly",
+      timesPerWeek: 6,
+      createdAt: "2026-05-21T10:00:00.000Z",
+    });
+    const subs: ProofSubmission[] = [
+      "2026-05-25",
+      "2026-05-26",
+      "2026-05-27",
+      "2026-05-28",
+      "2026-05-29",
+      "2026-05-30",
+    ].map((date, i) => ({
+      id: `w2-${i}`,
+      goalId: "g1",
+      date,
+      imageDataUrl: "x",
+      status: "verified" as const,
+      createdAt: `${date}T12:00:00.000Z`,
+    }));
+    expect(getGoalStreak(weekly, () => subs)).toBe(1);
+  });
 });
