@@ -40,7 +40,6 @@ export function PlantWateringCelebration({
     >
       {burst && active && (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-          <span className="absolute h-28 w-28 animate-garden-water-burst rounded-full bg-emerald-400/35" />
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <span
               key={`spark-${i}`}
