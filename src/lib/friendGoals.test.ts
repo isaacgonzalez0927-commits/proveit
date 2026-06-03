@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { format } from "date-fns";
 import {
   computeMemberProgress,
   displayNameFromProfile,
@@ -19,7 +20,7 @@ describe("friendGoals", () => {
   });
 
   it("computes weekly progress", () => {
-    const today = "2026-05-27";
+    const today = format(new Date(), "yyyy-MM-dd");
     const goal = { id: "g1", frequency: "weekly" as const, timesPerWeek: 3 as const, isOnBreak: false };
     const subs = [{ date: today, status: "verified" as const }];
     const p = computeMemberProgress(goal, subs, today);

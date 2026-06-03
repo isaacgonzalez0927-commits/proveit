@@ -3,8 +3,8 @@ import { PLANS } from "@/types";
 
 export const FREE_ACTIVE_REMINDER_LIMIT = 2;
 export const PAID_ACTIVE_REMINDER_LIMIT = 5;
-export const PRO_STREAK_SHIELD_BALANCE = 3;
-export const PREMIUM_STREAK_SHIELD_BALANCE = 7;
+export const PRO_STREAK_SHIELD_BALANCE = 1;
+export const PREMIUM_STREAK_SHIELD_BALANCE = 1;
 export const FREE_AI_VERIFICATIONS_PER_WEEK = 3;
 export const PRO_AI_VERIFICATIONS_PER_MONTH = 100;
 export const PREMIUM_AI_VERIFICATIONS_PER_MONTH = 500;
@@ -31,11 +31,8 @@ export function getGraceDayResetBalance(userOrPlan: Pick<User, "plan"> | PlanId)
   return 0;
 }
 
-export function getAiVerificationLimit(userOrPlan: Pick<User, "plan"> | PlanId): number {
-  const plan = typeof userOrPlan === "string" ? userOrPlan : userOrPlan.plan;
-  if (plan === "premium") return PREMIUM_AI_VERIFICATIONS_PER_MONTH;
-  if (plan === "pro") return PRO_AI_VERIFICATIONS_PER_MONTH;
-  return FREE_AI_VERIFICATIONS_PER_WEEK;
+export function getAiVerificationLimit(_userOrPlan: Pick<User, "plan"> | PlanId): number {
+  return Number.MAX_SAFE_INTEGER;
 }
 
 export function getAiVerificationCycleKind(userOrPlan: Pick<User, "plan"> | PlanId): "week" | "month" {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ensureDevAccountPremiumPlan, hasCreatorAccess } from "@/lib/accountAccess";
+import { ensureDevAccountPremiumPlan, hasDevPremiumAccess } from "@/lib/accountAccess";
 import { canSelfAssignPlan } from "@/lib/billing";
 import { normalizeUsername } from "@/lib/usernameAuth";
 import {
@@ -79,9 +79,36 @@ async function freezeExcessRemindersForPlan(
 async function expirePremiumTrialIfNeeded(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   userId: string,
-  data: ProfileRow
+  data: ProfileRow,
+  authEmail?: string | null
 ): Promise<ProfileRow> {
   if (data.premium_trial_ends_at == null) return data;
+
+  const isDev = hasDevPremiumAccess(
+    typeof data.email === "string" ? data.email : null,
+    typeof data.contact_email === "string" ? data.contact_email : null,
+    authEmail
+  );
+  if (isDev) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        premium_trial_ends_at: null,
+        premium_trial_revert_plan: null,
+        trial_expired_needs_review: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+    if (error) return data;
+    await ensureDevAccountPremiumPlan(supabase, userId, data, authEmail);
+    return {
+      ...data,
+      premium_trial_ends_at: null,
+      premium_trial_revert_plan: null,
+      trial_expired_needs_review: false,
+    };
+  }
+
   const revert =
     data.premium_trial_revert_plan === "pro"
       ? "pro"
@@ -115,6 +142,26 @@ async function expirePremiumTrialIfNeeded(
     strict_ai_verification: false,
     trial_expired_needs_review: true,
   };
+}
+
+async function resolveProfileRow(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  row: ProfileRow,
+  authEmail?: string | null
+): Promise<ProfileRow> {
+  let current = await expirePremiumTrialIfNeeded(supabase, userId, row, authEmail);
+  const upgraded = await ensureDevAccountPremiumPlan(supabase, userId, current, authEmail);
+  if (!upgraded) return current;
+  const { data: refreshed } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+  if (refreshed) {
+    current = refreshed as ProfileRow;
+  }
+  return current;
 }
 
 function profileJsonFromRow(data: ProfileRow) {
@@ -187,18 +234,7 @@ export async function GET() {
     });
   }
 
-  let row = await expirePremiumTrialIfNeeded(supabase, user.id, data as ProfileRow);
-  const upgraded = await ensureDevAccountPremiumPlan(supabase, user.id, row as ProfileRow);
-  if (upgraded) {
-    const { data: refreshed } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    if (refreshed) {
-      row = await expirePremiumTrialIfNeeded(supabase, user.id, refreshed as ProfileRow);
-    }
-  }
+  let row = await resolveProfileRow(supabase, user.id, data as ProfileRow, user.email);
   return NextResponse.json({ profile: profileJsonFromRow(row) });
 }
 
@@ -259,11 +295,11 @@ export async function PATCH(request: NextRequest) {
       .select("contact_email")
       .eq("id", user.id)
       .maybeSingle();
-    const isCreator = hasCreatorAccess(
+    const isDev = hasDevPremiumAccess(
       user.email,
       typeof contactRow?.contact_email === "string" ? contactRow.contact_email : null
     );
-    if (!canSelfAssignPlan(targetPlan, isCreator)) {
+    if (!canSelfAssignPlan(targetPlan, isDev)) {
       return NextResponse.json(
         {
           error: "Pro and Premium require a subscription. Open Pricing to checkout when billing is ready.",
@@ -415,7 +451,7 @@ export async function PATCH(request: NextRequest) {
         },
       });
     }
-    const final = await expirePremiumTrialIfNeeded(supabase, user.id, row as ProfileRow);
+    const final = await resolveProfileRow(supabase, user.id, row as ProfileRow, user.email);
     return NextResponse.json({ ok: true, profile: profileJsonFromRow(final) });
   }
 
@@ -487,13 +523,13 @@ export async function PATCH(request: NextRequest) {
     .maybeSingle();
 
   let finalRow: ProfileRow | null = fresh
-    ? await expirePremiumTrialIfNeeded(supabase, user.id, fresh as ProfileRow)
+    ? await resolveProfileRow(supabase, user.id, fresh as ProfileRow, user.email)
     : null;
 
   if (!finalRow) {
     const { data: again } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
     if (again) {
-      finalRow = await expirePremiumTrialIfNeeded(supabase, user.id, again as ProfileRow);
+      finalRow = await resolveProfileRow(supabase, user.id, again as ProfileRow, user.email);
     }
   }
 

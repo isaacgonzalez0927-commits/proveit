@@ -66,6 +66,7 @@ import {
   DEV_GUEST_MODE_KEY,
   resetOnboardingForDevExperience,
 } from "@/lib/onboardingStorage";
+import { applyDevPremiumGrantIfNeeded } from "@/lib/accountAccess";
 import {
   expireLocalPremiumTrialIfNeeded,
 } from "@/lib/premiumTrial";
@@ -292,57 +293,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           typeof window !== "undefined"
             ? window.localStorage.getItem("proveit_display_name") ?? undefined
             : undefined;
-        const profileUser = p
-          ? {
-              id: p.id,
-              email: p.email ?? "",
-              plan: normalizePlanId(p.plan),
-              planBilling: p.planBilling,
-              createdAt: p.createdAt ?? new Date().toISOString(),
-              name: p.name ?? storedName,
-              username: typeof p.username === "string" ? p.username : undefined,
-              contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
-              contactEmailPending:
-                typeof p.contactEmailPending === "string" ? p.contactEmailPending : undefined,
-              contactEmailVerified: p.contactEmailVerified === true,
-              premiumTrialEndsAt:
-                typeof p.premiumTrialEndsAt === "string"
-                  ? p.premiumTrialEndsAt
-                  : p.premiumTrialEndsAt === null
-                    ? null
-                    : undefined,
-              premiumTrialUsed: p.premiumTrialUsed === true,
-              graceDayBalance:
-                typeof p.graceDayBalance === "number" ? p.graceDayBalance : undefined,
-              graceDayCycleAnchor:
-                typeof p.graceDayCycleAnchor === "string" ? p.graceDayCycleAnchor : null,
-              strictAiVerification: p.strictAiVerification === true,
-              trialExpiredNeedsReview: p.trialExpiredNeedsReview === true,
-              aiVerificationCycleKey:
-                typeof p.aiVerificationCycleKey === "string" ? p.aiVerificationCycleKey : null,
-              aiVerificationCount:
-                typeof p.aiVerificationCount === "number" ? p.aiVerificationCount : undefined,
-            }
-          : {
-              id: supabaseUser.id,
-              email: supabaseUser.email ?? "",
-              plan: "free" as const,
-              planBilling: undefined as undefined,
-              createdAt: supabaseUser.created_at,
-              name: storedName,
-              username: undefined as string | undefined,
-              contactEmail: undefined as string | undefined,
-              contactEmailPending: undefined as string | undefined,
-              contactEmailVerified: false,
-              premiumTrialEndsAt: undefined,
-              premiumTrialUsed: false,
-              graceDayBalance: 0,
-              graceDayCycleAnchor: null,
-              strictAiVerification: false,
-              trialExpiredNeedsReview: false,
-              aiVerificationCycleKey: null,
-              aiVerificationCount: 0,
-            };
+        const profileUser = applyDevPremiumGrantIfNeeded(
+          p
+            ? {
+                id: p.id,
+                email: p.email ?? "",
+                plan: normalizePlanId(p.plan),
+                planBilling: p.planBilling,
+                createdAt: p.createdAt ?? new Date().toISOString(),
+                name: p.name ?? storedName,
+                username: typeof p.username === "string" ? p.username : undefined,
+                contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
+                contactEmailPending:
+                  typeof p.contactEmailPending === "string" ? p.contactEmailPending : undefined,
+                contactEmailVerified: p.contactEmailVerified === true,
+                premiumTrialEndsAt:
+                  typeof p.premiumTrialEndsAt === "string"
+                    ? p.premiumTrialEndsAt
+                    : p.premiumTrialEndsAt === null
+                      ? null
+                      : undefined,
+                premiumTrialUsed: p.premiumTrialUsed === true,
+                graceDayBalance:
+                  typeof p.graceDayBalance === "number" ? p.graceDayBalance : undefined,
+                graceDayCycleAnchor:
+                  typeof p.graceDayCycleAnchor === "string" ? p.graceDayCycleAnchor : null,
+                strictAiVerification: p.strictAiVerification === true,
+                trialExpiredNeedsReview: p.trialExpiredNeedsReview === true,
+                aiVerificationCycleKey:
+                  typeof p.aiVerificationCycleKey === "string" ? p.aiVerificationCycleKey : null,
+                aiVerificationCount:
+                  typeof p.aiVerificationCount === "number" ? p.aiVerificationCount : undefined,
+              }
+            : {
+                id: supabaseUser.id,
+                email: supabaseUser.email ?? "",
+                plan: "free" as const,
+                planBilling: undefined as undefined,
+                createdAt: supabaseUser.created_at,
+                name: storedName,
+                username: undefined as string | undefined,
+                contactEmail: undefined as string | undefined,
+                contactEmailPending: undefined as string | undefined,
+                contactEmailVerified: false,
+                premiumTrialEndsAt: undefined,
+                premiumTrialUsed: false,
+                graceDayBalance: 0,
+                graceDayCycleAnchor: null,
+                strictAiVerification: false,
+                trialExpiredNeedsReview: false,
+                aiVerificationCycleKey: null,
+                aiVerificationCount: 0,
+              }
+        );
         const profileApplyStale =
           bootstrapApplySeq !== bootstrapApplySeqRef.current ||
           profileClientEpochRef.current !== profileEpochAtBootstrapStart;
@@ -624,44 +627,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           const applyFromApiProfile = (pr: ApiProfileLike): boolean => {
             profileClientEpochRef.current += 1;
-            setUserState({
-              id: pr.id ?? user.id,
-              email: pr.email ?? user.email,
-              plan: normalizePlanId(pr.plan),
-              planBilling: pr.plan === "free" ? undefined : pr.planBilling ?? billing,
-              createdAt: pr.createdAt ?? user.createdAt,
-              name: pr.name ?? user.name,
-              username: typeof pr.username === "string" ? pr.username : user.username,
-              contactEmail:
-                typeof pr.contactEmail === "string" ? pr.contactEmail : user.contactEmail,
-              contactEmailPending:
-                typeof pr.contactEmailPending === "string"
-                  ? pr.contactEmailPending
-                  : user.contactEmailPending,
-              contactEmailVerified:
-                pr.contactEmailVerified === true
-                  ? true
-                  : pr.contactEmailVerified === false
-                    ? false
-                    : user.contactEmailVerified,
-              premiumTrialEndsAt:
-                typeof pr.premiumTrialEndsAt === "string"
-                  ? pr.premiumTrialEndsAt
-                  : pr.premiumTrialEndsAt === null
-                    ? null
-                    : undefined,
-              premiumTrialUsed: pr.premiumTrialUsed === true,
-              graceDayBalance:
-                typeof pr.graceDayBalance === "number" ? pr.graceDayBalance : undefined,
-              graceDayCycleAnchor:
-                typeof pr.graceDayCycleAnchor === "string" ? pr.graceDayCycleAnchor : null,
-              strictAiVerification: pr.strictAiVerification === true,
-              trialExpiredNeedsReview: pr.trialExpiredNeedsReview === true,
-              aiVerificationCycleKey:
-                typeof pr.aiVerificationCycleKey === "string" ? pr.aiVerificationCycleKey : null,
-              aiVerificationCount:
-                typeof pr.aiVerificationCount === "number" ? pr.aiVerificationCount : undefined,
-            });
+            setUserState(
+              applyDevPremiumGrantIfNeeded({
+                id: pr.id ?? user.id,
+                email: pr.email ?? user.email,
+                plan: normalizePlanId(pr.plan),
+                planBilling: pr.plan === "free" ? undefined : pr.planBilling ?? billing,
+                createdAt: pr.createdAt ?? user.createdAt,
+                name: pr.name ?? user.name,
+                username: typeof pr.username === "string" ? pr.username : user.username,
+                contactEmail:
+                  typeof pr.contactEmail === "string" ? pr.contactEmail : user.contactEmail,
+                contactEmailPending:
+                  typeof pr.contactEmailPending === "string"
+                    ? pr.contactEmailPending
+                    : user.contactEmailPending,
+                contactEmailVerified:
+                  pr.contactEmailVerified === true
+                    ? true
+                    : pr.contactEmailVerified === false
+                      ? false
+                      : user.contactEmailVerified,
+                premiumTrialEndsAt:
+                  typeof pr.premiumTrialEndsAt === "string"
+                    ? pr.premiumTrialEndsAt
+                    : pr.premiumTrialEndsAt === null
+                      ? null
+                      : undefined,
+                premiumTrialUsed: pr.premiumTrialUsed === true,
+                graceDayBalance:
+                  typeof pr.graceDayBalance === "number" ? pr.graceDayBalance : undefined,
+                graceDayCycleAnchor:
+                  typeof pr.graceDayCycleAnchor === "string" ? pr.graceDayCycleAnchor : null,
+                strictAiVerification: pr.strictAiVerification === true,
+                trialExpiredNeedsReview: pr.trialExpiredNeedsReview === true,
+                aiVerificationCycleKey:
+                  typeof pr.aiVerificationCycleKey === "string" ? pr.aiVerificationCycleKey : null,
+                aiVerificationCount:
+                  typeof pr.aiVerificationCount === "number" ? pr.aiVerificationCount : undefined,
+              })
+            );
             markStoredPlanSelection(user.id);
             if (typeof window !== "undefined") {
               window.localStorage.removeItem(PENDING_PLAN_AFTER_TOUR_KEY);

@@ -44,7 +44,7 @@ const COPY: Record<TourSpotlightPhase, { title: string; body: string }> = {
   },
   "goal-schedule": {
     title: "Rhythm & reminders",
-    body: "Set how many proofs you owe each week. Free keeps 2 active reminders; Pro keeps 5 and gets Streak Shields if life gets messy.",
+    body: "Set how many proofs you owe each week. Free keeps 2 active reminders; Pro and Premium keep 5 and get 1 Streak Shield per billing cycle if life gets messy.",
   },
   "goal-submit": {
     title: "Add it to your garden",

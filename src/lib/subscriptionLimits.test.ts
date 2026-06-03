@@ -27,11 +27,11 @@ describe("subscription limits", () => {
     expect(getActiveReminderLimit("free")).toBe(2);
     expect(getActiveReminderLimit("pro")).toBe(5);
     expect(getGraceDayResetBalance("free")).toBe(0);
-    expect(getGraceDayResetBalance("pro")).toBe(3);
-    expect(getGraceDayResetBalance("premium")).toBe(7);
-    expect(getAiVerificationLimit("free")).toBe(3);
-    expect(getAiVerificationLimit("pro")).toBe(100);
-    expect(getAiVerificationLimit("premium")).toBe(500);
+    expect(getGraceDayResetBalance("pro")).toBe(1);
+    expect(getGraceDayResetBalance("premium")).toBe(1);
+    expect(getAiVerificationLimit("free")).toBe(Number.MAX_SAFE_INTEGER);
+    expect(getAiVerificationLimit("pro")).toBe(Number.MAX_SAFE_INTEGER);
+    expect(getAiVerificationLimit("premium")).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   it("freezes reminders beyond the allowed active limit", () => {

@@ -51,11 +51,14 @@ function hasDevPremiumUsername(email?: string | null): boolean {
 /** Dev / team accounts receive complimentary Premium. */
 export function hasDevPremiumAccess(
   email?: string | null,
-  contactEmail?: string | null
+  contactEmail?: string | null,
+  authEmail?: string | null
 ): boolean {
   if (hasCreatorAccess(email, contactEmail)) return true;
+  if (hasCreatorAccess(authEmail, null)) return true;
   if (hasDevPremiumUsername(email)) return true;
   if (hasDevPremiumUsername(contactEmail)) return true;
+  if (hasDevPremiumUsername(authEmail)) return true;
   return false;
 }
 
@@ -65,13 +68,42 @@ type ProfilePlanRow = {
   plan?: string | null;
 };
 
+type DevGrantUser = {
+  email: string;
+  contactEmail?: string | null;
+  plan: PlanId;
+  planBilling?: "monthly" | "yearly";
+  premiumTrialEndsAt?: string | null;
+  premiumTrialRevertPlan?: "free" | "pro";
+};
+
+/** Client-side: grant complimentary Premium and clear legacy trial fields. */
+export function applyDevPremiumGrantIfNeeded<T extends DevGrantUser>(user: T): T {
+  if (!hasDevPremiumAccess(user.email, user.contactEmail)) return user;
+  const cleared =
+    user.premiumTrialEndsAt != null || user.premiumTrialRevertPlan != null
+      ? {
+          ...user,
+          premiumTrialEndsAt: undefined,
+          premiumTrialRevertPlan: undefined,
+        }
+      : user;
+  if (normalizePlanId(cleared.plan) === DEV_GRANTED_PLAN) return cleared;
+  return {
+    ...cleared,
+    plan: DEV_GRANTED_PLAN,
+    planBilling: cleared.planBilling ?? "yearly",
+  };
+}
+
 /** Persist complimentary Premium for dev accounts (runs on profile load). */
 export async function ensureDevAccountPremiumPlan(
   supabase: SupabaseClient,
   userId: string,
-  profile: ProfilePlanRow
+  profile: ProfilePlanRow,
+  authEmail?: string | null
 ): Promise<boolean> {
-  if (!hasDevPremiumAccess(profile.email, profile.contact_email)) return false;
+  if (!hasDevPremiumAccess(profile.email, profile.contact_email, authEmail)) return false;
 
   if (normalizePlanId(profile.plan) === DEV_GRANTED_PLAN) return false;
 

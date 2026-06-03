@@ -12,15 +12,15 @@ interface UpgradePromptModalProps {
 }
 
 const PRO_PERKS = [
-  "5 goals, Goal Break & Gallery",
+  "5 goals & Goal Gallery",
   "6 plant styles & 6 accent themes",
-  "3 Streak Shields & 100 AI checks/mo",
+  "1 Streak Shield per billing cycle & unlimited AI verification",
 ];
 
 const PREMIUM_PERKS = [
   "Unlimited goals & all 8 plant styles",
   "Weekly proof collages & share images",
-  "All 10 themes, 7 Shields & Premium badges",
+  "All 10 themes, 1 Shield per cycle & Premium badges",
 ];
 
 function ProUpgradeCard({
@@ -208,7 +208,7 @@ export function UpgradePromptModal({
     message ??
     (isPremium
       ? "Upgrade to Premium to unlock everything Pro has, plus unlimited goals, collages, and exclusive cosmetics."
-      : "Upgrade to Pro for more goals, Goal Break, Gallery, plant styles, and Streak Shields.");
+      : "Upgrade to Pro for more goals, Gallery, plant styles, and a Streak Shield each billing cycle.");
 
   return (
     <div
