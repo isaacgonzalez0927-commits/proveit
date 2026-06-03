@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApp } from "@/context/AppContext";
@@ -20,6 +20,57 @@ import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 const INTRO_SLIDE_COUNT = 6;
 type Slide = 0 | 1 | 2 | 3 | 4 | 5;
 type AuthMode = "signin" | "signup";
+
+function introCardMotion(
+  index: number,
+  slideProgress: number,
+  isDragging: boolean
+): CSSProperties {
+  const delta = index - slideProgress;
+  const abs = Math.abs(delta);
+  const rotateY = Math.max(-18, Math.min(18, delta * -18));
+  const scale = Math.max(0.9, 1 - abs * 0.055);
+  const translateZ = -Math.min(abs * 52, 110);
+  const opacity = abs > 1.08 ? 0 : 1 - abs * 0.16;
+
+  return {
+    transform: `rotateY(${rotateY}deg) scale(${scale}) translateZ(${translateZ}px)`,
+    opacity,
+    zIndex: Math.round(24 - abs * 8),
+    backfaceVisibility: "hidden",
+    transition: isDragging
+      ? "none"
+      : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease",
+  };
+}
+
+function IntroSlideCard({
+  index,
+  slideProgress,
+  isDragging,
+  className = "",
+  children,
+}: {
+  index: Slide;
+  slideProgress: number;
+  isDragging: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className="flex h-full min-h-full w-1/6 shrink-0 items-stretch px-2 py-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-[max(0.35rem,env(safe-area-inset-top))]"
+      aria-hidden={Math.abs(index - slideProgress) > 0.55}
+    >
+      <div
+        className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.75rem] shadow-[0_22px_60px_rgba(0,0,0,0.45)] ring-1 ring-white/10 ${className}`}
+        style={introCardMotion(index, slideProgress, isDragging)}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
 
 // Format-only check for real-looking email (password reset by email)
 const EMAIL_FORMAT = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
@@ -46,6 +97,7 @@ function LandingContent() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [dragOffsetPx, setDragOffsetPx] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const requestedStep = searchParams.get("step");
   const authError = searchParams.get("error");
   const [sessionSettled, setSessionSettled] = useState(false);
@@ -177,6 +229,16 @@ function LandingContent() {
     window.addEventListener("mouseup", onMouseUp);
     return () => window.removeEventListener("mouseup", onMouseUp);
   }, [isDragging, handleDragEnd]);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const sync = () => setViewportWidth(el.clientWidth);
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [sessionSettled, authReady]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,6 +540,9 @@ function LandingContent() {
     );
   }
 
+  const slideProgress =
+    slide - (viewportWidth > 0 ? dragOffsetPx / viewportWidth : 0);
+
   return (
     <main
       data-intro-fullscreen
@@ -486,7 +551,7 @@ function LandingContent() {
     >
       <div
         ref={viewportRef}
-        className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+        className="relative flex min-h-0 flex-1 flex-col overflow-visible [perspective:1400px]"
         style={{ touchAction: isDragging ? "none" : "pan-y" }}
         onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
         onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
@@ -505,11 +570,17 @@ function LandingContent() {
           }`}
           style={{
             transform: `translate3d(calc(-${slide * (100 / INTRO_SLIDE_COUNT)}% + ${dragOffsetPx}px), 0, 0)`,
+            transformStyle: "preserve-3d",
             willChange: isDragging ? "transform" : "auto",
           }}
         >
           {/* Slide 0 – Welcome */}
-          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30">
+          <IntroSlideCard
+            index={0}
+            slideProgress={slideProgress}
+            isDragging={isDragging}
+            className="bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30"
+          >
             <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="h-10 shrink-0" aria-hidden />
               <div className="shrink-0 text-center">
@@ -554,10 +625,15 @@ function LandingContent() {
                 </button>
               </div>
             </div>
-          </section>
+          </IntroSlideCard>
 
           {/* Slide 1 – AI verification */}
-          <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#061527]">
+          <IntroSlideCard
+            index={1}
+            slideProgress={slideProgress}
+            isDragging={isDragging}
+            className="relative bg-[#061527]"
+          >
             <img
               src="/onboarding/book-proof.png"
               alt="Book proof example"
@@ -596,10 +672,15 @@ function LandingContent() {
                 </button>
               </div>
             </div>
-          </section>
+          </IntroSlideCard>
 
           {/* Slide 2 – Plants */}
-          <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#061527]">
+          <IntroSlideCard
+            index={2}
+            slideProgress={slideProgress}
+            isDragging={isDragging}
+            className="relative bg-[#061527]"
+          >
             <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
             <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
             <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
@@ -643,10 +724,15 @@ function LandingContent() {
                 </button>
               </div>
             </div>
-          </section>
+          </IntroSlideCard>
 
           {/* Slide 3 – Buddies */}
-          <section className="relative flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-[#0c1a2e]">
+          <IntroSlideCard
+            index={3}
+            slideProgress={slideProgress}
+            isDragging={isDragging}
+            className="relative bg-[#0c1a2e]"
+          >
             <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-sky-500/25 to-transparent" />
             <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-prove-500/15 blur-3xl" />
             <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
@@ -706,10 +792,15 @@ function LandingContent() {
                 </button>
               </div>
             </div>
-          </section>
+          </IntroSlideCard>
 
           {/* Slide 4 – Sign in */}
-          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
+          <IntroSlideCard
+            index={4}
+            slideProgress={slideProgress}
+            isDragging={isDragging}
+            className="bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20"
+          >
             <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 6</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
@@ -804,10 +895,15 @@ function LandingContent() {
               <button type="button" onClick={() => goTo(2)} className="active:opacity-70">Back</button>
               <span>Plan comes next</span>
             </div>
-          </section>
+          </IntroSlideCard>
 
           {/* Slide 5 – Choose plan */}
-          <section className="flex h-full min-h-full w-1/6 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20">
+          <IntroSlideCard
+            index={5}
+            slideProgress={slideProgress}
+            isDragging={isDragging}
+            className="bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20"
+          >
             <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1 justify-center">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 6 of 6</p>
               <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
@@ -874,7 +970,7 @@ function LandingContent() {
               <button type="button" onClick={() => goTo(3)} className="active:opacity-70">Back</button>
               <span>Swipe ← back</span>
             </div>
-          </section>
+          </IntroSlideCard>
         </div>
 
         {/* Dots + legal — overlay so slides stay edge-to-edge */}
