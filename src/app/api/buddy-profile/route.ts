@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resolveEffectivePlanForAccount } from "@/lib/accountAccess";
 import { getBuddyProfileSettings } from "@/lib/buddyProfileServer";
 import { sanitizeBuddyAvatarPlant, sanitizeBuddyProfileAccent } from "@/lib/buddyProfile";
-import { normalizePlanId } from "@/types";
 
 function requestOrigin(request: NextRequest): string {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -24,7 +24,12 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const settings = await getBuddyProfileSettings(supabase, user.id, requestOrigin(request));
+  const settings = await getBuddyProfileSettings(
+    supabase,
+    user.id,
+    requestOrigin(request),
+    user.email
+  );
   if (!settings) {
     return NextResponse.json({ error: "Profile not found." }, { status: 404 });
   }
@@ -50,11 +55,11 @@ export async function PATCH(request: NextRequest) {
 
   const { data: current } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, email, contact_email")
     .eq("id", user.id)
     .maybeSingle();
 
-  const plan = normalizePlanId(current?.plan);
+  const plan = resolveEffectivePlanForAccount(current?.plan, current, user.email);
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
     buddy_profile_visibility: "shared_goals_only",
@@ -73,6 +78,11 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const settings = await getBuddyProfileSettings(supabase, user.id, requestOrigin(request));
+  const settings = await getBuddyProfileSettings(
+    supabase,
+    user.id,
+    requestOrigin(request),
+    user.email
+  );
   return NextResponse.json({ ok: true, settings });
 }

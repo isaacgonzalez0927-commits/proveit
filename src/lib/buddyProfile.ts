@@ -8,6 +8,7 @@ import {
   sanitizeAccentThemeForPlan,
   type AccentTheme,
 } from "@/lib/theme";
+import { accountDisplayLabel } from "@/lib/usernameAuth";
 import type { PlanId } from "@/types";
 
 export type BuddyProfileVisibility = "shared_goals_only" | "friend_link";
@@ -124,8 +125,15 @@ export function buddyProfileAccentBorderStyle(accent: AccentTheme): {
 export function displayNameFromBuddyRow(row: {
   name?: string | null;
   username?: string | null;
+  email?: string | null;
+  contact_email?: string | null;
 }): string {
-  if (row.name && String(row.name).trim()) return String(row.name).trim();
-  if (row.username && String(row.username).trim()) return String(row.username).trim();
+  const label = accountDisplayLabel({
+    name: typeof row.name === "string" ? row.name : undefined,
+    username: typeof row.username === "string" ? row.username : undefined,
+    email: typeof row.email === "string" ? row.email : undefined,
+    contactEmail: typeof row.contact_email === "string" ? row.contact_email : undefined,
+  });
+  if (label !== "Account") return label;
   return "Buddy";
 }

@@ -16,7 +16,8 @@ import {
 } from "@/lib/buddyProfile";
 import type { GoalPlantVariant } from "@/lib/goalPlants";
 import type { AccentTheme } from "@/lib/theme";
-import { normalizePlanId, type PlanId } from "@/types";
+import type { PlanId } from "@/types";
+import { resolveEffectivePlanForAccount } from "@/lib/accountAccess";
 import type { Goal, GraceDayEvent, ProofSubmission, TimesPerWeek } from "@/types";
 import { startOfWeek } from "date-fns";
 import { safeParseISO } from "@/lib/dateUtils";
@@ -65,6 +66,8 @@ function mapSubmissionRows(rows: Array<Record<string, unknown>>): ProofSubmissio
 
 type ProfileBuddyRow = {
   id: string;
+  email?: string | null;
+  contact_email?: string | null;
   name?: string | null;
   username?: string | null;
   plan?: string | null;
@@ -73,6 +76,10 @@ type ProfileBuddyRow = {
   buddy_profile_visibility?: string | null;
   buddy_friend_code?: string | null;
 };
+
+function effectivePlanForRow(row: ProfileBuddyRow, authEmail?: string | null): PlanId {
+  return resolveEffectivePlanForAccount(row.plan, row, authEmail);
+}
 
 export async function ensureBuddyFriendCode(
   client: SupabaseClient,
@@ -164,12 +171,14 @@ export async function buildBuddyProfilePublic(
   client: SupabaseClient,
   row: ProfileBuddyRow,
   viewerId: string,
-  origin: string
+  origin: string,
+  viewerAuthEmail?: string | null
 ): Promise<BuddyProfilePublic | null> {
   const allowed = await canViewBuddyProfile(client, viewerId, row.id);
   if (!allowed) return null;
 
-  const plan = normalizePlanId(row.plan) as PlanId;
+  const authEmail = viewerId === row.id ? viewerAuthEmail : undefined;
+  const plan = effectivePlanForRow(row, authEmail);
   const avatarPlant = sanitizeBuddyAvatarPlant(row.buddy_avatar_plant, plan, row.id) as GoalPlantVariant;
   const accentTheme = sanitizeBuddyProfileAccent(row.buddy_profile_accent, plan) as AccentTheme;
   const visibility = normalizeBuddyVisibility(row.buddy_profile_visibility);
@@ -229,12 +238,13 @@ export async function buildBuddyProfilePublic(
 export async function getBuddyProfileSettings(
   client: SupabaseClient,
   userId: string,
-  origin: string
+  origin: string,
+  authEmail?: string | null
 ): Promise<BuddyProfileSettings | null> {
   const { data, error } = await client
     .from("profiles")
     .select(
-      "id, plan, buddy_avatar_plant, buddy_profile_accent, buddy_profile_visibility, buddy_friend_code"
+      "id, email, contact_email, plan, buddy_avatar_plant, buddy_profile_accent, buddy_profile_visibility, buddy_friend_code"
     )
     .eq("id", userId)
     .maybeSingle();
@@ -242,7 +252,7 @@ export async function getBuddyProfileSettings(
   if (error || !data) return null;
 
   const row = data as ProfileBuddyRow;
-  const plan = normalizePlanId(row.plan) as PlanId;
+  const plan = effectivePlanForRow(row, authEmail);
 
   return {
     avatarPlant: sanitizeBuddyAvatarPlant(row.buddy_avatar_plant, plan, userId),
@@ -262,7 +272,7 @@ export async function connectBuddyByFriendCode(
   const { data: owner, error: ownerErr } = await client
     .from("profiles")
     .select(
-      "id, name, username, plan, buddy_avatar_plant, buddy_profile_accent, buddy_profile_visibility, buddy_friend_code"
+      "id, email, contact_email, name, username, plan, buddy_avatar_plant, buddy_profile_accent, buddy_profile_visibility, buddy_friend_code"
     )
     .eq("buddy_friend_code", normalized)
     .maybeSingle();
@@ -293,7 +303,8 @@ export async function connectBuddyByFriendCode(
     client,
     ownerRow,
     viewerId,
-    ""
+    "",
+    undefined
   );
   if (!profile) {
     return { ok: false, error: "Connected, but could not load profile." };
@@ -337,7 +348,7 @@ export async function listBuddyDirectory(
     const r = row as ProfileBuddyRow;
     const allowed = await canViewBuddyProfile(client, userId, r.id);
     if (!allowed) continue;
-    const plan = normalizePlanId(r.plan) as PlanId;
+    const plan = effectivePlanForRow(r, undefined);
     out.push({
       userId: r.id,
       displayName: displayNameFromBuddyRow(r),

@@ -62,6 +62,25 @@ export function hasDevPremiumAccess(
   return false;
 }
 
+type ProfilePlanFields = {
+  email?: string | null;
+  contact_email?: string | null;
+};
+
+/** Plan used for entitlements — includes complimentary Premium for dev accounts. */
+export function resolveEffectivePlanForAccount(
+  storedPlan: unknown,
+  profile?: ProfilePlanFields | null,
+  authEmail?: string | null
+): PlanId {
+  if (
+    hasDevPremiumAccess(profile?.email, profile?.contact_email, authEmail)
+  ) {
+    return DEV_GRANTED_PLAN;
+  }
+  return normalizePlanId(storedPlan);
+}
+
 type ProfilePlanRow = {
   email?: string | null;
   contact_email?: string | null;

@@ -67,6 +67,7 @@ import {
   resetOnboardingForDevExperience,
 } from "@/lib/onboardingStorage";
 import { applyDevPremiumGrantIfNeeded } from "@/lib/accountAccess";
+import { readStoredDisplayName } from "@/lib/displayNameStorage";
 import {
   expireLocalPremiumTrialIfNeeded,
 } from "@/lib/premiumTrial";
@@ -290,9 +291,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ? (profileRaw as ApiProfile)
             : null;
         const storedName =
-          typeof window !== "undefined"
-            ? window.localStorage.getItem("proveit_display_name") ?? undefined
-            : undefined;
+          p && typeof window !== "undefined" ? readStoredDisplayName(p.id) : undefined;
         const profileUser = applyDevPremiumGrantIfNeeded(
           p
             ? {
@@ -301,7 +300,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 plan: normalizePlanId(p.plan),
                 planBilling: p.planBilling,
                 createdAt: p.createdAt ?? new Date().toISOString(),
-                name: p.name ?? storedName,
+                name:
+                  typeof p.name === "string" && p.name.trim()
+                    ? p.name.trim()
+                    : storedName,
                 username: typeof p.username === "string" ? p.username : undefined,
                 contactEmail: typeof p.contactEmail === "string" ? p.contactEmail : undefined,
                 contactEmailPending:

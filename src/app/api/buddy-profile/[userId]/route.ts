@@ -22,7 +22,7 @@ export async function GET(
   const { data: row, error } = await supabase
     .from("profiles")
     .select(
-      "id, name, username, plan, buddy_avatar_plant, buddy_profile_accent, buddy_profile_visibility, buddy_friend_code"
+      "id, email, contact_email, name, username, plan, buddy_avatar_plant, buddy_profile_accent, buddy_profile_visibility, buddy_friend_code"
     )
     .eq("id", userId)
     .maybeSingle();
@@ -36,7 +36,7 @@ export async function GET(
     process.env.NEXT_PUBLIC_APP_URL ??
     "http://localhost:3000";
 
-  const profile = await buildBuddyProfilePublic(supabase, row, user.id, origin);
+  const profile = await buildBuddyProfilePublic(supabase, row, user.id, origin, user.email);
   if (!profile) {
     return NextResponse.json({ error: "You cannot view this buddy profile." }, { status: 403 });
   }

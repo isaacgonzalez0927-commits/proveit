@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   generateBuddyFriendCode,
+  displayNameFromBuddyRow,
   normalizeBuddyFriendCode,
   normalizeBuddyVisibility,
   sanitizeBuddyAvatarPlant,
@@ -33,5 +34,13 @@ describe("buddyProfile", () => {
   it("normalizes visibility", () => {
     expect(normalizeBuddyVisibility("friend_link")).toBe("friend_link");
     expect(normalizeBuddyVisibility("other")).toBe("shared_goals_only");
+  });
+
+  it("uses account email when name and username are missing", () => {
+    expect(
+      displayNameFromBuddyRow({
+        email: "isaacgonzalez0927@gmail.com",
+      })
+    ).toBe("isaacgonzalez0927@gmail.com");
   });
 });

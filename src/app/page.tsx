@@ -14,6 +14,7 @@ import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { startStripeCheckout } from "@/lib/checkoutClient";
 import { formatUsd, planPriceForBilling } from "@/lib/billing";
 import { shouldShowOnboardingSlideshow } from "@/lib/onboardingStorage";
+import { writeStoredDisplayName } from "@/lib/displayNameStorage";
 import { startDashboardTourForNewUser } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
 
@@ -362,8 +363,8 @@ function LandingContent() {
             return;
           }
           setLoginError("");
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem("proveit_display_name", trimmedName);
+          if (typeof window !== "undefined" && data?.user?.id && trimmedName) {
+            writeStoredDisplayName(data.user.id, trimmedName);
           }
           if (signupUsername) {
             try {
@@ -396,8 +397,9 @@ function LandingContent() {
         return;
       }
       const now = new Date().toISOString();
+      const uid = user?.id ?? `user-${Date.now()}`;
       setUser({
-        id: user?.id ?? `user-${Date.now()}`,
+        id: uid,
         email: usernameToAuthEmail(u),
         username: u,
         plan: user?.plan ?? "free",
@@ -405,7 +407,7 @@ function LandingContent() {
         name: trimmedName || user?.name,
       });
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("proveit_display_name", trimmedName || user?.name || "");
+        writeStoredDisplayName(uid, trimmedName || user?.name || "");
       }
       setLoginError("");
     }
