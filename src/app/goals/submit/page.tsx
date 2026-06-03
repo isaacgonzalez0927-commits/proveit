@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -89,11 +89,9 @@ function firstProofSeenStorageKey(userId: string) {
   return `proveit_first_proof_seen_${userId}`;
 }
 
-const proofFlowOverlayClass =
-  "fixed inset-0 flex items-center justify-center bg-slate-950/45 p-6 backdrop-blur-md dark:bg-black/55";
-
-const proofFlowCardClass =
-  "w-full max-w-sm rounded-3xl border p-8 text-center shadow-2xl ring-1 ring-black/5 glass-card dark:ring-white/10";
+function ProofFlowOverlay({ children }: { children: ReactNode }) {
+  return <div className="proof-flow-overlay">{children}</div>;
+}
 
 function SubmitProofContent() {
   const searchParams = useSearchParams();
@@ -785,12 +783,59 @@ function SubmitProofContent() {
     !cameraError &&
     (deferCameraAutostart || resumeAfterProofGate);
 
+  const hideMainForProofFlow = step === "uploading" || step === "result";
+
   return (
     <>
+      {step === "uploading" && (
+        <ProofFlowOverlay>
+          <div className="proof-flow-card glass-card ring-1 ring-black/5 dark:ring-white/10">
+            {goal && (
+              <div className="mx-auto mb-4 flex h-[88px] w-[88px] items-end justify-center">
+                <PlantIllustration
+                  stage={getPlantStageForStreak(
+                    getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
+                  ).stage}
+                  variant={getGoalPlantVariant(goal.id)}
+                  wateringLevel={0.55}
+                  wateredGoals={0}
+                  healthState="healthy"
+                  size="small"
+                />
+              </div>
+            )}
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-prove-100/80 dark:bg-prove-900/40">
+              <Loader2 className="h-6 w-6 animate-spin text-prove-600 dark:text-prove-400" />
+            </div>
+            <h2 className="mt-5 font-display text-xl font-bold text-slate-900 dark:text-white">
+              Verifying your proof
+            </h2>
+            {goal ? (
+              <p className="mt-2 text-sm font-medium text-prove-700 dark:text-prove-300">
+                {goal.title}
+              </p>
+            ) : null}
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              Checking that your photo matches this goal. This usually takes a few seconds.
+            </p>
+            <div className="mt-6 space-y-2 text-left text-xs text-slate-500 dark:text-slate-400">
+              <p className="flex items-center gap-2">
+                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-prove-500 animate-pulse" />
+                Reading your photo
+              </p>
+              <p className="flex items-center gap-2 opacity-80">
+                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
+                Matching your goal
+              </p>
+            </div>
+          </div>
+        </ProofFlowOverlay>
+      )}
+
       {step === "result" && verified !== null && (
-        <div className={`${proofFlowOverlayClass} z-[70]`}>
+        <ProofFlowOverlay>
           <div
-            className={`${proofFlowCardClass} ${
+            className={`proof-flow-card glass-card ring-1 ring-black/5 dark:ring-white/10 ${
               verified
                 ? "border-emerald-300/70 dark:border-emerald-600/50"
                 : "border-red-300/80 dark:border-red-600/45"
@@ -890,10 +935,10 @@ function SubmitProofContent() {
               </button>
             </div>
           </div>
-        </div>
+        </ProofFlowOverlay>
       )}
 
-      {step !== "result" && (
+      {!hideMainForProofFlow && (
       <main className="mx-auto max-w-lg px-4 py-8">
         {!showFullScreenCamera && !showStartingCamera && (
           <Link
@@ -1023,50 +1068,6 @@ function SubmitProofContent() {
           </div>
         )}
 
-        {step === "uploading" && (
-          <div className={`${proofFlowOverlayClass} z-[60]`}>
-            <div className={proofFlowCardClass}>
-              {goal && (
-                <div className="mx-auto mb-4 flex h-[88px] w-[88px] items-end justify-center">
-                  <PlantIllustration
-                    stage={getPlantStageForStreak(
-                      getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
-                    ).stage}
-                    variant={getGoalPlantVariant(goal.id)}
-                    wateringLevel={0.55}
-                    wateredGoals={0}
-                    healthState="healthy"
-                    size="small"
-                  />
-                </div>
-              )}
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-prove-100/80 dark:bg-prove-900/40">
-                <Loader2 className="h-6 w-6 animate-spin text-prove-600 dark:text-prove-400" />
-              </div>
-              <h2 className="mt-5 font-display text-xl font-bold text-slate-900 dark:text-white">
-                Verifying your proof
-              </h2>
-              {goal ? (
-                <p className="mt-2 text-sm font-medium text-prove-700 dark:text-prove-300">
-                  {goal.title}
-                </p>
-              ) : null}
-              <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Checking that your photo matches this goal. This usually takes a few seconds.
-              </p>
-              <div className="mt-6 space-y-2 text-left text-xs text-slate-500 dark:text-slate-400">
-                <p className="flex items-center gap-2">
-                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-prove-500 animate-pulse" />
-                  Reading your photo
-                </p>
-                <p className="flex items-center gap-2 opacity-80">
-                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
-                  Matching your goal
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
       )}
     </>
