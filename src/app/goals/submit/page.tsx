@@ -89,6 +89,12 @@ function firstProofSeenStorageKey(userId: string) {
   return `proveit_first_proof_seen_${userId}`;
 }
 
+const proofFlowOverlayClass =
+  "fixed inset-0 flex items-center justify-center bg-slate-950/45 p-6 backdrop-blur-md dark:bg-black/55";
+
+const proofFlowCardClass =
+  "w-full max-w-sm rounded-3xl border p-8 text-center shadow-2xl ring-1 ring-black/5 glass-card dark:ring-white/10";
+
 function SubmitProofContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -782,9 +788,9 @@ function SubmitProofContent() {
   return (
     <>
       {step === "result" && verified !== null && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-6 backdrop-blur-md dark:bg-black/55">
+        <div className={`${proofFlowOverlayClass} z-[70]`}>
           <div
-            className={`w-full max-w-sm rounded-3xl border p-8 text-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10 glass-card ${
+            className={`${proofFlowCardClass} ${
               verified
                 ? "border-emerald-300/70 dark:border-emerald-600/50"
                 : "border-red-300/80 dark:border-red-600/45"
@@ -1018,8 +1024,8 @@ function SubmitProofContent() {
         )}
 
         {step === "uploading" && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-6 backdrop-blur-md dark:bg-black/60">
-            <div className="w-full max-w-sm rounded-3xl border border-white/20 p-8 text-center shadow-2xl ring-1 ring-black/5 glass-card dark:ring-white/10">
+          <div className={`${proofFlowOverlayClass} z-[60]`}>
+            <div className={proofFlowCardClass}>
               {goal && (
                 <div className="mx-auto mb-4 flex h-[88px] w-[88px] items-end justify-center">
                   <PlantIllustration
