@@ -114,6 +114,15 @@ export function shortWeekLabel(goal: GoalQuotaInput, date: Date = new Date()): s
   return `Short week — started ${names[getDay(created)]} · no penalty if you miss`;
 }
 
+/** Compact signup-week note for tight UI (dashboard cards). */
+export function signupWeekDashboardNote(goal: GoalQuotaInput, date: Date = new Date()): string | null {
+  if (!isProratedSignupWeek(goal, date)) return null;
+  const created = safeParseISO(goal.createdAt);
+  if (!created) return null;
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+  return `Short week (from ${names[getDay(created)]}) · miss OK`;
+}
+
 /** True when signup week is shorter than a full Sun–Sat week (goal created mid-week). */
 export function isProratedSignupWeek(goal: GoalQuotaInput, weekReference: Date): boolean {
   if (!isGoalSignupWeek(goal, weekReference)) return false;

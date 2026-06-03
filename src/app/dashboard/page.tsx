@@ -46,7 +46,7 @@ import {
   isGoalDue,
   isWithinSubmissionWindow,
 } from "@/lib/goalDue";
-import { effectiveTimesPerWeek, getEffectiveQuotaForWeek, shortWeekLabel } from "@/lib/goalSchedule";
+import { effectiveTimesPerWeek, getEffectiveQuotaForWeek, signupWeekDashboardNote } from "@/lib/goalSchedule";
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
@@ -494,7 +494,10 @@ function DashboardContent() {
                 const weekVerifiedCount = countVerifiedInCalendarWeek(subs, now);
                 const doneToday = hasVerifiedSubmissionOnDate(subs, todayStr);
                 const weekMet = weekVerifiedCount >= tw;
-                const signupWeekNote = shortWeekLabel(goal, now);
+                const signupWeekNote = signupWeekDashboardNote(goal, now);
+                const streakN = displayStreakByGoalId.get(goal.id) ?? 0;
+                const streakLabel =
+                  streakN > 0 ? `${streakN} ${streakN === 1 ? "week" : "weeks"}` : "—";
                 const showComplete = isDashboardGoalComplete(goal, subs, now);
                 const todayVerifiedSub = subs.find(
                   (s) =>
@@ -506,37 +509,48 @@ function DashboardContent() {
                 const canSubmitNow = isWithinSubmissionWindow(goal, now, subs);
                 const due = isGoalDue(goal, now, subs);
                 const dueLabel = getNextDueLabel(goal);
-                const cadenceLabel =
-                  effectiveTimesPerWeek(goal) >= 7
-                    ? "Daily"
-                    : `Weekly · ${weekVerifiedCount}/${tw} this week${weekMet ? " · Done for the week" : doneToday ? " · Done today" : ""}${signupWeekNote ? ` · ${signupWeekNote}` : ""}`;
                 return (
                   <li
                     key={goal.id}
-                    className="flex items-center justify-between rounded-xl p-4 glass-card"
+                    className="flex items-center gap-3 rounded-xl p-4 glass-card"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                       {showComplete ? (
-                        <CheckCircle2 className="h-5 w-5 shrink-0 text-prove-500" />
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-prove-500" />
                       ) : (
-                        <div className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
+                        <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
                       )}
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-slate-900 dark:text-white">
                           {goal.title}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {cadenceLabel}
-                          {" · Streak: "}
-                          {(() => {
-                            const n = displayStreakByGoalId.get(goal.id) ?? 0;
-                            return n > 0 ? `${n} ${n === 1 ? "week" : "weeks"}` : "—";
-                          })()}
-                          {goal.isOnBreak ? " · On break" : ""}
-                          {fullTw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
-                        </p>
+                        {signupWeekNote ? (
+                          <p className="mt-0.5 text-[11px] font-medium text-prove-600 dark:text-prove-400">
+                            {signupWeekNote}
+                          </p>
+                        ) : null}
+                        <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          <p>
+                            {fullTw >= 7
+                              ? "Daily"
+                              : `${weekVerifiedCount}/${tw} this week`}
+                            {weekMet ? (
+                              <span className="text-prove-600 dark:text-prove-400"> · Done for the week</span>
+                            ) : doneToday ? (
+                              <span className="text-prove-600 dark:text-prove-400"> · Done today</span>
+                            ) : null}
+                            {goal.isOnBreak ? (
+                              <span className="text-amber-700 dark:text-amber-300"> · On break</span>
+                            ) : null}
+                          </p>
+                          <p>
+                            Streak: {streakLabel}
+                            {fullTw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <div className="shrink-0 self-center">
                     {goal.isOnBreak ? (
                       <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                         On break
@@ -560,17 +574,18 @@ function DashboardContent() {
                     ) : canSubmitNow ? (
                       <Link
                         href={`/goals/submit?goalId=${goal.id}`}
-                        className="flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
+                        className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-prove-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
                       >
-                        <Camera className="h-4 w-4" />
+                        <Camera className="h-4 w-4 shrink-0" />
                         Prove it
                       </Link>
                     ) : (
-                      <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px]">
+                      <span className="block max-w-[5.5rem] text-right text-xs leading-snug text-slate-500 dark:text-slate-400">
                         {getSubmissionWindowMessage(goal, now, subs) ??
-                          (fullTw < 7 ? `${weekVerifiedCount}/${tw} proofs this week` : "Not available")}
+                          (fullTw < 7 ? `${weekVerifiedCount}/${tw} this week` : "Not available")}
                       </span>
                     )}
+                    </div>
                   </li>
                 );
               })}
