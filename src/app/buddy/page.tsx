@@ -714,7 +714,7 @@ export default function BuddyPage() {
           }}
         />
       )}
-      <main className="mx-auto w-full min-w-0 max-w-2xl flex-1 space-y-4 overflow-x-hidden px-3 py-4 pb-[max(7.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] sm:space-y-6 sm:px-4 sm:py-6 sm:pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+      <main className="mx-auto w-full min-w-0 max-w-2xl flex-1 space-y-4 overflow-x-clip px-3 py-4 pb-[calc(7.75rem+env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-4 sm:py-8">
         <div className="mb-4 border-b border-slate-200/80 pb-4 dark:border-slate-800/80 sm:mb-8 sm:pb-6">
           <h1 className="font-display text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
             Goal Garden
@@ -854,8 +854,8 @@ export default function BuddyPage() {
                   />
                 </div>
               </div>
-              <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                <span>Daily reminder time</span>
+              <label className="flex min-w-0 flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+                <span className="shrink-0">Daily reminder time</span>
                 <input
                   type="time"
                   value={newReminderTime}
@@ -863,7 +863,7 @@ export default function BuddyPage() {
                     setNewReminderTime(e.target.value);
                     setScheduleTourAck(true);
                   }}
-                  className="w-full max-w-[11rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                  className="w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-prove-500 focus:outline-none focus:ring-1 focus:ring-prove-500 sm:max-w-[11rem] dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                   required
                 />
               </label>
@@ -942,7 +942,7 @@ export default function BuddyPage() {
           </h2>
           <GardenSnapshot
             plants={snapshotPlants}
-            className="mt-2 min-w-0 overflow-x-auto rounded-2xl border border-slate-200/70 bg-gradient-to-b from-emerald-50/40 via-white/50 to-slate-50/60 p-2 shadow-soft dark:border-slate-700/70 dark:from-emerald-950/20 dark:via-slate-900/40 dark:to-slate-950/50 glass-card sm:mt-3 sm:p-3"
+            className="mt-2 min-w-0 overflow-x-clip rounded-2xl border border-slate-200/70 bg-gradient-to-b from-emerald-50/40 via-white/50 to-slate-50/60 p-2 shadow-soft dark:border-slate-700/70 dark:from-emerald-950/20 dark:via-slate-900/40 dark:to-slate-950/50 glass-card sm:mt-3 sm:p-3"
           />
         </section>
 
@@ -1040,7 +1040,7 @@ export default function BuddyPage() {
                 }}
                 className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border shadow-soft dark:border-slate-700/60 glass-card transition-shadow duration-500 ${
                   highlightGoalId === entry.goal.id
-                    ? "border-prove-400 ring-2 ring-prove-400/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-950 animate-plant-water-pulse"
+                    ? "border-prove-400 ring-2 ring-prove-400/50 animate-plant-water-pulse"
                     : "border-slate-200/70"
                 }`}
               >
@@ -1132,7 +1132,7 @@ export default function BuddyPage() {
                   {verificationTextFromGoal(entry.goal)}
                 </p>
 
-                <div className="relative mx-2 mt-2 flex min-h-[108px] flex-col items-center justify-end overflow-hidden rounded-2xl bg-gradient-to-b from-sky-50/90 via-emerald-50/70 to-amber-50/50 px-2 pb-0.5 pt-4 ring-1 ring-inset ring-emerald-200/35 dark:from-slate-900/80 dark:via-emerald-950/25 dark:to-slate-950/90 dark:ring-emerald-900/35 sm:mx-3 sm:mt-3 sm:min-h-[128px] sm:pt-5">
+                <div className="relative mx-2 mt-2 flex h-[132px] max-w-full flex-col items-center justify-end overflow-hidden rounded-2xl bg-gradient-to-b from-sky-50/90 via-emerald-50/70 to-amber-50/50 px-2 pb-0.5 pt-3 ring-1 ring-inset ring-emerald-200/35 dark:from-slate-900/80 dark:via-emerald-950/25 dark:to-slate-950/90 dark:ring-emerald-900/35 sm:mx-3 sm:mt-3 sm:h-[148px] sm:pt-4">
                   <PlantIllustration
                     key={`${entry.goal.id}-${entry.stage.stage}-${entry.plantVariant}`}
                     stage={entry.stage.stage}
@@ -1141,18 +1141,19 @@ export default function BuddyPage() {
                     variant={entry.plantVariant}
                     healthState={entry.plantHealthState}
                     playFinalStageAnimation={isFinalStage(entry.stage.stage, entry.plantVariant) && !hasPlayedFinalAnimationForGoal.current.has(entry.goal.id)}
+                    className="max-h-full max-w-full"
                   />
                 </div>
 
                 {entry.gardenersNote && <GardenersNote text={entry.gardenersNote} />}
 
                 {entry.hydration.recoveryActive && entry.hydration.verified === 0 && (
-                  <p className="mx-4 mb-1 text-center text-[10px] font-medium text-amber-800 dark:text-amber-200">
+                  <p className="mx-3 mb-1 text-center text-[10px] font-medium leading-snug text-amber-800 dark:text-amber-200 sm:mx-4">
                     Recovery week — one verified photo brings your plant back.
                   </p>
                 )}
 
-                <div className="px-4 pb-1">
+                <div className="min-w-0 px-3 pb-1 sm:px-4">
                   <PlantHydrationBar
                     verified={entry.hydration.verified}
                     needed={entry.hydration.needed}
@@ -1167,7 +1168,7 @@ export default function BuddyPage() {
                   />
                 </div>
 
-                <div className="space-y-2 px-4 pb-4 pt-2">
+                <div className="min-w-0 space-y-2 px-3 pb-3 pt-2 sm:px-4 sm:pb-4">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                     <span>
                       Streak{" "}
@@ -1203,7 +1204,7 @@ export default function BuddyPage() {
                           );
                         });
                       }}
-                      className="inline-flex w-full justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:w-auto"
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     >
                       Use Streak Shield? ({user.graceDayBalance ?? 0} left)
                     </button>
@@ -1211,7 +1212,7 @@ export default function BuddyPage() {
                   {entry.canSubmitNow && !entry.doneInCurrentWindow && !entry.submissionWindowMessage && (
                     <Link
                       href={`/goals/submit?goalId=${entry.goal.id}`}
-                      className="inline-flex w-full justify-center rounded-xl bg-prove-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-prove-700 btn-glass-primary sm:w-auto"
+                      className="cta-chunky w-full text-sm"
                     >
                       Water now
                     </Link>
