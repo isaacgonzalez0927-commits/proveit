@@ -4,42 +4,40 @@ import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Home,
-  Camera,
-  Users,
-  UserCircle2,
+  LayoutDashboard,
+  CreditCard,
+  Images,
   LogOut,
   ChevronDown,
-  SlidersHorizontal,
-  Images,
   Sprout,
-  CreditCard,
+  UserCircle2,
+  SlidersHorizontal,
+  Users,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
-import { useTodayProgress } from "@/hooks/useTodayProgress";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
 import { StatusStrip } from "./StatusStrip";
 import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
-/** Primary path: Home → Prove → Buddies → Profile */
+/** `label` = accessibility & tooltips; `tabLabel` = short text for the bottom bar on small screens. */
 const APP_TABS = [
-  { href: "/dashboard", label: "Home", tabLabel: "Home", icon: Home, kind: "link" as const },
-  { href: "/goals/submit", label: "Prove it", tabLabel: "Prove", icon: Camera, kind: "prove" as const },
-  { href: "/friends", label: "Buddies", tabLabel: "Buddies", icon: Users, kind: "link" as const },
-  { href: "/settings", label: "Profile", tabLabel: "Profile", icon: UserCircle2, kind: "link" as const },
+  { href: "/dashboard", label: "Home", tabLabel: "Home", icon: LayoutDashboard },
+  { href: "/buddy", label: "Goal Garden", tabLabel: "Garden", icon: Sprout },
+  { href: "/goals/history", label: "Gallery", tabLabel: "Gallery", icon: Images },
+  { href: "/pricing", label: "Plan", tabLabel: "Plan", icon: CreditCard },
 ] as const;
 
 function getPageTitle(pathname: string): string {
-  if (pathname.startsWith("/dashboard")) return "Home";
+  if (pathname.startsWith("/dashboard")) return "Dashboard";
   if (pathname.startsWith("/buddy")) return "Goal Garden";
   if (pathname.startsWith("/goals/history")) return "Gallery";
   if (pathname.startsWith("/goals/submit")) return "Prove It";
   if (pathname.startsWith("/goals")) return "Goal Garden";
   if (pathname.startsWith("/achievements")) return "Buddies";
   if (pathname.startsWith("/settings/change-email")) return "Change email";
-  if (pathname.startsWith("/settings")) return "Profile";
+  if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/friends")) return "Buddies";
   if (pathname.startsWith("/profile")) return "Buddy profile";
   if (pathname.startsWith("/buddy-connect")) return "Connect";
@@ -52,27 +50,18 @@ function getPageTitle(pathname: string): string {
   return "Proveit";
 }
 
-function isTabActive(pathname: string, href: string, kind: string): boolean {
-  if (kind === "prove") return pathname.startsWith("/goals/submit");
+function isTabActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard";
-  if (href === "/friends") {
-    return (
-      pathname.startsWith("/friends") ||
-      pathname.startsWith("/achievements") ||
-      pathname.startsWith("/profile")
-    );
-  }
-  if (href === "/settings") {
-    return pathname.startsWith("/settings") || pathname.startsWith("/pricing");
-  }
-  return pathname === href || pathname.startsWith(href);
+  if (href === "/buddy") return pathname.startsWith("/buddy");
+  if (href === "/goals/history") return pathname.startsWith("/goals/history");
+  if (href === "/pricing") return pathname.startsWith("/pricing");
+  return pathname === href;
 }
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useApp();
-  const { proveHref } = useTodayProgress();
   const [hideHeader] = useHideHeader();
   const [accountOpen, setAccountOpen] = useState(false);
   const [tourSpotlight, setTourSpotlight] = useState<string | null>(null);
@@ -96,6 +85,7 @@ export function Header() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [accountOpen]);
 
+  // Hide the top toolbar until someone is "logged in", on onboarding, or when page requests it (e.g. full-screen camera)
   if (!user || pathname === "/" || hideHeader) {
     return null;
   }
@@ -125,7 +115,7 @@ export function Header() {
             : "border-slate-200/60 dark:border-slate-800/50"
         )}
       >
-        <div className="mx-auto flex h-[3.25rem] max-w-2xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="mx-auto flex h-[3.25rem] max-w-2xl items-center justify-between gap-3 px-4 sm:h-[3.5rem] sm:px-6">
           <div className="min-w-0">
             <Link
               href="/dashboard"
@@ -175,34 +165,6 @@ export function Header() {
                   </div>
                   <div className="my-1 border-t border-slate-100 dark:border-slate-800" role="separator" />
                   <Link
-                    href="/buddy"
-                    onClick={() => setAccountOpen(false)}
-                    data-tour={tourSpotlight === "garden-tab" ? "garden-tab" : undefined}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                    role="menuitem"
-                  >
-                    <Sprout className="h-4 w-4 shrink-0 text-prove-500" />
-                    Goal Garden
-                  </Link>
-                  <Link
-                    href="/goals/history"
-                    onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                    role="menuitem"
-                  >
-                    <Images className="h-4 w-4 shrink-0" />
-                    Gallery
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                    role="menuitem"
-                  >
-                    <CreditCard className="h-4 w-4 shrink-0" />
-                    Plan
-                  </Link>
-                  <Link
                     href="/settings"
                     onClick={() => setAccountOpen(false)}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
@@ -211,6 +173,15 @@ export function Header() {
                   >
                     <SlidersHorizontal className="h-4 w-4 shrink-0" />
                     Settings
+                  </Link>
+                  <Link
+                    href="/friends"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    role="menuitem"
+                  >
+                    <Users className="h-4 w-4 shrink-0 text-prove-500" />
+                    Buddies
                   </Link>
                   <Link
                     href="/privacy"
@@ -260,33 +231,26 @@ export function Header() {
             <nav className="pointer-events-auto grid grid-cols-4 gap-0.5 rounded-2xl p-1 shadow-nav ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06] glass-nav">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
-                const href = tab.kind === "prove" ? proveHref : tab.href;
-                const active = isTabActive(pathname, tab.href, tab.kind);
-                const isProve = tab.kind === "prove";
+                const active = isTabActive(pathname, tab.href);
+                const isGardenTab = tab.href === "/buddy";
+                const spotlightGarden = tourSpotlight === "garden-tab";
                 return (
                   <Link
                     key={tab.href}
-                    href={href}
+                    href={tab.href}
+                    data-tour={isGardenTab ? "garden-tab" : undefined}
                     title={tab.label}
                     aria-label={tab.tabLabel === tab.label ? undefined : tab.label}
                     className={clsx(
-                      "flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-bold leading-none tracking-tight transition-colors sm:min-h-[56px] sm:px-1 sm:text-[11px]",
-                      isProve &&
-                        "relative -mt-3 min-h-[58px] rounded-2xl bg-prove-600 text-white shadow-md shadow-prove-600/30 hover:bg-prove-700 dark:bg-prove-500 dark:hover:bg-prove-400",
-                      !isProve &&
-                        (active
-                          ? "bg-prove-100/90 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300 glass-outline-subtle"
-                          : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100")
+                      "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium leading-none tracking-tight transition-colors sm:min-h-[56px] sm:px-1 sm:text-[11px]",
+                      active
+                        ? "bg-prove-100/90 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300 glass-outline-subtle"
+                        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                      isGardenTab && spotlightGarden && "relative z-[100]"
                     )}
                     aria-current={active ? "page" : undefined}
                   >
-                    <Icon
-                      className={clsx(
-                        "shrink-0",
-                        isProve ? "h-5 w-5" : "h-[18px] w-[18px] sm:h-4 sm:w-4"
-                      )}
-                      strokeWidth={active || isProve ? 2.5 : 2}
-                    />
+                    <Icon className="h-[18px] w-[18px] shrink-0 sm:h-4 sm:w-4" strokeWidth={active ? 2.25 : 2} />
                     <span className="max-w-full truncate text-center">{tab.tabLabel}</span>
                   </Link>
                 );

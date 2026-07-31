@@ -27,15 +27,15 @@ export function GardenHeaderSummary({
 
   return (
     <div
-      className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${className}`}
+      className={`mt-2 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] sm:mt-3 sm:gap-2 sm:text-xs ${className}`}
       role="status"
     >
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/90 px-2.5 py-1 font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200">
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/90 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200 sm:px-2.5 sm:py-1">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
         {counts.thriving} thriving
       </span>
       {counts.shielded > 0 && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-200/90 px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-200/90 px-2 py-0.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:px-2.5 sm:py-1">
           {counts.shielded} shielded
         </span>
       )}
@@ -43,7 +43,7 @@ export function GardenHeaderSummary({
         <button
           type="button"
           onClick={onScrollToNeedsWater}
-          className="inline-flex items-center gap-1 rounded-full bg-amber-100/90 px-2.5 py-1 font-medium text-amber-900 transition hover:bg-amber-200/90 dark:bg-amber-950/50 dark:text-amber-200 dark:hover:bg-amber-900/50"
+          className="inline-flex items-center gap-1 rounded-full bg-amber-100/90 px-2 py-0.5 font-medium text-amber-900 transition hover:bg-amber-200/90 dark:bg-amber-950/50 dark:text-amber-200 dark:hover:bg-amber-900/50 sm:px-2.5 sm:py-1"
         >
           {needsAttention} need{needsAttention === 1 ? "" : ""} water
         </button>

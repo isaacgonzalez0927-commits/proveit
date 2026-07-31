@@ -30,17 +30,17 @@ export function GardenSnapshot({
   const visiblePlants = plants.slice(0, maxPlants);
 
   return (
-    <div className={className}>
+    <div className={`min-w-0 overflow-x-clip ${className}`}>
       {visiblePlants.length === 0 ? (
         <div className="flex min-h-[100px] items-center justify-center text-center">
           <p className="max-w-[22ch] text-xs text-slate-600 dark:text-slate-400">{emptyLabel}</p>
         </div>
       ) : (
-        <div className="flex flex-wrap items-end justify-center gap-0.5 sm:gap-1">
+        <div className="flex w-full flex-wrap items-end justify-center gap-x-1 gap-y-1 overflow-hidden sm:gap-x-1.5">
           {visiblePlants.map((plant) => (
             <div
               key={plant.id}
-              className={`flex h-[96px] w-[74px] shrink-0 items-end justify-center ${
+              className={`flex h-[84px] w-[calc((100%-0.75rem)/4)] max-w-[74px] min-w-[56px] items-end justify-center overflow-hidden sm:h-[96px] sm:w-[74px] sm:min-w-0 sm:max-w-none ${
                 highlightGoalId === plant.id ? "animate-plant-water-pulse" : ""
               }`}
             >
@@ -52,6 +52,7 @@ export function GardenSnapshot({
                 size="small"
                 variant={plant.variant}
                 healthState={plant.healthState}
+                className="max-h-full max-w-full"
               />
             </div>
           ))}

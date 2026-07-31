@@ -714,15 +714,12 @@ export default function BuddyPage() {
           }}
         />
       )}
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
-        <div className="mb-8 border-b border-slate-200/80 pb-6 dark:border-slate-800/80">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+      <main className="mx-auto w-full min-w-0 max-w-2xl flex-1 space-y-4 overflow-x-hidden px-3 py-4 pb-[max(7.25rem,calc(env(safe-area-inset-bottom)+5.75rem))] sm:space-y-6 sm:px-4 sm:py-6 sm:pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+        <div className="mb-4 border-b border-slate-200/80 pb-4 dark:border-slate-800/80 sm:mb-8 sm:pb-6">
+          <h1 className="font-display text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
             Goal Garden
           </h1>
-          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-            Plant goals here — prove them from Home.
-          </p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 sm:text-sm">
             Grow what you prove — verified photos water your plants each week.
           </p>
           <GardenHeaderSummary
@@ -789,11 +786,11 @@ export default function BuddyPage() {
                 }
                 setShowCreateForm((prev) => !prev);
               }}
-              className={`inline-flex items-center gap-1 rounded-lg bg-prove-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-prove-700 btn-glass-primary ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-prove-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-prove-700 btn-glass-primary ${
                 tourSpotlight === "add-goal-button" ? "relative z-[100]" : ""
               }`}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               {showCreateForm ? "Close" : "New goal"}
             </button>
           </div>
@@ -808,7 +805,7 @@ export default function BuddyPage() {
         {showCreateForm && (
           <form
             onSubmit={handleCreateGoal}
-            className="mb-8 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/70"
+            className="mb-6 min-w-0 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/70 sm:mb-8 sm:p-5"
           >
             <div className="border-b border-slate-200/80 pb-4 dark:border-slate-700/80">
               <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
@@ -916,12 +913,12 @@ export default function BuddyPage() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-200/80 pt-5 dark:border-slate-700/80">
+            <div className="mt-6 flex flex-col gap-2 border-t border-slate-200/80 pt-5 dark:border-slate-700/80 sm:flex-row sm:flex-wrap">
               <button
                 type="submit"
                 disabled={isAddingGoal || !canSubmitCreateGoalForm}
                 title={!proofIdeasReadyForCreate ? "Add a goal title (your proof photo should match it)" : undefined}
-                className="rounded-lg bg-prove-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-prove-700 disabled:opacity-60"
+                className="cta-chunky w-full text-sm sm:w-auto"
               >
                 {isAddingGoal ? "Adding…" : "Add goal"}
               </button>
@@ -931,7 +928,7 @@ export default function BuddyPage() {
                   setShowCreateForm(false);
                   resetCreateGoalForm();
                 }}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto"
               >
                 Cancel
               </button>
@@ -939,13 +936,13 @@ export default function BuddyPage() {
           </form>
         )}
 
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <section className="mb-6 min-w-0 sm:mb-8">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:text-sm">
             Overview
           </h2>
           <GardenSnapshot
             plants={snapshotPlants}
-            className="mt-3 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-emerald-50/40 via-white/50 to-slate-50/60 p-3 shadow-soft dark:border-slate-700/70 dark:from-emerald-950/20 dark:via-slate-900/40 dark:to-slate-950/50 glass-card"
+            className="mt-2 min-w-0 overflow-x-auto rounded-2xl border border-slate-200/70 bg-gradient-to-b from-emerald-50/40 via-white/50 to-slate-50/60 p-2 shadow-soft dark:border-slate-700/70 dark:from-emerald-950/20 dark:via-slate-900/40 dark:to-slate-950/50 glass-card sm:mt-3 sm:p-3"
           />
         </section>
 
@@ -1034,27 +1031,27 @@ export default function BuddyPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {garden.map((entry) => (
               <article
                 key={entry.goal.id}
                 ref={(el) => {
                   goalCardRefs.current[entry.goal.id] = el;
                 }}
-                className={`group flex flex-col overflow-hidden rounded-2xl border shadow-soft dark:border-slate-700/60 glass-card transition-shadow duration-500 ${
+                className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border shadow-soft dark:border-slate-700/60 glass-card transition-shadow duration-500 ${
                   highlightGoalId === entry.goal.id
                     ? "border-prove-400 ring-2 ring-prove-400/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-950 animate-plant-water-pulse"
                     : "border-slate-200/70"
                 }`}
               >
-                <div className="flex flex-col gap-2 border-b border-slate-200/60 bg-white/35 px-4 py-3 dark:border-slate-700/50 dark:bg-slate-900/25 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-2 border-b border-slate-200/60 bg-white/35 px-3 py-2.5 dark:border-slate-700/50 dark:bg-slate-900/25 sm:flex-row sm:items-start sm:justify-between sm:px-4 sm:py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold tracking-tight text-slate-900 dark:text-white">
+                    <p className="truncate text-sm font-semibold tracking-tight text-slate-900 dark:text-white sm:text-base">
                       {entry.goal.title}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{getDueDayName(entry.goal)}</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
                     {entry.isOnBreak && (
                       <span className="rounded-full border border-amber-300/80 bg-amber-50/90 px-2 py-0.5 text-[10px] font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
                         {entry.isProPlan
@@ -1131,11 +1128,11 @@ export default function BuddyPage() {
                   </div>
                 </div>
 
-                <p className="line-clamp-2 px-4 pt-2.5 text-[11px] leading-snug text-slate-500 dark:text-slate-500">
+                <p className="line-clamp-2 px-3 pt-2 text-[11px] leading-snug text-slate-500 dark:text-slate-500 sm:px-4 sm:pt-2.5">
                   {verificationTextFromGoal(entry.goal)}
                 </p>
 
-                <div className="relative mx-3 mt-3 flex min-h-[128px] flex-col items-center justify-end rounded-2xl bg-gradient-to-b from-sky-50/90 via-emerald-50/70 to-amber-50/50 px-2 pb-0.5 pt-5 ring-1 ring-inset ring-emerald-200/35 dark:from-slate-900/80 dark:via-emerald-950/25 dark:to-slate-950/90 dark:ring-emerald-900/35">
+                <div className="relative mx-2 mt-2 flex min-h-[108px] flex-col items-center justify-end overflow-hidden rounded-2xl bg-gradient-to-b from-sky-50/90 via-emerald-50/70 to-amber-50/50 px-2 pb-0.5 pt-4 ring-1 ring-inset ring-emerald-200/35 dark:from-slate-900/80 dark:via-emerald-950/25 dark:to-slate-950/90 dark:ring-emerald-900/35 sm:mx-3 sm:mt-3 sm:min-h-[128px] sm:pt-5">
                   <PlantIllustration
                     key={`${entry.goal.id}-${entry.stage.stage}-${entry.plantVariant}`}
                     stage={entry.stage.stage}
@@ -1229,7 +1226,7 @@ export default function BuddyPage() {
                   )}
                 </div>
 
-                <div className="border-t border-slate-200/50 bg-white/25 px-4 py-3 dark:border-slate-700/50 dark:bg-slate-900/20">
+                <div className="min-w-0 border-t border-slate-200/50 bg-white/25 px-3 py-2.5 dark:border-slate-700/50 dark:bg-slate-900/20 sm:px-4 sm:py-3">
                   <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                     Plant style
                   </p>
@@ -1254,7 +1251,7 @@ export default function BuddyPage() {
                           }`}
                           aria-label={`Set plant style ${variant}`}
                         >
-                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900">
+                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded bg-slate-50 dark:bg-slate-900 sm:h-12 sm:w-12">
                             <PlantIllustration
                               stage="flowering"
                               wateringLevel={1}
@@ -1270,7 +1267,7 @@ export default function BuddyPage() {
                 </div>
 
                 {editingGoalId === entry.goal.id && (
-                  <div className="mx-4 mb-4 mt-1 rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-sm dark:border-slate-600 dark:bg-slate-950/80">
+                  <div className="mx-3 mb-3 mt-1 min-w-0 rounded-xl border border-slate-200/90 bg-white/90 p-3 shadow-sm dark:border-slate-600 dark:bg-slate-950/80 sm:mx-4 sm:mb-4 sm:p-4">
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Edit schedule</p>
 
                     <div className="mt-3">

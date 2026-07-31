@@ -207,7 +207,8 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function getStageDimensions(size: "default" | "large" | "small") {
-  const stageHeight = size === "large" ? 250 : size === "small" ? 120 : 170;
+  // Sized for phone cards (~320–390px): small fits snapshot cells; default fits goal cards.
+  const stageHeight = size === "large" ? 250 : size === "small" ? 96 : 148;
   const stageWidth = stageHeight * 0.82;
   return { stageHeight, stageWidth };
 }
@@ -287,7 +288,7 @@ export function PlantIllustration({
   if (photoResolved && photoSrc && photoMatchesCurrent) {
     return (
       <div
-        className={`relative inline-flex items-center justify-center ${healthMotion} ${healthTone} ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
+        className={`relative inline-flex max-h-full max-w-full items-center justify-center overflow-hidden ${healthMotion} ${healthTone} ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
         style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%", transformOrigin: "center bottom" }}
       >
         <img
@@ -296,7 +297,7 @@ export function PlantIllustration({
           className="h-full w-full select-none object-contain"
           style={{
             filter: plantPhotoFilter(healthState, safeWater),
-            transform: `scale(${variantSizeMultiplier})`,
+            transform: `scale(${Math.min(variantSizeMultiplier, 1.06)})`,
             transformOrigin: "center bottom",
           }}
           loading="eager"
@@ -310,13 +311,12 @@ export function PlantIllustration({
   if (!photoResolved) {
     return (
       <div
-        className={`relative inline-flex items-center justify-center ${className}`}
+        className={`relative inline-flex max-h-full max-w-full items-center justify-center ${className}`}
         style={{
           width: stageWidth,
           height: stageHeight,
           maxWidth: "100%",
           maxHeight: "100%",
-          minHeight: stageHeight,
           backgroundColor: "transparent",
         }}
         aria-hidden
@@ -325,7 +325,7 @@ export function PlantIllustration({
   }
 
   return (
-    <div className={`${healthMotion} ${healthTone}`}>
+    <div className={`max-h-full max-w-full overflow-hidden ${healthMotion} ${healthTone}`}>
       <SvgPlantIllustration
         stage={stage}
         wateringLevel={wateringLevel}
@@ -364,13 +364,20 @@ function SvgPlantIllustration({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
-      style={{ transform: `scale(${variantSizeMultiplier})`, transformOrigin: "center bottom" }}
+      className={`relative inline-flex max-h-full max-w-full items-center justify-center overflow-hidden ${showFinalAnimation ? "animate-plant-final" : ""} ${className}`}
+      style={{
+        width: stageWidth,
+        height: stageHeight,
+        maxWidth: "100%",
+        maxHeight: "100%",
+        transform: `scale(${Math.min(variantSizeMultiplier, 1.06)})`,
+        transformOrigin: "center bottom",
+      }}
     >
       <svg
         viewBox="0 0 140 170"
-        className="shrink-0 overflow-visible"
-        style={{ width: stageWidth, height: stageHeight, maxWidth: "100%", maxHeight: "100%" }}
+        className="h-full w-full shrink-0 overflow-hidden"
+        preserveAspectRatio="xMidYMax meet"
         aria-hidden
       >
         <defs>

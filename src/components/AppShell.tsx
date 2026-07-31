@@ -9,7 +9,7 @@ import { NativeDeepLinkHandler } from "@/components/NativeDeepLinkHandler";
 import { NativeNotificationSync } from "@/components/NativeNotificationSync";
 import { FullscreenAppHint } from "@/components/FullscreenAppHint";
 
-/** App chrome: Header includes sticky status strip + bottom nav (Home → Prove → Buddies → Profile). */
+/** App chrome: Header includes optional status strip + bottom nav (Home / Garden / Gallery / Plan). */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>

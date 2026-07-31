@@ -40,27 +40,29 @@ export function PlantHydrationBar({
           ? "bg-slate-400"
           : "bg-prove-500";
 
+  const statusBits = [
+    gardenHealthLabel(healthState, recoveryActive, signupWeekNoPenalty),
+    inBloomSeason ? "Bloom season" : null,
+    !inBloomSeason && perfectWeekStreak > 0 ? `${perfectWeekStreak}/4 perfect weeks` : null,
+    !onPace && healthState === "healthy" && !recoveryActive ? "catch up" : null,
+  ].filter(Boolean) as string[];
+
   return (
-    <div className={className}>
-      <div className="flex items-center justify-between gap-2 text-[10px]">
-        <span className="font-medium text-slate-600 dark:text-slate-400">
+    <div className={`min-w-0 ${className}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-[10px]">
+        <span className="shrink-0 font-medium text-slate-600 dark:text-slate-400">
           {verified}/{needed} verified this week
         </span>
         <span
           className={
             healthState === "healthy" || healthState === "shielded"
-              ? "text-emerald-700 dark:text-emerald-300"
+              ? "min-w-0 text-right text-emerald-700 dark:text-emerald-300"
               : healthState === "wilting"
-                ? "text-amber-700 dark:text-amber-300"
-                : "text-amber-900 dark:text-amber-200"
+                ? "min-w-0 text-right text-amber-700 dark:text-amber-300"
+                : "min-w-0 text-right text-amber-900 dark:text-amber-200"
           }
         >
-          {gardenHealthLabel(healthState, recoveryActive, signupWeekNoPenalty)}
-          {inBloomSeason ? " · Bloom season" : ""}
-          {!inBloomSeason && perfectWeekStreak > 0
-            ? ` · ${perfectWeekStreak}/4 perfect weeks`
-            : ""}
-          {!onPace && healthState === "healthy" && !recoveryActive ? " · catch up" : ""}
+          {statusBits.join(" · ")}
         </span>
       </div>
       <div
