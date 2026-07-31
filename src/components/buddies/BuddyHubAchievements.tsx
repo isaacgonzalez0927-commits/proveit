@@ -40,15 +40,15 @@ export function BuddyHubAchievements() {
       title="Achievements"
       description="Badges you earn from proofs, streaks, and your garden."
     >
-      <div className="rounded-2xl p-4 glass-card">
+      <div className="lesson-tile">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-prove-100 text-prove-700 dark:bg-prove-950/60 dark:text-prove-400">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-prove-100 text-prove-700 dark:bg-prove-950/60 dark:text-prove-400">
               <Award className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{unlockedCount}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-3xl font-black text-slate-900 dark:text-white">{unlockedCount}</p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 of {ACHIEVEMENTS.length} unlocked
               </p>
             </div>

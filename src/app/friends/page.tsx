@@ -93,16 +93,23 @@ export default function BuddiesPage() {
 
   return (
     <main className="mx-auto max-w-lg space-y-8 px-4 pb-28 pt-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Buddies</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Prove together — keep each other growing.
+        </p>
+      </div>
+
       <BuddyHubProfileCard />
 
       {loading && (
-        <p className="text-center text-sm text-slate-500" role="status">
+        <p className="text-center text-sm font-medium text-slate-500" role="status">
           Loading buddies…
         </p>
       )}
 
       {error && (
-        <p className="rounded-2xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <p className="rounded-2xl border-2 border-red-200/80 bg-red-50/90 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </p>
       )}
@@ -119,15 +126,12 @@ export default function BuddiesPage() {
             ))}
           </div>
         ) : !loading ? (
-          <div className="rounded-2xl p-5 text-center glass-card">
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-100">No shared goals yet</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <div className="lesson-tile text-center">
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">No shared goals yet</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               In the garden, turn on <span className="font-semibold text-prove-700 dark:text-prove-300">Goal with a buddy</span> when you add a goal.
             </p>
-            <Link
-              href="/buddy"
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-4 py-2 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
-            >
+            <Link href="/buddy" className="cta-chunky mx-auto mt-1 inline-flex">
               <Sprout className="h-4 w-4" />
               Go to garden
             </Link>
@@ -146,7 +150,7 @@ export default function BuddiesPage() {
               <li key={buddy.userId}>
                 <Link
                   href={`/profile/${buddy.userId}`}
-                  className="flex items-center gap-3 rounded-2xl border-l-[3px] glass-card p-3 transition hover:ring-1 hover:ring-prove-400/30"
+                  className="flex items-center gap-3 rounded-2xl border-2 border-l-[3px] p-3.5 transition hover:ring-1 hover:ring-prove-400/30 lesson-tile !shadow-none"
                   style={buddyProfileAccentBorderStyle(buddy.accentTheme)}
                 >
                   <BuddyProfileAvatar

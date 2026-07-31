@@ -716,9 +716,12 @@ export default function BuddyPage() {
       )}
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         <div className="mb-8 border-b border-slate-200/80 pb-6 dark:border-slate-800/80">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Goal Garden
           </h1>
+          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+            Plant goals here — prove them from Home.
+          </p>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Grow what you prove — verified photos water your plants each week.
           </p>

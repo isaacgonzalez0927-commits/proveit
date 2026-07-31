@@ -586,19 +586,22 @@ function LandingContent() {
             <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="h-10 shrink-0" aria-hidden />
               <div className="shrink-0 text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-prove-600 dark:text-prove-300">
-                  Welcome to Proveit
-                </p>
-                <h1 className="mt-4 font-display text-6xl font-bold leading-[0.95] tracking-tight text-slate-950 dark:text-white">
-                  Grow habits with proof.
+                <div className="mx-auto flex items-center justify-center gap-2">
+                  <span className="proveit-mark h-10 w-10" role="img" aria-hidden="true" />
+                  <p className="font-display text-2xl font-black tracking-tight text-prove-600 dark:text-prove-300">
+                    Proveit
+                  </p>
+                </div>
+                <h1 className="mt-5 font-display text-5xl font-black leading-[0.95] tracking-tight text-slate-950 dark:text-white sm:text-6xl">
+                  Prove it. Grow it.
                 </h1>
-                <p className="mx-auto mt-5 max-w-[28ch] text-base leading-relaxed text-slate-600 dark:text-slate-300">
-                  Build a weekly routine, prove it with fresh photos, and keep your garden alive.
+                <p className="mx-auto mt-4 max-w-[30ch] text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
+                  Pick a goal, snap proof, water your plant — one clear path each day.
                 </p>
-                <div className="mx-auto mt-8 grid max-w-xs grid-cols-3 gap-2 text-center text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                  <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Goals</div>
-                  <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Proof</div>
-                  <div className="rounded-2xl bg-white/75 px-2 py-3 shadow-sm dark:bg-slate-900/70">Plants</div>
+                <div className="mx-auto mt-8 grid max-w-xs grid-cols-3 gap-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                  <div className="rounded-2xl border-2 border-prove-200/70 bg-white/80 px-2 py-3 shadow-sm dark:border-prove-800/50 dark:bg-slate-900/70">Home</div>
+                  <div className="rounded-2xl border-2 border-prove-300 bg-prove-50/90 px-2 py-3 shadow-sm text-prove-700 dark:border-prove-700 dark:bg-prove-950/50 dark:text-prove-300">Prove</div>
+                  <div className="rounded-2xl border-2 border-prove-200/70 bg-white/80 px-2 py-3 shadow-sm dark:border-prove-800/50 dark:bg-slate-900/70">Grow</div>
                 </div>
               </div>
               <div className="min-h-0 flex-1" aria-hidden />
@@ -610,7 +613,7 @@ function LandingContent() {
                   onClick={() => {
                     goTo(1);
                   }}
-                  className="rounded-2xl bg-prove-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-prove-600/25 transition hover:bg-prove-700 dark:bg-prove-500 dark:shadow-prove-500/20 dark:hover:bg-prove-400 btn-glass-primary"
+                  className="cta-chunky w-full !min-h-[3.25rem] !rounded-2xl !text-base"
                 >
                   See how it works
                 </button>
@@ -621,7 +624,7 @@ function LandingContent() {
                     setLoginError("");
                     goTo(4);
                   }}
-                  className="rounded-2xl border border-slate-200 bg-white/70 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-white dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
+                  className="rounded-2xl border-2 border-slate-200 bg-white/70 px-6 py-3 text-sm font-bold text-slate-700 hover:bg-white dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
                 >
                   I already have an account
                 </button>

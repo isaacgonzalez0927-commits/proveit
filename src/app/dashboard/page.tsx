@@ -245,8 +245,11 @@ function DashboardContent() {
         <PlanDowngradeReview />
         <div className="mb-5">
           <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-            Dashboard
+            Today&apos;s path
           </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Prove what&apos;s due — keep your streak and garden growing.
+          </p>
         </div>
 
         <section className="rounded-2xl border border-emerald-200/70 p-4 dark:border-emerald-800/45 glass-card">
@@ -261,7 +264,8 @@ function DashboardContent() {
             </div>
             <Link
               href="/buddy"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 btn-glass-primary"
+              data-tour="garden-tab"
+              className="cta-chunky shrink-0 !bg-emerald-600 !shadow-[0_4px_0_#065f46] hover:!brightness-105 dark:!bg-emerald-500"
             >
               Open Garden
               <ChevronRight className="h-4 w-4" />
@@ -356,7 +360,7 @@ function DashboardContent() {
           </div>
         ) : (
           <div className="mt-4">
-            <div className="rounded-2xl p-5 glass-card">
+            <div className="lesson-tile !gap-2">
               <button
                 type="button"
                 onClick={() => setStreakCardExpanded((e) => !e)}
@@ -369,7 +373,7 @@ function DashboardContent() {
                   ) : (
                     <Flame className="h-5 w-5 text-amber-500" />
                   )}
-                  <span className="font-semibold text-slate-900 dark:text-white">
+                  <span className="font-bold text-slate-900 dark:text-white">
                     Current streak
                   </span>
                 </div>
@@ -377,10 +381,13 @@ function DashboardContent() {
                   className={clsx("h-5 w-5 shrink-0 text-slate-400 transition", streakCardExpanded && "rotate-180")}
                 />
               </button>
-              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-                {displayMaxStreak} {displayMaxStreak === 1 ? streakUnit : `${streakUnit}s`}
+              <p className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                {displayMaxStreak}{" "}
+                <span className="text-lg font-bold text-slate-500 dark:text-slate-400">
+                  {displayMaxStreak === 1 ? streakUnit : `${streakUnit}s`}
+                </span>
               </p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {isCreatorAccount && effectiveDeveloperSettings.enabled
                   ? "Developer mode preview is active."
                   : displayMaxStreak === 0
@@ -446,13 +453,13 @@ function DashboardContent() {
           </div>
         )}
 
-        <section className="mt-6">
+        <section id="today-path" className="mt-6 scroll-mt-28">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-                Today&apos;s goals
+              <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+                Prove these
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                 {goals.length} goal{goals.length !== 1 ? "s" : ""} ·{" "}
                 {plan?.maxGoals === -1
                   ? "Unlimited on your plan"
@@ -461,7 +468,7 @@ function DashboardContent() {
             </div>
             <Link
               href="/buddy"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-semibold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 btn-glass-outline"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-bold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 btn-glass-outline"
             >
               Manage in Garden
               <ChevronRight className="h-4 w-4" />
@@ -469,23 +476,20 @@ function DashboardContent() {
           </div>
 
           {goals.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
-              <p className="text-base font-medium text-slate-700 dark:text-slate-300">
+            <div className="mt-4 rounded-2xl border-2 border-dashed border-prove-300/70 bg-prove-50/40 p-8 text-center dark:border-prove-700/50 dark:bg-prove-950/20">
+              <p className="text-base font-bold text-slate-800 dark:text-slate-100">
                 No goals yet
               </p>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                 Add a daily or weekly goal in the Garden to see today’s tasks and start building your streak.
               </p>
-              <Link
-                href="/buddy"
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-prove-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-prove-700 btn-glass-primary"
-              >
+              <Link href="/buddy" className="cta-chunky mt-5 inline-flex">
                 <Plus className="h-4 w-4" />
                 Add your first goal
               </Link>
             </div>
           ) : (
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 space-y-3.5">
               {[...dailyRhythmGoals, ...weeklyRhythmGoals].map((goal) => {
                 const subs = getSubmissionsForGoal(goal.id);
                 const now = new Date();
@@ -509,82 +513,82 @@ function DashboardContent() {
                 const canSubmitNow = isWithinSubmissionWindow(goal, now, subs);
                 const due = isGoalDue(goal, now, subs);
                 const dueLabel = getNextDueLabel(goal);
+                const lessonPct =
+                  fullTw >= 7
+                    ? doneToday || showComplete
+                      ? 100
+                      : 0
+                    : Math.min(100, Math.round((weekVerifiedCount / Math.max(1, tw)) * 100));
                 return (
                   <li
                     key={goal.id}
-                    className="flex items-center gap-3 rounded-xl p-4 glass-card"
+                    className={clsx("lesson-tile", (showComplete || doneToday) && "lesson-tile-done")}
                   >
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                      {showComplete ? (
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-prove-500" />
-                      ) : (
-                        <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                      )}
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="lesson-progress-ring"
+                        style={{ ["--lesson-pct" as string]: lessonPct }}
+                        aria-hidden
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-slate-900 dark:text-white">
+                        <p className="truncate text-base font-bold text-slate-900 dark:text-white">
                           {goal.title}
                         </p>
                         {signupWeekNote ? (
-                          <p className="mt-0.5 text-[11px] font-medium text-prove-600 dark:text-prove-400">
+                          <p className="mt-0.5 text-[11px] font-semibold text-prove-600 dark:text-prove-400">
                             {signupWeekNote}
                           </p>
                         ) : null}
-                        <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                          <p>
-                            {fullTw >= 7
-                              ? "Daily"
-                              : `${weekVerifiedCount}/${tw} this week`}
-                            {weekMet ? (
-                              <span className="text-prove-600 dark:text-prove-400"> · Done for the week</span>
-                            ) : doneToday ? (
-                              <span className="text-prove-600 dark:text-prove-400"> · Done today</span>
-                            ) : null}
-                            {goal.isOnBreak ? (
-                              <span className="text-amber-700 dark:text-amber-300"> · On break</span>
-                            ) : null}
-                          </p>
-                          <p>
-                            Streak: {streakLabel}
-                            {fullTw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
-                          </p>
-                        </div>
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {fullTw >= 7
+                            ? "Daily"
+                            : `${weekVerifiedCount}/${tw} this week`}
+                          {weekMet ? " · Week done" : doneToday ? " · Done today" : null}
+                          {goal.isOnBreak ? " · On break" : null}
+                          {" · "}
+                          Streak {streakLabel}
+                          {fullTw < 7 && !due && dueLabel && !weekMet ? ` · ${dueLabel}` : ""}
+                        </p>
                       </div>
+                      {showComplete || doneToday ? (
+                        <CheckCircle2 className="mt-1 h-6 w-6 shrink-0 text-prove-500 animate-celebrate-check" />
+                      ) : null}
                     </div>
-                    <div className="shrink-0 self-center">
-                    {goal.isOnBreak ? (
-                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                        On break
-                      </span>
-                    ) : doneToday && displayProofSub?.imageDataUrl ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="block h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
-                        aria-label={`View today's proof for ${goal.title}`}
-                      >
-                        <img
-                          src={displayProofSub.imageDataUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </Link>
-                    ) : showComplete ? (
-                      <span className="text-sm font-medium text-prove-600 dark:text-prove-400">
-                        Done
-                      </span>
-                    ) : canSubmitNow ? (
-                      <Link
-                        href={`/goals/submit?goalId=${goal.id}`}
-                        className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-prove-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-prove-700 btn-glass-primary"
-                      >
-                        <Camera className="h-4 w-4 shrink-0" />
-                        Prove it
-                      </Link>
-                    ) : (
-                      <span className="block max-w-[5.5rem] text-right text-xs leading-snug text-slate-500 dark:text-slate-400">
-                        {getSubmissionWindowMessage(goal, now, subs) ??
-                          (fullTw < 7 ? `${weekVerifiedCount}/${tw} this week` : "Not available")}
-                      </span>
-                    )}
+                    <div className="flex items-center justify-end gap-2">
+                      {goal.isOnBreak ? (
+                        <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                          On break
+                        </span>
+                      ) : doneToday && displayProofSub?.imageDataUrl ? (
+                        <Link
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          className="block h-12 w-12 shrink-0 overflow-hidden rounded-2xl ring-2 ring-prove-400/90 dark:ring-prove-500/70"
+                          aria-label={`View today's proof for ${goal.title}`}
+                        >
+                          <img
+                            src={displayProofSub.imageDataUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </Link>
+                      ) : showComplete ? (
+                        <span className="text-sm font-bold text-prove-600 dark:text-prove-400">
+                          Done
+                        </span>
+                      ) : canSubmitNow ? (
+                        <Link
+                          href={`/goals/submit?goalId=${goal.id}`}
+                          className="cta-chunky w-full sm:w-auto"
+                        >
+                          <Camera className="h-4 w-4 shrink-0" />
+                          Prove it
+                        </Link>
+                      ) : (
+                        <span className="text-right text-xs font-medium leading-snug text-slate-500 dark:text-slate-400">
+                          {getSubmissionWindowMessage(goal, now, subs) ??
+                            (fullTw < 7 ? `${weekVerifiedCount}/${tw} this week` : "Not available")}
+                        </span>
+                      )}
                     </div>
                   </li>
                 );

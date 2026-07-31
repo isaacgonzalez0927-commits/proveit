@@ -277,8 +277,19 @@ function SubmitProofContent() {
     if (!authReady || hasRedirected.current || pageLoading) return;
     if (hasShownContent.current) return; // Already showed content - don't redirect
     if (!goalId) {
+      // Prove tab: land on first due/submittable goal, else today's path
+      const now = new Date();
+      const today = format(new Date(), "yyyy-MM-dd");
+      const pick =
+        contextGoals.find(
+          (g) =>
+            !g.isOnBreak &&
+            !g.archivedAt &&
+            isWithinSubmissionWindow(g, now, getSubmissionsForGoal(g.id)) &&
+            !hasVerifiedSubmissionOnDate(getSubmissionsForGoal(g.id), today)
+        ) ?? null;
       hasRedirected.current = true;
-      router.replace("/buddy");
+      router.replace(pick ? `/goals/submit?goalId=${pick.id}` : "/dashboard#today-path");
       return;
     }
     if (!user) {
@@ -288,10 +299,19 @@ function SubmitProofContent() {
     }
     if (!goal) {
       hasRedirected.current = true;
-      router.replace("/buddy");
+      router.replace("/dashboard#today-path");
       return;
     }
-  }, [authReady, user, goalId, goal, router, pageLoading]);
+  }, [
+    authReady,
+    user,
+    goalId,
+    goal,
+    router,
+    pageLoading,
+    contextGoals,
+    getSubmissionsForGoal,
+  ]);
 
   useLayoutEffect(() => {
     if (!goalId || typeof window === "undefined") return;
@@ -843,14 +863,17 @@ function SubmitProofContent() {
           >
             {verified ? (
               <>
-                <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600 dark:text-emerald-400 animate-success-pop" />
+                <div className="relative mx-auto flex h-16 w-16 items-center justify-center">
+                  <span className="animate-celebrate-burst absolute inset-0 rounded-full bg-prove-400/25" aria-hidden />
+                  <CheckCircle2 className="relative h-14 w-14 text-prove-600 dark:text-prove-400 animate-celebrate-check" />
+                </div>
                 {wateringCelebration && (
                   <div className="mt-4">
                     <PlantWateringCelebration
                       stage={wateringCelebration.stage}
                       variant={wateringCelebration.variant}
                     />
-                    <p className="mt-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                    <p className="mt-2 text-sm font-bold text-prove-800 dark:text-prove-200">
                       Verified — your plant drank!
                     </p>
                   </div>

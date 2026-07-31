@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CreditCard,
-  ChevronLeft,
   ChevronRight,
   HelpCircle,
   Info,
@@ -454,19 +453,15 @@ export default function SettingsPage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-[max(6.5rem,env(safe-area-inset-bottom))]">
-        <header className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-slate-200/60 bg-[var(--bg-app)]/92 px-4 pb-4 pt-1 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#061527]/92">
-          <div className="relative flex items-center justify-center py-1.5">
-            <Link
-              href="/dashboard"
-              className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full text-slate-800 active:bg-slate-200/70 dark:text-white dark:active:bg-white/10"
-              aria-label="Back to dashboard"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Link>
-            <h1 className="text-lg font-semibold text-slate-950 dark:text-white">Settings</h1>
-          </div>
-          <label className="mt-3 flex h-[3.25rem] items-center gap-3 rounded-2xl px-4 glass-card">
+      <main className="mx-auto w-full max-w-md flex-1 space-y-4 px-4 pb-[max(6.5rem,env(safe-area-inset-bottom))] pt-6">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Profile</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Account, themes, and plan — clearer taps, less clutter.
+          </p>
+        </div>
+        <header className="sticky top-[calc(5.75rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-slate-200/60 bg-[var(--bg-app)]/92 px-4 pb-3 pt-1 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#061527]/92">
+          <label className="flex h-[3.25rem] items-center gap-3 rounded-2xl border-2 border-prove-200/50 px-4 dark:border-prove-800/40 glass-card">
             <Search className="h-5 w-5 shrink-0 text-slate-400 dark:text-slate-500" />
             <span className="sr-only">Search settings</span>
             <input
@@ -474,7 +469,7 @@ export default function SettingsPage() {
               value={settingsQuery}
               onChange={(event) => setSettingsQuery(event.target.value)}
               placeholder="Search for a setting..."
-              className="min-w-0 flex-1 bg-transparent text-[17px] text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500"
+              className="min-w-0 flex-1 bg-transparent text-[17px] font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500"
             />
           </label>
         </header>

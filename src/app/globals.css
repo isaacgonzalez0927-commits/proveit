@@ -1344,3 +1344,106 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
 .proof-camera-video {
   pointer-events: none;
 }
+
+/* ── Duolingo-inspired chrome (keeps --prove-* theme tokens) ─────────────── */
+.status-strip {
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+.status-strip-bar {
+  box-shadow: 0 0 12px color-mix(in srgb, rgb(var(--prove-500-rgb)) 45%, transparent);
+}
+
+.lesson-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 2px solid color-mix(in srgb, rgb(var(--prove-200-rgb)) 70%, var(--border));
+  background: var(--bg-card);
+  box-shadow: 0 4px 0 color-mix(in srgb, rgb(var(--prove-600-rgb)) 18%, transparent);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.dark .lesson-tile {
+  border-color: color-mix(in srgb, rgb(var(--prove-700-rgb)) 55%, var(--border));
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+}
+.lesson-tile:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 color-mix(in srgb, rgb(var(--prove-600-rgb)) 18%, transparent);
+}
+.lesson-tile-done {
+  border-color: color-mix(in srgb, rgb(var(--prove-400-rgb)) 80%, var(--border));
+  background: color-mix(in srgb, rgb(var(--prove-50-rgb)) 65%, var(--bg-card));
+}
+.dark .lesson-tile-done {
+  background: color-mix(in srgb, rgb(var(--prove-950-rgb)) 55%, var(--bg-card));
+}
+
+.lesson-progress-ring {
+  --lesson-pct: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: conic-gradient(
+    rgb(var(--prove-500-rgb)) calc(var(--lesson-pct) * 1%),
+    color-mix(in srgb, rgb(var(--prove-200-rgb)) 70%, transparent) 0
+  );
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.lesson-progress-ring::after {
+  content: "";
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: var(--bg-card);
+}
+.dark .lesson-progress-ring::after {
+  background: color-mix(in srgb, var(--bg-card) 100%, #0f172a);
+}
+
+.cta-chunky {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 1rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: white;
+  background: rgb(var(--prove-600-rgb));
+  box-shadow: 0 4px 0 rgb(var(--prove-800-rgb));
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.cta-chunky:hover {
+  filter: brightness(1.05);
+}
+.cta-chunky:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgb(var(--prove-800-rgb));
+}
+
+@keyframes celebrate-check {
+  0% { transform: scale(0.2) rotate(-12deg); opacity: 0; }
+  55% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-celebrate-check {
+  animation: celebrate-check 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes celebrate-burst {
+  0% { transform: scale(0.6); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+.animate-celebrate-burst {
+  animation: celebrate-burst 0.7s ease-out both;
+}

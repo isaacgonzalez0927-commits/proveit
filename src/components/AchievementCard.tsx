@@ -18,9 +18,9 @@ export function AchievementCard({ item, progress }: AchievementCardProps) {
 
   return (
     <article
-      className={`rounded-2xl p-4 glass-card ${
+      className={`lesson-tile !gap-3 ${
         progress.unlocked
-          ? "ring-1 ring-prove-300/80 dark:ring-prove-700/60"
+          ? "lesson-tile-done"
           : progress.lockedByPlan
             ? "opacity-90"
             : ""

@@ -56,18 +56,18 @@ function PricingContent() {
     <>
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-10 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         <div className="text-center">
-          <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
-            Simple pricing
+          <h1 className="font-display text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Pick your plan
           </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Start free. Upgrade to Pro or Premium when you are ready.
+          <p className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+            Start free. Upgrade when you want more goals and themes.
           </p>
-          <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl p-1.5 glass-card">
+          <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl border-2 border-prove-200/60 p-1.5 dark:border-prove-800/50 glass-card">
             <button
               onClick={() => setBilling("monthly")}
-              className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+              className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
                 billing === "monthly"
-                  ? "bg-prove-600 text-white btn-glass-primary"
+                  ? "cta-chunky !min-h-0 !py-2 !shadow-[0_3px_0_rgb(var(--prove-800-rgb))]"
                   : "text-slate-700 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/5"
               }`}
             >
@@ -75,9 +75,9 @@ function PricingContent() {
             </button>
             <button
               onClick={() => setBilling("yearly")}
-              className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+              className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
                 billing === "yearly"
-                  ? "bg-prove-600 text-white btn-glass-primary"
+                  ? "cta-chunky !min-h-0 !py-2 !shadow-[0_3px_0_rgb(var(--prove-800-rgb))]"
                   : "text-slate-700 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/5"
               }`}
             >
@@ -147,12 +147,12 @@ function PricingCard({
 
   return (
     <div
-      className={`relative rounded-2xl border p-6 glass-card ${
+      className={`relative lesson-tile p-6 ${
         isPremium
-          ? "border-amber-300/90 shadow-lg dark:border-amber-600/50"
+          ? "!border-amber-300/90 dark:!border-amber-600/50"
           : isPro
-            ? "border-prove-400/80 shadow-lg dark:border-prove-600/45"
-            : "border-slate-200/80 dark:border-slate-700/60"
+            ? "!border-prove-400/80 dark:!border-prove-600/45"
+            : ""
       }`}
     >
       {isPro && (
@@ -198,7 +198,7 @@ function PricingCard({
       </ul>
       <div className="mt-8">
         {isCurrent ? (
-          <div className="rounded-lg border border-prove-300 bg-prove-100 py-2.5 text-center text-sm font-medium text-prove-800 dark:border-prove-700 dark:bg-prove-900/50 dark:text-prove-200">
+          <div className="rounded-xl border-2 border-prove-300 bg-prove-100 py-3 text-center text-sm font-bold text-prove-800 dark:border-prove-700 dark:bg-prove-900/50 dark:text-prove-200">
             Current plan
           </div>
         ) : (
@@ -210,15 +210,13 @@ function PricingCard({
                 onSelect();
               }
             }}
-            className={`block rounded-lg py-2.5 text-center text-sm font-medium ${
-              isPremium
-                ? "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
-                : isPro
-                  ? "bg-prove-600 text-white hover:bg-prove-700 btn-glass-primary"
-                  : isFree
-                    ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-            }`}
+            className={
+              isFree
+                ? "block rounded-xl border-2 border-slate-300 bg-white py-3 text-center text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                : isPremium
+                  ? "cta-chunky w-full !bg-amber-500 !shadow-[0_4px_0_#b45309]"
+                  : "cta-chunky w-full"
+            }
           >
             {isFree
               ? busy
