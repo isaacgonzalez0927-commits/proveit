@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { INTRO_SEEN_KEY } from "@/lib/onboardingStorage";
-import { BrandMark } from "@/components/BrandMark";
+
 const INTRO_DURATION_MS = 2200;
 const INTRO_OUT_MS = 450;
 
@@ -76,7 +76,15 @@ export function IntroSplash() {
             className="absolute inset-0 scale-150 rounded-full bg-prove-400/30 blur-2xl animate-intro-glow"
             aria-hidden
           />
-          <BrandMark className="relative h-20 w-20" />
+          {/* Real brand mark — only allowed on splash + homescreen/PWA icons */}
+          <img
+            src="/icon.png"
+            alt=""
+            width={96}
+            height={96}
+            className="relative h-24 w-24 rounded-[1.35rem] shadow-lg"
+            draggable={false}
+          />
         </div>
         <span
           className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400 animate-intro-text"

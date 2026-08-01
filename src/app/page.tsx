@@ -17,8 +17,6 @@ import { shouldShowOnboardingSlideshow } from "@/lib/onboardingStorage";
 import { writeStoredDisplayName } from "@/lib/displayNameStorage";
 import { startDashboardTourForNewUser } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
-import { BrandMark } from "@/components/BrandMark";
-
 const INTRO_SLIDE_COUNT = 6;
 type Slide = 0 | 1 | 2 | 3 | 4 | 5;
 type AuthMode = "signin" | "signup";
@@ -587,12 +585,9 @@ function LandingContent() {
             <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="h-10 shrink-0" aria-hidden />
               <div className="shrink-0 text-center">
-                <div className="mx-auto flex items-center justify-center gap-2">
-                  <BrandMark className="h-10 w-10" />
-                  <p className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400">
-                    Proveit
-                  </p>
-                </div>
+                <p className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400">
+                  Proveit
+                </p>
                 <h1 className="mt-5 font-display text-5xl font-black leading-[0.95] tracking-tight text-slate-950 dark:text-white sm:text-6xl">
                   Prove it. Grow it.
                 </h1>

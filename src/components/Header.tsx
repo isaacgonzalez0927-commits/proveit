@@ -19,7 +19,6 @@ import { useHideHeader } from "@/context/HideHeaderContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
 import { StatusStrip } from "./StatusStrip";
-import { BrandMark } from "./BrandMark";
 import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
 /** `label` = accessibility & tooltips; `tabLabel` = short text for the bottom bar on small screens. */
@@ -120,10 +119,9 @@ export function Header() {
           <div className="min-w-0">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2.5 truncate rounded-md font-display text-lg font-bold tracking-tight text-prove-600 transition-opacity hover:opacity-90 dark:text-prove-300"
+              className="truncate rounded-md font-display text-lg font-bold tracking-tight text-prove-600 transition-opacity hover:opacity-90 dark:text-prove-300"
             >
-              <BrandMark className="h-7 w-7" />
-              <span>Proveit</span>
+              Proveit
             </Link>
             <p
               className={clsx(

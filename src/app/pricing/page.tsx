@@ -9,7 +9,6 @@ import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { startStripeCheckout } from "@/lib/checkoutClient";
 import { formatUsd, planPriceForBilling, yearlySavingsPercent } from "@/lib/billing";
 import { PLANS, type PlanId } from "@/types";
-import { BrandMark } from "@/components/BrandMark";
 
 function PricingContent() {
   const router = useRouter();
@@ -62,7 +61,6 @@ function PricingContent() {
             aria-hidden
           />
           <div className="relative mx-auto flex max-w-lg flex-col items-center">
-            <BrandMark className="mb-3 h-10 w-10 !text-prove-400" />
             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-prove-400">
               Proveit plans
             </p>
