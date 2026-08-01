@@ -48,6 +48,8 @@ import {
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { openStripeBillingPortal, syncStripeSubscription } from "@/lib/checkoutClient";
 import { PLANS } from "@/types";
+import { aiCoachUsageSummary } from "@/lib/aiCoachUsage";
+import { getAiVerificationLimit } from "@/lib/subscriptionLimits";
 
 function SettingsDisclosure({
   title,
@@ -633,16 +635,48 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {matchesSettingsQuery("ai proof verification strict") && (
+          {matchesSettingsQuery("ai proof verification strict coach") && (
             <section>
               <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Proof
               </p>
               <SettingsDisclosure
-                title="AI verification"
-                description={`${user.aiVerificationCount ?? 0} checks used this cycle.`}
+                title="AI Coach"
+                description={(() => {
+                  const usage = aiCoachUsageSummary(user);
+                  return `${usage.remaining} of ${usage.limit} uses left this week (UTC)`;
+                })()}
                 icon={<Sparkles className="h-5 w-5" />}
               >
+          <div className="space-y-1 border-b border-slate-100 px-4 py-4 dark:border-white/10">
+            <p className="text-sm font-bold text-slate-900 dark:text-white">
+              Weekly AI Coach uses
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Free {getAiVerificationLimit("free")}/week · Pro {getAiVerificationLimit("pro")}/week · Premium{" "}
+              {getAiVerificationLimit("premium")}/week. Resets Monday 00:00 UTC.
+            </p>
+            {(() => {
+              const usage = aiCoachUsageSummary(user);
+              const pct = usage.limit > 0 ? Math.min(100, (usage.used / usage.limit) * 100) : 100;
+              return (
+                <div className="mt-3">
+                  <div className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <span>
+                      {usage.used}/{usage.limit} used
+                    </span>
+                    <span>{usage.remaining} left</span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-prove-500 transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
           <label className="flex items-start justify-between gap-3 px-4 py-4">
             <div>
               <p className="text-sm font-medium text-slate-900 dark:text-white">Strict AI verification</p>

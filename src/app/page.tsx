@@ -17,6 +17,7 @@ import { shouldShowOnboardingSlideshow } from "@/lib/onboardingStorage";
 import { writeStoredDisplayName } from "@/lib/displayNameStorage";
 import { startDashboardTourForNewUser } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
+import { BrandMark } from "@/components/BrandMark";
 
 const INTRO_SLIDE_COUNT = 6;
 type Slide = 0 | 1 | 2 | 3 | 4 | 5;
@@ -581,14 +582,14 @@ function LandingContent() {
             index={0}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            className="bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30"
+            className="bg-gradient-to-b from-[#eef6e6] via-white to-prove-100/40 dark:from-[#050a18] dark:via-[#050a18] dark:to-[#0a1428]"
           >
             <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="h-10 shrink-0" aria-hidden />
               <div className="shrink-0 text-center">
                 <div className="mx-auto flex items-center justify-center gap-2">
-                  <span className="proveit-mark h-10 w-10" role="img" aria-hidden="true" />
-                  <p className="font-display text-2xl font-black tracking-tight text-prove-600 dark:text-prove-300">
+                  <BrandMark className="h-10 w-10" />
+                  <p className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400">
                     Proveit
                   </p>
                 </div>

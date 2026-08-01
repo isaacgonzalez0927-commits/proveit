@@ -23,15 +23,15 @@ function goal(id: string, createdAt: string, active = true): Goal {
 }
 
 describe("subscription limits", () => {
-  it("caps reminders, streak shields, and AI by plan", () => {
+  it("caps reminders, streak shields, and AI Coach by plan", () => {
     expect(getActiveReminderLimit("free")).toBe(2);
     expect(getActiveReminderLimit("pro")).toBe(5);
     expect(getGraceDayResetBalance("free")).toBe(0);
     expect(getGraceDayResetBalance("pro")).toBe(1);
     expect(getGraceDayResetBalance("premium")).toBe(1);
-    expect(getAiVerificationLimit("free")).toBe(Number.MAX_SAFE_INTEGER);
-    expect(getAiVerificationLimit("pro")).toBe(Number.MAX_SAFE_INTEGER);
-    expect(getAiVerificationLimit("premium")).toBe(Number.MAX_SAFE_INTEGER);
+    expect(getAiVerificationLimit("free")).toBe(3);
+    expect(getAiVerificationLimit("pro")).toBe(5);
+    expect(getAiVerificationLimit("premium")).toBe(20);
   });
 
   it("freezes reminders beyond the allowed active limit", () => {
@@ -47,4 +47,3 @@ describe("subscription limits", () => {
     expect(frozen.find((g) => g.id === "g3")?.reminderIsActive).toBe(false);
   });
 });
-

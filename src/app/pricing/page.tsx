@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Zap, Crown } from "lucide-react";
+import { Check, Zap, Crown, Sparkles } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { setPostPlanWelcomeFlag } from "@/lib/postPlanWelcome";
 import { startStripeCheckout } from "@/lib/checkoutClient";
 import { formatUsd, planPriceForBilling, yearlySavingsPercent } from "@/lib/billing";
 import { PLANS, type PlanId } from "@/types";
+import { BrandMark } from "@/components/BrandMark";
 
 function PricingContent() {
   const router = useRouter();
@@ -54,15 +55,28 @@ function PricingContent() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-10 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 space-y-8 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
+        <section className="paywall-hero relative overflow-hidden rounded-[1.75rem] border-2 border-prove-500/35 px-5 py-8 text-center shadow-[0_8px_0_rgba(0,0,0,0.35)] sm:px-8">
+          <div
+            className="pointer-events-none absolute -right-8 top-0 h-40 w-40 rounded-full bg-prove-400/25 blur-3xl"
+            aria-hidden
+          />
+          <div className="relative mx-auto flex max-w-lg flex-col items-center">
+            <BrandMark className="mb-3 h-10 w-10 !text-prove-400" />
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-prove-400">
+              Proveit plans
+            </p>
+            <h1 className="mt-2 font-display text-3xl font-black tracking-tight text-white sm:text-4xl">
+              Level up your grind
+            </h1>
+            <p className="mt-2 text-sm font-medium text-white/75">
+              Chunkier goals, more AI Coach uses, and themes that match the navy + lime vibe.
+            </p>
+          </div>
+        </section>
+
         <div className="text-center">
-          <h1 className="font-display text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Pick your plan
-          </h1>
-          <p className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-400">
-            Start free. Upgrade when you want more goals and themes.
-          </p>
-          <div className="mt-6 inline-flex justify-center gap-2 rounded-2xl border-2 border-prove-200/60 p-1.5 dark:border-prove-800/50 glass-card">
+          <div className="inline-flex justify-center gap-2 rounded-2xl border-2 border-prove-300/70 bg-white/80 p-1.5 dark:border-prove-700/60 dark:bg-[#0a1428]/80">
             <button
               onClick={() => setBilling("monthly")}
               className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
@@ -82,18 +96,18 @@ function PricingContent() {
               }`}
             >
               Yearly
-              <span className="ml-2 rounded bg-prove-200 px-1.5 py-0.5 text-xs text-prove-800 dark:bg-prove-900 dark:text-prove-200">
+              <span className="ml-2 rounded-md bg-prove-500 px-1.5 py-0.5 text-xs font-black text-[#050a18]">
                 Save up to 36%
               </span>
             </button>
           </div>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
             Yearly = pay once per year. Pro saves 25%, Premium saves 36% vs monthly.
           </p>
         </div>
 
         {planError && (
-          <p className="text-center text-sm text-red-600 dark:text-red-400" role="alert">
+          <p className="text-center text-sm font-semibold text-red-600 dark:text-red-400" role="alert">
             {planError}
           </p>
         )}
@@ -113,6 +127,10 @@ function PricingContent() {
           ))}
         </div>
 
+        <p className="flex items-center justify-center gap-2 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
+          <Sparkles className="h-3.5 w-3.5 text-prove-500" />
+          Secure checkout via Stripe · cancel anytime in Settings
+        </p>
       </main>
     </>
   );
@@ -147,58 +165,58 @@ function PricingCard({
 
   return (
     <div
-      className={`relative lesson-tile p-6 ${
+      className={`relative duo-card p-6 ${
         isPremium
-          ? "!border-amber-300/90 dark:!border-amber-600/50"
+          ? "!border-prove-400 !shadow-[0_6px_0_rgb(var(--prove-700-rgb))]"
           : isPro
-            ? "!border-prove-400/80 dark:!border-prove-600/45"
+            ? "!border-prove-500"
             : ""
       }`}
     >
       {isPro && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-prove-600 px-3 py-0.5 text-xs font-medium text-white">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-prove-500 px-3 py-0.5 text-xs font-black text-[#050a18]">
           Popular
         </span>
       )}
       {isPremium && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-3 py-0.5 text-xs font-medium text-white">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#050a18] px-3 py-0.5 text-xs font-black text-prove-400 ring-2 ring-prove-500">
           Best value
         </span>
       )}
       <div className="flex items-center gap-2">
         {Icon && (
-          <Icon className={`h-5 w-5 ${isPremium ? "text-amber-600 dark:text-amber-400" : "text-prove-600 dark:text-prove-400"}`} />
+          <Icon className={`h-5 w-5 ${isPremium ? "text-prove-500" : "text-prove-600 dark:text-prove-400"}`} />
         )}
-        <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+        <h2 className="font-display text-lg font-black text-slate-900 dark:text-white">
           {plan.name}
         </h2>
       </div>
       <div className="mt-4 flex items-baseline gap-1">
-        <span className="text-3xl font-bold text-slate-900 dark:text-white">
+        <span className="text-3xl font-black text-slate-900 dark:text-white">
           {formatUsd(price)}
         </span>
         {!isFree && (
-          <span className="text-slate-500 dark:text-slate-400">
+          <span className="font-semibold text-slate-500 dark:text-slate-400">
             /{billing === "yearly" ? "year" : "mo"}
           </span>
         )}
       </div>
       {!isFree && billing === "yearly" && yearlySave != null && (
-        <p className="mt-1 text-xs font-medium text-prove-600 dark:text-prove-400">
+        <p className="mt-1 text-xs font-bold text-prove-700 dark:text-prove-400">
           Save {yearlySave}% vs monthly
         </p>
       )}
       <ul className="mt-6 space-y-3">
         {plan.features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <Check className={`h-5 w-5 shrink-0 ${isPremium ? "text-amber-500" : "text-prove-500"}`} />
+          <li key={f} className="flex items-start gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+            <Check className="h-5 w-5 shrink-0 text-prove-500" />
             {f}
           </li>
         ))}
       </ul>
       <div className="mt-8">
         {isCurrent ? (
-          <div className="rounded-xl border-2 border-prove-300 bg-prove-100 py-3 text-center text-sm font-bold text-prove-800 dark:border-prove-700 dark:bg-prove-900/50 dark:text-prove-200">
+          <div className="rounded-xl border-2 border-prove-400 bg-prove-100 py-3 text-center text-sm font-black text-prove-900 dark:border-prove-600 dark:bg-prove-950/50 dark:text-prove-200">
             Current plan
           </div>
         ) : (
@@ -212,10 +230,8 @@ function PricingCard({
             }}
             className={
               isFree
-                ? "block rounded-xl border-2 border-slate-300 bg-white py-3 text-center text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                : isPremium
-                  ? "cta-chunky w-full !bg-amber-500 !shadow-[0_4px_0_#b45309]"
-                  : "cta-chunky w-full"
+                ? "block rounded-xl border-2 border-slate-300 bg-white py-3 text-center text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-[#0a1428] dark:text-slate-200"
+                : "cta-chunky w-full"
             }
           >
             {isFree

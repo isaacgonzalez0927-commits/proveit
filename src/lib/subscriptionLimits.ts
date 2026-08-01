@@ -5,9 +5,16 @@ export const FREE_ACTIVE_REMINDER_LIMIT = 2;
 export const PAID_ACTIVE_REMINDER_LIMIT = 5;
 export const PRO_STREAK_SHIELD_BALANCE = 1;
 export const PREMIUM_STREAK_SHIELD_BALANCE = 1;
-export const FREE_AI_VERIFICATIONS_PER_WEEK = 3;
-export const PRO_AI_VERIFICATIONS_PER_MONTH = 100;
-export const PREMIUM_AI_VERIFICATIONS_PER_MONTH = 500;
+
+/** Existing free-tier AI Coach allowance (weekly, UTC). */
+export const FREE_AI_COACH_USES_PER_WEEK = 3;
+/** Pro: 5 AI Coach uses per UTC week. */
+export const PRO_AI_COACH_USES_PER_WEEK = 5;
+/** Premium: 20 AI Coach uses per UTC week. */
+export const PREMIUM_AI_COACH_USES_PER_WEEK = 20;
+
+/** @deprecated use FREE_AI_COACH_USES_PER_WEEK */
+export const FREE_AI_VERIFICATIONS_PER_WEEK = FREE_AI_COACH_USES_PER_WEEK;
 
 export function getMaxGoalsForPlan(plan: PlanId): number {
   const match = PLANS.find((p) => p.id === plan);
@@ -31,13 +38,17 @@ export function getGraceDayResetBalance(userOrPlan: Pick<User, "plan"> | PlanId)
   return 0;
 }
 
-export function getAiVerificationLimit(_userOrPlan: Pick<User, "plan"> | PlanId): number {
-  return Number.MAX_SAFE_INTEGER;
+/** Weekly AI Coach / photo-verification cap by plan (UTC week). */
+export function getAiVerificationLimit(userOrPlan: Pick<User, "plan"> | PlanId): number {
+  const plan = typeof userOrPlan === "string" ? userOrPlan : userOrPlan.plan;
+  if (plan === "premium") return PREMIUM_AI_COACH_USES_PER_WEEK;
+  if (plan === "pro") return PRO_AI_COACH_USES_PER_WEEK;
+  return FREE_AI_COACH_USES_PER_WEEK;
 }
 
-export function getAiVerificationCycleKind(userOrPlan: Pick<User, "plan"> | PlanId): "week" | "month" {
-  const plan = typeof userOrPlan === "string" ? userOrPlan : userOrPlan.plan;
-  return plan === "free" ? "week" : "month";
+/** All plans use a UTC weekly cycle for AI Coach. */
+export function getAiVerificationCycleKind(_userOrPlan: Pick<User, "plan"> | PlanId): "week" | "month" {
+  return "week";
 }
 
 export function goalHasReminder(goal: Pick<Goal, "reminderTime" | "archivedAt">): boolean {

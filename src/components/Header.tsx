@@ -19,6 +19,7 @@ import { useHideHeader } from "@/context/HideHeaderContext";
 import clsx from "clsx";
 import { ThemeToggle } from "./ThemeToggle";
 import { StatusStrip } from "./StatusStrip";
+import { BrandMark } from "./BrandMark";
 import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
 /** `label` = accessibility & tooltips; `tabLabel` = short text for the bottom bar on small screens. */
@@ -121,7 +122,7 @@ export function Header() {
               href="/dashboard"
               className="flex items-center gap-2.5 truncate rounded-md font-display text-lg font-bold tracking-tight text-prove-600 transition-opacity hover:opacity-90 dark:text-prove-300"
             >
-              <span className="proveit-mark h-7 w-7 shrink-0" role="img" aria-hidden="true" />
+              <BrandMark className="h-7 w-7" />
               <span>Proveit</span>
             </Link>
             <p

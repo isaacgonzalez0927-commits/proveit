@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
         .update({
           grace_day_balance: balance,
           grace_day_cycle_anchor: now.toISOString(),
-          ai_verification_cycle_key: null,
-          ai_verification_count: 0,
+          // AI Coach uses roll weekly via ai_verification_cycle_key (UTC Monday) in /api/verify.
           updated_at: now.toISOString(),
         })
         .eq("id", id);

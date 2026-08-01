@@ -14,12 +14,12 @@ interface UpgradePromptModalProps {
 const PRO_PERKS = [
   "5 goals & Goal Gallery",
   "6 plant styles & 6 accent themes",
-  "1 Streak Shield per billing cycle & unlimited AI verification",
+  "5 AI Coach uses/week (UTC) & 1 Streak Shield per cycle",
 ];
 
 const PREMIUM_PERKS = [
   "Unlimited goals & all 8 plant styles",
-  "Weekly proof collages & share images",
+  "20 AI Coach uses/week (UTC) & weekly proof collages",
   "All 10 themes, 1 Shield per cycle & Premium badges",
 ];
 

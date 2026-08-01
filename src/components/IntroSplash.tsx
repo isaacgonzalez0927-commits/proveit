@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { INTRO_SEEN_KEY } from "@/lib/onboardingStorage";
+import { BrandMark } from "@/components/BrandMark";
 const INTRO_DURATION_MS = 2200;
 const INTRO_OUT_MS = 450;
 
@@ -55,7 +56,7 @@ export function IntroSplash() {
 
   const splash = (
     <div
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 via-white to-prove-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/30 ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-gradient-to-b from-[#eef6e6] via-white to-prove-100/50 dark:from-[#050a18] dark:via-[#050a18] dark:to-[#0a1428] ${
         phase === "exiting" ? "animate-intro-out" : ""
       }`}
       style={{
@@ -70,13 +71,15 @@ export function IntroSplash() {
       aria-hidden
     >
       <div className="relative z-10 flex flex-col items-center gap-4">
+        <div className="relative animate-intro-logo">
+          <div
+            className="absolute inset-0 scale-150 rounded-full bg-prove-400/30 blur-2xl animate-intro-glow"
+            aria-hidden
+          />
+          <BrandMark className="relative h-20 w-20" />
+        </div>
         <span
-          className="proveit-mark h-20 w-20 shrink-0 animate-intro-logo"
-          role="img"
-          aria-hidden
-        />
-        <span
-          className="font-display text-2xl font-bold tracking-tight text-prove-600 dark:text-prove-300 animate-intro-text"
+          className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400 animate-intro-text"
           aria-hidden
         >
           Proveit

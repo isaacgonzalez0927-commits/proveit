@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         .eq("id", user.id);
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       payment_method_types: ["card"],
       customer: customerId,
@@ -106,7 +106,31 @@ export async function POST(request: NextRequest) {
           billing,
         },
       },
-    });
+      // Hosted Checkout copy — Dashboard branding (logo/colors) still applies account-wide.
+      custom_text: {
+        submit: {
+          message: "Grow with Proveit — navy grit, lime energy. Cancel anytime in Settings.",
+        },
+      },
+    };
+
+    // Prefer rounded navy/lime look when the Stripe account/API supports branding_settings.
+    const withBranding = {
+      ...sessionParams,
+      branding_settings: {
+        background_color: "#050a18",
+        button_color: "#7cff01",
+        border_style: "rounded",
+        font_family: "inter",
+      },
+    } as Stripe.Checkout.SessionCreateParams;
+
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.create(withBranding);
+    } catch {
+      session = await stripe.checkout.sessions.create(sessionParams);
+    }
 
     if (!session.url) {
       return NextResponse.json({ error: "Could not start checkout." }, { status: 500 });

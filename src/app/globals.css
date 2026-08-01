@@ -2,44 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default to dark — .dark on html; light mode when user opts in */
+/* Default to dark — .dark on html; light mode when user opts in
+   Brand way from logo: deep navy + neon lime sprout */
 :root {
-  --prove-50-rgb: 240 253 246;
-  --prove-100-rgb: 220 252 235;
-  --prove-200-rgb: 187 247 214;
-  --prove-300-rgb: 134 239 180;
-  --prove-400-rgb: 74 222 138;
-  --prove-500-rgb: 34 197 94;
-  --prove-600-rgb: 22 163 74;
-  --prove-700-rgb: 21 128 61;
-  --prove-800-rgb: 22 101 52;
-  --prove-900-rgb: 20 83 45;
-  --prove-950-rgb: 5 46 22;
+  --prove-navy: #050a18;
+  --prove-navy-soft: #0a1428;
+  --prove-lime: #7cff01;
+  --prove-50-rgb: 236 255 214;
+  --prove-100-rgb: 210 255 150;
+  --prove-200-rgb: 180 255 80;
+  --prove-300-rgb: 150 255 40;
+  --prove-400-rgb: 130 255 10;
+  --prove-500-rgb: 124 255 1;
+  --prove-600-rgb: 100 214 0;
+  --prove-700-rgb: 78 168 0;
+  --prove-800-rgb: 58 122 0;
+  --prove-900-rgb: 40 84 0;
+  --prove-950-rgb: 18 42 0;
   --prove-green: rgb(var(--prove-600-rgb));
-  --prove-dark: rgb(var(--prove-950-rgb));
+  --prove-dark: var(--prove-navy);
   --accent-coral: #ff6b6b;
   --accent-gold: #f59e0b;
   --accent-violet: #8b5cf6;
-  /* Green theme (default) - Light mode */
-  --bg-app: #f4f7fb;
+  /* Lime theme (default) - Light mode */
+  --bg-app: #eef6e6;
   --bg-card: #ffffff;
-  --text-primary: #0f172a;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --gradient-1: rgba(34, 197, 94, 0.2);
-  --gradient-2: rgba(22, 163, 74, 0.14);
+  --text-primary: #050a18;
+  --text-muted: #3f5a2a;
+  --border: #cfe6b0;
+  --gradient-1: rgba(124, 255, 1, 0.22);
+  --gradient-2: rgba(100, 214, 0, 0.14);
   color-scheme: light;
 }
 
-/* Green theme - Dark mode (the grind: deep navy) */
+/* Lime theme - Dark mode (logo navy + neon lime) */
 .dark {
-  --bg-app: #0F172A;
-  --bg-card: rgba(15, 23, 42, 0.9);
-  --text-primary: #f9fafb;
-  --text-muted: #94a3b8;
-  --border: rgba(148, 163, 184, 0.5);
-  --gradient-1: rgba(34, 197, 94, 0.12);
-  --gradient-2: rgba(22, 163, 74, 0.08);
+  --bg-app: #050a18;
+  --bg-card: rgba(10, 20, 40, 0.92);
+  --text-primary: #f4ffe8;
+  --text-muted: #9fb88a;
+  --border: rgba(124, 255, 1, 0.22);
+  --gradient-1: rgba(124, 255, 1, 0.14);
+  --gradient-2: rgba(100, 214, 0, 0.08);
   color-scheme: dark;
 }
 
@@ -472,23 +476,6 @@
   --glass-shadow-inset: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 0 rgba(0, 0, 0, 0.22);
 }
 
-/* Header/loading mark: same shade as "Proveit" text (theme prove-600 / prove-300) */
-.proveit-mark {
-  display: inline-block;
-  background-color: rgb(var(--prove-600-rgb));
-  mask-image: url("/proveit-mark.png");
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  mask-position: center;
-  -webkit-mask-image: url("/proveit-mark.png");
-  -webkit-mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-}
-.dark .proveit-mark {
-  background-color: rgb(var(--prove-300-rgb));
-}
-
 * {
   box-sizing: border-box;
   padding: 0;
@@ -545,14 +532,14 @@ body {
   letter-spacing: -0.011em;
 }
 
-/* Light mode: soft mint-to-white mesh gradient base */
+/* Light mode: soft lime-to-white mesh (Duolingo energy, logo lime) */
 html:not(.dark) body {
   background:
     radial-gradient(1000px 1000px at 90% 0%, var(--gradient-1), transparent 50%),
     radial-gradient(900px 900px at 0% 100%, var(--gradient-2), transparent 50%),
     radial-gradient(1400px 700px at 80% -10%, var(--gradient-1), transparent 55%),
     radial-gradient(1200px 600px at 0% 0%, var(--gradient-2), transparent 60%),
-    linear-gradient(165deg, #e8f5e9 0%, #f1f8f2 35%, #ffffff 100%);
+    linear-gradient(165deg, #e6f8d4 0%, #f2fae8 35%, #ffffff 100%);
 }
 
 @layer utilities {
@@ -1420,23 +1407,38 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 2.75rem;
-  padding: 0.65rem 1.15rem;
-  border-radius: 1rem;
-  font-size: 0.9375rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: white;
-  background: rgb(var(--prove-600-rgb));
-  box-shadow: 0 4px 0 rgb(var(--prove-800-rgb));
+  min-height: 3rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 1.15rem;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  text-transform: none;
+  color: #050a18;
+  background: rgb(var(--prove-500-rgb));
+  box-shadow: 0 5px 0 rgb(var(--prove-800-rgb));
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 .cta-chunky:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.06);
 }
 .cta-chunky:active {
-  transform: translateY(3px);
+  transform: translateY(4px);
   box-shadow: 0 1px 0 rgb(var(--prove-800-rgb));
+}
+
+.duo-card {
+  border-radius: 1.35rem;
+  border: 2.5px solid color-mix(in srgb, rgb(var(--prove-400-rgb)) 55%, var(--border));
+  background: var(--bg-card);
+  box-shadow: 0 5px 0 color-mix(in srgb, rgb(var(--prove-700-rgb)) 35%, transparent);
+}
+
+.paywall-hero {
+  background:
+    radial-gradient(700px 420px at 80% -10%, rgba(124, 255, 1, 0.22), transparent 60%),
+    radial-gradient(560px 360px at 10% 110%, rgba(124, 255, 1, 0.12), transparent 55%),
+    linear-gradient(180deg, #071022 0%, #050a18 55%, #0a1428 100%);
 }
 
 @keyframes celebrate-check {
