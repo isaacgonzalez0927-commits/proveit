@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePlanId } from "@/types";
-import { consumeAiCoachUse } from "@/lib/aiCoachUsage";
 
 /**
  * Server-side proof verification powered by OpenAI Vision.
  * The in-app proof flow (`/goals/submit`) and the optional AI widget POST here
  * with `{ imageBase64, goalTitle, goalDescription?, proofRequirement? }`.
- * Response shape: `{ verified: boolean, feedback: string, aiCoach?: {...} }`.
+ * Response shape: `{ verified: boolean, feedback: string }`.
  *
- * Each call consumes one AI Coach use (weekly UTC quota by plan).
+ * Feedback is shown in the Goal Garden as a Gardener's Note (24h).
+ * This endpoint does NOT consume AI Coach weekly quota — that is `/api/ai-coach` only.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -41,52 +41,17 @@ export async function POST(request: NextRequest) {
     const { data: auth } = supabase
       ? await supabase.auth.getUser()
       : { data: { user: null } };
-
-    let plan = normalizePlanId(undefined);
-    let strictMode = false;
-    let aiCoachMeta:
-      | { used: number; remaining: number; limit: number; weekKey: string; timezone: "UTC" }
-      | undefined;
-
-    if (auth.user && supabase) {
-      const profile = await supabase
-        .from("profiles")
-        .select("plan, strict_ai_verification")
-        .eq("id", auth.user.id)
-        .maybeSingle();
-      plan = normalizePlanId(profile?.data?.plan);
-      strictMode =
-        (plan === "pro" || plan === "premium") &&
-        profile?.data?.strict_ai_verification === true;
-
-      const consume = await consumeAiCoachUse(supabase, auth.user.id, plan);
-      if (!consume.ok && consume.reason === "limit_reached") {
-        return NextResponse.json(
-          {
-            verified: false,
-            feedback: consume.message,
-            code: "AI_COACH_LIMIT",
-            aiCoach: {
-              used: consume.used,
-              remaining: consume.remaining,
-              limit: consume.limit,
-              weekKey: consume.weekKey,
-              timezone: "UTC" as const,
-            },
-          },
-          { status: 429 }
-        );
-      }
-      if (consume.ok) {
-        aiCoachMeta = {
-          used: consume.used,
-          remaining: consume.remaining,
-          limit: consume.limit,
-          weekKey: consume.weekKey,
-          timezone: "UTC",
-        };
-      }
-    }
+    const profile = auth.user && supabase
+      ? await supabase
+          .from("profiles")
+          .select("plan, strict_ai_verification")
+          .eq("id", auth.user.id)
+          .maybeSingle()
+      : null;
+    const plan = normalizePlanId(profile?.data?.plan);
+    const strictMode =
+      (plan === "pro" || plan === "premium") &&
+      profile?.data?.strict_ai_verification === true;
 
     // 1. Optional custom AI relay (kept for integrations).
     if (customUrl) {
@@ -97,7 +62,7 @@ export async function POST(request: NextRequest) {
         goalDescription ?? "",
         proofRequirement ?? ""
       );
-      return NextResponse.json({ ...result, aiCoach: aiCoachMeta });
+      return NextResponse.json(result);
     }
 
     // 2. Primary path: OpenAI GPT-4o-mini Vision.
@@ -110,7 +75,7 @@ export async function POST(request: NextRequest) {
         proofRequirement ?? "",
         { plan, strictMode }
       );
-      return NextResponse.json({ ...result, aiCoach: aiCoachMeta });
+      return NextResponse.json(result);
     }
 
     // 3. No key configured — fail closed with a clear message instead of fake verdicts.
@@ -119,7 +84,6 @@ export async function POST(request: NextRequest) {
         verified: false,
         feedback:
           "AI verification is not configured. Set OPENAI_API_KEY in the server environment.",
-        aiCoach: aiCoachMeta,
       },
       { status: 503 }
     );

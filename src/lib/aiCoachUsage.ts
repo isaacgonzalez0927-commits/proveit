@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PlanId, User } from "@/types";
-import { getAiVerificationLimit } from "@/lib/subscriptionLimits";
+import { getAiCoachLimit } from "@/lib/subscriptionLimits";
 
 /**
  * AI Coach weekly usage window: **UTC weeks**, Monday 00:00 UTC → Sunday 23:59:59 UTC.
@@ -30,7 +30,7 @@ export function getAiCoachRemaining(
   user: Pick<User, "plan" | "aiVerificationCycleKey" | "aiVerificationCount">,
   now: Date = new Date()
 ): number {
-  const limit = getAiVerificationLimit(user.plan);
+  const limit = getAiCoachLimit(user.plan);
   return Math.max(0, limit - effectiveAiCoachCount(user, now));
 }
 
@@ -45,7 +45,7 @@ export function aiCoachUsageSummary(
   timezone: typeof AI_COACH_WEEK_TZ;
 } {
   const weekKey = aiCoachUtcWeekKey(now);
-  const limit = getAiVerificationLimit(user.plan);
+  const limit = getAiCoachLimit(user.plan);
   const used = effectiveAiCoachCount(user, now);
   return {
     limit,
@@ -85,7 +85,7 @@ export async function consumeAiCoachUse(
   now: Date = new Date()
 ): Promise<ConsumeAiCoachResult> {
   const weekKey = aiCoachUtcWeekKey(now);
-  const limit = getAiVerificationLimit(plan);
+  const limit = getAiCoachLimit(plan);
 
   const { data, error } = await supabase
     .from("profiles")

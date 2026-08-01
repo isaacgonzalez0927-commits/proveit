@@ -28,19 +28,13 @@ import { generateId } from "@/lib/store";
 import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
 import type { VerificationResult } from "@/components/AIVerificationWidget";
-import { getAiCoachRemaining, aiCoachUsageSummary } from "@/lib/aiCoachUsage";
 
 async function verifyWithOpenAI(args: {
   imageDataUrl: string;
   goalTitle: string;
   goalDescription?: string;
   proofRequirement?: string;
-}): Promise<{
-  verified: boolean;
-  feedback: string;
-  aiCoach?: { used: number; remaining: number; limit: number; weekKey: string };
-  limitReached?: boolean;
-}> {
+}): Promise<{ verified: boolean; feedback: string }> {
   const base64 = args.imageDataUrl.includes(",")
     ? args.imageDataUrl.split(",")[1]
     : args.imageDataUrl;
@@ -55,26 +49,11 @@ async function verifyWithOpenAI(args: {
       proofRequirement: args.proofRequirement ?? "",
     }),
   });
-  let data: {
-    verified?: boolean;
-    feedback?: string;
-    code?: string;
-    aiCoach?: { used: number; remaining: number; limit: number; weekKey: string };
-  } = {};
+  let data: { verified?: boolean; feedback?: string } = {};
   try {
-    data = (await res.json()) as typeof data;
+    data = (await res.json()) as { verified?: boolean; feedback?: string };
   } catch {
     /* keep defaults */
-  }
-  if (res.status === 429 || data.code === "AI_COACH_LIMIT") {
-    return {
-      verified: false,
-      feedback:
-        data.feedback ??
-        "AI Coach weekly limit reached. Upgrade or wait until Monday 00:00 UTC.",
-      aiCoach: data.aiCoach,
-      limitReached: true,
-    };
   }
   if (!res.ok && !data.feedback) {
     return {
@@ -83,13 +62,11 @@ async function verifyWithOpenAI(args: {
         res.status === 503
           ? "AI verification isn't configured yet. Add an OpenAI key on the server."
           : "Verification service is unavailable. Try again in a moment.",
-      aiCoach: data.aiCoach,
     };
   }
   return {
     verified: Boolean(data.verified),
     feedback: data.feedback ?? (data.verified ? "Verified." : "Not verified."),
-    aiCoach: data.aiCoach,
   };
 }
 
@@ -138,11 +115,6 @@ function SubmitProofContent() {
   const [localUser, setLocalUser] = useState<StoredUser | null>(null);
   const [localGoal, setLocalGoal] = useState<Goal | null>(null);
   const [pageLoading, setPageLoading] = useState(false);
-  const [coachUsage, setCoachUsage] = useState<{
-    used: number;
-    remaining: number;
-    limit: number;
-  } | null>(null);
   /** Avoid full-page loading flashes when context refetches goals/user mid proof (same as sticky session in AppContext). */
   const stickyUserRef = useRef<StoredUser | null>(null);
   const stickyGoalRef = useRef<Goal | null>(null);
@@ -657,19 +629,6 @@ function SubmitProofContent() {
           goalDescription: goal.description,
           proofRequirement: goal.proofRequirement,
         });
-        if (result.aiCoach) {
-          setCoachUsage({
-            used: result.aiCoach.used,
-            remaining: result.aiCoach.remaining,
-            limit: result.aiCoach.limit,
-          });
-        }
-        if (result.limitReached) {
-          setVerified(false);
-          setResultSummary(result.feedback);
-          setStep("result");
-          return;
-        }
         await persistCompressedProof(compressed, result.feedback, result.verified);
       } catch {
         try {
@@ -845,15 +804,6 @@ function SubmitProofContent() {
     (deferCameraAutostart || resumeAfterProofGate);
 
   const hideMainForProofFlow = step === "uploading" || step === "result";
-  const coachSummary = coachUsage
-    ? coachUsage
-    : user
-      ? {
-          used: aiCoachUsageSummary(user).used,
-          remaining: getAiCoachRemaining(user),
-          limit: aiCoachUsageSummary(user).limit,
-        }
-      : null;
 
   return (
     <>
@@ -929,13 +879,6 @@ function SubmitProofContent() {
                   </div>
                 )}
               </>
-            ) : coachSummary && coachSummary.remaining <= 0 ? (
-              <>
-                <XCircle className="mx-auto h-14 w-14 text-amber-500" />
-                <p className="mt-3 text-sm font-bold text-amber-900 dark:text-amber-200">
-                  AI Coach weekly limit reached
-                </p>
-              </>
             ) : (
               <>
                 <XCircle className="mx-auto h-14 w-14 text-red-600 dark:text-red-400" />
@@ -959,21 +902,12 @@ function SubmitProofContent() {
               </>
             )}
             <h2 className="mt-5 font-display text-2xl font-bold text-slate-900 dark:text-white">
-              {verified
-                ? "Proof counted in your garden"
-                : coachSummary && coachSummary.remaining <= 0
-                  ? "Come back next week"
-                  : "Try another photo"}
+              {verified ? "Proof counted in your garden" : "Try another photo"}
             </h2>
             {resultSummary ? (
               <p className="mt-4 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
                 {resultSummary}
               </p>
-            ) : null}
-            {!verified && coachSummary && coachSummary.remaining <= 0 ? (
-              <Link href="/pricing" className="cta-chunky mt-5 w-full">
-                Upgrade for more AI Coach uses
-              </Link>
             ) : null}
             {verified && resultSummary ? (
               <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-300">
@@ -1048,11 +982,6 @@ function SubmitProofContent() {
               Snap a photo that matches your goal — when AI verifies it, your plant gets watered in
               the garden. One check-in per calendar day (Sun–Sat week for weekly targets).
             </p>
-            {coachSummary ? (
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full border-2 border-prove-400/70 bg-prove-50 px-3 py-1.5 text-xs font-black text-prove-900 dark:border-prove-600 dark:bg-prove-950/50 dark:text-prove-200">
-                AI Coach · {coachSummary.remaining}/{coachSummary.limit} left this week (UTC)
-              </div>
-            ) : null}
             <div className="mt-6 rounded-2xl p-4 glass-card">
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI verifier (optional)</p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">

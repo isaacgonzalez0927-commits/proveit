@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Camera,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
@@ -251,6 +252,25 @@ function DashboardContent() {
             Prove what&apos;s due — keep your streak and garden growing.
           </p>
         </div>
+
+        <section className="mb-5 rounded-2xl border-2 border-prove-400/40 bg-prove-50/80 p-4 dark:border-prove-700/50 dark:bg-prove-950/35">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="inline-flex items-center gap-1.5 font-display text-lg font-semibold text-slate-900 dark:text-white">
+                <Sparkles className="h-4 w-4 text-prove-600 dark:text-prove-400" />
+                AI Coach
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                Habit coaching (Pro 5 / Premium 20 per UTC week). Separate from Gardener&apos;s Notes on
+                your plants.
+              </p>
+            </div>
+            <Link href="/coach" className="cta-chunky shrink-0">
+              Open AI Coach
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
 
         <section className="rounded-2xl border border-emerald-200/70 p-4 dark:border-emerald-800/45 glass-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

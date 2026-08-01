@@ -43,6 +43,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/buddy-connect")) return "Connect";
   if (pathname.startsWith("/join")) return "Join goal";
   if (pathname.startsWith("/pricing")) return "Pricing";
+  if (pathname.startsWith("/coach")) return "AI Coach";
   if (pathname.startsWith("/privacy")) return "Privacy";
   if (pathname.startsWith("/terms")) return "Terms";
   if (pathname.startsWith("/support")) return "Support";

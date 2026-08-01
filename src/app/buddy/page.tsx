@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Plus, Pencil, Save, Trash2, X, Pause, Play, Lock } from "lucide-react";
+import { Plus, Pencil, Save, Trash2, X, Pause, Play, Lock, Sparkles } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BuddySkeleton } from "@/components/BuddySkeleton";
 import {
@@ -720,8 +720,16 @@ export default function BuddyPage() {
             Goal Garden
           </h1>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 sm:text-sm">
-            Grow what you prove — verified photos water your plants each week.
+            Grow what you prove — verified photos water your plants each week. Passed proofs leave a
+            Gardener&apos;s Note on the plant (24h).
           </p>
+          <Link
+            href="/coach"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-prove-700 hover:underline dark:text-prove-300"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Need a plan? Open AI Coach
+          </Link>
           <GardenHeaderSummary
             counts={gardenSummary}
             onScrollToNeedsWater={scrollToNeedsWater}

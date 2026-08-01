@@ -68,7 +68,8 @@ function PricingContent() {
               Level up your grind
             </h1>
             <p className="mt-2 text-sm font-medium text-white/75">
-              Chunkier goals, more AI Coach uses, and themes that match the navy + lime vibe.
+              Chunkier goals, a real AI Coach (Pro/Premium), unlimited Gardener&apos;s Notes from
+              proof, and themes that match the navy + lime vibe.
             </p>
           </div>
         </section>
