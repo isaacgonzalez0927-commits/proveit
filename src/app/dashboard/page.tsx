@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Camera,
   ChevronDown,
-  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 import { useApp } from "@/context/AppContext";
@@ -244,49 +243,74 @@ function DashboardContent() {
           </div>
         )}
         <PlanDowngradeReview />
-        <div className="mb-5">
-          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-            Today&apos;s path
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Prove what&apos;s due — keep your streak and garden growing.
-          </p>
-        </div>
 
-        <section className="mb-5 rounded-2xl border-2 border-prove-400/40 bg-prove-50/80 p-4 dark:border-prove-700/50 dark:bg-prove-950/35">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="inline-flex items-center gap-1.5 font-display text-lg font-semibold text-slate-900 dark:text-white">
-                <Sparkles className="h-4 w-4 text-prove-600 dark:text-prove-400" />
-                AI Coach
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                Habit coaching (Pro 5 / Premium 20 per UTC week). Separate from Gardener&apos;s Notes on
-                your plants.
+        {/* Cal AI–style hero metrics */}
+        <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.05)] dark:bg-neutral-900">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
+                Today
               </p>
+              <p className="mt-1 font-display text-[2.5rem] font-bold leading-none tracking-tight text-neutral-950 dark:text-white">
+                {displayGoalsDoneToday}
+                <span className="text-neutral-300 dark:text-neutral-600">/{displayTotalDueToday || 0}</span>
+              </p>
+              <p className="mt-1.5 text-sm font-medium text-neutral-500">Proofs completed</p>
             </div>
-            <Link href="/coach" className="cta-chunky shrink-0">
-              Open AI Coach
-              <ChevronRight className="h-4 w-4" />
-            </Link>
+            <div
+              className="lesson-progress-ring !h-[5.5rem] !w-[5.5rem] shrink-0"
+              style={{
+                ["--lesson-pct" as string]:
+                  displayTotalDueToday > 0
+                    ? Math.round((displayGoalsDoneToday / displayTotalDueToday) * 100)
+                    : 0,
+              }}
+              aria-hidden
+            />
           </div>
-        </section>
-
-        <section className="rounded-2xl border border-emerald-200/70 p-4 dark:border-emerald-800/45 glass-card">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
-                Garden snapshot
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                All your plants together, growing goal by goal.
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-neutral-50 px-3.5 py-3 dark:bg-neutral-800/80">
+              <div className="flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5 text-orange-500" />
+                <span className="text-[11px] font-semibold text-neutral-500">Streak</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight text-neutral-950 dark:text-white">
+                {displayMaxStreak}
+                <span className="ml-1 text-sm font-semibold text-neutral-400">
+                  {displayMaxStreak === 1 ? streakUnit : `${streakUnit}s`}
+                </span>
               </p>
             </div>
             <Link
               href="/buddy"
               data-tour="garden-tab"
-              className="cta-chunky shrink-0 !bg-emerald-600 !shadow-[0_4px_0_#065f46] hover:!brightness-105 dark:!bg-emerald-500"
+              className="rounded-2xl bg-neutral-50 px-3.5 py-3 transition hover:bg-neutral-100 dark:bg-neutral-800/80 dark:hover:bg-neutral-800"
             >
+              <div className="flex items-center gap-1.5">
+                <Target className="h-3.5 w-3.5 text-neutral-500" />
+                <span className="text-[11px] font-semibold text-neutral-500">Garden</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight text-neutral-950 dark:text-white">
+                {goals.length}
+                <span className="ml-1 text-sm font-semibold text-neutral-400">
+                  plant{goals.length === 1 ? "" : "s"}
+                </span>
+              </p>
+            </Link>
+          </div>
+        </section>
+
+        <section className="rounded-[1.35rem] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.05)] dark:bg-neutral-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-display text-lg font-bold text-neutral-950 dark:text-white">
+                Garden snapshot
+              </h2>
+              <p className="text-xs text-neutral-500">
+                All your plants together, growing goal by goal.
+              </p>
+            </div>
+            <Link href="/buddy" data-tour="garden-tab" className="cta-chunky shrink-0">
               Open Garden
               <ChevronRight className="h-4 w-4" />
             </Link>
@@ -296,7 +320,7 @@ function DashboardContent() {
             className="mt-3"
             highlightGoalId={wateredFlashGoalId}
           />
-          <p className="mt-3 text-xs text-emerald-800 dark:text-emerald-200">
+          <p className="mt-3 text-xs text-neutral-500">
             {goals.length === 0 ? (
               "Add goals in the Garden to start tracking streaks and watering."
             ) : displayTotalDueToday === 0 ? (
@@ -488,7 +512,7 @@ function DashboardContent() {
             </div>
             <Link
               href="/buddy"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-prove-500 bg-prove-50 px-4 py-2.5 text-sm font-bold text-prove-700 hover:bg-prove-100 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-300 dark:hover:bg-prove-900/50 btn-glass-outline"
+              className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
             >
               Manage in Garden
               <ChevronRight className="h-4 w-4" />

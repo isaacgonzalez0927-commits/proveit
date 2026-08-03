@@ -14,13 +14,13 @@ interface UpgradePromptModalProps {
 const PRO_PERKS = [
   "5 goals & Goal Gallery",
   "6 plant styles & 6 accent themes",
-  "5 AI Coach uses/week (UTC) + unlimited Gardener's Notes",
+  "Unlimited photo verification & Gardener's Notes",
 ];
 
 const PREMIUM_PERKS = [
   "Unlimited goals & all 8 plant styles",
-  "20 AI Coach uses/week (UTC) + weekly proof collages",
-  "All 10 themes, 1 Shield per cycle & Premium badges",
+  "Weekly proof collages & sharing",
+  "All themes, 1 Shield per cycle & Premium badges",
 ];
 
 function ProUpgradeCard({

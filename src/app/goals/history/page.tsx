@@ -173,68 +173,57 @@ function GalleryContent() {
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6 pb-[max(6.5rem,env(safe-area-inset-bottom))] sm:py-8">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Images className="h-7 w-7 text-prove-600 dark:text-prove-400" />
-              Goal gallery
+            <h1 className="font-display text-2xl font-bold tracking-tight text-neutral-950 dark:text-white">
+              Progress
             </h1>
+            <p className="mt-1 text-sm text-neutral-500">Your proofs, streaks, and gallery</p>
           </div>
           {isPro && (
             <Link
               href="/friends#achievements"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-soft transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
             >
-              <Award className="h-4 w-4 text-prove-600 dark:text-prove-400" />
+              <Award className="h-4 w-4" />
               Achievements
             </Link>
           )}
         </div>
 
         {!isPro ? (
-          <div className="relative overflow-hidden rounded-2xl border border-emerald-200/85 bg-gradient-to-br from-emerald-50/95 via-white to-prove-50/75 p-6 dark:border-emerald-800/45 dark:from-emerald-950/40 dark:via-slate-900 dark:to-prove-950/25 sm:p-8">
-            <div
-              className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-200/45 blur-3xl dark:bg-emerald-800/25"
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-prove-200/40 blur-2xl dark:bg-prove-800/20"
-              aria-hidden
-            />
+          <div className="relative overflow-hidden rounded-[1.35rem] border border-neutral-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.05)] dark:border-neutral-800 dark:bg-neutral-900 sm:p-8">
             <div className="relative text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-prove-500 to-emerald-500 shadow-lg shadow-prove-600/25">
-                <Images className="h-8 w-8 text-white" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-950 shadow-lg dark:bg-white">
+                <Images className="h-8 w-8 text-white dark:text-neutral-950" />
               </div>
-              <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+              <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
                 <Lock className="h-3 w-3" />
                 Pro & Premium
               </span>
-              <h2 className="mt-4 font-display text-xl font-bold text-slate-900 dark:text-white">
+              <h2 className="mt-4 font-display text-xl font-bold text-neutral-950 dark:text-white">
                 Your proof gallery is waiting
               </h2>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-neutral-500">
                 Every verified photo, streak timeline, and week-by-week win — all in one place when you upgrade.
               </p>
-              <ul className="mx-auto mt-5 max-w-xs space-y-2 text-left text-sm text-slate-700 dark:text-slate-300">
+              <ul className="mx-auto mt-5 max-w-xs space-y-2 text-left text-sm text-neutral-700 dark:text-neutral-300">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-neutral-950 dark:text-white" />
                   Browse proof photos by goal
                 </li>
                 <li className="flex items-start gap-2">
-                  <Flame className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                  <Flame className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
                   Streak timelines & calendar view
                 </li>
                 <li className="flex items-start gap-2">
-                  <Award className="mt-0.5 h-4 w-4 shrink-0 text-prove-500" />
+                  <Award className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
                   Achievements tied to your gallery
                 </li>
               </ul>
-              <Link
-                href="/pricing"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-prove-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-prove-600/20 transition hover:from-prove-700 hover:to-emerald-700 btn-glass-primary"
-              >
+              <Link href="/pricing" className="cta-chunky mt-6 inline-flex">
                 Unlock with Pro
                 <ChevronRight className="h-4 w-4" />
               </Link>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-500">
+              <p className="mt-3 text-xs text-neutral-400">
                 Free plan still includes dashboard, plants, and weekly growth.
               </p>
             </div>

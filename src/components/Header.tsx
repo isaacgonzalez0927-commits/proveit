@@ -4,15 +4,17 @@ import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  CreditCard,
-  Images,
+  Home,
   LogOut,
   ChevronDown,
   Sprout,
   UserCircle2,
   SlidersHorizontal,
   Users,
+  Settings,
+  Plus,
+  Images,
+  CreditCard,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useHideHeader } from "@/context/HideHeaderContext";
@@ -21,20 +23,19 @@ import { ThemeToggle } from "./ThemeToggle";
 import { StatusStrip } from "./StatusStrip";
 import { TOUR_CHANGED_EVENT, TOUR_SPOTLIGHT_KEY } from "@/lib/tourStorage";
 
-/** `label` = accessibility & tooltips; `tabLabel` = short text for the bottom bar on small screens. */
+/** Cal AI–style tabs: Home / Garden / Settings + floating prove action */
 const APP_TABS = [
-  { href: "/dashboard", label: "Home", tabLabel: "Home", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Home", tabLabel: "Home", icon: Home },
   { href: "/buddy", label: "Goal Garden", tabLabel: "Garden", icon: Sprout },
-  { href: "/goals/history", label: "Gallery", tabLabel: "Gallery", icon: Images },
-  { href: "/pricing", label: "Plan", tabLabel: "Plan", icon: CreditCard },
+  { href: "/settings", label: "Settings", tabLabel: "Settings", icon: Settings },
 ] as const;
 
 function getPageTitle(pathname: string): string {
-  if (pathname.startsWith("/dashboard")) return "Dashboard";
-  if (pathname.startsWith("/buddy")) return "Goal Garden";
-  if (pathname.startsWith("/goals/history")) return "Gallery";
+  if (pathname.startsWith("/dashboard")) return "Home";
+  if (pathname.startsWith("/buddy")) return "Garden";
+  if (pathname.startsWith("/goals/history")) return "Progress";
   if (pathname.startsWith("/goals/submit")) return "Prove It";
-  if (pathname.startsWith("/goals")) return "Goal Garden";
+  if (pathname.startsWith("/goals")) return "Garden";
   if (pathname.startsWith("/achievements")) return "Buddies";
   if (pathname.startsWith("/settings/change-email")) return "Change email";
   if (pathname.startsWith("/settings")) return "Settings";
@@ -43,7 +44,6 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/buddy-connect")) return "Connect";
   if (pathname.startsWith("/join")) return "Join goal";
   if (pathname.startsWith("/pricing")) return "Pricing";
-  if (pathname.startsWith("/coach")) return "AI Coach";
   if (pathname.startsWith("/privacy")) return "Privacy";
   if (pathname.startsWith("/terms")) return "Terms";
   if (pathname.startsWith("/support")) return "Support";
@@ -54,8 +54,7 @@ function getPageTitle(pathname: string): string {
 function isTabActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard";
   if (href === "/buddy") return pathname.startsWith("/buddy");
-  if (href === "/goals/history") return pathname.startsWith("/goals/history");
-  if (href === "/pricing") return pathname.startsWith("/pricing");
+  if (href === "/settings") return pathname.startsWith("/settings");
   return pathname === href;
 }
 
@@ -110,26 +109,21 @@ export function Header() {
     <>
       <header
         className={clsx(
-          "sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] shadow-soft dark:shadow-none glass-surface",
-          isSettingsPage
-            ? "border-slate-200/50 dark:border-white/[0.06] dark:bg-gradient-to-b dark:from-[#0a2e2a]/90 dark:via-[#061527]/95 dark:to-[#061527]"
-            : "border-slate-200/60 dark:border-slate-800/50"
+          "sticky top-0 z-40 border-b border-black/[0.06] pt-[env(safe-area-inset-top)] bg-white/90 backdrop-blur-xl dark:border-white/[0.08] dark:bg-neutral-950/90",
+          isSettingsPage && "dark:bg-neutral-950/95"
         )}
       >
         <div className="mx-auto flex h-[3.25rem] max-w-2xl items-center justify-between gap-3 px-4 sm:h-[3.5rem] sm:px-6">
           <div className="min-w-0">
             <Link
               href="/dashboard"
-              className="truncate rounded-md font-display text-lg font-bold tracking-tight text-prove-600 transition-opacity hover:opacity-90 dark:text-prove-300"
+              className="truncate rounded-md font-display text-lg font-bold tracking-tight text-neutral-950 transition-opacity hover:opacity-80 dark:text-white"
             >
               Proveit
             </Link>
             <p
               className={clsx(
-                "truncate text-[10px] font-semibold uppercase tracking-[0.2em]",
-                isSettingsPage
-                  ? "text-slate-500 dark:text-white/50"
-                  : "text-slate-500 dark:text-slate-400"
+                "truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500"
               )}
             >
               {pageTitle}
@@ -142,7 +136,7 @@ export function Header() {
                 e.stopPropagation();
                 setAccountOpen((o) => !o);
               }}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-slate-200/80 px-3 text-sm text-slate-600 shadow-soft transition hover:border-slate-300/90 hover:opacity-95 dark:border-slate-600/60 dark:text-slate-300 dark:hover:border-slate-500/60 glass-surface"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-black/[0.06] bg-neutral-50 px-3 text-sm text-neutral-600 transition hover:bg-neutral-100 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
               aria-expanded={accountOpen}
               aria-haspopup="true"
               aria-label="Account menu"
@@ -152,22 +146,22 @@ export function Header() {
             </button>
             {accountOpen && (
               <div
-                className="motion-dropdown absolute right-0 top-full z-[100] mt-2 min-w-[200px] origin-top-right rounded-2xl py-2 shadow-soft-lg glass-dropdown"
+                className="motion-dropdown absolute right-0 top-full z-[100] mt-2 min-w-[200px] origin-top-right rounded-2xl border border-black/[0.06] bg-white py-2 shadow-soft-lg dark:border-white/10 dark:bg-neutral-900"
                 role="menu"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="motion-stagger-grid">
                   <div className="flex items-center justify-between gap-3 px-3 py-2" role="none">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Theme</span>
+                    <span className="text-xs font-medium text-neutral-500">Theme</span>
                     <div onClick={(e) => e.stopPropagation()}>
                       <ThemeToggle />
                     </div>
                   </div>
-                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" role="separator" />
+                  <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" role="separator" />
                   <Link
                     href="/settings"
                     onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     role="menuitem"
                     aria-label="Open settings"
                   >
@@ -175,18 +169,36 @@ export function Header() {
                     Settings
                   </Link>
                   <Link
-                    href="/friends"
+                    href="/goals/history"
                     onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     role="menuitem"
                   >
-                    <Users className="h-4 w-4 shrink-0 text-prove-500" />
+                    <Images className="h-4 w-4 shrink-0" />
+                    Progress
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                    role="menuitem"
+                  >
+                    <CreditCard className="h-4 w-4 shrink-0" />
+                    Plans
+                  </Link>
+                  <Link
+                    href="/friends"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
+                    role="menuitem"
+                  >
+                    <Users className="h-4 w-4 shrink-0" />
                     Buddies
                   </Link>
                   <Link
                     href="/privacy"
                     onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     role="menuitem"
                   >
                     Privacy Policy
@@ -194,7 +206,7 @@ export function Header() {
                   <Link
                     href="/terms"
                     onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     role="menuitem"
                   >
                     Terms of Use
@@ -202,7 +214,7 @@ export function Header() {
                   <Link
                     href="/support"
                     onClick={() => setAccountOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     role="menuitem"
                   >
                     Support
@@ -210,7 +222,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
                     role="menuitem"
                     aria-label="Sign out"
                   >
@@ -227,8 +239,15 @@ export function Header() {
 
       {showBottomTabs && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
-          <div className="mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <nav className="pointer-events-auto grid grid-cols-4 gap-0.5 rounded-2xl p-1 shadow-nav ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06] glass-nav">
+          <div className="relative mx-auto w-full max-w-2xl px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <Link
+              href="/goals/submit"
+              className="fab-prove pointer-events-auto absolute -top-16 right-5 z-10"
+              aria-label="Prove it — submit photo proof"
+            >
+              <Plus className="h-7 w-7" strokeWidth={2.5} />
+            </Link>
+            <nav className="pointer-events-auto grid grid-cols-3 gap-0.5 rounded-[1.35rem] border border-black/[0.06] bg-white/95 p-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-neutral-950/95">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);
@@ -242,15 +261,15 @@ export function Header() {
                     title={tab.label}
                     aria-label={tab.tabLabel === tab.label ? undefined : tab.label}
                     className={clsx(
-                      "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium leading-none tracking-tight transition-colors sm:min-h-[56px] sm:px-1 sm:text-[11px]",
+                      "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-[10px] font-semibold leading-none tracking-tight transition-colors sm:min-h-[52px] sm:px-1 sm:text-[11px]",
                       active
-                        ? "bg-prove-100/90 text-prove-800 dark:bg-prove-900/50 dark:text-prove-300 glass-outline-subtle"
-                        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                        ? "bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-200",
                       isGardenTab && spotlightGarden && "relative z-[100]"
                     )}
                     aria-current={active ? "page" : undefined}
                   >
-                    <Icon className="h-[18px] w-[18px] shrink-0 sm:h-4 sm:w-4" strokeWidth={active ? 2.25 : 2} />
+                    <Icon className="h-[20px] w-[20px] shrink-0 sm:h-[18px] sm:w-[18px]" strokeWidth={active ? 2.4 : 1.9} />
                     <span className="max-w-full truncate text-center">{tab.tabLabel}</span>
                   </Link>
                 );

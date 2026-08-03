@@ -56,7 +56,7 @@ export function IntroSplash() {
 
   const splash = (
     <div
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-gradient-to-b from-[#eef6e6] via-white to-prove-100/50 dark:from-[#050a18] dark:via-[#050a18] dark:to-[#0a1428] ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-gradient-to-b from-[#f5f5f7] via-white to-white dark:from-[#0a0a0a] dark:via-[#0a0a0a] dark:to-[#171717] ${
         phase === "exiting" ? "animate-intro-out" : ""
       }`}
       style={{
@@ -73,7 +73,7 @@ export function IntroSplash() {
       <div className="relative z-10 flex flex-col items-center gap-4">
         <div className="relative animate-intro-logo">
           <div
-            className="absolute inset-0 scale-150 rounded-full bg-prove-400/30 blur-2xl animate-intro-glow"
+            className="absolute inset-0 scale-150 rounded-full bg-neutral-300/40 blur-2xl animate-intro-glow dark:bg-white/10"
             aria-hidden
           />
           {/* Real brand mark — only allowed on splash + homescreen/PWA icons */}
@@ -87,7 +87,7 @@ export function IntroSplash() {
           />
         </div>
         <span
-          className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400 animate-intro-text"
+          className="font-display text-2xl font-bold tracking-tight text-neutral-950 dark:text-white animate-intro-text"
           aria-hidden
         >
           Proveit

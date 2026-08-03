@@ -2,48 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default to dark — .dark on html; light mode when user opts in
-   Brand way from logo: deep navy + neon lime sprout */
+/* Cal AI–inspired light iOS: white / soft gray + black type; lime as sparse accent */
 :root {
-  --prove-navy: #050a18;
-  --prove-navy-soft: #0a1428;
+  --prove-navy: #0a0a0a;
+  --prove-navy-soft: #171717;
   --prove-lime: #7cff01;
-  --prove-50-rgb: 236 255 214;
-  --prove-100-rgb: 210 255 150;
-  --prove-200-rgb: 180 255 80;
-  --prove-300-rgb: 150 255 40;
-  --prove-400-rgb: 130 255 10;
+  --prove-50-rgb: 245 245 245;
+  --prove-100-rgb: 232 232 232;
+  --prove-200-rgb: 212 212 212;
+  --prove-300-rgb: 163 163 163;
+  --prove-400-rgb: 115 115 115;
   --prove-500-rgb: 124 255 1;
   --prove-600-rgb: 100 214 0;
-  --prove-700-rgb: 78 168 0;
-  --prove-800-rgb: 58 122 0;
-  --prove-900-rgb: 40 84 0;
-  --prove-950-rgb: 18 42 0;
+  --prove-700-rgb: 64 64 64;
+  --prove-800-rgb: 38 38 38;
+  --prove-900-rgb: 23 23 23;
+  --prove-950-rgb: 10 10 10;
   --prove-green: rgb(var(--prove-600-rgb));
   --prove-dark: var(--prove-navy);
   --accent-coral: #ff6b6b;
   --accent-gold: #f59e0b;
   --accent-violet: #8b5cf6;
-  /* Lime theme (default) - Light mode */
-  --bg-app: #eef6e6;
+  /* Default light — clean iOS */
+  --bg-app: #f5f5f7;
   --bg-card: #ffffff;
-  --text-primary: #050a18;
-  --text-muted: #3f5a2a;
-  --border: #cfe6b0;
-  --gradient-1: rgba(124, 255, 1, 0.22);
-  --gradient-2: rgba(100, 214, 0, 0.14);
+  --text-primary: #0a0a0a;
+  --text-muted: #737373;
+  --border: #ebebeb;
+  --gradient-1: rgba(0, 0, 0, 0.02);
+  --gradient-2: rgba(124, 255, 1, 0.06);
   color-scheme: light;
 }
 
-/* Lime theme - Dark mode (logo navy + neon lime) */
+/* Optional dark — still restrained, not navy mesh */
 .dark {
-  --bg-app: #050a18;
-  --bg-card: rgba(10, 20, 40, 0.92);
-  --text-primary: #f4ffe8;
-  --text-muted: #9fb88a;
-  --border: rgba(124, 255, 1, 0.22);
-  --gradient-1: rgba(124, 255, 1, 0.14);
-  --gradient-2: rgba(100, 214, 0, 0.08);
+  --bg-app: #0a0a0a;
+  --bg-card: #171717;
+  --text-primary: #fafafa;
+  --text-muted: #a3a3a3;
+  --border: rgba(255, 255, 255, 0.1);
+  --gradient-1: rgba(255, 255, 255, 0.03);
+  --gradient-2: rgba(124, 255, 1, 0.06);
   color-scheme: dark;
 }
 
@@ -512,13 +511,7 @@ html {
 }
 
 body {
-  /* Background soul: soft mesh so frosted layers read like iOS materials */
-  background:
-    radial-gradient(1000px 1000px at 90% 0%, var(--gradient-1), transparent 50%),
-    radial-gradient(900px 900px at 0% 100%, var(--gradient-2), transparent 50%),
-    radial-gradient(1400px 700px at 80% -10%, var(--gradient-1), transparent 55%),
-    radial-gradient(1200px 600px at 0% 0%, var(--gradient-2), transparent 60%),
-    var(--bg-app);
+  background: var(--bg-app);
   position: relative;
   color: var(--text-primary);
   font-family: var(--font-dm-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
@@ -529,17 +522,11 @@ body {
   overflow-x: clip;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.015em;
 }
 
-/* Light mode: soft lime-to-white mesh (Duolingo energy, logo lime) */
 html:not(.dark) body {
-  background:
-    radial-gradient(1000px 1000px at 90% 0%, var(--gradient-1), transparent 50%),
-    radial-gradient(900px 900px at 0% 100%, var(--gradient-2), transparent 50%),
-    radial-gradient(1400px 700px at 80% -10%, var(--gradient-1), transparent 55%),
-    radial-gradient(1200px 600px at 0% 0%, var(--gradient-2), transparent 60%),
-    linear-gradient(165deg, #e6f8d4 0%, #f2fae8 35%, #ffffff 100%);
+  background: #f5f5f7;
 }
 
 @layer utilities {
@@ -826,32 +813,31 @@ html:not(.dark) body {
   }
 }
 
-/* Light mode: softer frost (less “heavy” glass than dark) */
+/* Light mode: solid soft cards (Cal AI), not frosted mesh */
 html:not(.dark) .glass-panel,
 html:not(.dark) .glass-surface {
-  backdrop-filter: blur(8px) saturate(1.02);
-  -webkit-backdrop-filter: blur(8px) saturate(1.02);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 html:not(.dark) .glass-nav {
-  --nav-glass-bg: rgba(255, 255, 255, 0.72);
-  --nav-glass-br: linear-gradient(318deg, rgba(255, 255, 255, 0.2) 0%, transparent 58%);
-  --nav-glass-tl: linear-gradient(138deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.06) 28%, transparent 56%);
-  background: var(--nav-glass-br), var(--nav-glass-tl), var(--nav-glass-bg);
-  backdrop-filter: blur(10px) saturate(1.05);
-  -webkit-backdrop-filter: blur(10px) saturate(1.05);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.32), inset 0 -1px 0 0 rgba(15, 23, 42, 0.04);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.08);
 }
 
 html:not(.dark) .glass-card {
-  --card-glass-bg: rgba(255, 255, 255, 0.72);
-  --card-glass-br: linear-gradient(318deg, rgba(255, 255, 255, 0.14) 0%, transparent 62%);
-  --card-glass-tl: linear-gradient(138deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 34%, transparent 60%);
-  background: var(--card-glass-br), var(--card-glass-tl), var(--card-glass-bg);
-  border-color: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(10px) saturate(1.04);
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 0 rgba(15, 23, 42, 0.03);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.05);
+  border-radius: 1.25rem;
 }
 
 html:not(.dark) .glass-dropdown {
@@ -1356,26 +1342,25 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   flex-direction: column;
   gap: 0.75rem;
   border-radius: 1.25rem;
-  padding: 1rem 1.1rem;
-  border: 2px solid color-mix(in srgb, rgb(var(--prove-200-rgb)) 70%, var(--border));
+  padding: 1.1rem 1.15rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background: var(--bg-card);
-  box-shadow: 0 4px 0 color-mix(in srgb, rgb(var(--prove-600-rgb)) 18%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.05);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 .dark .lesson-tile {
-  border-color: color-mix(in srgb, rgb(var(--prove-700-rgb)) 55%, var(--border));
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 .lesson-tile:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 color-mix(in srgb, rgb(var(--prove-600-rgb)) 18%, transparent);
+  transform: scale(0.99);
 }
 .lesson-tile-done {
-  border-color: color-mix(in srgb, rgb(var(--prove-400-rgb)) 80%, var(--border));
-  background: color-mix(in srgb, rgb(var(--prove-50-rgb)) 65%, var(--bg-card));
+  border-color: rgba(124, 255, 1, 0.35);
+  background: color-mix(in srgb, rgb(124 255 1) 6%, var(--bg-card));
 }
 .dark .lesson-tile-done {
-  background: color-mix(in srgb, rgb(var(--prove-950-rgb)) 55%, var(--bg-card));
+  background: color-mix(in srgb, rgb(124 255 1) 8%, var(--bg-card));
 }
 
 .lesson-progress-ring {
@@ -1384,12 +1369,18 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   height: 2.75rem;
   border-radius: 9999px;
   background: conic-gradient(
-    rgb(var(--prove-500-rgb)) calc(var(--lesson-pct) * 1%),
-    color-mix(in srgb, rgb(var(--prove-200-rgb)) 70%, transparent) 0
+    #0a0a0a calc(var(--lesson-pct) * 1%),
+    #e5e5e5 0
   );
   display: grid;
   place-items: center;
   flex-shrink: 0;
+}
+.dark .lesson-progress-ring {
+  background: conic-gradient(
+    #fafafa calc(var(--lesson-pct) * 1%),
+    #404040 0
+  );
 }
 .lesson-progress-ring::after {
   content: "";
@@ -1402,43 +1393,68 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   background: color-mix(in srgb, var(--bg-card) 100%, #0f172a);
 }
 
+/* Primary CTA — black pill (Cal AI style); lime reserved for rings/accents */
 .cta-chunky {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 3rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 1.15rem;
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: -0.015em;
+  min-height: 2.85rem;
+  padding: 0.7rem 1.35rem;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   text-transform: none;
-  color: #050a18;
-  background: rgb(var(--prove-500-rgb));
-  box-shadow: 0 5px 0 rgb(var(--prove-800-rgb));
+  color: #ffffff;
+  background: #0a0a0a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 .cta-chunky:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.08);
 }
 .cta-chunky:active {
-  transform: translateY(4px);
-  box-shadow: 0 1px 0 rgb(var(--prove-800-rgb));
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+.dark .cta-chunky {
+  color: #0a0a0a;
+  background: #fafafa;
 }
 
 .duo-card {
   border-radius: 1.35rem;
-  border: 2.5px solid color-mix(in srgb, rgb(var(--prove-400-rgb)) 55%, var(--border));
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background: var(--bg-card);
-  box-shadow: 0 5px 0 color-mix(in srgb, rgb(var(--prove-700-rgb)) 35%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
 .paywall-hero {
-  background:
-    radial-gradient(700px 420px at 80% -10%, rgba(124, 255, 1, 0.22), transparent 60%),
-    radial-gradient(560px 360px at 10% 110%, rgba(124, 255, 1, 0.12), transparent 55%),
-    linear-gradient(180deg, #071022 0%, #050a18 55%, #0a1428 100%);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+/* Floating prove action — Cal AI + button */
+.fab-prove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  background: #0a0a0a;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.fab-prove:active {
+  transform: scale(0.94);
+}
+.dark .fab-prove {
+  background: #fafafa;
+  color: #0a0a0a;
 }
 
 @keyframes celebrate-check {

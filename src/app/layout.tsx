@@ -44,8 +44,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef6e6" },
-    { media: "(prefers-color-scheme: dark)", color: "#050a18" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
 };
 
@@ -54,7 +54,7 @@ const themeScript = `
     var themeKey = 'proveit-theme';
     var accentKey = 'proveit-accent-theme';
     var stored = localStorage.getItem(themeKey);
-    var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark';
+    var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
     var storedAccent = localStorage.getItem(accentKey);
     var accentTheme =
       storedAccent === 'green' ||
@@ -85,7 +85,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${outfit.variable} ${dmSans.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${outfit.variable} ${dmSans.variable}`} suppressHydrationWarning>
       <body className="font-body min-h-screen flex flex-col antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <a

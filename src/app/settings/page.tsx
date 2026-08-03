@@ -48,8 +48,6 @@ import {
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { openStripeBillingPortal, syncStripeSubscription } from "@/lib/checkoutClient";
 import { PLANS } from "@/types";
-import { aiCoachUsageSummary } from "@/lib/aiCoachUsage";
-import { getAiCoachLimit } from "@/lib/subscriptionLimits";
 
 function SettingsDisclosure({
   title,
@@ -650,7 +648,7 @@ export default function SettingsPage() {
               Unlimited on every plan
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Verified proofs water your garden and save a Gardener&apos;s Note. This is not AI Coach.
+              Verified proofs water your garden and save a Gardener&apos;s Note on the plant.
             </p>
           </div>
           <label className="flex items-start justify-between gap-3 px-4 py-4">
@@ -667,59 +665,6 @@ export default function SettingsPage() {
               className="mt-1 h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
             />
           </label>
-              </SettingsDisclosure>
-            </section>
-          )}
-
-          {matchesSettingsQuery("ai coach habit coaching weekly") && (
-            <section>
-              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Coaching
-              </p>
-              <SettingsDisclosure
-                title="AI Coach"
-                description={(() => {
-                  const usage = aiCoachUsageSummary(user);
-                  if (usage.limit === 0) return "Pro/Premium habit coaching (separate from Gardener's Notes)";
-                  return `${usage.remaining} of ${usage.limit} uses left this week (UTC)`;
-                })()}
-                icon={<Sparkles className="h-5 w-5" />}
-              >
-          <div className="space-y-1 border-b border-slate-100 px-4 py-4 dark:border-white/10">
-            <p className="text-sm font-bold text-slate-900 dark:text-white">
-              Weekly AI Coach uses
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Free {getAiCoachLimit("free")}/week · Pro {getAiCoachLimit("pro")}/week · Premium{" "}
-              {getAiCoachLimit("premium")}/week. Resets Monday 00:00 UTC. Not photo verification.
-            </p>
-            {(() => {
-              const usage = aiCoachUsageSummary(user);
-              const pct = usage.limit > 0 ? Math.min(100, (usage.used / usage.limit) * 100) : 100;
-              return (
-                <div className="mt-3">
-                  <div className="mb-1 flex justify-between text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <span>
-                      {usage.limit === 0 ? "Not on Free" : `${usage.used}/${usage.limit} used`}
-                    </span>
-                    <span>{usage.limit === 0 ? "Upgrade" : `${usage.remaining} left`}</span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                    <div
-                      className="h-full rounded-full bg-prove-500 transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-            <Link
-              href="/coach"
-              className="mt-3 inline-flex text-sm font-bold text-prove-700 underline dark:text-prove-300"
-            >
-              Open AI Coach
-            </Link>
-          </div>
               </SettingsDisclosure>
             </section>
           )}

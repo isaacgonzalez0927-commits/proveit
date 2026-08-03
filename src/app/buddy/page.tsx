@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Plus, Pencil, Save, Trash2, X, Pause, Play, Lock, Sparkles } from "lucide-react";
+import { Plus, Pencil, Save, Trash2, X, Pause, Play, Lock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BuddySkeleton } from "@/components/BuddySkeleton";
 import {
@@ -715,21 +715,14 @@ export default function BuddyPage() {
         />
       )}
       <main className="mx-auto w-full min-w-0 max-w-2xl flex-1 space-y-4 overflow-x-clip px-3 py-4 pb-[calc(7.75rem+env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-4 sm:py-8">
-        <div className="mb-4 border-b border-slate-200/80 pb-4 dark:border-slate-800/80 sm:mb-8 sm:pb-6">
-          <h1 className="font-display text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
-            Goal Garden
+        <div className="mb-4 pb-2 sm:mb-6">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-neutral-950 dark:text-white">
+            Garden
           </h1>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 sm:text-sm">
-            Grow what you prove — verified photos water your plants each week. Passed proofs leave a
-            Gardener&apos;s Note on the plant (24h).
+          <p className="mt-1 text-sm text-neutral-500">
+            Grow what you prove — verified photos water your plants. Passed proofs leave a
+            Gardener&apos;s Note (24h).
           </p>
-          <Link
-            href="/coach"
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-prove-700 hover:underline dark:text-prove-300"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Need a plan? Open AI Coach
-          </Link>
           <GardenHeaderSummary
             counts={gardenSummary}
             onScrollToNeedsWater={scrollToNeedsWater}

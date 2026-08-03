@@ -9,7 +9,6 @@ import { normalizePlanId } from "@/types";
  * Response shape: `{ verified: boolean, feedback: string }`.
  *
  * Feedback is shown in the Goal Garden as a Gardener's Note (24h).
- * This endpoint does NOT consume AI Coach weekly quota — that is `/api/ai-coach` only.
  */
 export async function POST(request: NextRequest) {
   try {

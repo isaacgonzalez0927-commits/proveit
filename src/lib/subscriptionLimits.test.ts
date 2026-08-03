@@ -4,7 +4,6 @@ import {
   countActiveReminders,
   freezeRemindersBeyondLimit,
   getActiveReminderLimit,
-  getAiCoachLimit,
   getAiVerificationLimit,
   getGraceDayResetBalance,
 } from "./subscriptionLimits";
@@ -24,15 +23,12 @@ function goal(id: string, createdAt: string, active = true): Goal {
 }
 
 describe("subscription limits", () => {
-  it("caps reminders, streak shields, and AI Coach by plan", () => {
+  it("caps reminders and streak shields by plan", () => {
     expect(getActiveReminderLimit("free")).toBe(2);
     expect(getActiveReminderLimit("pro")).toBe(5);
     expect(getGraceDayResetBalance("free")).toBe(0);
     expect(getGraceDayResetBalance("pro")).toBe(1);
     expect(getGraceDayResetBalance("premium")).toBe(1);
-    expect(getAiCoachLimit("free")).toBe(0);
-    expect(getAiCoachLimit("pro")).toBe(5);
-    expect(getAiCoachLimit("premium")).toBe(20);
     // Photo verification / Gardener's Note is unlimited
     expect(getAiVerificationLimit("free")).toBe(Number.MAX_SAFE_INTEGER);
     expect(getAiVerificationLimit("pro")).toBe(Number.MAX_SAFE_INTEGER);
