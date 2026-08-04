@@ -23,7 +23,12 @@ export type PlantHydration = {
   onPace: boolean;
   state: PlantHealthState;
   baseState: PlantHealthState;
+  /** True during the 2-week post-miss wilt grace. */
+  wiltActive: boolean;
+  /** Alias of wiltActive for older UI props. */
   recoveryActive: boolean;
+  plantDead: boolean;
+  wiltWeekIndex: 1 | 2 | null;
   inBloomSeason: boolean;
   perfectWeekStreak: number;
   /** Set on the goal's first calendar week when quota is prorated. */
@@ -33,20 +38,36 @@ export type PlantHydration = {
 };
 
 export type PlantHealthOptions = {
+  wiltActive?: boolean;
+  /** @deprecated use wiltActive */
   recoveryActive?: boolean;
+  plantDead?: boolean;
 };
 
+/**
+ * Wilt grace / death override.
+ * - plantDead → always dead until revive proof
+ * - wiltActive → never instant-dead; Saturday miss stays wilting
+ */
+export function applyWiltGraceCap(
+  state: PlantHealthState,
+  options: PlantHealthOptions,
+  _verified: number
+): PlantHealthState {
+  if (options.plantDead) return "dead";
+  if (state === "shielded") return state;
+  const wiltActive = Boolean(options.wiltActive ?? options.recoveryActive);
+  if (wiltActive && state === "dead") return "wilting";
+  return state;
+}
 
-/** Recovery week: no instant death; first verified proof restores normal pacing. */
+/** @deprecated use applyWiltGraceCap */
 export function applyRecoveryWeekCap(
   state: PlantHealthState,
   recoveryActive: boolean,
   verified: number
 ): PlantHealthState {
-  if (!recoveryActive || state === "shielded") return state;
-  if (verified === 0) return "wilting";
-  if (state === "dead") return "wilting";
-  return state;
+  return applyWiltGraceCap(state, { wiltActive: recoveryActive }, verified);
 }
 
 function computeBaseWeeklyPlantState(
@@ -63,9 +84,10 @@ function computeBaseWeeklyPlantState(
   const uploaded = countVerifiedInCalendarWeek(submissions, now);
   const dayOfWeek = getDay(now);
 
+  // Soft miss: Saturday unmet quota wilts instead of killing.
+  // Death only happens after the full 2-week wilt window (garden meta).
   if (dayOfWeek === 6 && uploaded < needed) {
-    if (isProratedSignupWeek(goal, now)) return "wilting";
-    return "dead";
+    return "wilting";
   }
   if (uploaded >= needed) return "healthy";
 
@@ -80,7 +102,7 @@ function computeBaseWeeklyPlantState(
 }
 
 /**
- * Weekly plant health — softer than v1: early-week lag stays healthy; wilt appears later.
+ * Weekly plant health — miss → 2-week wilt grace → dead if never proven.
  */
 export function getWeeklyPlantState(
   goal: Pick<Goal, "id" | "frequency" | "timesPerWeek" | "archivedAt" | "createdAt">,
@@ -91,7 +113,7 @@ export function getWeeklyPlantState(
 ): PlantHealthState {
   const base = computeBaseWeeklyPlantState(goal, submissions, graceDays, now);
   const uploaded = countVerifiedInCalendarWeek(submissions, now);
-  return applyRecoveryWeekCap(base, Boolean(options?.recoveryActive), uploaded);
+  return applyWiltGraceCap(base, options ?? {}, uploaded);
 }
 
 export function getPlantHydration(
@@ -108,9 +130,10 @@ export function getPlantHydration(
   const progress = needed <= 0 ? 1 : Math.min(1, verified / needed);
   const expectedByToday = getExpectedVerifiedForWeek(goal, now);
   const onPace = needed <= 0 || verified >= needed || verified >= expectedByToday;
-  const recoveryActive = gardenContext?.recoveryActive ?? false;
+  const wiltActive = gardenContext?.wiltActive ?? gardenContext?.recoveryActive ?? false;
+  const plantDead = gardenContext?.plantDead ?? false;
   const baseState = computeBaseWeeklyPlantState(goal, submissions, graceDays, now);
-  const state = applyRecoveryWeekCap(baseState, recoveryActive, verified);
+  const state = applyWiltGraceCap(baseState, { wiltActive, plantDead }, verified);
 
   const signupWeekNoPenalty =
     isProratedSignupWeek(goal, now) && state !== "healthy" && state !== "shielded" && verified < needed;
@@ -124,7 +147,10 @@ export function getPlantHydration(
     onPace,
     state,
     baseState,
-    recoveryActive,
+    wiltActive,
+    recoveryActive: wiltActive,
+    plantDead,
+    wiltWeekIndex: gardenContext?.wiltWeekIndex ?? null,
     inBloomSeason: gardenContext?.inBloomSeason ?? false,
     perfectWeekStreak: gardenContext?.perfectWeekStreak ?? 0,
     shortWeekLabel: shortWeekLabel(goal, now),
@@ -152,11 +178,15 @@ export function resolvePlantWateringLevel(
 
 export function gardenHealthLabel(
   state: PlantHealthState,
-  recoveryActive = false,
-  signupWeekMiss = false
+  wiltActive = false,
+  signupWeekMiss = false,
+  wiltWeekIndex: 1 | 2 | null = null
 ): string {
   if (signupWeekMiss && state === "wilting") return "Welcome week — no penalty";
-  if (recoveryActive && state === "wilting") return "Recovery week";
+  if (wiltActive && state === "wilting") {
+    if (wiltWeekIndex === 2) return "Wilting · week 2";
+    return "Wilting · prove to keep";
+  }
   switch (state) {
     case "healthy":
       return "Thriving";
@@ -165,7 +195,7 @@ export function gardenHealthLabel(
     case "wilting":
       return "Needs water";
     case "dead":
-      return "Wilted";
+      return "Needs a revive";
     default:
       return "";
   }

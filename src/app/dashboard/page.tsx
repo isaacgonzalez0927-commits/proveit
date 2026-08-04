@@ -50,6 +50,7 @@ import { effectiveTimesPerWeek, getEffectiveQuotaForWeek, signupWeekDashboardNot
 import { format, isThisWeek } from "date-fns";
 import { getGoalStreak, isGoalDoneInCurrentWindow } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
+import { syncGardenWeekMeta } from "@/lib/gardenMeta";
 import { getPlantHydration, resolvePlantWateringLevel } from "@/lib/plantState";
 
 function DashboardContent() {
@@ -199,7 +200,8 @@ function DashboardContent() {
   const sortedGoalStreaks = [...goalStreaks].sort((a, b) => b.displayStreak - a.displayStreak);
   const gardenSnapshotPlants = sortedGoalStreaks.map((entry) => {
     const subs = getSubmissionsForGoal(entry.goal.id);
-    const hydration = getPlantHydration(entry.goal, subs, graceDayEvents);
+    const gardenWeek = syncGardenWeekMeta(entry.goal.id, entry.goal, subs, graceDayEvents);
+    const hydration = getPlantHydration(entry.goal, subs, graceDayEvents, new Date(), gardenWeek);
     const doneToday = hasVerifiedSubmissionOnDate(subs, format(new Date(), "yyyy-MM-dd"));
     return {
       id: entry.goal.id,

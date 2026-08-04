@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyWiltGraceCap,
   applyRecoveryWeekCap,
   getPlantHydration,
   getWeeklyPlantState,
@@ -8,7 +9,7 @@ import {
 const goal = {
   id: "g1",
   frequency: "weekly" as const,
-  timesPerWeek: 3,
+  timesPerWeek: 3 as const,
   archivedAt: undefined as string | undefined,
   createdAt: "2026-01-01T00:00:00.000Z",
 };
@@ -17,7 +18,7 @@ function d(iso: string) {
   return new Date(iso + "T12:00:00");
 }
 
-describe("getWeeklyPlantState (softer wilt)", () => {
+describe("getWeeklyPlantState (wilt grace)", () => {
   it("stays healthy mid-week with 0 proofs when pace allows", () => {
     const state = getWeeklyPlantState(goal, [], [], d("2026-05-27")); // Wed
     expect(state).toBe("healthy");
@@ -28,9 +29,10 @@ describe("getWeeklyPlantState (softer wilt)", () => {
     expect(state).toBe("wilting");
   });
 
-  it("is dead on Saturday when quota unmet", () => {
+  it("wilts on Saturday when quota unmet — does not instantly die", () => {
     const state = getWeeklyPlantState(goal, [], [], d("2026-05-30")); // Sat
-    expect(state).toBe("dead");
+    expect(state).toBe("wilting");
+    expect(state).not.toBe("dead");
   });
 
   it("does not kill the plant on Saturday during a missed prorated signup week", () => {
@@ -43,15 +45,26 @@ describe("getWeeklyPlantState (softer wilt)", () => {
     expect(state).toBe("wilting");
     expect(state).not.toBe("dead");
   });
+
+  it("shows dead only when garden meta marks plantDead", () => {
+    const state = getWeeklyPlantState(goal, [], [], d("2026-05-27"), {
+      plantDead: true,
+    });
+    expect(state).toBe("dead");
+  });
 });
 
-describe("applyRecoveryWeekCap", () => {
-  it("caps dead to wilting during recovery before any proof", () => {
-    expect(applyRecoveryWeekCap("dead", true, 0)).toBe("wilting");
+describe("applyWiltGraceCap", () => {
+  it("caps dead to wilting during wilt grace", () => {
+    expect(applyWiltGraceCap("dead", { wiltActive: true }, 0)).toBe("wilting");
   });
 
-  it("allows healthy after first verified proof in recovery", () => {
-    expect(applyRecoveryWeekCap("healthy", true, 1)).toBe("healthy");
+  it("keeps dead when plantDead is set", () => {
+    expect(applyWiltGraceCap("wilting", { plantDead: true }, 0)).toBe("dead");
+  });
+
+  it("keeps recovery alias working", () => {
+    expect(applyRecoveryWeekCap("dead", true, 0)).toBe("wilting");
   });
 });
 
@@ -63,5 +76,18 @@ describe("getPlantHydration", () => {
     expect(h.needed).toBe(3);
     expect(h.progress).toBeCloseTo(1 / 3, 2);
     expect(h.onPace).toBe(true);
+  });
+
+  it("surfaces wilt week copy fields from garden context", () => {
+    const h = getPlantHydration(goal, [], [], d("2026-05-27"), {
+      wiltActive: true,
+      recoveryActive: true,
+      plantDead: false,
+      wiltWeekIndex: 1,
+      inBloomSeason: false,
+      perfectWeekStreak: 0,
+    });
+    expect(h.wiltActive).toBe(true);
+    expect(h.wiltWeekIndex).toBe(1);
   });
 });

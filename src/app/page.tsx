@@ -17,8 +17,10 @@ import { shouldShowOnboardingSlideshow } from "@/lib/onboardingStorage";
 import { writeStoredDisplayName } from "@/lib/displayNameStorage";
 import { startDashboardTourForNewUser } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
-const INTRO_SLIDE_COUNT = 6;
-type Slide = 0 | 1 | 2 | 3 | 4 | 5;
+const INTRO_SLIDE_COUNT = 8;
+const AUTH_SLIDE = 6 as const;
+const PLAN_SLIDE = 7 as const;
+type Slide = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 type AuthMode = "signin" | "signup";
 
 function introCardMotion(
@@ -28,10 +30,10 @@ function introCardMotion(
 ): CSSProperties {
   const delta = index - slideProgress;
   const abs = Math.abs(delta);
-  const rotateY = Math.max(-18, Math.min(18, delta * -18));
-  const scale = Math.max(0.9, 1 - abs * 0.055);
-  const translateZ = -Math.min(abs * 52, 110);
-  const opacity = abs > 1.08 ? 0 : 1 - abs * 0.16;
+  const rotateY = Math.max(-12, Math.min(12, delta * -12));
+  const scale = Math.max(0.94, 1 - abs * 0.04);
+  const translateZ = -Math.min(abs * 36, 80);
+  const opacity = abs > 1.08 ? 0 : 1 - abs * 0.12;
 
   return {
     transform: `rotateY(${rotateY}deg) scale(${scale}) translateZ(${translateZ}px)`,
@@ -59,16 +61,89 @@ function IntroSlideCard({
 }) {
   return (
     <section
-      className="flex h-full min-h-full w-1/6 shrink-0 items-stretch px-2 py-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-[max(0.35rem,env(safe-area-inset-top))]"
+      className="flex h-full min-h-full w-[12.5%] shrink-0 items-stretch px-2 py-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-[max(0.35rem,env(safe-area-inset-top))]"
       aria-hidden={Math.abs(index - slideProgress) > 0.55}
     >
       <div
-        className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.75rem] shadow-[0_22px_60px_rgba(0,0,0,0.45)] ring-1 ring-white/10 ${className}`}
+        className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/80 ${className}`}
         style={introCardMotion(index, slideProgress, isDragging)}
       >
         {children}
       </div>
     </section>
+  );
+}
+
+function IntroStorySlide({
+  index,
+  slideProgress,
+  isDragging,
+  eyebrow,
+  title,
+  body,
+  imageSrc,
+  imageAlt,
+  imageContain = false,
+  onBack,
+  onNext,
+  nextLabel = "Next",
+}: {
+  index: Slide;
+  slideProgress: number;
+  isDragging: boolean;
+  eyebrow: string;
+  title: string;
+  body: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageContain?: boolean;
+  onBack: () => void;
+  onNext: () => void;
+  nextLabel?: string;
+}) {
+  return (
+    <IntroSlideCard index={index} slideProgress={slideProgress} isDragging={isDragging}>
+      <div className="flex h-full min-h-full w-full flex-col bg-[#f7f7f8] px-5 pb-[max(5.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex h-10 shrink-0 items-start">
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-fit rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm ring-1 ring-slate-200/80 active:bg-slate-50"
+          >
+            Back
+          </button>
+        </div>
+        <div className="shrink-0 pt-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-prove-600">
+            {eyebrow}
+          </p>
+          <h2 className="mt-2 max-w-[12ch] font-display text-[2.35rem] font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-5xl">
+            {title}
+          </h2>
+          <p className="mt-3 max-w-[32ch] text-[15px] leading-relaxed text-slate-500">
+            {body}
+          </p>
+        </div>
+        <div className="relative mt-5 min-h-0 flex-1">
+          <div className="absolute inset-0 overflow-hidden rounded-[1.5rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+            <img
+              src={imageSrc}
+              alt={imageAlt}
+              className={`h-full w-full ${imageContain ? "object-contain p-4" : "object-cover"}`}
+            />
+          </div>
+        </div>
+        <div className="shrink-0 pt-4">
+          <button
+            type="button"
+            onClick={onNext}
+            className="w-full rounded-2xl bg-prove-600 py-3.5 text-[15px] font-semibold text-white shadow-sm active:opacity-90"
+          >
+            {nextLabel}
+          </button>
+        </div>
+      </div>
+    </IntroSlideCard>
   );
 }
 
@@ -106,7 +181,7 @@ function LandingContent() {
   useEffect(() => {
     if (authError === "auth") {
       setSessionSettled(true);
-      setSlide(4);
+      setSlide(AUTH_SLIDE);
       setLoginError("Sign-in failed. Try again.");
       setAuthMode("signin");
       router.replace("/?step=login", { scroll: false });
@@ -133,21 +208,21 @@ function LandingContent() {
         return;
       }
       if (requestedStep === "plan") {
-        setSlide(5);
+        setSlide(PLAN_SLIDE);
         return;
       }
-      setSlide(5);
+      setSlide(PLAN_SLIDE);
       return;
     }
 
     if (requestedStep === "plan") {
       setSessionSettled(true);
-      setSlide(5);
+      setSlide(PLAN_SLIDE);
       return;
     }
     if (requestedStep === "login") {
       setSessionSettled(true);
-      setSlide(4);
+      setSlide(AUTH_SLIDE);
       return;
     }
 
@@ -498,7 +573,7 @@ function LandingContent() {
       if (!user) {
         setAuthMode("signup");
         setLoginError("");
-        setSlide(4);
+        setSlide(AUTH_SLIDE);
         return;
       }
       if (planId === "free") {
@@ -547,7 +622,7 @@ function LandingContent() {
   return (
     <main
       data-intro-fullscreen
-      className="fixed inset-0 z-[200] flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-slate-950 touch-pan-y"
+      className="fixed inset-0 z-[200] flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-[#f7f7f8] touch-pan-y"
       style={{ height: "100dvh", minHeight: "100dvh" }}
     >
       <div
@@ -566,7 +641,7 @@ function LandingContent() {
       >
         {/* Slides container */}
         <div
-          className={`flex min-h-0 flex-1 w-[600%] ${
+          className={`flex min-h-0 flex-1 w-[800%] ${
             isDragging ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           }`}
           style={{
@@ -576,40 +651,38 @@ function LandingContent() {
           }}
         >
           {/* Slide 0 – Welcome */}
-          <IntroSlideCard
-            index={0}
-            slideProgress={slideProgress}
-            isDragging={isDragging}
-            className="bg-gradient-to-b from-[#eef6e6] via-white to-prove-100/40 dark:from-[#050a18] dark:via-[#050a18] dark:to-[#0a1428]"
-          >
-            <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
-              <div className="h-10 shrink-0" aria-hidden />
+          <IntroSlideCard index={0} slideProgress={slideProgress} isDragging={isDragging}>
+            <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
+              <div className="h-8 shrink-0" aria-hidden />
               <div className="shrink-0 text-center">
-                <p className="font-display text-2xl font-black tracking-tight text-prove-700 dark:text-prove-400">
+                <p className="font-display text-[1.65rem] font-bold tracking-tight text-prove-700">
                   Proveit
                 </p>
-                <h1 className="mt-5 font-display text-5xl font-black leading-[0.95] tracking-tight text-slate-950 dark:text-white sm:text-6xl">
-                  Prove it. Grow it.
+                <h1 className="mt-6 font-display text-[2.75rem] font-bold leading-[1.02] tracking-tight text-slate-950 sm:text-5xl">
+                  Prove it.
+                  <br />
+                  Grow it.
                 </h1>
-                <p className="mx-auto mt-4 max-w-[30ch] text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                  Snap proof, AI matches a goal, water your plant — one clear path each day.
+                <p className="mx-auto mt-4 max-w-[28ch] text-[15px] leading-relaxed text-slate-500">
+                  Photo proof. AI check. A plant that grows with you.
                 </p>
-                <div className="mx-auto mt-8 grid max-w-xs grid-cols-3 gap-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
-                  <div className="rounded-2xl border-2 border-prove-200/70 bg-white/80 px-2 py-3 shadow-sm dark:border-prove-800/50 dark:bg-slate-900/70">Home</div>
-                  <div className="rounded-2xl border-2 border-prove-300 bg-prove-50/90 px-2 py-3 shadow-sm text-prove-700 dark:border-prove-700 dark:bg-prove-950/50 dark:text-prove-300">Prove</div>
-                  <div className="rounded-2xl border-2 border-prove-200/70 bg-white/80 px-2 py-3 shadow-sm dark:border-prove-800/50 dark:bg-slate-900/70">Grow</div>
+              </div>
+              <div className="relative mt-8 min-h-0 flex-1">
+                <div className="absolute inset-0 overflow-hidden rounded-[1.5rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+                  <img
+                    src="/onboarding/garden-streak.jpg"
+                    alt="Healthy green plants"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </div>
-              <div className="min-h-0 flex-1" aria-hidden />
             </div>
-            <div className="flex w-full shrink-0 items-center justify-center px-5 pb-[max(5rem,env(safe-area-inset-bottom))]">
-              <div className="flex w-full max-w-sm flex-col gap-3">
+            <div className="flex w-full shrink-0 items-center justify-center bg-[#f7f7f8] px-5 pb-[max(5rem,env(safe-area-inset-bottom))] pt-4">
+              <div className="flex w-full max-w-sm flex-col gap-2.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    goTo(1);
-                  }}
-                  className="cta-chunky w-full !min-h-[3.25rem] !rounded-2xl !text-base"
+                  onClick={() => goTo(1)}
+                  className="w-full rounded-2xl bg-prove-600 py-3.5 text-[15px] font-semibold text-white shadow-sm active:opacity-90"
                 >
                   See how it works
                 </button>
@@ -618,9 +691,9 @@ function LandingContent() {
                   onClick={() => {
                     setAuthMode("signin");
                     setLoginError("");
-                    goTo(4);
+                    goTo(AUTH_SLIDE);
                   }}
-                  className="rounded-2xl border-2 border-slate-200 bg-white/70 px-6 py-3 text-sm font-bold text-slate-700 hover:bg-white dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
+                  className="rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 active:bg-slate-50"
                 >
                   I already have an account
                 </button>
@@ -628,377 +701,320 @@ function LandingContent() {
             </div>
           </IntroSlideCard>
 
-          {/* Slide 1 – AI verification */}
-          <IntroSlideCard
+          <IntroStorySlide
             index={1}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            className="relative bg-[#061527]"
-          >
-            <img
-              src="/onboarding/book-proof.png"
-              alt="Book proof example"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#061527]/95 via-[#061527]/25 to-[#061527]/95" />
-            <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
-              <div className="flex h-10 shrink-0 items-start">
-                <button
-                  type="button"
-                  onClick={() => goTo(0)}
-                  className="w-fit rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur-md active:bg-white/25"
-                >
-                  Back
-                </button>
-              </div>
-              <div className="shrink-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
-                  AI proof check
-                </p>
-                <h2 className="mt-3 max-w-[10ch] text-5xl font-bold leading-[0.95] tracking-tight">
-                  Snap fresh proof.
-                </h2>
-                <p className="mt-4 max-w-[28ch] text-sm leading-relaxed text-white/75">
-                  Proveit checks that your photo matches your goal, like reading a book or finishing a walk.
-                </p>
-              </div>
-              <div className="min-h-0 flex-1" aria-hidden />
-              <div className="shrink-0 pt-3">
-                <button
-                  type="button"
-                  onClick={() => goTo(2)}
-                  className="w-full rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </IntroSlideCard>
+            eyebrow="Step 1"
+            title="Snap your proof."
+            body="Take a fresh photo of the habit — a walk, a workout, a book page."
+            imageSrc="/onboarding/snap-proof.jpg"
+            imageAlt="Phone camera ready to capture proof"
+            onBack={() => goTo(0)}
+            onNext={() => goTo(2)}
+          />
 
-          {/* Slide 2 – Plants */}
-          <IntroSlideCard
+          <IntroStorySlide
             index={2}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            className="relative bg-[#061527]"
-          >
-            <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-prove-500/35 to-transparent" />
-            <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-prove-500/20 blur-3xl" />
-            <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
-              <div className="flex h-10 shrink-0 items-start">
-                <button
-                  type="button"
-                  onClick={() => goTo(1)}
-                  className="w-fit rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur-md active:bg-white/25"
-                >
-                  Back
-                </button>
-              </div>
-              <div className="shrink-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-prove-200">
-                  Live garden
-                </p>
-                <h2 className="mt-3 max-w-[11ch] text-5xl font-bold leading-[0.95] tracking-tight">
-                  Grow what you prove.
-                </h2>
-                <p className="mt-4 max-w-[29ch] text-sm leading-relaxed text-white/75">
-                  Hit your proof goal to keep your plant healthy. Miss too much and it wilts.
-                </p>
-              </div>
-              <div className="relative min-h-0 flex-1">
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="absolute h-[min(54vh,22rem)] w-[min(84vw,22rem)] rounded-full bg-prove-400/10 blur-3xl" />
-                  <img
-                    src="/onboarding/plant-growth-transparent.png"
-                    alt="Plant growing from a hand"
-                    className="relative h-[min(58vh,26rem)] w-[min(92vw,26rem)] object-contain drop-shadow-[0_22px_28px_rgba(16,185,129,0.25)]"
-                  />
-                </div>
-              </div>
-              <div className="shrink-0 pt-3">
-                <button
-                  type="button"
-                  onClick={() => goTo(3)}
-                  className="w-full rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </IntroSlideCard>
+            eyebrow="Step 2"
+            title="AI checks it."
+            body="Proveit matches the photo to your goal so check-ins stay honest."
+            imageSrc="/onboarding/ai-check.jpg"
+            imageAlt="Open book as an example proof photo"
+            onBack={() => goTo(1)}
+            onNext={() => goTo(3)}
+          />
 
-          {/* Slide 3 – Buddies */}
-          <IntroSlideCard
+          <IntroStorySlide
             index={3}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            className="relative bg-[#0c1a2e]"
-          >
-            <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-sky-500/25 to-transparent" />
-            <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-prove-500/15 blur-3xl" />
-            <div className="relative flex h-full min-h-full w-full flex-col px-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-white">
-              <div className="flex h-10 shrink-0 items-start">
-                <button
-                  type="button"
-                  onClick={() => goTo(2)}
-                  className="w-fit rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur-md active:bg-white/25"
-                >
-                  Back
-                </button>
-              </div>
-              <div className="shrink-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
-                  Buddy goals
-                </p>
-                <h2 className="mt-3 max-w-[12ch] text-5xl font-bold leading-[0.95] tracking-tight">
-                  Prove it together.
-                </h2>
-                <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-white/75">
-                  Share a goal with a friend, see each other&apos;s progress, and show off a plant profile
-                  only your buddies can view.
-                </p>
-              </div>
-              <div className="relative min-h-0 flex-1">
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div
-                    className="absolute h-[min(44vh,17rem)] w-[min(90vw,24rem)] rounded-full bg-emerald-400/35 blur-3xl"
-                    aria-hidden
-                  />
-                  <div
-                    className="absolute h-[min(38vh,14rem)] w-[min(76vw,20rem)] rounded-full bg-prove-500/30 blur-2xl"
-                    aria-hidden
-                  />
-                  <img
-                    src="/onboarding/buddies.png"
-                    alt="Two friends cheering each other on"
-                    className="relative h-[min(46vh,18rem)] w-auto max-w-[min(96vw,26rem)] object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.35)]"
-                  />
-                </div>
-              </div>
-              <div className="shrink-0 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginError("");
-                    if (user) {
-                      goTo(5);
-                      return;
-                    }
-                    setAuthMode("signup");
-                    goTo(4);
-                  }}
-                  className="w-full rounded-full bg-prove-500 py-4 text-base font-bold text-white shadow-lg shadow-prove-950/30"
-                >
-                  {user ? "Choose plan" : "Start"}
-                </button>
-              </div>
-            </div>
-          </IntroSlideCard>
+            eyebrow="Step 3"
+            title="Water your plant."
+            body="Verified proofs grow your garden over time — one clear win each day."
+            imageSrc="/onboarding/plant-growth-transparent.png"
+            imageAlt="Plant growing from a hand"
+            imageContain
+            onBack={() => goTo(2)}
+            onNext={() => goTo(4)}
+          />
 
-          {/* Slide 4 – Sign in */}
-          <IntroSlideCard
+          <IntroStorySlide
             index={4}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            className="bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20"
-          >
-            <div className="flex min-h-0 flex-1 flex-col max-w-sm mx-auto w-full justify-center">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 5 of 6</p>
-              <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
-                {authMode === "signin" ? "Sign in" : "Create account"}
-              </h2>
-              <p className="mt-0.5 text-[14px] text-slate-500 dark:text-slate-400">
-                {authMode === "signin" ? "Welcome back." : "Create your account, then choose your plan."}
-              </p>
-              <div className="mt-4 overflow-y-auto">
-                <form onSubmit={handleLoginSubmit} className="space-y-2.5 pb-2">
-                  {loginError && (
-                    <p className="text-[13px] text-red-500" role="alert">{loginError}</p>
-                  )}
-                  <div className="overflow-hidden rounded-2xl [&>*]:border-b [&>*]:border-slate-100 dark:[&>*]:border-slate-700/80 last:[&>*]:border-b-0 glass-surface">
-                    {authMode === "signup" && (
-                      <label className="block">
-                        <span className="sr-only">Name or nickname</span>
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-transparent px-3 py-2.5 text-[16px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-                          placeholder="Name or nickname"
-                        />
-                      </label>
-                    )}
-                    <label className="block">
-                      <span className="sr-only">
-                        {authMode === "signup" ? "Username" : "Username or email"}
-                      </span>
-                      <input
-                        type="text"
-                        name={authMode === "signup" ? "username" : "username"}
-                        autoComplete={authMode === "signup" ? "username" : "username"}
-                        value={loginId}
-                        onChange={(e) => setLoginId(e.target.value)}
-                        className="w-full bg-transparent px-3 py-2.5 text-[16px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-                        placeholder={authMode === "signup" ? "Username" : "Username or email"}
-                        required
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="sr-only">Password</span>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-transparent px-3 py-2.5 text-[16px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-                        placeholder={authMode === "signup" ? "Password (6+)" : "Password"}
-                        required
-                      />
-                    </label>
-                  </div>
-                  {useSupabase && authMode === "signin" && (
-                    <button type="button" onClick={handleForgotPassword} disabled={loading} className="text-[14px] text-prove-600 dark:text-prove-400">
-                      Forgot password?
-                    </button>
-                  )}
-                  {resetFeedback && (
-                    <p className="text-[14px] text-prove-600 dark:text-prove-400" role="status">
-                      {resetFeedback}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full rounded-xl bg-prove-600 dark:bg-prove-500 py-2.5 text-[15px] font-semibold text-white active:opacity-90 disabled:opacity-70 btn-glass-primary"
-                  >
-                    {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
-                  </button>
-                  {authMode === "signup" && (
-                    <p className="text-center text-[12px] text-slate-500 dark:text-slate-400">
-                      By creating an account you agree to our{" "}
-                      <Link href="/privacy" className="text-prove-600 hover:underline dark:text-prove-400">Privacy Policy</Link>
-                      {" "}and{" "}
-                      <Link href="/terms" className="text-prove-600 hover:underline dark:text-prove-400">Terms of Use</Link>.
-                    </p>
-                  )}
-                  {useSupabase && (
-                    <p className="text-center text-[14px] text-slate-500 dark:text-slate-400">
-                      {authMode === "signin" ? (
-                        <>New?{" "}<button type="button" onClick={() => { setAuthMode("signup"); setLoginError(""); }} className="font-medium text-prove-600 dark:text-prove-400">Create account</button></>
-                      ) : (
-                        <>Have an account?{" "}<button type="button" onClick={() => { setAuthMode("signin"); setLoginError(""); }} className="font-medium text-prove-600 dark:text-prove-400">Sign in</button></>
-                      )}
-                    </p>
-                  )}
-                </form>
-              </div>
-            </div>
-            <div className="mt-2 flex w-full max-w-sm mx-auto shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={() => goTo(2)} className="active:opacity-70">Back</button>
-              <span>Plan comes next</span>
-            </div>
-          </IntroSlideCard>
+            eyebrow="Streaks"
+            title="Miss a week? It wilts first."
+            body="Two-week grace: prove again to keep the plant. Your streak still resets."
+            imageSrc="/onboarding/wilt-grace.jpg"
+            imageAlt="Potted plant that needs water"
+            onBack={() => goTo(3)}
+            onNext={() => goTo(5)}
+          />
 
-          {/* Slide 5 – Choose plan */}
-          <IntroSlideCard
+          <IntroStorySlide
             index={5}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            className="bg-gradient-to-b from-slate-50 via-white to-prove-50/30 px-4 pt-[env(safe-area-inset-top)] dark:from-slate-950 dark:via-slate-950 dark:to-prove-950/20"
-          >
-            <div className="flex w-full max-w-sm mx-auto flex-col min-h-0 flex-1 justify-center">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-prove-600 dark:text-prove-400">Step 6 of 6</p>
-              <h2 className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-white">
-                Choose your plan
-              </h2>
-              <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
-                Start on Free, or subscribe to Pro or Premium.
-              </p>
-              <div className="mt-3 space-y-2">
-                {[...PLANS]
-                  .sort((a, b) => {
-                    const order: Record<string, number> = { free: 0, pro: 1, premium: 2 };
-                    return order[a.id] - order[b.id];
-                  })
-                  .map((plan) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => handleChoosePlan(plan.id as PlanId)}
-                    className={`w-full rounded-2xl border-2 text-left transition active:scale-[0.99] glass-card ${
-                      plan.id === "pro"
-                        ? "border-prove-400 dark:border-prove-500 shadow-md shadow-prove-600/10 dark:shadow-prove-900/25"
-                        : "border-slate-200/85 dark:border-slate-700/65 hover:border-slate-300 dark:hover:border-slate-600"
-                    }`}
-                  >
-                    <div className="px-4 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          {plan.id === "pro" && (
-                            <span className="inline-block rounded-full bg-prove-200 dark:bg-prove-800/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-prove-700 dark:text-prove-300 mb-1.5">
-                              Popular
-                            </span>
-                          )}
-                          <p className="text-[16px] font-bold text-slate-900 dark:text-white">{plan.name}</p>
-                          <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">
-                            {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal{(plan.maxGoals ?? 0) !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                        <span className={`shrink-0 text-[14px] font-bold ${plan.id === "free" ? "text-slate-700 dark:text-slate-300" : "text-prove-600 dark:text-prove-400"}`}>
-                          {plan.id === "free"
-                            ? "Free"
-                            : `${formatUsd(plan.priceMonthly)}/mo`}
+            eyebrow="Buddies"
+            title="Grow together."
+            body="Share a goal, see each other’s progress, and keep each other honest."
+            imageSrc="/onboarding/buddies.png"
+            imageAlt="Two friends cheering each other on"
+            imageContain
+            onBack={() => goTo(4)}
+            onNext={() => {
+              setLoginError("");
+              if (user) {
+                goTo(PLAN_SLIDE);
+                return;
+              }
+              setAuthMode("signup");
+              goTo(AUTH_SLIDE);
+            }}
+            nextLabel={user ? "Choose plan" : "Get started"}
+          />
+
+          {/* Slide 6 – Sign in */}
+          <IntroSlideCard index={AUTH_SLIDE} slideProgress={slideProgress} isDragging={isDragging}>
+            <div className="flex min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pt-[max(1rem,env(safe-area-inset-top))]">
+              <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col justify-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-prove-600">
+                  Account
+                </p>
+                <h2 className="mt-2 font-display text-2xl font-bold text-slate-950">
+                  {authMode === "signin" ? "Sign in" : "Create account"}
+                </h2>
+                <p className="mt-1 text-[14px] text-slate-500">
+                  {authMode === "signin" ? "Welcome back." : "Then pick a plan."}
+                </p>
+                <div className="mt-5 overflow-y-auto">
+                  <form onSubmit={handleLoginSubmit} className="space-y-2.5 pb-2">
+                    {loginError && (
+                      <p className="text-[13px] text-red-500" role="alert">{loginError}</p>
+                    )}
+                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 [&>*]:border-b [&>*]:border-slate-100 last:[&>*]:border-b-0">
+                      {authMode === "signup" && (
+                        <label className="block">
+                          <span className="sr-only">Name or nickname</span>
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-transparent px-3.5 py-3 text-[16px] text-slate-900 placeholder-slate-400 focus:outline-none"
+                            placeholder="Name or nickname"
+                          />
+                        </label>
+                      )}
+                      <label className="block">
+                        <span className="sr-only">
+                          {authMode === "signup" ? "Username" : "Username or email"}
                         </span>
-                      </div>
-                      <ul className="mt-2 flex flex-col gap-1 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
-                        {plan.features.slice(0, 2).map((f, i) => (
-                          <li key={i} className="flex gap-2">
-                            <span className="text-prove-500 dark:text-prove-400 shrink-0 mt-0.5" aria-hidden>✓</span>
-                            <span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-2 text-[12px] font-semibold text-prove-600 dark:text-prove-400">
-                        {plan.id === "free"
-                          ? "Continue with Free →"
-                          : `Subscribe to ${plan.name} →`}
-                      </p>
+                        <input
+                          type="text"
+                          name="username"
+                          autoComplete="username"
+                          value={loginId}
+                          onChange={(e) => setLoginId(e.target.value)}
+                          className="w-full bg-transparent px-3.5 py-3 text-[16px] text-slate-900 placeholder-slate-400 focus:outline-none"
+                          placeholder={authMode === "signup" ? "Username" : "Username or email"}
+                          required
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="sr-only">Password</span>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full bg-transparent px-3.5 py-3 text-[16px] text-slate-900 placeholder-slate-400 focus:outline-none"
+                          placeholder={authMode === "signup" ? "Password (6+)" : "Password"}
+                          required
+                        />
+                      </label>
                     </div>
-                  </button>
-                ))}
+                    {useSupabase && authMode === "signin" && (
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={loading}
+                        className="text-[14px] text-prove-600"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                    {resetFeedback && (
+                      <p className="text-[14px] text-prove-600" role="status">
+                        {resetFeedback}
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full rounded-2xl bg-prove-600 py-3 text-[15px] font-semibold text-white active:opacity-90 disabled:opacity-70"
+                    >
+                      {loading ? "Loading…" : authMode === "signin" ? "Sign in" : "Create account"}
+                    </button>
+                    {authMode === "signup" && (
+                      <p className="text-center text-[12px] text-slate-500">
+                        By creating an account you agree to our{" "}
+                        <Link href="/privacy" className="text-prove-600 hover:underline">
+                          Privacy Policy
+                        </Link>{" "}
+                        and{" "}
+                        <Link href="/terms" className="text-prove-600 hover:underline">
+                          Terms of Use
+                        </Link>
+                        .
+                      </p>
+                    )}
+                    {useSupabase && (
+                      <p className="text-center text-[14px] text-slate-500">
+                        {authMode === "signin" ? (
+                          <>
+                            New?{" "}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAuthMode("signup");
+                                setLoginError("");
+                              }}
+                              className="font-medium text-prove-600"
+                            >
+                              Create account
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            Have an account?{" "}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAuthMode("signin");
+                                setLoginError("");
+                              }}
+                              className="font-medium text-prove-600"
+                            >
+                              Sign in
+                            </button>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </form>
+                </div>
+              </div>
+              <div className="mx-auto mt-2 flex w-full max-w-sm shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500">
+                <button type="button" onClick={() => goTo(5)} className="active:opacity-70">
+                  Back
+                </button>
+                <span>Plan comes next</span>
               </div>
             </div>
-            <div className="mt-2 flex w-full max-w-sm mx-auto shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500 dark:text-slate-400">
-              <button type="button" onClick={() => goTo(3)} className="active:opacity-70">Back</button>
-              <span>Swipe ← back</span>
+          </IntroSlideCard>
+
+          {/* Slide 7 – Choose plan */}
+          <IntroSlideCard index={PLAN_SLIDE} slideProgress={slideProgress} isDragging={isDragging}>
+            <div className="flex min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pt-[max(1rem,env(safe-area-inset-top))]">
+              <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col justify-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-prove-600">
+                  Plan
+                </p>
+                <h2 className="mt-2 font-display text-2xl font-bold text-slate-950">
+                  Choose your plan
+                </h2>
+                <p className="mt-1 text-[14px] text-slate-500">
+                  Start free, or go Pro / Premium anytime.
+                </p>
+                <div className="mt-4 space-y-2.5">
+                  {[...PLANS]
+                    .sort((a, b) => {
+                      const order: Record<string, number> = { free: 0, pro: 1, premium: 2 };
+                      return order[a.id] - order[b.id];
+                    })
+                    .map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => handleChoosePlan(plan.id as PlanId)}
+                        className={`w-full rounded-2xl border bg-white text-left shadow-sm transition active:scale-[0.99] ${
+                          plan.id === "pro"
+                            ? "border-prove-400 shadow-prove-600/10"
+                            : "border-slate-200/90 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="px-4 py-3.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              {plan.id === "pro" && (
+                                <span className="mb-1.5 inline-block rounded-full bg-prove-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-prove-700">
+                                  Popular
+                                </span>
+                              )}
+                              <p className="text-[16px] font-bold text-slate-900">{plan.name}</p>
+                              <p className="mt-0.5 text-[12px] text-slate-500">
+                                {plan.maxGoals === -1 ? "Unlimited" : plan.maxGoals} goal
+                                {(plan.maxGoals ?? 0) !== 1 ? "s" : ""}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 text-[14px] font-bold ${
+                                plan.id === "free" ? "text-slate-700" : "text-prove-600"
+                              }`}
+                            >
+                              {plan.id === "free" ? "Free" : `${formatUsd(plan.priceMonthly)}/mo`}
+                            </span>
+                          </div>
+                          <ul className="mt-2 flex flex-col gap-1 text-[11px] leading-snug text-slate-600">
+                            {plan.features.slice(0, 2).map((f, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="mt-0.5 shrink-0 text-prove-500" aria-hidden>
+                                  ✓
+                                </span>
+                                <span>{f}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+              <div className="mx-auto mt-2 flex w-full max-w-sm shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500">
+                <button type="button" onClick={() => goTo(AUTH_SLIDE)} className="active:opacity-70">
+                  Back
+                </button>
+                <span>Swipe ← back</span>
+              </div>
             </div>
           </IntroSlideCard>
         </div>
 
-        {/* Dots + legal — overlay so slides stay edge-to-edge */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/55 via-black/25 to-transparent pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10 dark:from-black/70">
-          <div
-            className="pointer-events-auto flex items-center justify-center gap-[clamp(0.375rem,1.5vw,0.5rem)] px-4 animate-welcome-dots [animation-fill-mode:forwards]"
-          >
-            {[0, 1, 2, 3, 4, 5].map((i) => (
+        {/* Dots + legal */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-[#f7f7f8] via-[#f7f7f8]/90 to-transparent pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10">
+          <div className="pointer-events-auto flex items-center justify-center gap-[clamp(0.3rem,1.2vw,0.45rem)] px-4 animate-welcome-dots [animation-fill-mode:forwards]">
+            {Array.from({ length: INTRO_SLIDE_COUNT }, (_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => goTo(i as Slide)}
                 className={`rounded-full transition-all duration-300 ${
                   slide === i
-                    ? "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(1rem,4vmin,1.5rem)] bg-prove-400"
-                    : "h-[clamp(0.375rem,1.5vmin,0.5rem)] w-[clamp(0.375rem,1.5vmin,0.5rem)] bg-white/40"
+                    ? "h-1.5 w-5 bg-prove-600"
+                    : "h-1.5 w-1.5 bg-slate-300"
                 }`}
                 aria-label={`Go to slide ${i + 1}`}
               />
             ))}
           </div>
-          <p className="pointer-events-auto mt-2 text-center text-xs text-white/70">
-            <Link href="/privacy" className="hover:text-white hover:underline">
+          <p className="pointer-events-auto mt-2 text-center text-xs text-slate-400">
+            <Link href="/privacy" className="hover:text-slate-600 hover:underline">
               Privacy
             </Link>
             <span className="mx-2">·</span>
-            <Link href="/terms" className="hover:text-white hover:underline">
+            <Link href="/terms" className="hover:text-slate-600 hover:underline">
               Terms
             </Link>
           </p>

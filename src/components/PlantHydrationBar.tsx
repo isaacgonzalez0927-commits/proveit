@@ -9,7 +9,10 @@ interface PlantHydrationBarProps {
   progress: number;
   healthState: PlantHealthState;
   onPace: boolean;
+  wiltActive?: boolean;
+  /** @deprecated use wiltActive */
   recoveryActive?: boolean;
+  wiltWeekIndex?: 1 | 2 | null;
   inBloomSeason?: boolean;
   perfectWeekStreak?: number;
   shortWeekLabel?: string | null;
@@ -23,13 +26,16 @@ export function PlantHydrationBar({
   progress,
   healthState,
   onPace,
+  wiltActive,
   recoveryActive = false,
+  wiltWeekIndex = null,
   inBloomSeason = false,
   perfectWeekStreak = 0,
   shortWeekLabel: shortWeekNote = null,
   signupWeekNoPenalty = false,
   className = "",
 }: PlantHydrationBarProps) {
+  const inWilt = wiltActive ?? recoveryActive;
   const pct = Math.round(progress * 100);
   const barColor =
     healthState === "dead"
@@ -41,10 +47,10 @@ export function PlantHydrationBar({
           : "bg-prove-500";
 
   const statusBits = [
-    gardenHealthLabel(healthState, recoveryActive, signupWeekNoPenalty),
+    gardenHealthLabel(healthState, inWilt, signupWeekNoPenalty, wiltWeekIndex),
     inBloomSeason ? "Bloom season" : null,
     !inBloomSeason && perfectWeekStreak > 0 ? `${perfectWeekStreak}/4 perfect weeks` : null,
-    !onPace && healthState === "healthy" && !recoveryActive ? "catch up" : null,
+    !onPace && healthState === "healthy" && !inWilt ? "catch up" : null,
   ].filter(Boolean) as string[];
 
   return (

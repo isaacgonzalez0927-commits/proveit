@@ -168,9 +168,13 @@ export default function BuddyPage() {
           setGardenProofToast(
             `${flash.goalTitle} grew to a new stage — verified proof counts!`
           );
-        } else if (flash.healthBefore === "dead" || flash.healthAfter !== flash.healthBefore) {
+        } else if (
+          flash.healthBefore === "dead" ||
+          flash.healthBefore === "wilting" ||
+          flash.healthAfter !== flash.healthBefore
+        ) {
           setGardenProofToast(
-            `${flash.goalTitle} is coming back — recovery week helped your plant!`
+            `${flash.goalTitle} is coming back — streak resets, plant stays alive.`
           );
         } else {
           setGardenProofToast(`${flash.goalTitle} was watered. Your garden is happier.`);
@@ -1148,9 +1152,14 @@ export default function BuddyPage() {
 
                 {entry.gardenersNote && <GardenersNote text={entry.gardenersNote} />}
 
-                {entry.hydration.recoveryActive && entry.hydration.verified === 0 && (
+                {entry.hydration.wiltActive && entry.hydration.verified === 0 && (
                   <p className="mx-3 mb-1 text-center text-[10px] font-medium leading-snug text-amber-800 dark:text-amber-200 sm:mx-4">
-                    Recovery week — one verified photo brings your plant back.
+                    Wilting: prove this week or next to keep your plant. Streak resets.
+                  </p>
+                )}
+                {entry.hydration.plantDead && (
+                  <p className="mx-3 mb-1 text-center text-[10px] font-medium leading-snug text-amber-900 dark:text-amber-200 sm:mx-4">
+                    Your plant dried out — one verified photo brings it back. Streak stays reset.
                   </p>
                 )}
 
@@ -1161,7 +1170,8 @@ export default function BuddyPage() {
                     progress={entry.hydration.progress}
                     healthState={entry.plantHealthState}
                     onPace={entry.hydration.onPace}
-                    recoveryActive={entry.hydration.recoveryActive}
+                    wiltActive={entry.hydration.wiltActive}
+                    wiltWeekIndex={entry.hydration.wiltWeekIndex}
                     inBloomSeason={entry.hydration.inBloomSeason}
                     perfectWeekStreak={entry.hydration.perfectWeekStreak}
                     shortWeekLabel={entry.hydration.shortWeekLabel}

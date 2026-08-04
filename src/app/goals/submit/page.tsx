@@ -18,7 +18,7 @@ import { lightImpact, success as hapticSuccess } from "@/lib/haptics";
 import { getGoalStreak } from "@/lib/goalProgress";
 import { getPlantStageForStreak } from "@/lib/plantGrowth";
 import { setGardenProofFlash } from "@/lib/gardenProofFlash";
-import { completeGardenRecovery, setGardenersNote } from "@/lib/gardenMeta";
+import { completeGardenRecovery, setGardenersNote, syncGardenWeekMeta } from "@/lib/gardenMeta";
 import { completeWelcomeWeekIfNeeded } from "@/lib/welcomeWeek";
 import { PlantWateringCelebration } from "@/components/PlantWateringCelebration";
 import { PlantIllustration } from "@/components/PlantIllustration";
@@ -532,7 +532,11 @@ function SubmitProofContent() {
           const stageBefore = getPlantStageForStreak(
             getGoalStreak(targetGoal, getSubmissionsForGoal, graceDayEvents)
           ).stage;
-          const healthBefore = getWeeklyPlantState(targetGoal, subsBefore, graceDayEvents);
+          const gardenBefore = syncGardenWeekMeta(targetGoal.id, targetGoal, subsBefore, graceDayEvents);
+          const healthBefore = getWeeklyPlantState(targetGoal, subsBefore, graceDayEvents, new Date(), {
+            wiltActive: gardenBefore.wiltActive,
+            plantDead: gardenBefore.plantDead,
+          });
           const subsAfter = [
             ...subsBefore,
             {
@@ -546,8 +550,12 @@ function SubmitProofContent() {
             graceDayEvents
           );
           const stageAfter = getPlantStageForStreak(streakAfter).stage;
+          const gardenAfter = syncGardenWeekMeta(targetGoal.id, targetGoal, subsAfter, graceDayEvents);
           const healthAfter = ok
-            ? getWeeklyPlantState(targetGoal, subsAfter, graceDayEvents)
+            ? getWeeklyPlantState(targetGoal, subsAfter, graceDayEvents, new Date(), {
+                wiltActive: gardenAfter.wiltActive,
+                plantDead: gardenAfter.plantDead,
+              })
             : healthBefore;
           setGardenProofFlash({
             goalId: targetGoal.id,
