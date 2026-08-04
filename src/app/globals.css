@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Brand default: mint emerald — soft wash in light, charcoal in dark */
+/* Brand default: mint emerald accents on pure white/light-gray or charcoal surfaces */
 :root {
   --prove-navy: #0a0a0a;
   --prove-navy-soft: #171717;
@@ -23,12 +23,12 @@
   --accent-coral: #ff6b6b;
   --accent-gold: #f59e0b;
   --accent-violet: #8b5cf6;
-  /* Default light — subtle mint wash */
-  --bg-app: #f3faf7;
+  /* Light surfaces stay white/gray — accents only on controls */
+  --bg-app: #f5f5f7;
   --bg-card: #ffffff;
   --text-primary: #0a0a0a;
-  --text-muted: #64748b;
-  --border: #d1fae5;
+  --text-muted: #737373;
+  --border: #ebebeb;
   --gradient-1: rgba(0, 0, 0, 0.02);
   --gradient-2: rgba(16, 185, 129, 0.08);
   color-scheme: light;
@@ -46,6 +46,16 @@
   color-scheme: dark;
 }
 
+/* Shared light surfaces for every accent — white/gray only, tint via prove-* on controls */
+:root[data-accent-theme] {
+  --bg-app: #f5f5f7;
+  --bg-card: #ffffff;
+  --text-primary: #0a0a0a;
+  --text-muted: #737373;
+  --border: #ebebeb;
+  --gradient-1: rgba(0, 0, 0, 0.02);
+}
+
 /* Shared dark surface tokens for every accent — charcoal only, tint via gradients/prove-* */
 :root[data-accent-theme].dark {
   --bg-app: #0a0a0a;
@@ -56,7 +66,7 @@
   --gradient-1: rgba(255, 255, 255, 0.03);
 }
 
-/* Mint (Default) — light keeps soft wash; dark uses shared charcoal */
+/* Mint (Default) — prove-* accents only; surfaces from shared light/dark tokens */
 :root[data-accent-theme="mint"],
 :root[data-accent-theme="green"] {
   --prove-50-rgb: 236 253 245;
@@ -71,12 +81,6 @@
   --prove-900-rgb: 6 78 59;
   --prove-950-rgb: 2 44 34;
   --prove-lime: #10b981;
-  --bg-app: #f3faf7;
-  --bg-card: #ffffff;
-  --text-primary: #0a0a0a;
-  --text-muted: #64748b;
-  --border: #d1fae5;
-  --gradient-1: rgba(0, 0, 0, 0.02);
   --gradient-2: rgba(16, 185, 129, 0.08);
 }
 
@@ -98,12 +102,6 @@
   --prove-800-rgb: 157 23 77;
   --prove-900-rgb: 131 24 67;
   --prove-950-rgb: 80 7 36;
-  --bg-app: #fdf2f8;
-  --bg-card: #ffffff;
-  --text-primary: #1f0f18;
-  --text-muted: #831843;
-  --border: #fce7f3;
-  --gradient-1: rgba(236, 72, 153, 0.2);
   --gradient-2: rgba(219, 39, 119, 0.14);
 }
 
@@ -124,12 +122,6 @@
   --prove-800-rgb: 91 33 182;
   --prove-900-rgb: 76 29 149;
   --prove-950-rgb: 46 16 101;
-  --bg-app: #faf9ff;
-  --bg-card: #ffffff;
-  --text-primary: #1e0f2e;
-  --text-muted: #6b4d8f;
-  --border: #ede9fe;
-  --gradient-1: rgba(139, 92, 246, 0.2);
   --gradient-2: rgba(124, 58, 237, 0.14);
 }
 
@@ -150,12 +142,6 @@
   --prove-800-rgb: 7 89 133;
   --prove-900-rgb: 12 74 110;
   --prove-950-rgb: 8 47 73;
-  --bg-app: #f0f9ff;
-  --bg-card: #ffffff;
-  --text-primary: #0c1e2e;
-  --text-muted: #0e7490;
-  --border: #e0f2fe;
-  --gradient-1: rgba(14, 165, 233, 0.2);
   --gradient-2: rgba(2, 132, 199, 0.14);
 }
 
@@ -176,12 +162,6 @@
   --prove-800-rgb: 154 52 18;
   --prove-900-rgb: 124 45 18;
   --prove-950-rgb: 67 20 7;
-  --bg-app: #fff7ed;
-  --bg-card: #ffffff;
-  --text-primary: #1c0f07;
-  --text-muted: #9a3412;
-  --border: #ffedd5;
-  --gradient-1: rgba(249, 115, 22, 0.2);
   --gradient-2: rgba(234, 88, 12, 0.14);
 }
 
@@ -202,12 +182,6 @@
   --prove-800-rgb: 146 64 14;
   --prove-900-rgb: 120 53 15;
   --prove-950-rgb: 69 26 3;
-  --bg-app: #fffbeb;
-  --bg-card: #ffffff;
-  --text-primary: #1c1305;
-  --text-muted: #92400e;
-  --border: #fef3c7;
-  --gradient-1: rgba(245, 158, 11, 0.2);
   --gradient-2: rgba(217, 119, 6, 0.14);
 }
 
@@ -228,12 +202,6 @@
   --prove-800-rgb: 153 27 27;
   --prove-900-rgb: 127 29 29;
   --prove-950-rgb: 69 10 10;
-  --bg-app: #fef2f2;
-  --bg-card: #ffffff;
-  --text-primary: #1f0f0f;
-  --text-muted: #991b1b;
-  --border: #fee2e2;
-  --gradient-1: rgba(239, 68, 68, 0.2);
   --gradient-2: rgba(220, 38, 38, 0.14);
 }
 
@@ -254,12 +222,6 @@
   --prove-800-rgb: 107 33 168;
   --prove-900-rgb: 88 28 135;
   --prove-950-rgb: 59 7 100;
-  --bg-app: #faf5ff;
-  --bg-card: #ffffff;
-  --text-primary: #1e0f2e;
-  --text-muted: #6b21a8;
-  --border: #f3e8ff;
-  --gradient-1: rgba(168, 85, 247, 0.2);
   --gradient-2: rgba(147, 51, 234, 0.14);
 }
 
@@ -280,12 +242,6 @@
   --prove-800-rgb: 55 48 163;
   --prove-900-rgb: 49 46 129;
   --prove-950-rgb: 30 27 75;
-  --bg-app: #eef2ff;
-  --bg-card: #ffffff;
-  --text-primary: #0f0f1e;
-  --text-muted: #4338ca;
-  --border: #e0e7ff;
-  --gradient-1: rgba(99, 102, 241, 0.2);
   --gradient-2: rgba(79, 70, 229, 0.14);
 }
 
@@ -306,12 +262,6 @@
   --prove-800-rgb: 17 94 89;
   --prove-900-rgb: 19 78 74;
   --prove-950-rgb: 4 47 46;
-  --bg-app: #f0fdfa;
-  --bg-card: #ffffff;
-  --text-primary: #0d1f1e;
-  --text-muted: #0f766e;
-  --border: #ccfbf1;
-  --gradient-1: rgba(20, 184, 166, 0.2);
   --gradient-2: rgba(13, 148, 136, 0.14);
 }
 
@@ -332,12 +282,6 @@
   --prove-800-rgb: 30 41 59;
   --prove-900-rgb: 15 23 42;
   --prove-950-rgb: 2 6 23;
-  --bg-app: #f8fafc;
-  --bg-card: #ffffff;
-  --text-primary: #0f172a;
-  --text-muted: #475569;
-  --border: #e2e8f0;
-  --gradient-1: rgba(100, 116, 139, 0.2);
   --gradient-2: rgba(71, 85, 105, 0.14);
 }
 
@@ -358,12 +302,6 @@
   --prove-800-rgb: 133 77 14;
   --prove-900-rgb: 113 63 18;
   --prove-950-rgb: 66 32 6;
-  --bg-app: #fefce8;
-  --bg-card: #ffffff;
-  --text-primary: #1c1917;
-  --text-muted: #854d0e;
-  --border: #fef08a;
-  --gradient-1: rgba(234, 179, 8, 0.2);
   --gradient-2: rgba(202, 138, 4, 0.14);
 }
 
