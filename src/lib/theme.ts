@@ -32,7 +32,7 @@ export const ACCENT_THEME_OPTIONS: Array<{
   paidOnly: boolean;
   premiumOnly: boolean;
 }> = [
-  { id: "green", label: "Green", swatchClassName: "bg-emerald-500", swatchColor: "#10b981", paidOnly: false, premiumOnly: false },
+  { id: "green", label: "Default", swatchClassName: "bg-emerald-500", swatchColor: "#10b981", paidOnly: false, premiumOnly: false },
   { id: "pink", label: "Pink", swatchClassName: "bg-pink-500", swatchColor: "#ec4899", paidOnly: true, premiumOnly: false },
   { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", swatchColor: "#8b5cf6", paidOnly: true, premiumOnly: false },
   { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", swatchColor: "#0ea5e9", paidOnly: true, premiumOnly: false },

@@ -680,12 +680,9 @@ export default function SettingsPage() {
                 title="AI verification"
                 icon={<Sparkles className="h-5 w-5" />}
               >
-          <div className="space-y-1 border-b border-slate-100 px-4 py-4 dark:border-white/10">
-            <p className="text-sm font-bold text-slate-900 dark:text-white">
+          <div className="border-b border-slate-100 px-4 py-4 dark:border-white/10">
+            <p className="text-sm font-medium text-slate-900 dark:text-white">
               Unlimited on every plan
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Verified proofs water your garden and save a Gardener&apos;s Note on the plant.
             </p>
           </div>
           <label className="flex items-center justify-between gap-3 px-4 py-4">
