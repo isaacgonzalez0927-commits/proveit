@@ -82,7 +82,10 @@ export function sanitizeBuddyAvatarPlant(
 export function sanitizeBuddyProfileAccent(raw: unknown, plan: PlanId): AccentTheme {
   const value = typeof raw === "string" ? raw.trim() : "";
   const match = ACCENT_THEME_OPTIONS.find((o) => o.id === value);
-  if (!match) return "green";
+  if (!match) {
+    if (value === "green") return sanitizeAccentThemeForPlan("mint", plan);
+    return "mint";
+  }
   return sanitizeAccentThemeForPlan(match.id, plan);
 }
 

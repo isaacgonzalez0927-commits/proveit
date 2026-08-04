@@ -71,7 +71,8 @@ const themeScript = `
       storedAccent === 'slate' ||
       storedAccent === 'gold'
         ? storedAccent
-        : 'green';
+        : 'mint';
+    if (accentTheme === 'green') accentTheme = 'mint';
     var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     var isDark = theme === 'dark' || (theme === 'system' && systemDark);
     document.documentElement.setAttribute('data-accent-theme', accentTheme);

@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       ...sessionParams,
       branding_settings: {
         background_color: "#050a18",
-        button_color: "#7cff01",
+        button_color: "#10b981",
         border_style: "rounded",
         font_family: "inter",
       },

@@ -30,7 +30,7 @@ export function BuddyHubProfileCard() {
 
   const displayName = accountDisplayLabel(user);
   const plant = settings?.avatarPlant ?? 1;
-  const accent = settings?.accentTheme ?? "green";
+  const accent = settings?.accentTheme ?? "mint";
 
   return (
     <Link

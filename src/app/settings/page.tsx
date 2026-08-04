@@ -136,7 +136,7 @@ export default function SettingsPage() {
   const [hidingGoalId, setHidingGoalId] = useState<string | null>(null);
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
   const [developerEnabled, setDeveloperEnabled] = useState(false);
-  const [accentTheme, setAccentTheme] = useState<AccentTheme>("green");
+  const [accentTheme, setAccentTheme] = useState<AccentTheme>("mint");
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [upgradePromptOpen, setUpgradePromptOpen] = useState(false);
   const [upgradePromptPlan, setUpgradePromptPlan] = useState<"pro" | "premium">("pro");

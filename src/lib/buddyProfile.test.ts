@@ -27,7 +27,8 @@ describe("buddyProfile", () => {
   });
 
   it("sanitizes accent for plan", () => {
-    expect(sanitizeBuddyProfileAccent("gold", "free")).toBe("green");
+    expect(sanitizeBuddyProfileAccent("gold", "free")).toBe("mint");
+    expect(sanitizeBuddyProfileAccent("green", "free")).toBe("mint");
     expect(sanitizeBuddyProfileAccent("pink", "pro")).toBe("pink");
   });
 

@@ -2,39 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Cal AI–inspired light iOS: white / soft gray + black type; lime as sparse accent */
+/* Brand default: mint emerald — soft wash in light, charcoal in dark */
 :root {
   --prove-navy: #0a0a0a;
   --prove-navy-soft: #171717;
-  --prove-lime: #7cff01;
-  --prove-50-rgb: 245 245 245;
-  --prove-100-rgb: 232 232 232;
-  --prove-200-rgb: 212 212 212;
-  --prove-300-rgb: 163 163 163;
-  --prove-400-rgb: 115 115 115;
-  --prove-500-rgb: 124 255 1;
-  --prove-600-rgb: 100 214 0;
-  --prove-700-rgb: 64 64 64;
-  --prove-800-rgb: 38 38 38;
-  --prove-900-rgb: 23 23 23;
-  --prove-950-rgb: 10 10 10;
+  --prove-lime: #10b981;
+  --prove-50-rgb: 236 253 245;
+  --prove-100-rgb: 209 250 229;
+  --prove-200-rgb: 167 243 208;
+  --prove-300-rgb: 110 231 183;
+  --prove-400-rgb: 52 211 153;
+  --prove-500-rgb: 16 185 129;
+  --prove-600-rgb: 5 150 105;
+  --prove-700-rgb: 4 120 87;
+  --prove-800-rgb: 6 95 70;
+  --prove-900-rgb: 6 78 59;
+  --prove-950-rgb: 2 44 34;
   --prove-green: rgb(var(--prove-600-rgb));
   --prove-dark: var(--prove-navy);
   --accent-coral: #ff6b6b;
   --accent-gold: #f59e0b;
   --accent-violet: #8b5cf6;
-  /* Default light — clean iOS */
-  --bg-app: #f5f5f7;
+  /* Default light — subtle mint wash */
+  --bg-app: #f3faf7;
   --bg-card: #ffffff;
   --text-primary: #0a0a0a;
-  --text-muted: #737373;
-  --border: #ebebeb;
+  --text-muted: #64748b;
+  --border: #d1fae5;
   --gradient-1: rgba(0, 0, 0, 0.02);
-  --gradient-2: rgba(124, 255, 1, 0.06);
+  --gradient-2: rgba(16, 185, 129, 0.08);
   color-scheme: light;
 }
 
-/* Optional dark — still restrained, not navy mesh */
+/* Dark base: near-black charcoal. Accents stay sparse (FAB/rings/chips), not flood bg. */
 .dark {
   --bg-app: #0a0a0a;
   --bg-card: #171717;
@@ -42,11 +42,50 @@
   --text-muted: #a3a3a3;
   --border: rgba(255, 255, 255, 0.1);
   --gradient-1: rgba(255, 255, 255, 0.03);
-  --gradient-2: rgba(124, 255, 1, 0.06);
+  --gradient-2: rgba(16, 185, 129, 0.08);
   color-scheme: dark;
 }
 
-/* Pink theme - Light mode (softer pink, less red) */
+/* Shared dark surface tokens for every accent — charcoal only, tint via gradients/prove-* */
+:root[data-accent-theme].dark {
+  --bg-app: #0a0a0a;
+  --bg-card: #171717;
+  --text-primary: #fafafa;
+  --text-muted: #a3a3a3;
+  --border: rgba(255, 255, 255, 0.1);
+  --gradient-1: rgba(255, 255, 255, 0.03);
+}
+
+/* Mint (Default) — light keeps soft wash; dark uses shared charcoal */
+:root[data-accent-theme="mint"],
+:root[data-accent-theme="green"] {
+  --prove-50-rgb: 236 253 245;
+  --prove-100-rgb: 209 250 229;
+  --prove-200-rgb: 167 243 208;
+  --prove-300-rgb: 110 231 183;
+  --prove-400-rgb: 52 211 153;
+  --prove-500-rgb: 16 185 129;
+  --prove-600-rgb: 5 150 105;
+  --prove-700-rgb: 4 120 87;
+  --prove-800-rgb: 6 95 70;
+  --prove-900-rgb: 6 78 59;
+  --prove-950-rgb: 2 44 34;
+  --prove-lime: #10b981;
+  --bg-app: #f3faf7;
+  --bg-card: #ffffff;
+  --text-primary: #0a0a0a;
+  --text-muted: #64748b;
+  --border: #d1fae5;
+  --gradient-1: rgba(0, 0, 0, 0.02);
+  --gradient-2: rgba(16, 185, 129, 0.08);
+}
+
+:root[data-accent-theme="mint"].dark,
+:root[data-accent-theme="green"].dark {
+  --gradient-2: rgba(16, 185, 129, 0.1);
+}
+
+/* Pink theme - Light mode */
 :root[data-accent-theme="pink"] {
   --prove-50-rgb: 253 242 248;
   --prove-100-rgb: 252 231 243;
@@ -69,13 +108,7 @@
 }
 
 :root[data-accent-theme="pink"].dark {
-  --bg-app: #1a0a12;
-  --bg-card: rgba(80, 7, 36, 0.9);
-  --text-primary: #fdf2f8;
-  --text-muted: #f9a8d4;
-  --border: rgba(190, 24, 93, 0.5);
-  --gradient-1: rgba(236, 72, 153, 0.12);
-  --gradient-2: rgba(219, 39, 119, 0.08);
+  --gradient-2: rgba(236, 72, 153, 0.12);
 }
 
 /* Violet theme - Light mode */
@@ -101,13 +134,7 @@
 }
 
 :root[data-accent-theme="violet"].dark {
-  --bg-app: #0f0819;
-  --bg-card: rgba(46, 16, 101, 0.9);
-  --text-primary: #faf5ff;
-  --text-muted: #c4b5fd;
-  --border: rgba(109, 40, 217, 0.5);
-  --gradient-1: rgba(139, 92, 246, 0.12);
-  --gradient-2: rgba(124, 58, 237, 0.08);
+  --gradient-2: rgba(139, 92, 246, 0.12);
 }
 
 /* Ocean theme - Light mode */
@@ -133,13 +160,7 @@
 }
 
 :root[data-accent-theme="ocean"].dark {
-  --bg-app: #05141f;
-  --bg-card: rgba(8, 47, 73, 0.9);
-  --text-primary: #f0f9ff;
-  --text-muted: #7dd3fc;
-  --border: rgba(3, 105, 161, 0.5);
-  --gradient-1: rgba(14, 165, 233, 0.12);
-  --gradient-2: rgba(2, 132, 199, 0.08);
+  --gradient-2: rgba(14, 165, 233, 0.12);
 }
 
 /* Orange theme - Light mode */
@@ -165,13 +186,7 @@
 }
 
 :root[data-accent-theme="orange"].dark {
-  --bg-app: #1c0f07;
-  --bg-card: rgba(67, 20, 7, 0.9);
-  --text-primary: #fff7ed;
-  --text-muted: #fdba74;
-  --border: rgba(194, 65, 12, 0.5);
-  --gradient-1: rgba(249, 115, 22, 0.12);
-  --gradient-2: rgba(234, 88, 12, 0.08);
+  --gradient-2: rgba(249, 115, 22, 0.12);
 }
 
 /* Amber theme - Light mode */
@@ -197,13 +212,7 @@
 }
 
 :root[data-accent-theme="amber"].dark {
-  --bg-app: #1c1305;
-  --bg-card: rgba(69, 26, 3, 0.9);
-  --text-primary: #fffbeb;
-  --text-muted: #fcd34d;
-  --border: rgba(180, 83, 9, 0.5);
-  --gradient-1: rgba(245, 158, 11, 0.12);
-  --gradient-2: rgba(217, 119, 6, 0.08);
+  --gradient-2: rgba(245, 158, 11, 0.12);
 }
 
 /* Red theme - Light mode */
@@ -229,13 +238,7 @@
 }
 
 :root[data-accent-theme="red"].dark {
-  --bg-app: #1f0f0f;
-  --bg-card: rgba(69, 10, 10, 0.9);
-  --text-primary: #fef2f2;
-  --text-muted: #fca5a5;
-  --border: rgba(185, 28, 28, 0.5);
-  --gradient-1: rgba(239, 68, 68, 0.12);
-  --gradient-2: rgba(220, 38, 38, 0.08);
+  --gradient-2: rgba(239, 68, 68, 0.12);
 }
 
 /* Purple theme - Light mode */
@@ -261,13 +264,7 @@
 }
 
 :root[data-accent-theme="purple"].dark {
-  --bg-app: #1a0a2e;
-  --bg-card: rgba(59, 7, 100, 0.9);
-  --text-primary: #faf5ff;
-  --text-muted: #c084fc;
-  --border: rgba(126, 34, 206, 0.5);
-  --gradient-1: rgba(168, 85, 247, 0.12);
-  --gradient-2: rgba(147, 51, 234, 0.08);
+  --gradient-2: rgba(168, 85, 247, 0.12);
 }
 
 /* Indigo theme - Light mode */
@@ -293,13 +290,7 @@
 }
 
 :root[data-accent-theme="indigo"].dark {
-  --bg-app: #0f0f1e;
-  --bg-card: rgba(30, 27, 75, 0.9);
-  --text-primary: #eef2ff;
-  --text-muted: #a5b4fc;
-  --border: rgba(67, 56, 202, 0.5);
-  --gradient-1: rgba(99, 102, 241, 0.12);
-  --gradient-2: rgba(79, 70, 229, 0.08);
+  --gradient-2: rgba(99, 102, 241, 0.12);
 }
 
 /* Teal theme - Light mode */
@@ -325,45 +316,7 @@
 }
 
 :root[data-accent-theme="teal"].dark {
-  --bg-app: #0d1f1e;
-  --bg-card: rgba(4, 47, 46, 0.9);
-  --text-primary: #f0fdfa;
-  --text-muted: #5eead4;
-  --border: rgba(15, 118, 110, 0.5);
-  --gradient-1: rgba(20, 184, 166, 0.12);
-  --gradient-2: rgba(13, 148, 136, 0.08);
-}
-
-/* Mint theme - Light mode */
-:root[data-accent-theme="mint"] {
-  --prove-50-rgb: 236 253 245;
-  --prove-100-rgb: 209 250 229;
-  --prove-200-rgb: 167 243 208;
-  --prove-300-rgb: 110 231 183;
-  --prove-400-rgb: 52 211 153;
-  --prove-500-rgb: 16 185 129;
-  --prove-600-rgb: 5 150 105;
-  --prove-700-rgb: 4 120 87;
-  --prove-800-rgb: 6 95 70;
-  --prove-900-rgb: 6 78 59;
-  --prove-950-rgb: 2 44 34;
-  --bg-app: #ecfdf5;
-  --bg-card: #ffffff;
-  --text-primary: #0f1f18;
-  --text-muted: #047857;
-  --border: #a7f3d0;
-  --gradient-1: rgba(16, 185, 129, 0.2);
-  --gradient-2: rgba(5, 150, 105, 0.14);
-}
-
-:root[data-accent-theme="mint"].dark {
-  --bg-app: #0f1f18;
-  --bg-card: rgba(2, 44, 34, 0.9);
-  --text-primary: #ecfdf5;
-  --text-muted: #6ee7b7;
-  --border: rgba(4, 120, 87, 0.5);
-  --gradient-1: rgba(16, 185, 129, 0.12);
-  --gradient-2: rgba(5, 150, 105, 0.08);
+  --gradient-2: rgba(20, 184, 166, 0.12);
 }
 
 /* Slate theme - Light mode */
@@ -389,13 +342,7 @@
 }
 
 :root[data-accent-theme="slate"].dark {
-  --bg-app: #0f172a;
-  --bg-card: rgba(15, 23, 42, 0.95);
-  --text-primary: #f8fafc;
-  --text-muted: #94a3b8;
-  --border: rgba(71, 85, 105, 0.5);
-  --gradient-1: rgba(100, 116, 139, 0.12);
-  --gradient-2: rgba(71, 85, 105, 0.08);
+  --gradient-2: rgba(100, 116, 139, 0.12);
 }
 
 /* Gold theme - Light mode */
@@ -421,13 +368,7 @@
 }
 
 :root[data-accent-theme="gold"].dark {
-  --bg-app: #1c1917;
-  --bg-card: rgba(66, 32, 6, 0.9);
-  --text-primary: #fefce8;
-  --text-muted: #fde047;
-  --border: rgba(161, 98, 7, 0.5);
-  --gradient-1: rgba(234, 179, 8, 0.12);
-  --gradient-2: rgba(202, 138, 4, 0.08);
+  --gradient-2: rgba(234, 179, 8, 0.12);
 }
 
 /* Liquid glass: dual specular (top-left + bottom-right). Light = airy frost; dark = stronger frost. */
@@ -1353,11 +1294,11 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   transform: scale(0.99);
 }
 .lesson-tile-done {
-  border-color: rgba(124, 255, 1, 0.35);
-  background: color-mix(in srgb, rgb(124 255 1) 6%, var(--bg-card));
+  border-color: rgba(16, 185, 129, 0.35);
+  background: color-mix(in srgb, rgb(16 185 129) 6%, var(--bg-card));
 }
 .dark .lesson-tile-done {
-  background: color-mix(in srgb, rgb(124 255 1) 8%, var(--bg-card));
+  background: color-mix(in srgb, rgb(16 185 129) 8%, var(--bg-card));
 }
 
 .lesson-progress-ring {

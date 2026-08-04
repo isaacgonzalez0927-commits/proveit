@@ -1,6 +1,7 @@
 import type { PlanId } from "@/types";
 
 export type ThemeMode = "light" | "dark" | "system";
+/** `green` is a legacy alias migrated to `mint` (Default). */
 export type AccentTheme =
   | "green"
   | "pink"
@@ -19,7 +20,9 @@ export type AccentTheme =
 export const THEME_STORAGE_KEY = "proveit-theme";
 export const ACCENT_THEME_STORAGE_KEY = "proveit-accent-theme";
 export const DEFAULT_THEME_MODE: ThemeMode = "light";
-export const DEFAULT_ACCENT_THEME: AccentTheme = "green";
+/** Brand default — mint emerald `#10b981`. */
+export const DEFAULT_ACCENT_THEME: AccentTheme = "mint";
+export const DEFAULT_ACCENT_HEX = "#10b981";
 
 /** Themes included in Pro (6). Premium gets all colors. */
 export const PRO_ACCENT_THEMES: AccentTheme[] = ["pink", "violet", "ocean", "teal", "orange", "amber"];
@@ -32,7 +35,7 @@ export const ACCENT_THEME_OPTIONS: Array<{
   paidOnly: boolean;
   premiumOnly: boolean;
 }> = [
-  { id: "green", label: "Default", swatchClassName: "bg-emerald-500", swatchColor: "#10b981", paidOnly: false, premiumOnly: false },
+  { id: "mint", label: "Default", swatchClassName: "bg-emerald-500", swatchColor: DEFAULT_ACCENT_HEX, paidOnly: false, premiumOnly: false },
   { id: "pink", label: "Pink", swatchClassName: "bg-pink-500", swatchColor: "#ec4899", paidOnly: true, premiumOnly: false },
   { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", swatchColor: "#8b5cf6", paidOnly: true, premiumOnly: false },
   { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", swatchColor: "#0ea5e9", paidOnly: true, premiumOnly: false },
@@ -42,7 +45,6 @@ export const ACCENT_THEME_OPTIONS: Array<{
   { id: "red", label: "Red", swatchClassName: "bg-red-500", swatchColor: "#ef4444", paidOnly: true, premiumOnly: true },
   { id: "purple", label: "Purple", swatchClassName: "bg-purple-500", swatchColor: "#a855f7", paidOnly: true, premiumOnly: true },
   { id: "indigo", label: "Indigo", swatchClassName: "bg-indigo-500", swatchColor: "#6366f1", paidOnly: true, premiumOnly: true },
-  { id: "mint", label: "Mint", swatchClassName: "bg-emerald-400", swatchColor: "#34d399", paidOnly: true, premiumOnly: true },
   { id: "slate", label: "Slate", swatchClassName: "bg-slate-500", swatchColor: "#64748b", paidOnly: true, premiumOnly: true },
   { id: "gold", label: "Gold", swatchClassName: "bg-yellow-500", swatchColor: "#eab308", paidOnly: true, premiumOnly: true },
 ];
@@ -69,6 +71,11 @@ function isAccentTheme(value: string | null): value is AccentTheme {
   );
 }
 
+/** Map legacy `green` / lime default to mint. */
+export function normalizeAccentTheme(accent: AccentTheme): AccentTheme {
+  return accent === "green" ? "mint" : accent;
+}
+
 export function getStoredThemeMode(): ThemeMode {
   if (typeof window === "undefined") return DEFAULT_THEME_MODE;
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -78,7 +85,8 @@ export function getStoredThemeMode(): ThemeMode {
 export function getStoredAccentTheme(): AccentTheme {
   if (typeof window === "undefined") return DEFAULT_ACCENT_THEME;
   const stored = window.localStorage.getItem(ACCENT_THEME_STORAGE_KEY);
-  return isAccentTheme(stored) ? stored : DEFAULT_ACCENT_THEME;
+  if (!isAccentTheme(stored)) return DEFAULT_ACCENT_THEME;
+  return normalizeAccentTheme(stored);
 }
 
 export function applyThemeMode(theme: ThemeMode) {
@@ -90,7 +98,7 @@ export function applyThemeMode(theme: ThemeMode) {
 
 export function applyAccentTheme(accent: AccentTheme) {
   if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("data-accent-theme", accent);
+  document.documentElement.setAttribute("data-accent-theme", normalizeAccentTheme(accent));
 }
 
 export function saveAndApplyThemeMode(theme: ThemeMode) {
@@ -101,8 +109,9 @@ export function saveAndApplyThemeMode(theme: ThemeMode) {
 
 export function saveAndApplyAccentTheme(accent: AccentTheme) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(ACCENT_THEME_STORAGE_KEY, accent);
-  applyAccentTheme(accent);
+  const normalized = normalizeAccentTheme(accent);
+  window.localStorage.setItem(ACCENT_THEME_STORAGE_KEY, normalized);
+  applyAccentTheme(normalized);
 }
 
 export function getEffectiveIsDark(theme: ThemeMode): boolean {
@@ -116,9 +125,10 @@ export function canUsePaidAccentThemes(plan: PlanId | null | undefined): boolean
 }
 
 export function canUseAccentTheme(plan: PlanId | null | undefined, accent: AccentTheme): boolean {
-  if (accent === "green") return true;
+  const normalized = normalizeAccentTheme(accent);
+  if (normalized === "mint") return true;
   if (plan === "premium") return true;
-  if (plan === "pro") return PRO_ACCENT_THEMES.includes(accent);
+  if (plan === "pro") return PRO_ACCENT_THEMES.includes(normalized);
   return false;
 }
 
@@ -126,6 +136,7 @@ export function sanitizeAccentThemeForPlan(
   accent: AccentTheme,
   plan: PlanId | null | undefined
 ): AccentTheme {
-  if (canUseAccentTheme(plan, accent)) return accent;
-  return "green";
+  const normalized = normalizeAccentTheme(accent);
+  if (canUseAccentTheme(plan, normalized)) return normalized;
+  return DEFAULT_ACCENT_THEME;
 }

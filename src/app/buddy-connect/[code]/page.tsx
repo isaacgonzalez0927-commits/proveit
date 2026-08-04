@@ -88,7 +88,7 @@ export default function BuddyConnectPage() {
     }
   }, [code, connecting]);
 
-  const previewAccent = (preview?.accentTheme ?? "green") as AccentTheme;
+  const previewAccent = (preview?.accentTheme ?? "mint") as AccentTheme;
   const previewPlant = (preview?.avatarPlant ?? 1) as GoalPlantVariant;
 
   return (
