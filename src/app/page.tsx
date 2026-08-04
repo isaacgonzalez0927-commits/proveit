@@ -709,7 +709,7 @@ function LandingContent() {
             title="Snap your proof."
             body="Take a fresh photo of the habit — a walk, a workout, a book page."
             imageSrc="/onboarding/snap-proof.jpg"
-            imageAlt="Phone camera ready to capture proof"
+            imageAlt="Running shoe as workout proof"
             onBack={() => goTo(0)}
             onNext={() => goTo(2)}
           />
@@ -734,9 +734,8 @@ function LandingContent() {
             eyebrow="Step 3"
             title="Water your plant."
             body="Verified proofs grow your garden over time — one clear win each day."
-            imageSrc="/onboarding/plant-growth-transparent.png"
-            imageAlt="Plant growing from a hand"
-            imageContain
+            imageSrc="/onboarding/plant-growth.jpg"
+            imageAlt="Seedling growing in an open hand"
             onBack={() => goTo(2)}
             onNext={() => goTo(4)}
           />
@@ -749,7 +748,7 @@ function LandingContent() {
             title="Miss a week? It wilts first."
             body="Two-week grace: prove again to keep the plant. Your streak still resets."
             imageSrc="/onboarding/wilt-grace.jpg"
-            imageAlt="Potted plant that needs water"
+            imageAlt="Wilting houseplant on a windowsill"
             onBack={() => goTo(3)}
             onNext={() => goTo(5)}
           />
@@ -761,9 +760,8 @@ function LandingContent() {
             eyebrow="Buddies"
             title="Grow together."
             body="Share a goal, see each other’s progress, and keep each other honest."
-            imageSrc="/onboarding/buddies.png"
-            imageAlt="Two friends cheering each other on"
-            imageContain
+            imageSrc="/onboarding/buddies.jpg"
+            imageAlt="Trainer and athlete working out together"
             onBack={() => goTo(4)}
             onNext={() => {
               setLoginError("");

@@ -1,13 +1,21 @@
 # Onboarding image sources
 
-## Existing product assets
-- `book-proof.png` — existing Proveit asset
-- `buddies.png` — existing Proveit asset
-- `plant-growth.png` / `plant-growth-transparent.png` — existing Proveit assets
+Portrait-friendly photos for intro slides (`object-cover` in a tall card). Downloaded 2026-08-04.
 
-## Unsplash (royalty-free, downloaded 2026-08-03)
-- `snap-proof.jpg` — https://unsplash.com/photos/phone-in-hand-1512941937669-90a1b58e7e9c (`photo-1512941937669-90a1b58e7e9c`)
-- `ai-check.jpg` — https://unsplash.com/photos/open-book-1512820790803-83ca734da794 (`photo-1512820790803-83ca734da794`)
-- `garden-streak.jpg` — https://unsplash.com/photos/garden-plants-1416879595882-3373a0480b5b (`photo-1416879595882-3373a0480b5b`)
-- `wilt-grace.jpg` — https://unsplash.com/photos/potted-plant-1485955900006-10f4d324d411 (`photo-1485955900006-10f4d324d411`)
-- `habit-walk.jpg` — https://unsplash.com/photos/walking-path-1476480862126-209bfaa8edc8 (`photo-1476480862126-209bfaa8edc8`) — reserved / unused spare
+## Active slides
+- `garden-streak.jpg` (Welcome) — Unsplash `photo-1501004318641-b39e6451bec6`  
+  https://images.unsplash.com/photo-1501004318641-b39e6451bec6
+- `snap-proof.jpg` (Snap your proof) — Unsplash `photo-1542291026-7eec264c27ff`  
+  https://images.unsplash.com/photo-1542291026-7eec264c27ff
+- `ai-check.jpg` (AI checks it) — derived from existing Proveit asset `book-proof.png` (POV open book outdoors)
+- `plant-growth.jpg` (Water your plant) — Pexels `1072824`  
+  https://www.pexels.com/photo/person-holding-a-green-plant-1072824/
+- `wilt-grace.jpg` (Miss a week? It wilts first.) — Pexels `10651660`  
+  https://www.pexels.com/photo/wilting-plant-on-a-windowsill-10651660/
+- `buddies.jpg` (Grow together) — Unsplash `photo-1571019614242-c5c5dee9f50b`  
+  https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b
+
+## Unused / removed
+- Removed clipart and mismatched stock: `buddies.png`, `plant-growth.png`, `plant-growth-transparent.png`, prior landscape `wilt-grace` / garden / snap assets.
+- `book-proof.png` kept as source archive for `ai-check.jpg` (not referenced in UI).
+- `habit-walk.jpg` — Unsplash `photo-1476480862126-209bfaa8edc8` — reserved spare, unused in UI.
