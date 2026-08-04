@@ -15,7 +15,7 @@ import {
 
 export function ThemeToggle() {
   const { user } = useApp();
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

@@ -41,9 +41,12 @@ import {
   ACCENT_THEME_OPTIONS,
   canUseAccentTheme,
   getStoredAccentTheme,
+  getStoredThemeMode,
   saveAndApplyAccentTheme,
+  saveAndApplyThemeMode,
   sanitizeAccentThemeForPlan,
   type AccentTheme,
+  type ThemeMode,
 } from "@/lib/theme";
 import { UpgradePromptModal } from "@/components/UpgradePromptModal";
 import { openStripeBillingPortal, syncStripeSubscription } from "@/lib/checkoutClient";
@@ -66,30 +69,44 @@ function SettingsDisclosure({
 
   return (
     <details
-      className={`motion-disclosure group overflow-hidden rounded-2xl glass-card ${danger ? "border-red-300/70 dark:border-red-800/50" : ""}`}
+      className={`motion-disclosure group settings-group ${danger ? "border-red-300/80 dark:border-red-800/60" : ""}`}
       onToggle={(event) => {
         if ((event.currentTarget as HTMLDetailsElement).open) {
           setOpenSeq((seq) => seq + 1);
         }
       }}
     >
-      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 marker:hidden">
-        <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${danger ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" : "bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300"}`}>
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 marker:hidden">
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-[0.85rem] ${
+            danger
+              ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+              : "bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300"
+          }`}
+        >
           {icon}
         </span>
         <span className="min-w-0 flex-1">
-          <span className={`block text-[15px] font-semibold ${danger ? "text-red-800 dark:text-red-200" : "text-slate-950 dark:text-white"}`}>
+          <span
+            className={`block text-[15px] font-semibold tracking-tight ${
+              danger ? "text-red-800 dark:text-red-200" : "text-[color:var(--text-primary)]"
+            }`}
+          >
             {title}
           </span>
           {description && (
-            <span className={`mt-0.5 block text-xs ${danger ? "text-red-700/90 dark:text-red-300/90" : "text-slate-500 dark:text-slate-400"}`}>
+            <span
+              className={`mt-0.5 block text-[12px] leading-snug ${
+                danger ? "text-red-700/90 dark:text-red-300/90" : "text-[color:var(--text-muted)]"
+              }`}
+            >
               {description}
             </span>
           )}
         </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-slate-300 transition-transform group-open:rotate-90" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--text-muted)] transition-transform group-open:rotate-90" />
       </summary>
-      <div className="motion-disclosure-panel border-t border-slate-200/50 dark:border-white/10">
+      <div className="motion-disclosure-panel border-t border-[color:var(--border)]">
         <div className="motion-disclosure-inner" key={openSeq}>
           {children}
         </div>
@@ -137,6 +154,7 @@ export default function SettingsPage() {
   const [hiddenGoalIds, setHiddenGoalIds] = useState<string[]>([]);
   const [developerEnabled, setDeveloperEnabled] = useState(false);
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("green");
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [upgradePromptOpen, setUpgradePromptOpen] = useState(false);
   const [upgradePromptPlan, setUpgradePromptPlan] = useState<"pro" | "premium">("pro");
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -157,6 +175,7 @@ export default function SettingsPage() {
     setHiddenGoalIds(getStoredHiddenHistoryGoalIds());
     setDeveloperEnabled(getStoredDeveloperModeSettings().enabled);
     setAccentTheme(getStoredAccentTheme());
+    setThemeMode(getStoredThemeMode());
   }, []);
 
   useEffect(() => {
@@ -246,6 +265,13 @@ export default function SettingsPage() {
     setSettingsMessage("Gallery settings saved.");
   };
 
+  const updateThemeMode = (nextMode: ThemeMode) => {
+    setThemeMode(nextMode);
+    saveAndApplyThemeMode(nextMode);
+    const label = nextMode === "system" ? "System" : nextMode === "dark" ? "Dark" : "Light";
+    setSettingsMessage(`${label} appearance applied.`);
+  };
+
   const updateAccentTheme = (nextAccent: AccentTheme) => {
     if (!canUseAccentTheme(user?.plan, nextAccent)) {
       const option = ACCENT_THEME_OPTIONS.find((o) => o.id === nextAccent);
@@ -262,7 +288,7 @@ export default function SettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accentTheme: nextAccent }),
     }).catch(() => undefined);
-    setSettingsMessage(`${label} theme enabled.`);
+    setSettingsMessage(`${label} color applied across the app.`);
   };
 
   const handleToggleDeveloperTools = (enabled: boolean) => {
@@ -453,31 +479,33 @@ export default function SettingsPage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-md flex-1 space-y-4 px-4 pb-[max(6.5rem,env(safe-area-inset-bottom))] pt-6">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Profile</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Account, themes, and plan — clearer taps, less clutter.
+      <main className="mx-auto w-full max-w-md flex-1 space-y-5 px-4 pb-[max(6.5rem,env(safe-area-inset-bottom))] pt-5">
+        <div className="px-0.5">
+          <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[color:var(--text-primary)]">
+            Settings
+          </h1>
+          <p className="mt-1 text-sm text-[color:var(--text-muted)]">
+            Account, appearance, and proof preferences.
           </p>
         </div>
-        <header className="sticky top-[calc(5.75rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-slate-200/60 bg-[var(--bg-app)]/92 px-4 pb-3 pt-1 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#061527]/92">
-          <label className="flex h-[3.25rem] items-center gap-3 rounded-2xl border-2 border-prove-200/50 px-4 dark:border-prove-800/40 glass-card">
-            <Search className="h-5 w-5 shrink-0 text-slate-400 dark:text-slate-500" />
+        <header className="sticky top-[calc(5.75rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--bg-app)_92%,transparent)] px-4 pb-3 pt-1 backdrop-blur-xl">
+          <label className="settings-group flex h-11 items-center gap-3 px-3.5">
+            <Search className="h-4 w-4 shrink-0 text-[color:var(--text-muted)]" />
             <span className="sr-only">Search settings</span>
             <input
               type="search"
               value={settingsQuery}
               onChange={(event) => setSettingsQuery(event.target.value)}
-              placeholder="Search for a setting..."
-              className="min-w-0 flex-1 bg-transparent text-[17px] font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500"
+              placeholder="Search settings"
+              className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none"
             />
           </label>
         </header>
 
-        <div className="motion-stagger-rise space-y-5 pt-4">
+        <div className="motion-stagger-rise space-y-6 pt-1">
           {matchesSettingsQuery("account profile plan") && (
             <section>
-              <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
                 Account
               </p>
               <SettingsDisclosure
@@ -587,55 +615,91 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {matchesSettingsQuery("appearance theme colors accent dark") && (
+          {matchesSettingsQuery("appearance theme colors accent dark light system") && (
             <section>
-              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
                 Appearance
               </p>
-              <SettingsDisclosure
-                title="Appearance"
-                description="Theme colors and app style."
-                icon={<Palette className="h-5 w-5" />}
-              >
-                <div className="motion-stagger-grid grid gap-2 p-3">
-            {ACCENT_THEME_OPTIONS.map((option) => {
-              const selected = accentTheme === option.id;
-              const locked = !canUseAccentTheme(user?.plan, option.id);
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => updateAccentTheme(option.id)}
-                  className={`flex items-center justify-between rounded-2xl border px-3 py-2.5 text-sm transition ${
-                    selected
-                      ? "border-prove-500 bg-prove-50 text-prove-800 dark:border-prove-500 dark:bg-prove-950/40 dark:text-prove-300"
-                      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                  }`}
-                  aria-label={`Set ${option.label} theme`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <span
-                      className="h-4 w-4 shrink-0 rounded-full border border-slate-300 dark:border-slate-600"
-                      style={{ backgroundColor: option.swatchColor }}
-                    />
-                    {option.label}
-                  </span>
-                  {locked ? (
-                    <Lock className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-                  ) : selected ? (
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em]">Active</span>
-                  ) : null}
-                </button>
-              );
-            })}
+              <div className="settings-group">
+                <div className="settings-row flex-col items-stretch gap-3 !py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-[0.85rem] bg-prove-100 text-prove-700 dark:bg-prove-950 dark:text-prove-300">
+                      <Palette className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-semibold tracking-tight text-[color:var(--text-primary)]">
+                        Mode
+                      </p>
+                      <p className="text-[12px] text-[color:var(--text-muted)]">
+                        Light, dark, or follow your device.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="settings-seg" role="group" aria-label="Appearance mode">
+                    {(
+                      [
+                        { id: "light", label: "Light" },
+                        { id: "dark", label: "Dark" },
+                        { id: "system", label: "System" },
+                      ] as const
+                    ).map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={themeMode === option.id}
+                        onClick={() => updateThemeMode(option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </SettingsDisclosure>
+                <div className="settings-row flex-col items-stretch gap-3 !py-4">
+                  <div>
+                    <p className="text-[15px] font-semibold tracking-tight text-[color:var(--text-primary)]">
+                      Accent color
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-[color:var(--text-muted)]">
+                      Tints the background, buttons, and + prove button.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                    {ACCENT_THEME_OPTIONS.map((option) => {
+                      const selected = accentTheme === option.id;
+                      const locked = !canUseAccentTheme(user?.plan, option.id);
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => updateAccentTheme(option.id)}
+                          className={`relative flex flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2.5 text-[11px] font-semibold transition ${
+                            selected
+                              ? "border-prove-500 bg-prove-50 text-prove-800 ring-2 ring-prove-500/30 dark:border-prove-400 dark:bg-prove-950/50 dark:text-prove-200"
+                              : "border-[color:var(--border)] bg-[color:var(--bg-app)] text-[color:var(--text-muted)] hover:border-prove-300"
+                          }`}
+                          aria-label={`Set ${option.label} theme`}
+                          aria-pressed={selected}
+                        >
+                          <span
+                            className="h-7 w-7 rounded-full border border-black/10 shadow-sm dark:border-white/15"
+                            style={{ backgroundColor: option.swatchColor }}
+                          />
+                          <span className="truncate">{option.label}</span>
+                          {locked ? (
+                            <Lock className="absolute right-1 top-1 h-3 w-3 text-[color:var(--text-muted)]" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </section>
           )}
 
           {matchesSettingsQuery("ai proof verification strict gardener note") && (
             <section>
-              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
                 Proof
               </p>
               <SettingsDisclosure
@@ -671,7 +735,7 @@ export default function SettingsPage() {
 
           {matchesSettingsQuery("gallery display proof photos streak verified history") && (
             <section>
-              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
                 Gallery
               </p>
               <SettingsDisclosure
@@ -702,7 +766,7 @@ export default function SettingsPage() {
 
         {useSupabase && matchesSettingsQuery("contact email password reset account") && (
           <section>
-            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
               Contact
             </p>
             <SettingsDisclosure
@@ -828,7 +892,7 @@ export default function SettingsPage() {
 
         {isCreatorAccount && matchesSettingsQuery("developer tools private guest mode") && (
           <section>
-            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-500">
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-500">
               Developer
             </p>
             <SettingsDisclosure
@@ -884,7 +948,7 @@ export default function SettingsPage() {
 
         {matchesSettingsQuery("hide goals gallery privacy") && (
         <section>
-          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-red-400">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-red-400">
             Privacy
           </p>
           <SettingsDisclosure
@@ -956,7 +1020,7 @@ export default function SettingsPage() {
 
         {matchesSettingsQuery("help support about legal privacy terms") && (
         <section>
-          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
             More
           </p>
           <SettingsDisclosure

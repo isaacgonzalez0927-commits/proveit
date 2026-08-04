@@ -592,7 +592,7 @@ function LandingContent() {
                   Prove it. Grow it.
                 </h1>
                 <p className="mx-auto mt-4 max-w-[30ch] text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                  Pick a goal, snap proof, water your plant — one clear path each day.
+                  Snap proof, AI matches a goal, water your plant — one clear path each day.
                 </p>
                 <div className="mx-auto mt-8 grid max-w-xs grid-cols-3 gap-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                   <div className="rounded-2xl border-2 border-prove-200/70 bg-white/80 px-2 py-3 shadow-sm dark:border-prove-800/50 dark:bg-slate-900/70">Home</div>

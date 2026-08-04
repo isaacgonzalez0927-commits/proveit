@@ -523,10 +523,7 @@ body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
   letter-spacing: -0.015em;
-}
-
-html:not(.dark) body {
-  background: #f5f5f7;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 @layer utilities {
@@ -1393,7 +1390,7 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   background: color-mix(in srgb, var(--bg-card) 100%, #0f172a);
 }
 
-/* Primary CTA — black pill (Cal AI style); lime reserved for rings/accents */
+/* Primary CTA — uses accent prove tokens so Appearance changes are visible */
 .cta-chunky {
   display: inline-flex;
   align-items: center;
@@ -1407,20 +1404,20 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   letter-spacing: -0.02em;
   text-transform: none;
   color: #ffffff;
-  background: #0a0a0a;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  background: rgb(var(--prove-950-rgb));
+  box-shadow: 0 4px 14px rgb(var(--prove-950-rgb) / 0.22);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease, background-color 180ms ease;
 }
 .cta-chunky:hover {
   filter: brightness(1.08);
 }
 .cta-chunky:active {
   transform: scale(0.97);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 8px rgb(var(--prove-950-rgb) / 0.18);
 }
 .dark .cta-chunky {
-  color: #0a0a0a;
-  background: #fafafa;
+  color: rgb(var(--prove-950-rgb));
+  background: rgb(var(--prove-100-rgb));
 }
 
 .duo-card {
@@ -1436,7 +1433,7 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
-/* Floating prove action — Cal AI + button */
+/* Floating prove action — accent-aware so theme picks show immediately */
 .fab-prove {
   display: flex;
   align-items: center;
@@ -1444,17 +1441,59 @@ main > div:not([id]):not(.motion-stagger-rise):nth-child(4) {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 9999px;
-  background: #0a0a0a;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  background: rgb(var(--prove-600-rgb));
+  color: #0a0a0a;
+  box-shadow: 0 8px 24px rgb(var(--prove-600-rgb) / 0.35);
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 180ms ease;
 }
 .fab-prove:active {
   transform: scale(0.94);
 }
 .dark .fab-prove {
-  background: #fafafa;
+  background: rgb(var(--prove-500-rgb));
   color: #0a0a0a;
+  box-shadow: 0 8px 24px rgb(var(--prove-500-rgb) / 0.3);
+}
+
+/* iOS-style settings groups */
+.settings-group {
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child {
+  border-bottom: none;
+}
+.settings-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--bg-app) 88%, rgb(var(--prove-200-rgb)));
+}
+.settings-seg button {
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+.settings-seg button[aria-pressed="true"] {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 @keyframes celebrate-check {

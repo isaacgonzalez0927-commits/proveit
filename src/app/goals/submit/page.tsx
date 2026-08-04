@@ -29,29 +29,50 @@ import type { StoredUser } from "@/lib/store";
 import type { Goal } from "@/types";
 import type { VerificationResult } from "@/components/AIVerificationWidget";
 
-async function verifyWithOpenAI(args: {
+type VerifyMatchResult = {
+  verified: boolean;
+  feedback: string;
+  matchedGoalId: string | null;
+  matchedGoalTitle: string | null;
+  denyReason: "no_connection" | "not_proven" | null;
+};
+
+async function verifyProofPhoto(args: {
   imageDataUrl: string;
-  goalTitle: string;
+  /** FAB / no-picker: send all candidate goals; server matches. */
+  goals?: Array<{ id: string; title: string; description?: string; proofRequirement?: string }>;
+  /** Deep-link: force one goal id (still must be in goals). */
+  lockGoalId?: string;
+  /** Legacy single-goal fallback when goals omitted. */
+  goalTitle?: string;
   goalDescription?: string;
   proofRequirement?: string;
-}): Promise<{ verified: boolean; feedback: string }> {
+}): Promise<VerifyMatchResult> {
   const base64 = args.imageDataUrl.includes(",")
     ? args.imageDataUrl.split(",")[1]
     : args.imageDataUrl;
+  const body =
+    args.goals && args.goals.length > 0
+      ? {
+          imageBase64: base64,
+          goals: args.goals,
+          lockGoalId: args.lockGoalId,
+        }
+      : {
+          imageBase64: base64,
+          goalTitle: args.goalTitle ?? "",
+          goalDescription: args.goalDescription ?? "",
+          proofRequirement: args.proofRequirement ?? "",
+        };
   const res = await fetch("/api/verify", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      imageBase64: base64,
-      goalTitle: args.goalTitle,
-      goalDescription: args.goalDescription ?? "",
-      proofRequirement: args.proofRequirement ?? "",
-    }),
+    body: JSON.stringify(body),
   });
-  let data: { verified?: boolean; feedback?: string } = {};
+  let data: Partial<VerifyMatchResult> = {};
   try {
-    data = (await res.json()) as { verified?: boolean; feedback?: string };
+    data = (await res.json()) as Partial<VerifyMatchResult>;
   } catch {
     /* keep defaults */
   }
@@ -62,11 +83,22 @@ async function verifyWithOpenAI(args: {
         res.status === 503
           ? "AI verification isn't configured yet. Add an OpenAI key on the server."
           : "Verification service is unavailable. Try again in a moment.",
+      matchedGoalId: null,
+      matchedGoalTitle: null,
+      denyReason: "no_connection",
     };
   }
   return {
     verified: Boolean(data.verified),
     feedback: data.feedback ?? (data.verified ? "Verified." : "Not verified."),
+    matchedGoalId: typeof data.matchedGoalId === "string" ? data.matchedGoalId : null,
+    matchedGoalTitle: typeof data.matchedGoalTitle === "string" ? data.matchedGoalTitle : null,
+    denyReason:
+      data.denyReason === "no_connection" || data.denyReason === "not_proven"
+        ? data.denyReason
+        : data.verified
+          ? null
+          : "not_proven",
   };
 }
 
@@ -81,7 +113,7 @@ const AIVerificationWidget = dynamic(() => import("@/components/AIVerificationWi
   ),
 });
 
-function submitCameraGateKey(goalId: string) {
+function submitCameraGateKey(goalId: string | "auto") {
   return `proveit_submit_camera_gate_${goalId}`;
 }
 
@@ -97,6 +129,8 @@ function SubmitProofContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const goalId = searchParams.get("goalId");
+  /** FAB / bare /goals/submit — no goal picker; AI matches photo to a goal. */
+  const autoMatchMode = !goalId;
   const {
     user: contextUser,
     goals: contextGoals,
@@ -114,13 +148,17 @@ function SubmitProofContent() {
   // Fallback: fetch directly when context doesn't have data (handles direct nav / context race)
   const [localUser, setLocalUser] = useState<StoredUser | null>(null);
   const [localGoal, setLocalGoal] = useState<Goal | null>(null);
+  const [localGoals, setLocalGoals] = useState<Goal[]>([]);
   const [pageLoading, setPageLoading] = useState(false);
+  /** Goal resolved by AI match (auto mode) or sticky deep-link goal. */
+  const [matchedGoal, setMatchedGoal] = useState<Goal | null>(null);
   /** Avoid full-page loading flashes when context refetches goals/user mid proof (same as sticky session in AppContext). */
   const stickyUserRef = useRef<StoredUser | null>(null);
   const stickyGoalRef = useRef<Goal | null>(null);
 
   useEffect(() => {
     stickyGoalRef.current = null;
+    setMatchedGoal(null);
   }, [goalId]);
 
   useEffect(() => {
@@ -132,9 +170,17 @@ function SubmitProofContent() {
   }, [authReady, contextUser, localUser]);
 
   const userFromSources = contextUser ?? localUser;
+  const allGoals =
+    contextGoals.length > 0
+      ? contextGoals
+      : localGoals.length > 0
+        ? localGoals
+        : localGoal
+          ? [localGoal]
+          : [];
   const goalFromSources = goalId
-    ? contextGoals.find((g) => g.id === goalId) ?? localGoal ?? null
-    : null;
+    ? allGoals.find((g) => g.id === goalId) ?? localGoal ?? null
+    : matchedGoal;
 
   useEffect(() => {
     if (userFromSources) stickyUserRef.current = userFromSources;
@@ -150,16 +196,16 @@ function SubmitProofContent() {
     goalFromSources ??
     (goalId && authReady && stickyGoalRef.current?.id === goalId
       ? stickyGoalRef.current
-      : null);
-  const goals = goal && !contextGoals.find((g) => g.id === goal.id) ? [...contextGoals, goal] : contextGoals;
+      : matchedGoal);
+  const goals =
+    goal && !allGoals.find((g) => g.id === goal.id) ? [...allGoals, goal] : allGoals;
 
   useEffect(() => {
-    if (!goalId || !authReady) return;
-    if (user && goal) {
+    if (!authReady) return;
+    if (user && (autoMatchMode || goal)) {
       setPageLoading(false);
       return;
     }
-    // Need to fetch - prevent redirect until we have data
     setPageLoading(true);
     let cancelled = false;
     Promise.all([
@@ -169,14 +215,17 @@ function SubmitProofContent() {
       if (cancelled) return;
       const p = profileRes?.profile;
       if (p) setLocalUser({ id: p.id, email: p.email, plan: p.plan ?? "free", createdAt: p.createdAt ?? new Date().toISOString() });
-      const gs = goalsRes?.goals ?? [];
-      const g = gs.find((x: Goal) => x.id === goalId);
-      if (g) setLocalGoal(g);
+      const gs = (goalsRes?.goals ?? []) as Goal[];
+      setLocalGoals(gs);
+      if (goalId) {
+        const g = gs.find((x) => x.id === goalId);
+        if (g) setLocalGoal(g);
+      }
     }).catch(() => {}).finally(() => {
       if (!cancelled) setPageLoading(false);
     });
     return () => { cancelled = true; };
-  }, [goalId, authReady, user?.id, goal?.id, contextUser?.id]);
+  }, [goalId, autoMatchMode, authReady, user?.id, goal?.id, contextUser?.id]);
 
   const [step, setStep] = useState<"capture" | "uploading" | "result">("capture");
   const [cameraStarted, setCameraStarted] = useState(false);
@@ -239,13 +288,27 @@ function SubmitProofContent() {
 
   // Once we've shown the submit UI (camera), never redirect - avoids auth blips
   useEffect(() => {
-    if (user && goal) hasShownContent.current = true;
-  }, [user, goal]);
+    if (user && (goal || autoMatchMode)) hasShownContent.current = true;
+  }, [user, goal, autoMatchMode]);
 
   const goalSubs = goal ? getSubmissionsForGoal(goal.id) : [];
-  const inWindow = !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
+  /** In auto mode, allow capture even before a goal is matched. */
+  const inWindow = autoMatchMode
+    ? true
+    : !!goal && isWithinSubmissionWindow(goal, new Date(), goalSubs);
   const alreadyVerifiedToday =
     !!goal && hasVerifiedSubmissionOnDate(goalSubs, todayStr);
+
+  const candidateGoals = useMemo(() => {
+    const now = new Date();
+    const today = format(now, "yyyy-MM-dd");
+    return goals.filter((g) => {
+      if (g.isOnBreak || g.archivedAt) return false;
+      const subs = getSubmissionsForGoal(g.id);
+      if (hasVerifiedSubmissionOnDate(subs, today)) return false;
+      return isWithinSubmissionWindow(g, now, subs);
+    });
+  }, [goals, getSubmissionsForGoal, submissions]);
 
   const wateringCelebration = useMemo(() => {
     if (!goal || verified !== true) return null;
@@ -276,27 +339,13 @@ function SubmitProofContent() {
   useEffect(() => {
     if (!authReady || hasRedirected.current || pageLoading) return;
     if (hasShownContent.current) return; // Already showed content - don't redirect
-    if (!goalId) {
-      // Prove tab: land on first due/submittable goal, else today's path
-      const now = new Date();
-      const today = format(new Date(), "yyyy-MM-dd");
-      const pick =
-        contextGoals.find(
-          (g) =>
-            !g.isOnBreak &&
-            !g.archivedAt &&
-            isWithinSubmissionWindow(g, now, getSubmissionsForGoal(g.id)) &&
-            !hasVerifiedSubmissionOnDate(getSubmissionsForGoal(g.id), today)
-        ) ?? null;
-      hasRedirected.current = true;
-      router.replace(pick ? `/goals/submit?goalId=${pick.id}` : "/dashboard#today-path");
-      return;
-    }
     if (!user) {
       hasRedirected.current = true;
       router.replace("/dashboard");
       return;
     }
+    // Auto mode: stay on /goals/submit — camera opens; AI matches a goal after capture.
+    if (autoMatchMode) return;
     if (!goal) {
       hasRedirected.current = true;
       router.replace("/dashboard#today-path");
@@ -305,18 +354,18 @@ function SubmitProofContent() {
   }, [
     authReady,
     user,
-    goalId,
+    autoMatchMode,
     goal,
     router,
     pageLoading,
-    contextGoals,
-    getSubmissionsForGoal,
   ]);
 
+  const cameraGateId = goalId ?? "auto";
+
   useLayoutEffect(() => {
-    if (!goalId || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     try {
-      if (window.sessionStorage.getItem(submitCameraGateKey(goalId)) === "1") {
+      if (window.sessionStorage.getItem(submitCameraGateKey(cameraGateId)) === "1") {
         setResumeAfterProofGate(true);
         autoStartCameraAttemptedRef.current = true;
       } else {
@@ -325,7 +374,7 @@ function SubmitProofContent() {
     } catch {
       setResumeAfterProofGate(false);
     }
-  }, [goalId]);
+  }, [cameraGateId]);
 
   const stopCamera = useCallback((keepCameraMode = false) => {
     if (streamRef.current) {
@@ -359,13 +408,14 @@ function SubmitProofContent() {
   }, [stopCamera, router]);
 
   const handleTryAnotherPhoto = useCallback(() => {
-    if (goalId && typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       try {
-        window.sessionStorage.removeItem(submitCameraGateKey(goalId));
+        window.sessionStorage.removeItem(submitCameraGateKey(cameraGateId));
       } catch {
         /* ignore */
       }
     }
+    if (autoMatchMode) setMatchedGoal(null);
     setDeferCameraAutostart(false);
     setResumeAfterProofGate(false);
     setStep("capture");
@@ -375,7 +425,7 @@ function SubmitProofContent() {
     autoStartCameraAttemptedRef.current = false;
     setCameraError(null);
     stopCamera();
-  }, [goalId, stopCamera]);
+  }, [cameraGateId, autoMatchMode, stopCamera]);
 
   useEffect(() => {
     return () => stopCamera();
@@ -451,7 +501,8 @@ function SubmitProofContent() {
   }, [step, streamReady]);
 
   useEffect(() => {
-    if (!user || !goal) return;
+    if (!user) return;
+    if (!autoMatchMode && !goal) return;
     if (!inWindow) return;
     if (step !== "capture" || cameraStarted) return;
     if (deferCameraAutostart) return;
@@ -463,6 +514,7 @@ function SubmitProofContent() {
     user?.id,
     goal?.id,
     goal,
+    autoMatchMode,
     inWindow,
     step,
     cameraStarted,
@@ -472,14 +524,15 @@ function SubmitProofContent() {
   ]);
 
   const persistCompressedProof = useCallback(
-    async (compressed: string, clipSummary: string, aiPassed: boolean) => {
+    async (compressed: string, clipSummary: string, aiPassed: boolean, goalOverride?: Goal | null) => {
+      const targetGoal = goalOverride ?? goal;
       const finish = (ok: boolean, summary: string | null) => {
-        if (goal) {
-          const subsBefore = getSubmissionsForGoal(goal.id);
+        if (targetGoal) {
+          const subsBefore = getSubmissionsForGoal(targetGoal.id);
           const stageBefore = getPlantStageForStreak(
-            getGoalStreak(goal, getSubmissionsForGoal, graceDayEvents)
+            getGoalStreak(targetGoal, getSubmissionsForGoal, graceDayEvents)
           ).stage;
-          const healthBefore = getWeeklyPlantState(goal, subsBefore, graceDayEvents);
+          const healthBefore = getWeeklyPlantState(targetGoal, subsBefore, graceDayEvents);
           const subsAfter = [
             ...subsBefore,
             {
@@ -488,17 +541,17 @@ function SubmitProofContent() {
             },
           ];
           const streakAfter = getGoalStreak(
-            goal,
-            (gid) => (gid === goal.id ? subsAfter : getSubmissionsForGoal(gid)),
+            targetGoal,
+            (gid) => (gid === targetGoal.id ? subsAfter : getSubmissionsForGoal(gid)),
             graceDayEvents
           );
           const stageAfter = getPlantStageForStreak(streakAfter).stage;
           const healthAfter = ok
-            ? getWeeklyPlantState(goal, subsAfter, graceDayEvents)
+            ? getWeeklyPlantState(targetGoal, subsAfter, graceDayEvents)
             : healthBefore;
           setGardenProofFlash({
-            goalId: goal.id,
-            goalTitle: goal.title,
+            goalId: targetGoal.id,
+            goalTitle: targetGoal.title,
             verified: ok,
             stageBefore,
             stageAfter,
@@ -508,14 +561,12 @@ function SubmitProofContent() {
             aiFeedback: summary ?? undefined,
           });
           if (ok) {
-            if (summary?.trim()) setGardenersNote(goal.id, summary);
-            completeGardenRecovery(goal.id);
-            completeWelcomeWeekIfNeeded(goal, subsBefore, subsAfter);
+            if (summary?.trim()) setGardenersNote(targetGoal.id, summary);
+            completeGardenRecovery(targetGoal.id);
+            completeWelcomeWeekIfNeeded(targetGoal, subsBefore, subsAfter);
           }
         }
-        if (ok && goal) {
-          hapticSuccess();
-        } else if (ok) {
+        if (ok) {
           hapticSuccess();
         }
         setVerified(ok);
@@ -523,7 +574,7 @@ function SubmitProofContent() {
         setStep("result");
       };
 
-      if (!goal || !user) {
+      if (!targetGoal || !user) {
         finish(false, "Couldn’t save your proof. Try going back and opening this goal again.");
         return;
       }
@@ -549,13 +600,13 @@ function SubmitProofContent() {
 
       try {
         const now = new Date();
-        const subsNow = getSubmissionsForGoal(goal.id);
-        const withinWindow = isWithinSubmissionWindow(goal, now, subsNow);
+        const subsNow = getSubmissionsForGoal(targetGoal.id);
+        const withinWindow = isWithinSubmissionWindow(targetGoal, now, subsNow);
         const passed = aiPassed && withinWindow;
         const msg = withinWindow ? clipSummary : "Submissions are closed right now.";
 
         const sub = await addSubmission({
-          goalId: goal.id,
+          goalId: targetGoal.id,
           date: todayStr,
           imageDataUrl: imageToStore,
           status: passed ? "verified" : "rejected",
@@ -568,9 +619,9 @@ function SubmitProofContent() {
           verifiedAt: passed ? new Date().toISOString() : undefined,
         });
         if (passed) {
-          const g = goals.find((x: Goal) => x.id === goal.id);
+          const g = goals.find((x: Goal) => x.id === targetGoal.id);
           if (g && !g.completedDates.includes(todayStr)) {
-            const savedGoal = await updateGoal(goal.id, {
+            const savedGoal = await updateGoal(targetGoal.id, {
               completedDates: [...g.completedDates, todayStr],
             });
             if (!savedGoal.ok) {
@@ -600,15 +651,16 @@ function SubmitProofContent() {
 
   const runProofVerification = useCallback(
     async (sourceDataUrl: string) => {
-      if (!goal || !user) return;
+      if (!user) return;
+      if (!autoMatchMode && !goal) return;
       if (verifyInFlightRef.current) return;
       verifyInFlightRef.current = true;
       setResultSummary(null);
       lightImpact();
       setStep("uploading");
-        if (goalId && typeof window !== "undefined") {
+      if (typeof window !== "undefined") {
         try {
-          window.sessionStorage.setItem(submitCameraGateKey(goalId), "1");
+          window.sessionStorage.setItem(submitCameraGateKey(cameraGateId), "1");
         } catch {
           /* ignore */
         }
@@ -623,24 +675,72 @@ function SubmitProofContent() {
           verificationImageMaxSide(user.plan),
           user.plan === "pro" || user.plan === "premium" ? 0.75 : 0.65
         );
-        const result = await verifyWithOpenAI({
-          imageDataUrl: compressed,
-          goalTitle: goal.title,
-          goalDescription: goal.description,
-          proofRequirement: goal.proofRequirement,
-        });
-        await persistCompressedProof(compressed, result.feedback, result.verified);
-      } catch {
-        try {
-          await addSubmission({
-            goalId: goal.id,
-            date: todayStr,
-            imageDataUrl: imageToStore,
-            status: "rejected",
-            aiFeedback: "Verification failed on this device. Try again.",
+
+        let result: VerifyMatchResult;
+        if (autoMatchMode) {
+          const pool = candidateGoals.length > 0 ? candidateGoals : goals.filter((g) => !g.isOnBreak && !g.archivedAt);
+          if (pool.length === 0) {
+            setVerified(false);
+            setResultSummary("No goals are ready for proof right now. Add a goal or check back later.");
+            setStep("result");
+            return;
+          }
+          result = await verifyProofPhoto({
+            imageDataUrl: compressed,
+            goals: pool.map((g) => ({
+              id: g.id,
+              title: g.title,
+              description: g.description,
+              proofRequirement: g.proofRequirement,
+            })),
           });
-        } catch {
-          /* keep denied state */
+          if (result.matchedGoalId) {
+            const found = pool.find((g) => g.id === result.matchedGoalId) ?? goals.find((g) => g.id === result.matchedGoalId);
+            if (found) setMatchedGoal(found);
+            if (found && result.verified) {
+              await persistCompressedProof(compressed, result.feedback, true, found);
+            } else if (found && !result.verified) {
+              // Connected but not proven — deny; still attach rejected submission to that goal.
+              await persistCompressedProof(compressed, result.feedback, false, found);
+            } else {
+              setVerified(false);
+              setResultSummary(result.feedback);
+              setStep("result");
+            }
+          } else {
+            // No connection to any goal — deny without writing a goal submission.
+            setVerified(false);
+            setResultSummary(result.feedback);
+            setStep("result");
+          }
+        } else if (goal) {
+          result = await verifyProofPhoto({
+            imageDataUrl: compressed,
+            goals: [
+              {
+                id: goal.id,
+                title: goal.title,
+                description: goal.description,
+                proofRequirement: goal.proofRequirement,
+              },
+            ],
+            lockGoalId: goal.id,
+          });
+          await persistCompressedProof(compressed, result.feedback, result.verified, goal);
+        }
+      } catch {
+        if (goal) {
+          try {
+            await addSubmission({
+              goalId: goal.id,
+              date: todayStr,
+              imageDataUrl: imageToStore,
+              status: "rejected",
+              aiFeedback: "Verification failed on this device. Try again.",
+            });
+          } catch {
+            /* keep denied state */
+          }
         }
         setVerified(false);
         setResultSummary("Verification failed on this device. Try again.");
@@ -649,7 +749,17 @@ function SubmitProofContent() {
         verifyInFlightRef.current = false;
       }
     },
-    [goal, goalId, user, todayStr, addSubmission, persistCompressedProof]
+    [
+      goal,
+      autoMatchMode,
+      cameraGateId,
+      user,
+      todayStr,
+      addSubmission,
+      persistCompressedProof,
+      candidateGoals,
+      goals,
+    ]
   );
 
   const handleAiWidgetResult = useCallback(
@@ -671,9 +781,9 @@ function SubmitProofContent() {
         setResultSummary(null);
         lightImpact();
         setStep("uploading");
-        if (goalId && typeof window !== "undefined") {
+        if (typeof window !== "undefined") {
           try {
-            window.sessionStorage.setItem(submitCameraGateKey(goalId), "1");
+            window.sessionStorage.setItem(submitCameraGateKey(cameraGateId), "1");
           } catch {
             /* ignore */
           }
@@ -691,7 +801,7 @@ function SubmitProofContent() {
             (result.verified
               ? `Verified for "${goal.title}".`
               : `Not verified for "${goal.title}". Try another photo that clearly shows it.`);
-          await persistCompressedProof(compressed, summary, result.verified);
+          await persistCompressedProof(compressed, summary, result.verified, goal);
         } catch {
           setVerified(false);
           setResultSummary("Couldn’t process that photo. Try again.");
@@ -701,7 +811,7 @@ function SubmitProofContent() {
         }
       })();
     },
-    [goal, goalId, user, persistCompressedProof]
+    [goal, cameraGateId, user, persistCompressedProof]
   );
 
   const handleCloseApp = useCallback(() => {
@@ -745,7 +855,7 @@ function SubmitProofContent() {
     });
   }, [facingMode, stopCamera, runProofVerification]);
 
-  if (!authReady || pageLoading || !user || !goal) {
+  if (!authReady || pageLoading || !user || (!autoMatchMode && !goal)) {
     return (
       <main className="flex min-h-[50vh] items-center justify-center">
         <LoadingView />
@@ -755,7 +865,7 @@ function SubmitProofContent() {
 
   // After a verified check-in, `inWindow` becomes false (already proved today). Still show upload/result UI
   // so the user sees verified vs denied — only block the capture flow when the window was closed on arrival.
-  if (!inWindow && step === "capture" && !alreadyVerifiedToday) {
+  if (!autoMatchMode && !inWindow && step === "capture" && !alreadyVerifiedToday && goal) {
     const msg = getSubmissionWindowMessage(goal, new Date(), goalSubs);
     return (
       <main className="mx-auto max-w-lg px-4 py-8">
@@ -834,9 +944,15 @@ function SubmitProofContent() {
               <p className="mt-2 text-sm font-medium text-prove-700 dark:text-prove-300">
                 {goal.title}
               </p>
+            ) : autoMatchMode ? (
+              <p className="mt-2 text-sm font-medium text-prove-700 dark:text-prove-300">
+                Matching to your goals…
+              </p>
             ) : null}
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Checking that your photo matches this goal. This usually takes a few seconds.
+              {autoMatchMode
+                ? "Finding which goal this photo proves — or denying it if it doesn’t fit."
+                : "Checking that your photo matches this goal. This usually takes a few seconds."}
             </p>
             <div className="mt-6 space-y-2 text-left text-xs text-slate-500 dark:text-slate-400">
               <p className="flex items-center gap-2">
@@ -845,7 +961,7 @@ function SubmitProofContent() {
               </p>
               <p className="flex items-center gap-2 opacity-80">
                 <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
-                Matching your goal
+                {autoMatchMode ? "Matching a goal" : "Matching your goal"}
               </p>
             </div>
           </div>
@@ -976,29 +1092,36 @@ function SubmitProofContent() {
         {!showFullScreenCamera && !showStartingCamera && (
           <>
             <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">
-              Prove it: {goal.title}
+              {autoMatchMode
+                ? "Prove it"
+                : goal
+                  ? `Prove it: ${goal.title}`
+                  : "Prove it"}
             </h1>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Snap a photo that matches your goal — when AI verifies it, your plant gets watered in
-              the garden. One check-in per calendar day (Sun–Sat week for weekly targets).
+              {autoMatchMode
+                ? "Snap a photo — AI matches it to one of your goals. No connection or weak proof gets denied."
+                : "Snap a photo that matches your goal — when AI verifies it, your plant gets watered in the garden. One check-in per calendar day (Sun–Sat week for weekly targets)."}
             </p>
-            <div className="mt-6 rounded-2xl p-4 glass-card">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI verifier (optional)</p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                When verification finishes here, your proof is saved like the camera flow.
-              </p>
-              <div className="mt-3" ref={aiWidgetMountRef}>
-                <AIVerificationWidget
-                  key={`${goal.id}-${aiWidgetSession}`}
-                  goalTitle={goal.title}
-                  goalDescription={goal.description}
-                  proofRequirement={goal.proofRequirement}
-                  onResult={(r) => {
-                    void handleAiWidgetResult(r);
-                  }}
-                />
+            {!autoMatchMode && goal ? (
+              <div className="mt-6 rounded-2xl p-4 glass-card">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">AI verifier (optional)</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  When verification finishes here, your proof is saved like the camera flow.
+                </p>
+                <div className="mt-3" ref={aiWidgetMountRef}>
+                  <AIVerificationWidget
+                    key={`${goal.id}-${aiWidgetSession}`}
+                    goalTitle={goal.title}
+                    goalDescription={goal.description}
+                    proofRequirement={goal.proofRequirement}
+                    onResult={(r) => {
+                      void handleAiWidgetResult(r);
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            ) : null}
           </>
         )}
 

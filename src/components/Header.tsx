@@ -93,7 +93,6 @@ export function Header() {
   const showBottomTabs = !pathname.startsWith("/goals/submit");
   const showStatusStrip = showBottomTabs;
   const pageTitle = getPageTitle(pathname);
-  const isSettingsPage = pathname.startsWith("/settings");
 
   const handleSignOut = async () => {
     setAccountOpen(false);
@@ -109,23 +108,19 @@ export function Header() {
     <>
       <header
         className={clsx(
-          "sticky top-0 z-40 border-b border-black/[0.06] pt-[env(safe-area-inset-top)] bg-white/90 backdrop-blur-xl dark:border-white/[0.08] dark:bg-neutral-950/90",
-          isSettingsPage && "dark:bg-neutral-950/95"
+          "sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] backdrop-blur-xl",
+          "border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--bg-card)_92%,transparent)]"
         )}
       >
         <div className="mx-auto flex h-[3.25rem] max-w-2xl items-center justify-between gap-3 px-4 sm:h-[3.5rem] sm:px-6">
           <div className="min-w-0">
             <Link
               href="/dashboard"
-              className="truncate rounded-md font-display text-lg font-bold tracking-tight text-neutral-950 transition-opacity hover:opacity-80 dark:text-white"
+              className="truncate rounded-md font-display text-lg font-bold tracking-tight text-[color:var(--text-primary)] transition-opacity hover:opacity-80"
             >
               Proveit
             </Link>
-            <p
-              className={clsx(
-                "truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500"
-              )}
-            >
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
               {pageTitle}
             </p>
           </div>
@@ -136,7 +131,7 @@ export function Header() {
                 e.stopPropagation();
                 setAccountOpen((o) => !o);
               }}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-black/[0.06] bg-neutral-50 px-3 text-sm text-neutral-600 transition hover:bg-neutral-100 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--bg-app)] px-3 text-sm text-[color:var(--text-muted)] transition hover:bg-prove-50 dark:hover:bg-prove-950/40"
               aria-expanded={accountOpen}
               aria-haspopup="true"
               aria-label="Account menu"
@@ -247,7 +242,7 @@ export function Header() {
             >
               <Plus className="h-7 w-7" strokeWidth={2.5} />
             </Link>
-            <nav className="pointer-events-auto grid grid-cols-3 gap-0.5 rounded-[1.35rem] border border-black/[0.06] bg-white/95 p-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-neutral-950/95">
+            <nav className="pointer-events-auto grid grid-cols-3 gap-0.5 rounded-[1.35rem] border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--bg-card)_94%,transparent)] p-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] backdrop-blur-xl">
               {APP_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = isTabActive(pathname, tab.href);
@@ -263,8 +258,8 @@ export function Header() {
                     className={clsx(
                       "flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 text-[10px] font-semibold leading-none tracking-tight transition-colors sm:min-h-[52px] sm:px-1 sm:text-[11px]",
                       active
-                        ? "bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-200",
+                        ? "bg-prove-100 text-[color:var(--text-primary)] dark:bg-prove-950/60"
+                        : "text-[color:var(--text-muted)] hover:bg-[color:var(--bg-app)] hover:text-[color:var(--text-primary)]",
                       isGardenTab && spotlightGarden && "relative z-[100]"
                     )}
                     aria-current={active ? "page" : undefined}
