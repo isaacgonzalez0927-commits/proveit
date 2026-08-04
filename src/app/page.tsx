@@ -709,7 +709,7 @@ function LandingContent() {
             title="Snap your proof."
             body="Take a fresh photo of the habit — a walk, a workout, a book page."
             imageSrc="/onboarding/snap-proof.jpg"
-            imageAlt="Running shoe as workout proof"
+            imageAlt="Hand checking off a habit checklist"
             onBack={() => goTo(0)}
             onNext={() => goTo(2)}
           />
@@ -722,7 +722,7 @@ function LandingContent() {
             title="AI checks it."
             body="Proveit matches the photo to your goal so check-ins stay honest."
             imageSrc="/onboarding/ai-check.jpg"
-            imageAlt="Open book as an example proof photo"
+            imageAlt="Sticky notes marked to do, doing, and done"
             onBack={() => goTo(1)}
             onNext={() => goTo(3)}
           />
@@ -748,7 +748,7 @@ function LandingContent() {
             title="Miss a week? It wilts first."
             body="Two-week grace: prove again to keep the plant. Your streak still resets."
             imageSrc="/onboarding/wilt-grace.jpg"
-            imageAlt="Wilting houseplant on a windowsill"
+            imageAlt="Wilted pink flowers in a vase on a windowsill"
             onBack={() => goTo(3)}
             onNext={() => goTo(5)}
           />
@@ -761,7 +761,7 @@ function LandingContent() {
             title="Grow together."
             body="Share a goal, see each other’s progress, and keep each other honest."
             imageSrc="/onboarding/buddies.jpg"
-            imageAlt="Trainer and athlete working out together"
+            imageAlt="Friends laughing together outdoors"
             onBack={() => goTo(4)}
             onNext={() => {
               setLoginError("");
