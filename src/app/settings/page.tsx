@@ -251,7 +251,7 @@ export default function SettingsPage() {
   const updateThemeMode = (nextMode: ThemeMode) => {
     setThemeMode(nextMode);
     saveAndApplyThemeMode(nextMode);
-    const label = nextMode === "system" ? "System" : nextMode === "dark" ? "Dark" : "Light";
+    const label = nextMode === "system" ? "System" : nextMode === "dark" ? "Black" : "White";
     setSettingsMessage(`${label} appearance applied.`);
   };
 
@@ -595,7 +595,7 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {matchesSettingsQuery("appearance theme colors accent dark light system") && (
+          {matchesSettingsQuery("appearance theme colors accent dark light system white black mode") && (
             <section>
               <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
                 Appearance
@@ -615,8 +615,8 @@ export default function SettingsPage() {
                   <div className="settings-seg" role="group" aria-label="Appearance mode">
                     {(
                       [
-                        { id: "light", label: "Light" },
-                        { id: "dark", label: "Dark" },
+                        { id: "light", label: "White" },
+                        { id: "dark", label: "Black" },
                         { id: "system", label: "System" },
                       ] as const
                     ).map((option) => (
