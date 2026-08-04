@@ -68,6 +68,8 @@ const themeScript = `
       storedAccent === 'indigo' ||
       storedAccent === 'teal' ||
       storedAccent === 'mint' ||
+      storedAccent === 'white' ||
+      storedAccent === 'black' ||
       storedAccent === 'slate' ||
       storedAccent === 'gold'
         ? storedAccent

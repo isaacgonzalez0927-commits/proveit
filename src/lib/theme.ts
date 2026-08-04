@@ -14,6 +14,8 @@ export type AccentTheme =
   | "indigo"
   | "teal"
   | "mint"
+  | "white"
+  | "black"
   | "slate"
   | "gold";
 
@@ -27,6 +29,9 @@ export const DEFAULT_ACCENT_HEX = "#10b981";
 /** Themes included in Pro (6). Premium gets all colors. */
 export const PRO_ACCENT_THEMES: AccentTheme[] = ["pink", "violet", "ocean", "teal", "orange", "amber"];
 
+/** Free accents available on every plan (mint default + mono chrome ways). */
+export const FREE_ACCENT_THEMES: AccentTheme[] = ["mint", "white", "black"];
+
 export const ACCENT_THEME_OPTIONS: Array<{
   id: AccentTheme;
   label: string;
@@ -36,6 +41,8 @@ export const ACCENT_THEME_OPTIONS: Array<{
   premiumOnly: boolean;
 }> = [
   { id: "mint", label: "Default", swatchClassName: "bg-emerald-500", swatchColor: DEFAULT_ACCENT_HEX, paidOnly: false, premiumOnly: false },
+  { id: "white", label: "White", swatchClassName: "bg-white", swatchColor: "#ffffff", paidOnly: false, premiumOnly: false },
+  { id: "black", label: "Black", swatchClassName: "bg-neutral-950", swatchColor: "#0a0a0a", paidOnly: false, premiumOnly: false },
   { id: "pink", label: "Pink", swatchClassName: "bg-pink-500", swatchColor: "#ec4899", paidOnly: true, premiumOnly: false },
   { id: "violet", label: "Violet", swatchClassName: "bg-violet-500", swatchColor: "#8b5cf6", paidOnly: true, premiumOnly: false },
   { id: "ocean", label: "Ocean", swatchClassName: "bg-sky-500", swatchColor: "#0ea5e9", paidOnly: true, premiumOnly: false },
@@ -66,6 +73,8 @@ function isAccentTheme(value: string | null): value is AccentTheme {
     value === "indigo" ||
     value === "teal" ||
     value === "mint" ||
+    value === "white" ||
+    value === "black" ||
     value === "slate" ||
     value === "gold"
   );
@@ -126,7 +135,7 @@ export function canUsePaidAccentThemes(plan: PlanId | null | undefined): boolean
 
 export function canUseAccentTheme(plan: PlanId | null | undefined, accent: AccentTheme): boolean {
   const normalized = normalizeAccentTheme(accent);
-  if (normalized === "mint") return true;
+  if (FREE_ACCENT_THEMES.includes(normalized)) return true;
   if (plan === "premium") return true;
   if (plan === "pro") return PRO_ACCENT_THEMES.includes(normalized);
   return false;
