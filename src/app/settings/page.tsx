@@ -118,28 +118,11 @@ function SettingsDisclosure({
 const HISTORY_SETTING_ITEMS: Array<{
   key: keyof HistoryDisplaySettings;
   label: string;
-  description: string;
 }> = [
-  {
-    key: "showProofPhotos",
-    label: "Show proof photos",
-    description: "Display image thumbnails in goal gallery when a submission has a photo.",
-  },
-  {
-    key: "showStreak",
-    label: "Show streak details",
-    description: "Show current streak for each goal inside gallery cards.",
-  },
-  {
-    key: "showVerifiedCount",
-    label: "Show verified count",
-    description: "Show total verified entries for each goal.",
-  },
-  {
-    key: "showThisWeekBadge",
-    label: "Show \"This week\" badge",
-    description: "Highlight entries that happened in the current week.",
-  },
+  { key: "showProofPhotos", label: "Show proof photos" },
+  { key: "showStreak", label: "Show streak details" },
+  { key: "showVerifiedCount", label: "Show verified count" },
+  { key: "showThisWeekBadge", label: "Show \"This week\" badge" },
 ];
 
 export default function SettingsPage() {
@@ -484,9 +467,6 @@ export default function SettingsPage() {
           <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[color:var(--text-primary)]">
             Settings
           </h1>
-          <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-            Account, appearance, and proof preferences.
-          </p>
         </div>
         <header className="sticky top-[calc(5.75rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--bg-app)_92%,transparent)] px-4 pb-3 pt-1 backdrop-blur-xl">
           <label className="settings-group flex h-11 items-center gap-3 px-3.5">
@@ -630,9 +610,6 @@ export default function SettingsPage() {
                       <p className="text-[15px] font-semibold tracking-tight text-[color:var(--text-primary)]">
                         Mode
                       </p>
-                      <p className="text-[12px] text-[color:var(--text-muted)]">
-                        Light, dark, or follow your device.
-                      </p>
                     </div>
                   </div>
                   <div className="settings-seg" role="group" aria-label="Appearance mode">
@@ -658,9 +635,6 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-[15px] font-semibold tracking-tight text-[color:var(--text-primary)]">
                       Accent color
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-[color:var(--text-muted)]">
-                      Tints the background, buttons, and + prove button.
                     </p>
                   </div>
                   <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
@@ -704,7 +678,6 @@ export default function SettingsPage() {
               </p>
               <SettingsDisclosure
                 title="AI verification"
-                description="Photo proof checks leave a Gardener's Note on your plant (24h)."
                 icon={<Sparkles className="h-5 w-5" />}
               >
           <div className="space-y-1 border-b border-slate-100 px-4 py-4 dark:border-white/10">
@@ -715,18 +688,13 @@ export default function SettingsPage() {
               Verified proofs water your garden and save a Gardener&apos;s Note on the plant.
             </p>
           </div>
-          <label className="flex items-start justify-between gap-3 px-4 py-4">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-white">Strict AI verification</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Looks harder for stale/reused photos and asks for more specific visual evidence.
-              </p>
-            </div>
+          <label className="flex items-center justify-between gap-3 px-4 py-4">
+            <p className="text-sm font-medium text-slate-900 dark:text-white">Strict AI verification</p>
             <input
               type="checkbox"
               checked={strictAiEnabled}
               onChange={(event) => void handleStrictAiToggle(event.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
+              className="h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
             />
           </label>
               </SettingsDisclosure>
@@ -740,23 +708,19 @@ export default function SettingsPage() {
               </p>
               <SettingsDisclosure
                 title="Gallery display"
-                description="Choose what shows in your proof gallery."
                 icon={<Info className="h-5 w-5" />}
               >
             {HISTORY_SETTING_ITEMS.map((item) => (
               <label
                 key={item.key}
-                    className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 dark:border-white/10"
+                    className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 dark:border-white/10"
               >
-                <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{item.description}</p>
-                </div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
                 <input
                   type="checkbox"
                   checked={historySettings[item.key]}
                   onChange={(event) => updateHistorySetting(item.key, event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
+                  className="h-4 w-4 rounded border-slate-300 text-prove-600 focus:ring-prove-500 dark:border-slate-600"
                 />
               </label>
             ))}
@@ -771,7 +735,6 @@ export default function SettingsPage() {
             </p>
             <SettingsDisclosure
               title="Contact email"
-              description="Used for password reset. We send a verification link before it is saved."
               icon={<Mail className="h-5 w-5" />}
             >
               <div className="space-y-2 p-4">
@@ -824,7 +787,6 @@ export default function SettingsPage() {
           <section>
             <SettingsDisclosure
               title="Confirm email"
-              description="Secure your account and enable password recovery."
               icon={<Shield className="h-5 w-5" />}
             >
               <div className="px-4 pb-4">
@@ -897,7 +859,6 @@ export default function SettingsPage() {
             </p>
             <SettingsDisclosure
               title="Developer tools"
-              description="Private creator account controls."
               icon={<Lock className="h-5 w-5" />}
             >
             <div className="p-4">
@@ -953,7 +914,6 @@ export default function SettingsPage() {
           </p>
           <SettingsDisclosure
             title="Hide goals from gallery"
-            description="Hide a goal from Gallery without deleting proof data."
             icon={<Shield className="h-5 w-5" />}
             danger
           >
@@ -1025,7 +985,6 @@ export default function SettingsPage() {
           </p>
           <SettingsDisclosure
             title="Legal & support"
-            description="Policies and contact links."
             icon={<HelpCircle className="h-5 w-5" />}
           >
             <Link href="/privacy" className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-white/10">
@@ -1054,7 +1013,6 @@ export default function SettingsPage() {
         <section>
           <SettingsDisclosure
             title="Delete account"
-            description="Permanently delete your account and all associated data."
             icon={<Trash2 className="h-5 w-5" />}
             danger
           >
