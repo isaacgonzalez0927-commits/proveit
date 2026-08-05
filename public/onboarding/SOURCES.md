@@ -1,25 +1,19 @@
-# Onboarding image sources
+# Onboarding visuals
 
-Portrait-friendly photos for intro slides (`object-cover` in a tall card). Updated 2026-08-04.
+Updated 2026-08-05. Intro no longer uses Unsplash/Pexels stock photos.
 
-## Active slides
-- `garden-streak.jpg` (Welcome) — Unsplash `photo-1501004318641-b39e6451bec6`  
-  https://images.unsplash.com/photo-1501004318641-b39e6451bec6
-- `snap-proof.jpg` (Snap your proof) — Unsplash `photo-1484480974693-6ca0a78fb36b`  
-  https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b  
-  Habit checklist / check-in proof (replaces red product-shoe shot).
-- `ai-check.jpg` (AI checks it) — Unsplash `photo-1611224923853-80b023f02d71`  
-  https://images.unsplash.com/photo-1611224923853-80b023f02d71  
-  To do → doing → done sticky notes (clearer review/check visual).
-- `plant-growth.jpg` (Water your plant) — Pexels `1072824`  
-  https://www.pexels.com/photo/person-holding-a-green-plant-1072824/
-- `wilt-grace.jpg` (Miss a week? It wilts first.) — Pexels `13660107`  
-  https://www.pexels.com/photo/pink-wilted-flowers-in-clear-glass-vase-13660107/  
-  Wilted flowers on a bright windowsill (replaces gloomy grey apartment plant).
-- `buddies.jpg` (Grow together) — Unsplash `photo-1539635278303-d4002c07eae3`  
-  https://images.unsplash.com/photo-1539635278303-d4002c07eae3  
-  Friends laughing outdoors (replaces stock trainer/gym session).
+## Active approach
+In-app plant art from `/public/plants/` (same stages as the garden UI):
 
-## Unused / removed
-- Removed off-brand stock: Nike red shoe `snap-proof`, trainer-client `buddies`, prior gloomy wilt windowsill, and `book-proof.png` archive.
-- `habit-walk.jpg` — Unsplash `photo-1476480862126-209bfaa8edc8` — reserved spare, unused in UI.
+- Welcome — `plant-stage-6-1.png` (flowering plant on mint → white panel)
+- How it works — numbered steps + `plant-stage-1/3/5.png` progression strip
+- Miss a week — `plant-stage-5.png` with a desaturated wilt filter
+
+Auth and plan slides are UI-only (no hero images).
+
+## Removed (deleted from disk)
+Former stock onboarding JPEGs are gone and should not be re-added:
+
+- `garden-streak.jpg`, `snap-proof.jpg`, `ai-check.jpg`
+- `plant-growth.jpg`, `wilt-grace.jpg`, `buddies.jpg`
+- `habit-walk.jpg` (unused spare)

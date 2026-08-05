@@ -17,10 +17,10 @@ import { shouldShowOnboardingSlideshow } from "@/lib/onboardingStorage";
 import { writeStoredDisplayName } from "@/lib/displayNameStorage";
 import { startDashboardTourForNewUser } from "@/lib/tourStorage";
 import { consumePostAuthRedirect } from "@/lib/postAuthRedirect";
-const INTRO_SLIDE_COUNT = 8;
-const AUTH_SLIDE = 6 as const;
-const PLAN_SLIDE = 7 as const;
-type Slide = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+const INTRO_SLIDE_COUNT = 5;
+const AUTH_SLIDE = 3 as const;
+const PLAN_SLIDE = 4 as const;
+type Slide = 0 | 1 | 2 | 3 | 4;
 type AuthMode = "signin" | "signup";
 
 function introCardMotion(
@@ -30,19 +30,16 @@ function introCardMotion(
 ): CSSProperties {
   const delta = index - slideProgress;
   const abs = Math.abs(delta);
-  const rotateY = Math.max(-12, Math.min(12, delta * -12));
-  const scale = Math.max(0.94, 1 - abs * 0.04);
-  const translateZ = -Math.min(abs * 36, 80);
-  const opacity = abs > 1.08 ? 0 : 1 - abs * 0.12;
+  const scale = Math.max(0.97, 1 - abs * 0.025);
+  const opacity = abs > 1.05 ? 0 : 1 - abs * 0.08;
 
   return {
-    transform: `rotateY(${rotateY}deg) scale(${scale}) translateZ(${translateZ}px)`,
+    transform: `scale(${scale})`,
     opacity,
     zIndex: Math.round(24 - abs * 8),
-    backfaceVisibility: "hidden",
     transition: isDragging
       ? "none"
-      : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease",
+      : "transform 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease",
   };
 }
 
@@ -61,11 +58,11 @@ function IntroSlideCard({
 }) {
   return (
     <section
-      className="flex h-full min-h-full w-[12.5%] shrink-0 items-stretch px-2 py-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-[max(0.35rem,env(safe-area-inset-top))]"
+      className="flex h-full min-h-full w-[20%] shrink-0 items-stretch px-2 py-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-[max(0.35rem,env(safe-area-inset-top))]"
       aria-hidden={Math.abs(index - slideProgress) > 0.55}
     >
       <div
-        className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/80 ${className}`}
+        className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-[0_12px_40px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70 ${className}`}
         style={introCardMotion(index, slideProgress, isDragging)}
       >
         {children}
@@ -74,16 +71,75 @@ function IntroSlideCard({
   );
 }
 
+/** Product-style phone frame: camera proof UI — no stock photography. */
+function ProofPhoneVisual() {
+  return (
+    <div className="flex h-full items-center justify-center bg-gradient-to-b from-[#eef6f0] to-[#f7f7f8] px-6 py-4">
+      <div
+        className="relative aspect-[9/17] w-[min(100%,11.5rem)] overflow-hidden rounded-[1.85rem] bg-slate-950 shadow-[0_20px_40px_rgba(15,23,42,0.18)] ring-[3px] ring-slate-900"
+        aria-hidden
+      >
+        <div className="absolute inset-x-[18%] top-0 z-10 h-5 rounded-b-2xl bg-slate-950" />
+        <div className="absolute inset-[3px] overflow-hidden rounded-[1.65rem] bg-[#f4f7f5]">
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between px-3.5 pt-7 text-[10px] font-medium text-slate-500">
+              <span>Proof</span>
+              <span className="rounded-full bg-prove-100 px-2 py-0.5 text-[9px] font-semibold text-prove-700">
+                Live
+              </span>
+            </div>
+            <div className="relative mx-3 mt-2 min-h-0 flex-1 overflow-hidden rounded-2xl bg-gradient-to-br from-[#cfe8d4] via-[#e8f3ea] to-[#d4e4f0]">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-16 w-16 rounded-full border-[3px] border-white/80 shadow-sm" />
+              </div>
+              <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-white/90 px-2.5 py-2 shadow-sm backdrop-blur-sm">
+                <p className="text-[10px] font-semibold text-slate-800">Morning walk</p>
+                <p className="mt-0.5 text-[9px] text-slate-500">Just now · photo proof</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-4 py-3">
+              <div className="h-8 w-8 rounded-full bg-white ring-1 ring-slate-200" />
+              <div className="h-12 w-12 rounded-full bg-prove-600 shadow-sm ring-4 ring-prove-100" />
+              <div className="h-8 w-8 rounded-lg bg-white ring-1 ring-slate-200" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Real in-app plant art: growth stages (wilt copy lives in the slide body). */
+function PlantGrowthVisual() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-[#f3f8f4] to-[#f7f7f8] px-4 py-5">
+      <div className="flex w-full max-w-[16rem] items-end justify-center gap-3">
+        {[
+          { src: "/plants/plant-stage-1.png", label: "Start" },
+          { src: "/plants/plant-stage-3.png", label: "Growing" },
+          { src: "/plants/plant-stage-5.png", label: "Strong" },
+        ].map((p) => (
+          <div key={p.label} className="flex flex-1 flex-col items-center gap-1.5">
+            <img
+              src={p.src}
+              alt=""
+              className="h-28 w-auto object-contain drop-shadow-sm sm:h-32"
+            />
+            <span className="text-[10px] font-medium text-slate-500">{p.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function IntroStorySlide({
   index,
   slideProgress,
   isDragging,
-  eyebrow,
   title,
   body,
-  imageSrc,
-  imageAlt,
-  imageContain = false,
+  visual,
   onBack,
   onNext,
   nextLabel = "Next",
@@ -91,12 +147,9 @@ function IntroStorySlide({
   index: Slide;
   slideProgress: number;
   isDragging: boolean;
-  eyebrow: string;
   title: string;
   body: string;
-  imageSrc: string;
-  imageAlt: string;
-  imageContain?: boolean;
+  visual: ReactNode;
   onBack: () => void;
   onNext: () => void;
   nextLabel?: string;
@@ -113,24 +166,17 @@ function IntroStorySlide({
             Back
           </button>
         </div>
-        <div className="shrink-0 pt-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-prove-600">
-            {eyebrow}
-          </p>
-          <h2 className="mt-2 max-w-[12ch] font-display text-[2.35rem] font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-5xl">
+        <div className="shrink-0 pt-3">
+          <h2 className="max-w-[14ch] font-display text-[2.4rem] font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-5xl">
             {title}
           </h2>
-          <p className="mt-3 max-w-[32ch] text-[15px] leading-relaxed text-slate-500">
+          <p className="mt-3 max-w-[30ch] text-[15px] leading-relaxed text-slate-500">
             {body}
           </p>
         </div>
         <div className="relative mt-5 min-h-0 flex-1">
           <div className="absolute inset-0 overflow-hidden rounded-[1.5rem] bg-white shadow-sm ring-1 ring-slate-200/70">
-            <img
-              src={imageSrc}
-              alt={imageAlt}
-              className={`h-full w-full ${imageContain ? "object-contain p-4" : "object-cover"}`}
-            />
+            {visual}
           </div>
         </div>
         <div className="shrink-0 pt-4">
@@ -627,7 +673,7 @@ function LandingContent() {
     >
       <div
         ref={viewportRef}
-        className="relative flex min-h-0 flex-1 flex-col overflow-visible [perspective:1400px]"
+        className="relative flex min-h-0 flex-1 flex-col overflow-visible"
         style={{ touchAction: isDragging ? "none" : "pan-y" }}
         onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
         onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
@@ -639,52 +685,50 @@ function LandingContent() {
         }}
         onMouseUp={handleDragEnd}
       >
-        {/* Slides container */}
+        {/* 5 slides: welcome → how it works → miss/wilt → auth → plan */}
         <div
-          className={`flex min-h-0 flex-1 w-[800%] ${
+          className={`flex min-h-0 flex-1 w-[500%] ${
             isDragging ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           }`}
           style={{
             transform: `translate3d(calc(-${slide * (100 / INTRO_SLIDE_COUNT)}% + ${dragOffsetPx}px), 0, 0)`,
-            transformStyle: "preserve-3d",
             willChange: isDragging ? "transform" : "auto",
           }}
         >
           {/* Slide 0 – Welcome */}
           <IntroSlideCard index={0} slideProgress={slideProgress} isDragging={isDragging}>
-            <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
-              <div className="h-8 shrink-0" aria-hidden />
+            <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pb-3 pt-[max(1.5rem,env(safe-area-inset-top))]">
               <div className="shrink-0 text-center">
-                <p className="font-display text-[1.65rem] font-bold tracking-tight text-prove-700">
+                <p className="font-display text-[1.85rem] font-bold tracking-tight text-prove-700">
                   Proveit
                 </p>
-                <h1 className="mt-6 font-display text-[2.75rem] font-bold leading-[1.02] tracking-tight text-slate-950 sm:text-5xl">
-                  Prove it.
+                <h1 className="mt-5 font-display text-[2.6rem] font-bold leading-[1.05] tracking-tight text-slate-950 sm:text-[2.85rem]">
+                  Prove habits.
                   <br />
-                  Grow it.
+                  Grow a plant.
                 </h1>
-                <p className="mx-auto mt-4 max-w-[28ch] text-[15px] leading-relaxed text-slate-500">
-                  Photo proof. AI check. A plant that grows with you.
+                <p className="mx-auto mt-3 max-w-[26ch] text-[15px] leading-relaxed text-slate-500">
+                  Snap proof. AI verifies. Your plant grows with you.
                 </p>
               </div>
-              <div className="relative mt-8 min-h-0 flex-1">
-                <div className="absolute inset-0 overflow-hidden rounded-[1.5rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+              <div className="relative mt-6 min-h-0 flex-1">
+                <div className="absolute inset-0 flex items-end justify-center overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-prove-50 to-white ring-1 ring-prove-100/80">
                   <img
-                    src="/onboarding/garden-streak.jpg"
-                    alt="Healthy green plants"
-                    className="h-full w-full object-cover"
+                    src="/plants/plant-stage-6-1.png"
+                    alt="Healthy Proveit plant"
+                    className="h-[90%] w-auto max-w-[75%] object-contain object-bottom drop-shadow-sm"
                   />
                 </div>
               </div>
             </div>
-            <div className="flex w-full shrink-0 items-center justify-center bg-[#f7f7f8] px-5 pb-[max(5rem,env(safe-area-inset-bottom))] pt-4">
+            <div className="flex w-full shrink-0 items-center justify-center bg-[#f7f7f8] px-5 pb-[max(5rem,env(safe-area-inset-bottom))] pt-3">
               <div className="flex w-full max-w-sm flex-col gap-2.5">
                 <button
                   type="button"
                   onClick={() => goTo(1)}
                   className="w-full rounded-2xl bg-prove-600 py-3.5 text-[15px] font-semibold text-white shadow-sm active:opacity-90"
                 >
-                  See how it works
+                  Continue
                 </button>
                 <button
                   type="button"
@@ -705,11 +749,9 @@ function LandingContent() {
             index={1}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            eyebrow="Step 1"
-            title="Snap your proof."
-            body="Take a fresh photo of the habit — a walk, a workout, a book page."
-            imageSrc="/onboarding/snap-proof.jpg"
-            imageAlt="Hand checking off a habit checklist"
+            title="Snap a proof."
+            body="A photo shows you did the habit — not just that you checked a box."
+            visual={<ProofPhoneVisual />}
             onBack={() => goTo(0)}
             onNext={() => goTo(2)}
           />
@@ -718,51 +760,10 @@ function LandingContent() {
             index={2}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            eyebrow="Step 2"
-            title="AI checks it."
-            body="Proveit matches the photo to your goal so check-ins stay honest."
-            imageSrc="/onboarding/ai-check.jpg"
-            imageAlt="Sticky notes marked to do, doing, and done"
+            title="Your plant grows."
+            body="Miss a week and it wilts — not instant death."
+            visual={<PlantGrowthVisual />}
             onBack={() => goTo(1)}
-            onNext={() => goTo(3)}
-          />
-
-          <IntroStorySlide
-            index={3}
-            slideProgress={slideProgress}
-            isDragging={isDragging}
-            eyebrow="Step 3"
-            title="Water your plant."
-            body="Verified proofs grow your garden over time — one clear win each day."
-            imageSrc="/onboarding/plant-growth.jpg"
-            imageAlt="Seedling growing in an open hand"
-            onBack={() => goTo(2)}
-            onNext={() => goTo(4)}
-          />
-
-          <IntroStorySlide
-            index={4}
-            slideProgress={slideProgress}
-            isDragging={isDragging}
-            eyebrow="Streaks"
-            title="Miss a week? It wilts first."
-            body="Two-week grace: prove again to keep the plant. Your streak still resets."
-            imageSrc="/onboarding/wilt-grace.jpg"
-            imageAlt="Wilted pink flowers in a vase on a windowsill"
-            onBack={() => goTo(3)}
-            onNext={() => goTo(5)}
-          />
-
-          <IntroStorySlide
-            index={5}
-            slideProgress={slideProgress}
-            isDragging={isDragging}
-            eyebrow="Buddies"
-            title="Grow together."
-            body="Share a goal, see each other’s progress, and keep each other honest."
-            imageSrc="/onboarding/buddies.jpg"
-            imageAlt="Friends laughing together outdoors"
-            onBack={() => goTo(4)}
             onNext={() => {
               setLoginError("");
               if (user) {
@@ -775,14 +776,11 @@ function LandingContent() {
             nextLabel={user ? "Choose plan" : "Get started"}
           />
 
-          {/* Slide 6 – Sign in */}
+          {/* Slide 3 – Sign in */}
           <IntroSlideCard index={AUTH_SLIDE} slideProgress={slideProgress} isDragging={isDragging}>
             <div className="flex min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col justify-center">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-prove-600">
-                  Account
-                </p>
-                <h2 className="mt-2 font-display text-2xl font-bold text-slate-950">
+                <h2 className="font-display text-2xl font-bold text-slate-950">
                   {authMode === "signin" ? "Sign in" : "Create account"}
                 </h2>
                 <p className="mt-1 text-[14px] text-slate-500">
@@ -905,7 +903,7 @@ function LandingContent() {
                 </div>
               </div>
               <div className="mx-auto mt-2 flex w-full max-w-sm shrink-0 items-center justify-between pb-[max(4.5rem,env(safe-area-inset-bottom))] text-[12px] text-slate-500">
-                <button type="button" onClick={() => goTo(5)} className="active:opacity-70">
+                <button type="button" onClick={() => goTo(2)} className="active:opacity-70">
                   Back
                 </button>
                 <span>Plan comes next</span>
@@ -913,18 +911,15 @@ function LandingContent() {
             </div>
           </IntroSlideCard>
 
-          {/* Slide 7 – Choose plan */}
+          {/* Slide 4 – Choose plan */}
           <IntroSlideCard index={PLAN_SLIDE} slideProgress={slideProgress} isDragging={isDragging}>
             <div className="flex min-h-0 flex-1 flex-col bg-[#f7f7f8] px-5 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col justify-center">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-prove-600">
-                  Plan
-                </p>
-                <h2 className="mt-2 font-display text-2xl font-bold text-slate-950">
+                <h2 className="font-display text-2xl font-bold text-slate-950">
                   Choose your plan
                 </h2>
                 <p className="mt-1 text-[14px] text-slate-500">
-                  Start free, or go Pro / Premium anytime.
+                  Start free. Upgrade anytime.
                 </p>
                 <div className="mt-4 space-y-2.5">
                   {[...PLANS]
