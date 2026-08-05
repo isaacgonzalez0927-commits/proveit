@@ -71,63 +71,59 @@ function IntroSlideCard({
   );
 }
 
-/** Product-style phone frame: camera proof UI — no stock photography. */
-function ProofPhoneVisual() {
+/** One slide: snap → AI → grow, using in-app plant art (no stock photos). */
+function HowItWorksVisual() {
   return (
-    <div className="flex h-full items-center justify-center bg-gradient-to-b from-[#eef6f0] to-[#f7f7f8] px-6 py-4">
-      <div
-        className="relative aspect-[9/17] w-[min(100%,11.5rem)] overflow-hidden rounded-[1.85rem] bg-slate-950 shadow-[0_20px_40px_rgba(15,23,42,0.18)] ring-[3px] ring-slate-900"
-        aria-hidden
-      >
-        <div className="absolute inset-x-[18%] top-0 z-10 h-5 rounded-b-2xl bg-slate-950" />
-        <div className="absolute inset-[3px] overflow-hidden rounded-[1.65rem] bg-[#f4f7f5]">
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between px-3.5 pt-7 text-[10px] font-medium text-slate-500">
-              <span>Proof</span>
-              <span className="rounded-full bg-prove-100 px-2 py-0.5 text-[9px] font-semibold text-prove-700">
-                Live
-              </span>
-            </div>
-            <div className="relative mx-3 mt-2 min-h-0 flex-1 overflow-hidden rounded-2xl bg-gradient-to-br from-[#cfe8d4] via-[#e8f3ea] to-[#d4e4f0]">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-16 w-16 rounded-full border-[3px] border-white/80 shadow-sm" />
-              </div>
-              <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-white/90 px-2.5 py-2 shadow-sm backdrop-blur-sm">
-                <p className="text-[10px] font-semibold text-slate-800">Morning walk</p>
-                <p className="mt-0.5 text-[9px] text-slate-500">Just now · photo proof</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-4 py-3">
-              <div className="h-8 w-8 rounded-full bg-white ring-1 ring-slate-200" />
-              <div className="h-12 w-12 rounded-full bg-prove-600 shadow-sm ring-4 ring-prove-100" />
-              <div className="h-8 w-8 rounded-lg bg-white ring-1 ring-slate-200" />
-            </div>
+    <div className="flex h-full flex-col justify-center gap-4 bg-gradient-to-b from-prove-50/80 to-white px-5 py-5">
+      {[
+        { n: "1", title: "Snap a photo", detail: "Fresh proof of the habit" },
+        { n: "2", title: "AI verifies", detail: "Matched to your goal" },
+        { n: "3", title: "Plant grows", detail: "Wins water your garden" },
+      ].map((step) => (
+        <div key={step.n} className="flex items-center gap-3.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-prove-600 text-[13px] font-bold text-white">
+            {step.n}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-slate-900">{step.title}</p>
+            <p className="text-[13px] text-slate-500">{step.detail}</p>
           </div>
         </div>
+      ))}
+      <div className="mt-1 flex items-end justify-center gap-2 border-t border-prove-100/80 pt-4">
+        {[
+          "/plants/plant-stage-1.png",
+          "/plants/plant-stage-3.png",
+          "/plants/plant-stage-5.png",
+        ].map((src) => (
+          <img
+            key={src}
+            src={src}
+            alt=""
+            className="h-[4.5rem] w-auto object-contain drop-shadow-sm sm:h-20"
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-/** Real in-app plant art: growth stages (wilt copy lives in the slide body). */
-function PlantGrowthVisual() {
+/** Miss → wilt first, then death — in-app plant with wilt treatment. */
+function WiltVisual() {
   return (
-    <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-[#f3f8f4] to-[#f7f7f8] px-4 py-5">
-      <div className="flex w-full max-w-[16rem] items-end justify-center gap-3">
-        {[
-          { src: "/plants/plant-stage-1.png", label: "Start" },
-          { src: "/plants/plant-stage-3.png", label: "Growing" },
-          { src: "/plants/plant-stage-5.png", label: "Strong" },
-        ].map((p) => (
-          <div key={p.label} className="flex flex-1 flex-col items-center gap-1.5">
-            <img
-              src={p.src}
-              alt=""
-              className="h-28 w-auto object-contain drop-shadow-sm sm:h-32"
-            />
-            <span className="text-[10px] font-medium text-slate-500">{p.label}</span>
-          </div>
-        ))}
+    <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-slate-100 to-white px-4 py-6">
+      <img
+        src="/plants/plant-stage-5.png"
+        alt=""
+        className="h-[min(100%,14rem)] w-auto max-w-full object-contain"
+        style={{ filter: "saturate(0.35) brightness(0.88) contrast(0.95)" }}
+      />
+      <div className="mt-4 flex w-full max-w-[16rem] items-center justify-between gap-2 text-center text-[11px] font-medium text-slate-500">
+        <span>Wilts</span>
+        <span className="h-px flex-1 bg-slate-200" aria-hidden />
+        <span>Then dies</span>
+        <span className="h-px flex-1 bg-slate-200" aria-hidden />
+        <span>Streak resets</span>
       </div>
     </div>
   );
@@ -749,9 +745,9 @@ function LandingContent() {
             index={1}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            title="Snap a proof."
-            body="A photo shows you did the habit — not just that you checked a box."
-            visual={<ProofPhoneVisual />}
+            title="How it works"
+            body="Three steps. That’s the whole loop."
+            visual={<HowItWorksVisual />}
             onBack={() => goTo(0)}
             onNext={() => goTo(2)}
           />
@@ -760,9 +756,9 @@ function LandingContent() {
             index={2}
             slideProgress={slideProgress}
             isDragging={isDragging}
-            title="Your plant grows."
-            body="Miss a week and it wilts — not instant death."
-            visual={<PlantGrowthVisual />}
+            title="Miss a week?"
+            body="It wilts first. Prove again to save it — or it dies and your streak resets."
+            visual={<WiltVisual />}
             onBack={() => goTo(1)}
             onNext={() => {
               setLoginError("");
